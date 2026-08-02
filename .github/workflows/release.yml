@@ -33,17 +33,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - id: plan
+        env:
+          HAS_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
         run: |
-          pnpm change status > plan.txt 2>&1 || true
-          cat plan.txt
+          pnpm change status || true
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::notice::NPM_TOKEN is not set. Holding the release; no version will be applied."
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if pnpm version -r --dry-run 2>&1 | grep -q '→'; then
             echo "pending=true" >> "$GITHUB_OUTPUT"
           else
+            echo "::notice::No pending change intents. Nothing to release."
             echo "pending=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - if: steps.plan.outputs.pending == 'false'
-        run: echo "No pending change intents. Nothing to release."
 
       - if: steps.plan.outputs.pending == 'true'
         run: pnpm typecheck && pnpm lint && pnpm test

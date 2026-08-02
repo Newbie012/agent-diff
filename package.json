@@ -1,5 +1,5 @@
 {
-  "name": "adiff",
+  "name": "@eliya-oss/agent-diff",
   "type": "module",
   "devDependencies": {
     "@effect/vitest": "^4.0.0-beta.102",
@@ -30,7 +30,7 @@
     "adiff": "./bin/adiff.js"
   },
   "packageManager": "pnpm@12.0.0-beta.3",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Review agent work across git worktrees like a PR, and hand the comments back to the agent.",
   "license": "MIT",
   "repository": {
