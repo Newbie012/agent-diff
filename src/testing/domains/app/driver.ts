@@ -46,6 +46,11 @@ export class AppTestDriver {
     }
   }
 
+  runTake(worktree: string, wait?: number): Promise<CliResult> {
+    const args = ["take", "--worktree", worktree]
+    return this.run(wait === undefined ? args : [...args, "--wait", String(wait)])
+  }
+
   runBranches(): Promise<CliResult> {
     return this.run(["branches", "--repo", this.state.repo])
   }

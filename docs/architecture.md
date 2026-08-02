@@ -106,6 +106,10 @@ adiff has exactly two observable boundaries, and the driver is built around them
 | The terminal screen | What the reviewer sees and can act on |
 | The store | What the agent receives, and what survives a restart |
 
+A comment is handed to an agent exactly once. The store keeps a consumed count per worktree
+alongside the vouches, so `take` is the only thing that advances it and nothing else has to
+remember what the agent has already seen.
+
 ```
 src/testing/
   driver.ts            composes the domains, owns lifecycle
