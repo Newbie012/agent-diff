@@ -14,6 +14,7 @@ the way it is, why it is tested the way it is. ADRs explain choices that outlive
 | [ADR-001](ADR-001-node-26-runtime.md) | Node 26 with `--experimental-ffi` as the runtime |
 | [ADR-002](ADR-002-effect-v4-and-module-boundaries.md) | Effect v4, and modules sealed behind `index.ts` |
 | [ADR-003](ADR-003-blackbox-testdriver.md) | Black-box tests through a TestDriver, and no unit tests |
+| [ADR-004](ADR-004-pnpm-native-releases.md) | pnpm's own release tooling instead of Changesets |
 
 ## Writing one
 
