@@ -1,12 +1,11 @@
 import { describe, expect, it } from "@effect/vitest"
-import { generateBranchTestModel, generateFileTestModel, TestDriver } from "./index.ts"
+import { TestDriver } from "./index.ts"
 
 describe("reviewing a branch", () => {
   it("lists only branches that have something to review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const model = generateBranchTestModel({ name: "cdr-1-add-third" })
-    await driver.branch.withChange(model)
+    await driver.branch.create({ name: "cdr-1-add-third" })
 
     // ACT
     const result = await driver.app.branches()
@@ -22,12 +21,11 @@ describe("reviewing a branch", () => {
   it("delivers a comment to the agent anchored to the lines that were selected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const model = generateBranchTestModel()
-    const worktree = await driver.branch.withChange(model)
+    const branch = await driver.branch.create()
 
     // ACT
     const result = await driver.app.comment({
-      branch: model.name,
+      branch: branch.name,
       file: "src/api.ts",
       start: 4,
       end: 5,
@@ -36,7 +34,7 @@ describe("reviewing a branch", () => {
 
     // ASSERT
     expect(result.code).toBe(0)
-    const delivered = await driver.agent.delivered(worktree)
+    const delivered = await driver.agent.delivered(branch.worktree)
     expect(delivered).toEqual([
       {
         body: "third is unused outside this sum",
@@ -52,20 +50,19 @@ describe("reviewing a branch", () => {
   it("carries the changed source so the agent needs no other reference", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const model = generateBranchTestModel({
+    const branch = await driver.branch.create({
       files: [
-        generateFileTestModel({
+        {
           path: "src/deep/nested.ts",
           before: ["const a = 1", "const b = 2"],
           after: ["const a = 1", "const renamed = 2", "const c = 3"],
-        }),
+        },
       ],
     })
-    const worktree = await driver.branch.withChange(model)
 
     // ACT
     await driver.app.comment({
-      branch: model.name,
+      branch: branch.name,
       file: "src/deep/nested.ts",
       start: 2,
       end: 2,
@@ -73,20 +70,48 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    const delivered = await driver.agent.delivered(worktree)
+    const delivered = await driver.agent.delivered(branch.worktree)
     expect(delivered[0]?.snippet).toBe("const renamed = 2")
     expect(delivered[0]?.file).toBe("src/deep/nested.ts")
+  })
+
+  it("anchors to the removed side when asked about code that was deleted", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({
+      files: [
+        {
+          path: "src/api.ts",
+          before: ["const kept = 1", "const doomed = 2"],
+          after: ["const kept = 1"],
+        },
+      ],
+    })
+
+    // ACT
+    await driver.app.comment({
+      branch: branch.name,
+      file: "src/api.ts",
+      start: 2,
+      end: 2,
+      side: "old",
+      body: "why was this removed",
+    })
+
+    // ASSERT
+    const delivered = await driver.agent.delivered(branch.worktree)
+    expect(delivered[0]?.side).toBe("old")
+    expect(delivered[0]?.snippet).toBe("const doomed = 2")
   })
 
   it("refuses a range the diff does not show, rather than anchoring somewhere else", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const model = generateBranchTestModel()
-    const worktree = await driver.branch.withChange(model)
+    const branch = await driver.branch.create()
 
     // ACT
     const result = await driver.app.comment({
-      branch: model.name,
+      branch: branch.name,
       file: "src/api.ts",
       start: 900,
       end: 901,
@@ -96,13 +121,13 @@ describe("reviewing a branch", () => {
     // ASSERT
     expect(result.code).toBe(1)
     expect(result.envelope).toMatchObject({ ok: false, error: { _tag: "UnselectableRange" } })
-    expect(await driver.agent.delivered(worktree)).toHaveLength(0)
+    expect(await driver.agent.delivered(branch.worktree)).toHaveLength(0)
   })
 
   it("names the branches it knows when asked for one that does not exist", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.withChange(generateBranchTestModel({ name: "cdr-2-real" }))
+    await driver.branch.create({ name: "cdr-2-real" })
 
     // ACT
     const result = await driver.app.comment({
@@ -124,19 +149,18 @@ describe("reviewing a branch", () => {
   it("keeps every submitted comment, so a second review does not replace the first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const model = generateBranchTestModel()
-    const worktree = await driver.branch.withChange(model)
+    const branch = await driver.branch.create()
 
     // ACT
     await driver.app.comment({
-      branch: model.name,
+      branch: branch.name,
       file: "src/api.ts",
       start: 4,
       end: 4,
       body: "first",
     })
     await driver.app.comment({
-      branch: model.name,
+      branch: branch.name,
       file: "src/api.ts",
       start: 5,
       end: 5,
@@ -144,7 +168,7 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    const delivered = await driver.agent.delivered(worktree)
+    const delivered = await driver.agent.delivered(branch.worktree)
     expect(delivered.map((comment) => comment.body)).toEqual(["first", "second"])
   })
 })
