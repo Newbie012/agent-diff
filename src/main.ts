@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto"
 import { Cause, Effect, Exit, Layer } from "effect"
 import {
+  awaitComments,
   listBranches,
   numeric,
   optionsFrom,
   required,
   reviewProgress,
   submitComment,
+  takeComments,
   toggleVouch,
   UnknownCommand,
 } from "./cli/index.ts"
@@ -55,6 +57,18 @@ const progressCommand = Effect.fn("Main.progress")(function* (options: Record<st
   yield* emit({ ok: true, ...report })
 })
 
+const WAIT_UNIT = 1000
+
+const takeCommand = Effect.fn("Main.take")(function* (options: Record<string, string>) {
+  const worktree = yield* required(options, "worktree")
+  const wait = Number(options["wait"] ?? 0)
+  const comments =
+    wait > 0
+      ? yield* awaitComments(worktree, Date.now() + wait * WAIT_UNIT)
+      : yield* takeComments(worktree)
+  yield* emit({ ok: true, comments })
+})
+
 const dispatch = Effect.fn("Main.dispatch")(function* (argv: ReadonlyArray<string>) {
   const name = argv[0] ?? ""
   const options = optionsFrom(argv.slice(1))
@@ -62,6 +76,7 @@ const dispatch = Effect.fn("Main.dispatch")(function* (argv: ReadonlyArray<strin
   if (name === "comment") return yield* commentCommand(options)
   if (name === "vouch") return yield* vouchCommand(options)
   if (name === "progress") return yield* progressCommand(options)
+  if (name === "take") return yield* takeCommand(options)
   if (name === "review") return yield* runTui(yield* required(options, "repo"))
   return yield* new UnknownCommand({ name })
 })

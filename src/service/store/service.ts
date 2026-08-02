@@ -13,6 +13,9 @@ type Shape = {
     worktreePath: string,
     state: BranchState,
   ) => Effect.Effect<void, StoreUnwritable>
+  readonly take: (
+    worktreePath: string,
+  ) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable | StoreUnwritable>
 }
 
 export class Store extends Context.Service<Store, Shape>()("adiff/Store") {}
@@ -39,7 +42,10 @@ const parseBatches = (raw: string): ReadonlyArray<Batch> =>
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line) as Batch)
 
-const parseState = (raw: string): BranchState => JSON.parse(raw) as BranchState
+const parseState = (raw: string): BranchState => ({
+  ...emptyBranchState,
+  ...(JSON.parse(raw) as Partial<BranchState>),
+})
 
 const makeStore = (root: string): Shape => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
@@ -73,7 +79,17 @@ const makeStore = (root: string): Shape => {
     })
   })
 
-  return { root, submit, inbox, state, saveState }
+  const take = Effect.fn("Store.take")(function* (worktreePath: string) {
+    const batches = yield* inbox(worktreePath)
+    const current = yield* state(worktreePath)
+    const pending = batches.slice(current.consumed)
+    if (pending.length > 0) {
+      yield* saveState(worktreePath, { ...current, consumed: batches.length })
+    }
+    return pending
+  })
+
+  return { root, submit, inbox, state, saveState, take }
 }
 
 export const storeAt = (root: string): Layer.Layer<Store> => Layer.succeed(Store)(makeStore(root))

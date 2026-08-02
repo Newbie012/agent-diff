@@ -1,11 +1,13 @@
+import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import { anchorFor, lineOn, parsePatches, type Patch, type Side } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { isVouched, vouch } from "../domain/review/index.ts"
-import { Store, type Batch } from "../service/store/index.ts"
+import { Store, type Batch, type StoreUnreadable, type StoreUnwritable } from "../service/store/index.ts"
 import { UnknownBranch, UnknownFile, UnselectableRange } from "./error.ts"
 
 const CONTEXT = 3
+const POLL = "500 millis"
 
 export type BranchSummary = {
   readonly branch: string
@@ -106,7 +108,7 @@ export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: Vouc
 
   const current = yield* store.state(worktree.path)
   const next = vouch(current.vouches, request.file, blob)
-  yield* store.saveState(worktree.path, { vouches: next })
+  yield* store.saveState(worktree.path, { ...current, vouches: next })
 
   const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
   return {
@@ -167,3 +169,46 @@ export const listPatches = Effect.fn("Cli.listPatches")(function* (repo: string,
   const worktree = yield* findBranch(repo, branch)
   return yield* patchesOf(worktree)
 })
+
+export type PendingComment = {
+  readonly at: string
+  readonly head: string
+  readonly file: string
+  readonly side: Side
+  readonly start: number
+  readonly end: number
+  readonly snippet: string
+  readonly body: string
+}
+
+const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =>
+  batches.flatMap((batch) =>
+    batch.comments.map((comment) => ({
+      at: batch.at,
+      head: batch.head,
+      file: comment.anchor.path,
+      side: comment.anchor.side,
+      start: comment.anchor.start,
+      end: comment.anchor.end,
+      snippet: comment.anchor.snippet,
+      body: comment.body,
+    })),
+  )
+
+export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
+  const store = yield* Store
+  const resolved = yield* Effect.promise(() => realpath(worktree))
+  return flatten(yield* store.take(resolved))
+})
+
+export const awaitComments = (
+  worktree: string,
+  deadline: number,
+): Effect.Effect<ReadonlyArray<PendingComment>, StoreUnreadable | StoreUnwritable, Store> =>
+  takeComments(worktree).pipe(
+    Effect.flatMap((comments) =>
+      comments.length > 0 || Date.now() >= deadline
+        ? Effect.succeed(comments)
+        : Effect.sleep(POLL).pipe(Effect.flatMap(() => awaitComments(worktree, deadline))),
+    ),
+  )

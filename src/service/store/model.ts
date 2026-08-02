@@ -15,6 +15,7 @@ export type Batch = {
 
 export type BranchState = {
   readonly vouches: Readonly<Record<string, string>>
+  readonly consumed: number
 }
 
-export const emptyBranchState: BranchState = { vouches: {} }
+export const emptyBranchState: BranchState = { vouches: {}, consumed: 0 }
