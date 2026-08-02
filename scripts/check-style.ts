@@ -71,12 +71,30 @@ const boundaryViolations = (file: string, source: string): Violation[] => {
   return out
 }
 
+const CONSTRUCTOR = /constructor\s*\(([\s\S]*?)\)\s*\{/g
+const PARAMETER_PROPERTY = /(?:^|,)\s*(?:private|public|protected|readonly)\s/
+
+const strippableViolations = (file: string, source: string): Violation[] => {
+  const out: Violation[] = []
+  for (const match of stripStrings(source).matchAll(CONSTRUCTOR)) {
+    if (!PARAMETER_PROPERTY.test(match[1] ?? "")) continue
+    out.push({
+      file,
+      line: source.slice(0, match.index).split("\n").length,
+      rule: "no-parameter-properties",
+      detail: "node strips types only; parameter properties do not run",
+    })
+  }
+  return out
+}
+
 const files = globSync(`${SRC}/**/*.ts`).toSorted()
 const sources = await Promise.all(files.map(async (file) => [file, await readFile(file, "utf8")] as const))
 const found: Violation[] = []
 for (const [file, source] of sources) {
   found.push(...commentViolations(file, source))
   found.push(...boundaryViolations(file, source))
+  found.push(...strippableViolations(file, source))
 }
 
 if (found.length === 0) {

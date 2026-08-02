@@ -11,6 +11,7 @@ import {
   UnknownCommand,
 } from "./cli/index.ts"
 import { GitLive } from "./service/git/index.ts"
+import { runTui } from "./tui/index.ts"
 import { storeAt, defaultRoot } from "./service/store/index.ts"
 
 const emit = (value: unknown): Effect.Effect<void> =>
@@ -61,6 +62,7 @@ const dispatch = Effect.fn("Main.dispatch")(function* (argv: ReadonlyArray<strin
   if (name === "comment") return yield* commentCommand(options)
   if (name === "vouch") return yield* vouchCommand(options)
   if (name === "progress") return yield* progressCommand(options)
+  if (name === "review") return yield* runTui(yield* required(options, "repo"))
   return yield* new UnknownCommand({ name })
 })
 

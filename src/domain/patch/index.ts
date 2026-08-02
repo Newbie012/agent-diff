@@ -1,4 +1,6 @@
 export { anchorFor, rowsForRange } from "./anchor.ts"
 export { parsePatches } from "./parse.ts"
+export { renderPatch } from "./render.ts"
+export type { Rendered } from "./render.ts"
 export { lineOn } from "./model.ts"
 export type { Anchor, Blob, FilePath, Hunk, Patch, Range, Row, RowKind, Side } from "./model.ts"
