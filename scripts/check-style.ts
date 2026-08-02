@@ -14,6 +14,9 @@ const STRING_LITERAL = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g
 
 const stripStrings = (line: string): string => line.replace(STRING_LITERAL, '""')
 
+const SECTION_MARKER = /^\s*\/\/ (ARRANGE|ACT|ASSERT)\s*$/
+const isTest = (file: string): boolean => file.endsWith(".test.ts")
+
 const commentViolations = (file: string, source: string): Violation[] => {
   const out: Violation[] = []
   let inBlock = false
@@ -31,7 +34,9 @@ const commentViolations = (file: string, source: string): Violation[] => {
       out.push({ file, line: index + 1, rule: "no-comments", detail: raw.trim() })
       return
     }
-    if (inline >= 0) out.push({ file, line: index + 1, rule: "no-comments", detail: raw.trim() })
+    if (inline < 0) return
+    if (isTest(file) && SECTION_MARKER.test(raw)) return
+    out.push({ file, line: index + 1, rule: "no-comments", detail: raw.trim() })
   })
   return out
 }
