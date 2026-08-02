@@ -2,4 +2,4 @@ allowBuilds:
   msgpackr-extract: true
 versioning:
   lanes:
-    adiff: alpha
+    "@eliya-oss/agent-diff": alpha

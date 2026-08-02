@@ -55,10 +55,20 @@ a visible diff.
 - A change that should ship needs an intent recorded with it. Without one, the release workflow
   finds no pending plan and does nothing — which is the correct default, but it means "I merged and
   nothing published" is expected rather than broken.
-- Publishing needs `NPM_TOKEN` in repository secrets. Without it the release job fails at the
-  publish step, after versioning has already been applied.
+- Publishing needs `NPM_TOKEN` in repository secrets. The release job checks for it before
+  applying any version, and holds with a notice when it is missing, so merging to `main` is safe
+  before the credential exists. Adding the secret releases everything that accumulated.
+- The package is `@eliya-oss/agent-diff`. Both `adiff` and `agent-diff` were already taken on npm,
+  and a scope is the answer that does not need re-litigating every time a name is claimed.
 - Nothing can reach `latest` by accident while the lane says `alpha`. Going stable is a deliberate
-  `pnpm lane main --filter adiff`.
+  `pnpm lane main --filter @eliya-oss/agent-diff`.
+
+## Known beta behavior
+
+`pnpm version -r` on a lane produces a prerelease of the *current* version rather than of the
+bumped one: at `0.1.0` a minor intent yields `0.1.0-alpha.0`, not `0.2.0-alpha.0`. The alpha train
+is coherent — `0.1.0-alpha.0`, `.1`, `.2`, then `0.1.0` on leaving the lane — so this is recorded
+rather than worked around. Re-check it before the first stable release.
 
 ## Revisit When
 

@@ -73,23 +73,50 @@ ln -s "$PWD/skills/adiff" ~/.claude/skills/adiff
 
 ## Releasing
 
-adiff is on the `alpha` lane, so it publishes prereleases under the `alpha` dist-tag and never
-`latest`:
+Published as `@eliya-oss/agent-diff`, on the `alpha` lane — so every release is a prerelease under
+the `alpha` dist-tag and nothing reaches `latest` by accident:
 
 ```bash
-pnpm add -D adiff@alpha     # what a consumer gets
+pnpm add -D @eliya-oss/agent-diff@alpha
 ```
 
-Record what a change should do to the version as part of the change:
+**Record intent with the change, not at release time.** A change that should ship gets an intent
+in the same commit; the person who knows what changed decides the bump:
 
 ```bash
-pnpm change adiff --bump minor --summary "..."   # writes an intent
-pnpm change status                               # the pending plan
-pnpm version -r --dry-run                        # the versions it produces
+pnpm change @eliya-oss/agent-diff --bump patch --summary "Anchor comments to the right side."
 ```
 
-Merging to `main` applies the pending intents, publishes, tags, and pushes.
-[ADR-004](.agents/adr/ADR-004-pnpm-native-releases.md) explains why this is not Changesets.
+That writes a markdown file to `.changeset/`. Commit it with the code.
+
+**Check the plan** before merging:
+
+```bash
+pnpm change status          # the pending intents and what they produce
+pnpm version -r --dry-run   # 0.1.0 → 0.1.0-alpha.0
+```
+
+**Merging to `main` does the rest.** The release workflow runs the full check, applies the pending
+intents, publishes with provenance under the `alpha` tag, tags the commit, and pushes. With no
+pending intent it does nothing, and with no `NPM_TOKEN` secret it holds without applying a version
+— so `main` is always safe to merge into.
+
+Releasing by hand, if you ever need to:
+
+```bash
+pnpm version -r                         # applies intents, writes the changelog
+pnpm publish --tag alpha --provenance   # never omit --tag, or it lands on latest
+```
+
+**Leaving alpha** is deliberate, and the only way to reach `latest`:
+
+```bash
+pnpm lane main --filter @eliya-oss/agent-diff
+```
+
+[ADR-004](.agents/adr/ADR-004-pnpm-native-releases.md) explains why this is not Changesets, and
+records one beta quirk: on a lane, a minor intent at `0.1.0` produces `0.1.0-alpha.0` rather than
+`0.2.0-alpha.0`.
 
 ## Working on adiff
 
