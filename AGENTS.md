@@ -28,12 +28,12 @@ Keep the split clean:
 ## Commands
 
 ```bash
-npm install
-npm run check          # typecheck, lint, style rules, tests
-npm run typecheck
-npm run lint           # oxlint + scripts/check-style.ts
-npm test
-npm run review         # adiff review --repo .
+pnpm install
+pnpm check          # typecheck, lint, style rules, tests
+pnpm typecheck
+pnpm lint           # oxlint + scripts/check-style.ts
+pnpm test
+pnpm review         # adiff review --repo .
 ```
 
 Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entry point in the

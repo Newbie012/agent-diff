@@ -14,8 +14,8 @@ a module Node only exposes behind `--experimental-ffi`, and only from 26 onward.
 in this repo passes the flag for you.
 
 ```bash
-npm install
-npm run review
+pnpm install
+pnpm review
 ```
 
 ## Reviewing
@@ -60,7 +60,7 @@ ln -s "$PWD/skills/adiff" ~/.claude/skills/adiff
 ## Working on adiff
 
 ```bash
-npm run check   # typecheck, lint, style rules, tests
+pnpm check   # typecheck, lint, style rules, tests
 ```
 
 adiff is PRD-driven: runtime behavior is specified in `.agents/prd/` before code changes. Start at
