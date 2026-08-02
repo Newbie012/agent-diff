@@ -63,6 +63,6 @@ ln -s "$PWD/skills/adiff" ~/.claude/skills/adiff
 npm run check   # typecheck, lint, style rules, tests
 ```
 
-`docs/architecture.md` is the contract: the ubiquitous language, the module boundaries, and why
-the tests only ever assert on what a reviewer or an agent can observe. Read it before adding a
-module. `PRD.md` says what adiff is for and what it deliberately is not.
+adiff is PRD-driven: runtime behavior is specified in `.agents/prd/` before code changes. Start at
+`.agents/prd/000-overview.md` for what adiff is and which PRD owns which behavior, `AGENTS.md` for
+how to make a change, and `ARCHITECTURE.md` for how the code is laid out.

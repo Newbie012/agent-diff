@@ -1,0 +1,101 @@
+# PRD-002 — Diff and anchoring
+
+> Turning a branch's diff into rows a reviewer can point at, and a selection into an anchor an
+> agent can act on.
+
+- **Status:** `accepted`
+- **Owner:** TBD
+- **Last updated:** 2026-08-02
+
+## Problem Statement
+
+"Line 4" is ambiguous in a diff. It can mean the fourth line of the file before the change, the
+fourth after, or the fourth line on screen — and in a diff with deletions those are three different
+pieces of code. When a reviewer comments on line 4 and the agent reads line 4, they can be looking
+at different text and never find out.
+
+## Solution
+
+adiff has one coordinate space for pointing — the [row](CONTEXT.md#row), counted from the start of
+the [patch](CONTEXT.md#patch) — and every row knows which file line it is on each
+[side](CONTEXT.md#side). A selection made on the new side never picks up removed lines, and a
+selection on the old side never picks up added ones.
+
+A selection becomes an [anchor](CONTEXT.md#anchor): the file, the side, the line range, the
+[blob](CONTEXT.md#blob), and the exact snippet the reviewer had selected. The snippet is what makes
+the anchor survive; if the code has moved by the time the agent reads it, the agent still knows
+what was meant.
+
+## User Stories
+
+1. As a `reviewer`, I want a comment on new-side lines to quote the code I selected, so that the
+   agent reads what I read.
+2. As a `reviewer`, I want to comment on deleted code by selecting it on the old side, so that
+   "why did this go" is answerable.
+3. As an `agent`, I want the snippet in the anchor, so that I can act without opening the file and
+   guessing whether it moved.
+4. As a `reviewer`, I want a range the diff does not show to be refused, so that a comment never
+   silently lands somewhere else.
+
+## Implementation Decisions
+
+### Owns
+
+Parsing a unified diff into patches, hunks, and rows; the row-to-line mapping on both sides;
+building an anchor from a row range; rendering a patch back to text for display.
+
+### Does not own
+
+Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
+([PRD 003](003-review-terminal.md)); what happens to a comment once anchored
+([PRD 004](004-comment-delivery.md)).
+
+### Public contract
+
+- A **row** carries its index, its kind (`context`, `added`, `removed`), its line number on each
+  side as an optional, and its text. An added row has no old line; a removed row has no new line.
+- A **patch** carries its path, previous path, blob, header lines, hunks, rows, and the added and
+  removed counts.
+- **Selecting by line** on a side matches only rows that have a line on that side within the
+  range. This is the rule that keeps a new-side comment from quoting deleted code.
+- **An anchor** takes its side from the rows selected: new if any selected row exists on the new
+  side, old otherwise. Its range is the minimum and maximum line on that side; its snippet is the
+  selected rows' text, joined by newlines, without diff signs.
+- **A range with no matching rows produces no anchor.** The caller refuses; it never falls back to
+  the nearest row.
+- **Rendering a patch produces the display text and the row-to-line map in one pass.** These two
+  must never be computed separately — a cursor that lands on a line the text does not have is the
+  failure mode this rule exists to prevent.
+
+### Deferred decisions
+
+| Decision | Trigger |
+| --- | --- |
+| Expanding the context around a hunk on demand | A reviewer needing more than three lines to judge a change |
+| Word-level intra-line diffing | A review where line granularity demonstrably misleads |
+
+## Testing Decisions
+
+Observed at the store boundary: a comment is submitted through the command surface, and the
+assertion is on the snippet the agent receives — the exact string, not its length or its presence.
+A test that asserts "a comment arrived" cannot see the class of bug this PRD exists to prevent.
+
+Behaviors that must be covered:
+
+- A new-side range quotes only the new-side code, with deleted lines nearby excluded.
+- An old-side range quotes the deleted code.
+- A range the diff does not show is refused, and nothing reaches the agent.
+- A file in a nested directory anchors to the right path.
+
+## Out of Scope
+
+- Binary files, renames without content changes, and mode-only changes. They parse without error
+  and produce no rows; commenting on them is refused by the range rule.
+- Merge conflict markers.
+- Syntax highlighting, which belongs to the renderer.
+
+## Further Notes
+
+Every layout bug in adiff's prototype had one cause: two pieces of code independently predicting
+the same geometry. Rows and display lines are the highest-traffic instance of that, which is why
+the contract pins them to a single pass rather than to two agreeing functions.
