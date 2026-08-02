@@ -3,6 +3,7 @@
 - **Status:** `accepted`
 - **Date:** 2026-08-02
 - **PRDs:** [PRD 009](../prd/009-runtime-and-configuration.md)
+- **Supersedes nothing. Amended 2026-08-02** to publish over OIDC rather than a long-lived token.
 
 ## Context
 
@@ -20,6 +21,11 @@ Use pnpm's built-in release tooling. adiff sits on the `alpha` lane, recorded in
 `pnpm-workspace.yaml`, so an intent that would produce `0.1.0` produces `0.1.0-alpha.0` instead.
 Releases publish under the `alpha` dist-tag, never `latest`.
 
+**Authentication is OIDC trusted publishing, not a token.** The workflow requests an OIDC identity
+with `id-token: write`, and npm verifies the repository and workflow filename against a trusted
+publisher configured on the package. No credential is stored anywhere — nothing to leak, rotate,
+or scope.
+
 pnpm is pinned to `12.0.0-beta.3` in `packageManager`.
 
 ## Rationale
@@ -36,6 +42,9 @@ a visible diff.
 
 ## Alternatives Considered
 
+- **A long-lived `NPM_TOKEN` secret.** The default, and what this ADR originally specified. A
+  publish token in repository secrets is a standing credential that any workflow — including one
+  added later by someone else — can read. OIDC removes the credential rather than protecting it.
 - **Changesets.** Mature, well understood, and the safe answer. Rejected for the pre-mode
   statefulness above and for being a second tool to install and keep current when the package
   manager already does it. Reconsider if pnpm 12's beta proves unstable.
@@ -55,9 +64,21 @@ a visible diff.
 - A change that should ship needs an intent recorded with it. Without one, the release workflow
   finds no pending plan and does nothing — which is the correct default, but it means "I merged and
   nothing published" is expected rather than broken.
-- Publishing needs `NPM_TOKEN` in repository secrets. The release job checks for it before
-  applying any version, and holds with a notice when it is missing, so merging to `main` is safe
-  before the credential exists. Adding the secret releases everything that accumulated.
+- No publish credential exists anywhere. Compromising the repository's secrets yields nothing that
+  can publish, and there is no token to rotate.
+- **The first version cannot be published by CI.** npm's trusted-publisher settings live on a
+  package, and a package that has never been published has no settings page — so trusted
+  publishing cannot create one ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). The first
+  release is published once by hand, the trusted publisher is configured, and every release after
+  that is credential-free.
+- The release job checks whether the package exists on the registry before applying any version,
+  and holds with a notice explaining the bootstrap when it does not. `main` is safe to merge
+  before the package exists, and the hold clears itself once it does.
+- Trusted publishing binds to the **workflow filename**. Renaming `release.yml` breaks publishing
+  until the trusted publisher is updated to match.
+- Provenance is not generated. npm produces it automatically under trusted publishing, but only
+  for public repositories, and this repository is private. The `--provenance` flag is therefore
+  omitted rather than passed and silently failing.
 - The package is `@eliya-oss/agent-diff`. Both `adiff` and `agent-diff` were already taken on npm,
   and a scope is the answer that does not need re-litigating every time a name is claimed.
 - Nothing can reach `latest` by accident while the lane says `alpha`. Going stable is a deliberate
@@ -73,6 +94,9 @@ rather than worked around. Re-check it before the first stable release.
 ## Revisit When
 
 - pnpm 12 reaches stable, and the pin can move off a beta.
+- npm supports configuring a trusted publisher before a package exists, at which point the manual
+  bootstrap and the registry check that guards it both go away.
+- The repository becomes public, at which point provenance starts working and should be verified.
 - The lane model gets in the way of a release adiff actually wants to cut.
 - pnpm's release tooling changes shape before 12.0.0 final — it is beta, and this ADR is written
   against `12.0.0-beta.3`.

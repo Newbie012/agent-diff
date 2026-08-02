@@ -97,16 +97,41 @@ pnpm version -r --dry-run   # 0.1.0 → 0.1.0-alpha.0
 ```
 
 **Merging to `main` does the rest.** The release workflow runs the full check, applies the pending
-intents, publishes with provenance under the `alpha` tag, tags the commit, and pushes. With no
-pending intent it does nothing, and with no `NPM_TOKEN` secret it holds without applying a version
-— so `main` is always safe to merge into.
+intents, publishes under the `alpha` tag, tags the commit, and pushes. With no pending intent it
+does nothing — so `main` is always safe to merge into.
 
-Releasing by hand, if you ever need to:
+There is no publish token. The workflow authenticates to npm over
+[OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): it requests a short-lived
+identity with `id-token: write`, and npm checks it against a trusted publisher registered on the
+package. Nothing is stored in repository secrets.
+
+### Bootstrapping the first release
+
+npm cannot create a package through trusted publishing — the settings live on a package that must
+already exist ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). So the first version goes
+out by hand, once:
 
 ```bash
-pnpm version -r                         # applies intents, writes the changelog
-pnpm publish --tag alpha --provenance   # never omit --tag, or it lands on latest
+npm login
+pnpm version -r                 # 0.1.0 → 0.1.0-alpha.0, writes the changelog
+pnpm publish --tag alpha        # never omit --tag, or it lands on latest
+git commit -am "release 0.1.0-alpha.0" && git tag v0.1.0-alpha.0 && git push --follow-tags
 ```
+
+Then on npmjs.com, under the package's **Settings → Trusted Publisher**, add:
+
+| Field | Value |
+| --- | --- |
+| Publisher | GitHub Actions |
+| Organization or user | `Newbie012` |
+| Repository | `agent-diff` |
+| Workflow filename | `release.yml` |
+| Allowed actions | `npm publish` |
+
+Every release after that is credential-free. Until the package exists the workflow holds with a
+notice instead of failing, and the hold clears itself once it does.
+
+Renaming `release.yml` breaks publishing until the trusted publisher is updated to match.
 
 **Leaving alpha** is deliberate, and the only way to reach `latest`:
 
