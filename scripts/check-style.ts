@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// Enforces the two rules in docs/architecture.md that oxlint cannot express:
+// Enforces the three rules in ARCHITECTURE.md that oxlint cannot express:
 // no comments in src/, and no imports that reach past a module's index.ts.
 // This file is a script, not src/, so it may explain itself.
 import { globSync } from "node:fs"
