@@ -1,0 +1,68 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - id: plan
+        run: |
+          pnpm change status > plan.txt 2>&1 || true
+          cat plan.txt
+          if pnpm version -r --dry-run 2>&1 | grep -q '→'; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.plan.outputs.pending == 'false'
+        run: echo "No pending change intents. Nothing to release."
+
+      - if: steps.plan.outputs.pending == 'true'
+        run: pnpm typecheck && pnpm lint && pnpm test
+
+      - if: steps.plan.outputs.pending == 'true'
+        id: version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          pnpm version -r
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - if: steps.plan.outputs.pending == 'true'
+        run: pnpm publish --tag alpha --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - if: steps.plan.outputs.pending == 'true'
+        run: |
+          git commit -am "release ${{ steps.version.outputs.version }}" || true
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin HEAD:main --follow-tags
