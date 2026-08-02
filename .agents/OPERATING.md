@@ -19,7 +19,7 @@ How to make a change here, in order. `AGENTS.md` is the short version; this is w
 5. **Write the failing test first.** It asserts what a reviewer or an agent can observe. Run it and
    watch it fail for the right reason — a test that passes before the code exists is testing
    something else.
-6. **Write the code.** Then `npm run check`.
+6. **Write the code.** Then `pnpm check`.
 
 ## Changing behavior that a PRD already describes
 
@@ -56,7 +56,7 @@ These are enforced, not advised. Each exists because the alternative already cau
 ## Before saying it is done
 
 ```bash
-npm run check
+pnpm check
 ```
 
 Typecheck, lint, style rules, and the full suite. Report what actually happened: if a test fails,
