@@ -18,9 +18,15 @@ a module Node only exposes behind `--experimental-ffi`, and only from 26 onward.
 in this repo passes the flag for you.
 
 ```bash
+corepack disable pnpm
+npm install -g --allow-scripts=pnpm pnpm@next-12
 pnpm install
 pnpm review
 ```
+
+pnpm 12 is a Rust rewrite and is still beta, so
+[corepack cannot install it](https://pnpm.io/installation) — install it directly, as above. The
+`packageManager` pin in `package.json` stays for CI, which reads it through `pnpm/action-setup`.
 
 ## Reviewing
 
