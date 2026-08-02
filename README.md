@@ -57,6 +57,26 @@ to make it available everywhere:
 ln -s "$PWD/skills/adiff" ~/.claude/skills/adiff
 ```
 
+## Releasing
+
+adiff is on the `alpha` lane, so it publishes prereleases under the `alpha` dist-tag and never
+`latest`:
+
+```bash
+pnpm add -D adiff@alpha     # what a consumer gets
+```
+
+Record what a change should do to the version as part of the change:
+
+```bash
+pnpm change adiff --bump minor --summary "..."   # writes an intent
+pnpm change status                               # the pending plan
+pnpm version -r --dry-run                        # the versions it produces
+```
+
+Merging to `main` applies the pending intents, publishes, tags, and pushes.
+[ADR-004](.agents/adr/ADR-004-pnpm-native-releases.md) explains why this is not Changesets.
+
 ## Working on adiff
 
 ```bash
