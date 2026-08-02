@@ -1,6 +1,7 @@
 import { Effect, Option } from "effect"
 import { anchorFor, lineOn, parsePatches, type Patch, type Side } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
+import { isVouched, vouch } from "../domain/review/index.ts"
 import { Store, type Batch } from "../service/store/index.ts"
 import { UnknownBranch, UnknownFile, UnselectableRange } from "./error.ts"
 
@@ -76,6 +77,57 @@ export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: strin
     })
   }
   return summaries.filter((summary) => summary.files > 0)
+})
+
+export type VouchRequest = {
+  readonly repo: string
+  readonly branch: string
+  readonly file: string
+}
+
+export type VouchReport = {
+  readonly vouched: ReadonlyArray<string>
+  readonly total: number
+}
+
+const blobOf = (patches: ReadonlyArray<Patch>, file: string): Option.Option<string> =>
+  Option.map(findPatch(patches, file), (patch) => patch.blob)
+
+export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: VouchRequest) {
+  const store = yield* Store
+  const worktree = yield* findBranch(request.repo, request.branch)
+  const patches = yield* patchesOf(worktree)
+
+  const blob = yield* Option.match(blobOf(patches, request.file), {
+    onNone: () =>
+      new UnknownFile({ file: request.file, known: patches.map((patch) => patch.path) }),
+    onSome: Effect.succeed,
+  })
+
+  const current = yield* store.state(worktree.path)
+  const next = vouch(current.vouches, request.file, blob)
+  yield* store.saveState(worktree.path, { vouches: next })
+
+  const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  return {
+    vouched: files.filter((file) => isVouched(next, file.path, file.blob)).map((file) => file.path),
+    total: patches.length,
+  } satisfies VouchReport
+})
+
+export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
+  repo: string,
+  branch: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const patches = yield* patchesOf(worktree)
+  const current = yield* store.state(worktree.path)
+  const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  return {
+    vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
+    total: patches.length,
+  } satisfies VouchReport
 })
 
 export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {

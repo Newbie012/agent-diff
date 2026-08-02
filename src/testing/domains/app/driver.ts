@@ -46,6 +46,22 @@ export class AppTestDriver {
     return this.run(["branches", "--repo", this.state.repo])
   }
 
+  vouch(options: { readonly branch: string; readonly file: string }): Promise<CliResult> {
+    return this.run([
+      "vouch",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--file",
+      options.file,
+    ])
+  }
+
+  progress(branch: string): Promise<CliResult> {
+    return this.run(["progress", "--repo", this.state.repo, "--branch", branch])
+  }
+
   comment(options: CommentOptions): Promise<CliResult> {
     return this.run([
       "comment",
