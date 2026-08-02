@@ -79,7 +79,10 @@ describe("tracking review progress", () => {
     const result = await driver.app.runVouch({ branch: branch.name, file: "src/absent.ts" })
 
     // ASSERT
-    expect(result.code).toBe(1)
-    expect(result.envelope).toMatchObject({ ok: false, error: { _tag: "UnknownFile" } })
+    expect(result.code).toBe(3)
+    expect(result.envelope).toMatchObject({
+      ok: false,
+      error: { type: "UnknownFile", known: expect.arrayContaining(["src/api.ts"]) },
+    })
   })
 })

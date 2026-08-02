@@ -34,7 +34,15 @@
     "typescript/consistent-type-imports": "error",
     "typescript/no-non-null-assertion": "error",
     "unicorn/no-null": "error",
-    "import/no-cycle": "error"
+    "import/no-cycle": "error",
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": [
+          "_tag"
+        ]
+      }
+    ]
   },
   "ignorePatterns": [
     "node_modules",

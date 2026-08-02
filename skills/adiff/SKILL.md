@@ -11,7 +11,7 @@ comment is filed against this worktree. This skill is how you collect those comm
 ## Collect what is waiting
 
 ```bash
-adiff take --worktree .
+adiff comment take --worktree .
 ```
 
 Returns one JSON line:
@@ -29,7 +29,7 @@ A comment is handed over exactly once. A second `take` returns only what was wri
 ## Wait for the next one
 
 ```bash
-adiff take --worktree . --wait 300
+adiff comment take --worktree . --wait 300
 ```
 
 Blocks until a comment arrives or the timeout in seconds elapses, then returns the same envelope.
@@ -49,6 +49,24 @@ Handle every comment in the batch before taking again.
 
 ## Failure
 
-Any command can return `{"ok":false,"error":{"_tag":"..."}}` and exit non-zero. `UnknownBranch`
-means this worktree is not one adiff knows about — the reviewer has not opened it. Do not retry in
-a loop; report it.
+Failures go to **stderr**, never stdout, so stdout is always safe to parse. The shape is
+`{"ok":false,"error":{"type":"...","retriable":false,"suggestion":"..."}}`, and the exit code says
+what kind of problem it is: `2` the request was malformed, `3` the branch or file does not exist,
+`1` something unexpected.
+
+Read `suggestion` before doing anything else — it names the command that resolves the failure.
+Retry only when `retriable` is true. `UnknownBranch` means this worktree is not one adiff knows
+about, because the reviewer has not opened it; report that rather than looping.
+
+## Discovering the rest
+
+```bash
+adiff describe
+```
+
+Returns every command with its options, which are required, and where its payload sits. Use it
+instead of guessing, and use `--fields` to keep answers small:
+
+```bash
+adiff branch list --repo . --fields branch,files
+```
