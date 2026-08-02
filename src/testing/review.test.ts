@@ -8,7 +8,7 @@ describe("reviewing a branch", () => {
     await driver.branch.create({ name: "cdr-1-add-third" })
 
     // ACT
-    const result = await driver.app.branches()
+    const result = await driver.app.runBranches()
 
     // ASSERT
     expect(result.code).toBe(0)
@@ -24,7 +24,7 @@ describe("reviewing a branch", () => {
     const branch = await driver.branch.create()
 
     // ACT
-    const result = await driver.app.comment({
+    const result = await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 4,
@@ -34,8 +34,8 @@ describe("reviewing a branch", () => {
 
     // ASSERT
     expect(result.code).toBe(0)
-    const delivered = await driver.agent.delivered(branch.worktree)
-    expect(delivered).toEqual([
+    const comments = await driver.agent.listComments(branch.worktree)
+    expect(comments).toEqual([
       {
         body: "third is unused outside this sum",
         file: "src/api.ts",
@@ -61,7 +61,7 @@ describe("reviewing a branch", () => {
     })
 
     // ACT
-    await driver.app.comment({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/deep/nested.ts",
       start: 2,
@@ -70,9 +70,9 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    const delivered = await driver.agent.delivered(branch.worktree)
-    expect(delivered[0]?.snippet).toBe("const renamed = 2")
-    expect(delivered[0]?.file).toBe("src/deep/nested.ts")
+    const comments = await driver.agent.listComments(branch.worktree)
+    expect(comments[0]?.snippet).toBe("const renamed = 2")
+    expect(comments[0]?.file).toBe("src/deep/nested.ts")
   })
 
   it("anchors to the removed side when asked about code that was deleted", async () => {
@@ -89,7 +89,7 @@ describe("reviewing a branch", () => {
     })
 
     // ACT
-    await driver.app.comment({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -99,9 +99,9 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    const delivered = await driver.agent.delivered(branch.worktree)
-    expect(delivered[0]?.side).toBe("old")
-    expect(delivered[0]?.snippet).toBe("const doomed = 2")
+    const comments = await driver.agent.listComments(branch.worktree)
+    expect(comments[0]?.side).toBe("old")
+    expect(comments[0]?.snippet).toBe("const doomed = 2")
   })
 
   it("refuses a range the diff does not show, rather than anchoring somewhere else", async () => {
@@ -110,7 +110,7 @@ describe("reviewing a branch", () => {
     const branch = await driver.branch.create()
 
     // ACT
-    const result = await driver.app.comment({
+    const result = await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 900,
@@ -121,7 +121,7 @@ describe("reviewing a branch", () => {
     // ASSERT
     expect(result.code).toBe(1)
     expect(result.envelope).toMatchObject({ ok: false, error: { _tag: "UnselectableRange" } })
-    expect(await driver.agent.delivered(branch.worktree)).toHaveLength(0)
+    expect(await driver.agent.listComments(branch.worktree)).toHaveLength(0)
   })
 
   it("names the branches it knows when asked for one that does not exist", async () => {
@@ -130,7 +130,7 @@ describe("reviewing a branch", () => {
     await driver.branch.create({ name: "cdr-2-real" })
 
     // ACT
-    const result = await driver.app.comment({
+    const result = await driver.app.runComment({
       branch: "cdr-99-imaginary",
       file: "src/api.ts",
       start: 1,
@@ -152,14 +152,14 @@ describe("reviewing a branch", () => {
     const branch = await driver.branch.create()
 
     // ACT
-    await driver.app.comment({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 4,
       end: 4,
       body: "first",
     })
-    await driver.app.comment({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 5,
@@ -168,7 +168,7 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    const delivered = await driver.agent.delivered(branch.worktree)
-    expect(delivered.map((comment) => comment.body)).toEqual(["first", "second"])
+    const comments = await driver.agent.listComments(branch.worktree)
+    expect(comments.map((comment) => comment.body)).toEqual(["first", "second"])
   })
 })

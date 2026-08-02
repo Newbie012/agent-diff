@@ -162,3 +162,8 @@ export const submitComment = Effect.fn("Cli.submitComment")(function* (request: 
   yield* store.submit(worktree.path, batch)
   return batch
 })
+
+export const listPatches = Effect.fn("Cli.listPatches")(function* (repo: string, branch: string) {
+  const worktree = yield* findBranch(repo, branch)
+  return yield* patchesOf(worktree)
+})

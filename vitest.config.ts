@@ -5,5 +5,6 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     reporters: ["dot"],
     globals: false,
+    pool: "forks",
   },
 })

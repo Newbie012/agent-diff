@@ -12,9 +12,13 @@ export type DeliveredComment = {
 }
 
 export class AgentTestDriver {
-  constructor(private readonly state: DriverState) {}
+  private readonly state: DriverState
 
-  async inbox(worktree: string): Promise<ReadonlyArray<Batch>> {
+  constructor(state: DriverState) {
+    this.state = state
+  }
+
+  async listBatches(worktree: string): Promise<ReadonlyArray<Batch>> {
     const read = Effect.gen(function* () {
       const store = yield* Store
       return yield* store.inbox(worktree)
@@ -22,8 +26,8 @@ export class AgentTestDriver {
     return Effect.runPromise(read.pipe(Effect.provide(storeAt(this.state.storeRoot))))
   }
 
-  async delivered(worktree: string): Promise<ReadonlyArray<DeliveredComment>> {
-    const batches = await this.inbox(worktree)
+  async listComments(worktree: string): Promise<ReadonlyArray<DeliveredComment>> {
+    const batches = await this.listBatches(worktree)
     return batches.flatMap((batch) =>
       batch.comments.map((comment) => ({
         body: comment.body,

@@ -13,7 +13,11 @@ export type CreatedBranch = BranchTestModel & {
 }
 
 export class BranchTestDriver {
-  constructor(private readonly state: DriverState) {}
+  private readonly state: DriverState
+
+  constructor(state: DriverState) {
+    this.state = state
+  }
 
   async create(options: CreateBranchOptions = {}): Promise<CreatedBranch> {
     const model = generateBranchTestModel(options)
@@ -24,12 +28,12 @@ export class BranchTestDriver {
     return { ...model, worktree: await realpath(worktree) }
   }
 
-  async commit(branch: CreatedBranch, message: string): Promise<void> {
+  async commitAll(branch: CreatedBranch, message: string): Promise<void> {
     await this.state.git(branch.worktree, ["add", "-A"])
     await this.state.git(branch.worktree, ["commit", "-q", "-m", message])
   }
 
-  async rewrite(branch: CreatedBranch, path: string, lines: ReadonlyArray<string>): Promise<void> {
+  async setFile(branch: CreatedBranch, path: string, lines: ReadonlyArray<string>): Promise<void> {
     await this.write(branch.worktree, path, lines)
   }
 

@@ -28,12 +28,16 @@ const parse = (stdout: string): unknown => {
 }
 
 export class AppTestDriver {
-  constructor(private readonly state: DriverState) {}
+  private readonly state: DriverState
+
+  constructor(state: DriverState) {
+    this.state = state
+  }
 
   async run(args: ReadonlyArray<string>): Promise<CliResult> {
     const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot }
     try {
-      const { stdout } = await exec("node", [ENTRY, ...args], { env, encoding: "utf8" })
+      const { stdout } = await exec(process.execPath, ["--experimental-ffi", ENTRY, ...args], { env, encoding: "utf8" })
       return { code: 0, stdout, envelope: parse(stdout) }
     } catch (cause) {
       const failure = cause as { code?: number; stdout?: string }
@@ -42,11 +46,11 @@ export class AppTestDriver {
     }
   }
 
-  branches(): Promise<CliResult> {
+  runBranches(): Promise<CliResult> {
     return this.run(["branches", "--repo", this.state.repo])
   }
 
-  vouch(options: { readonly branch: string; readonly file: string }): Promise<CliResult> {
+  runVouch(options: { readonly branch: string; readonly file: string }): Promise<CliResult> {
     return this.run([
       "vouch",
       "--repo",
@@ -58,11 +62,11 @@ export class AppTestDriver {
     ])
   }
 
-  progress(branch: string): Promise<CliResult> {
+  runProgress(branch: string): Promise<CliResult> {
     return this.run(["progress", "--repo", this.state.repo, "--branch", branch])
   }
 
-  comment(options: CommentOptions): Promise<CliResult> {
+  runComment(options: CommentOptions): Promise<CliResult> {
     return this.run([
       "comment",
       "--repo",

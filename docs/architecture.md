@@ -82,6 +82,17 @@ reaches into a sibling's internals is testing the wrong thing.
 
 A pull request that adds behaviour without a failing test that preceded it is not reviewable.
 
+## Runtime
+
+adiff runs on Node 26 or newer, started with `--experimental-ffi`. opentui draws through a
+native library and reaches it over `node:ffi`, which Node exposes only behind that flag and only
+from 26 onward. `bin/adiff.js` and the npm scripts pass it; nothing else needs to know.
+
+Node runs TypeScript by stripping types, never by compiling them. Syntax that needs emit does
+not run — constructor parameter properties are the one that keeps being reached for, so
+`check-style` rejects them. `tsc` and vitest both accept such code, which is precisely why the
+rule has to exist outside them.
+
 ## Testing
 
 Black box only. A test asserts the outcome a user or an agent can observe, never an internal
@@ -101,14 +112,18 @@ src/testing/
   state.ts             temp repo, worktrees, store directory
   domains/
     branch/            ARRANGE: real git repos, worktrees, commits
-    app/               ACT: drives the real binary through a real terminal
+    app/               ACT: spawns the real binary and reads its JSON envelope
+    screen/            ACT: drives the real TUI and captures the rendered frame
     agent/             ASSERT: what arrived in the store, read via its public contract
 ```
 
 Rules that keep it honest:
 
-- The driver speaks the ubiquitous language: `driver.branch.create`, `driver.app.comment`,
-  `driver.agent.delivered`.
+- The driver speaks the ubiquitous language with one consistent set of action prefixes:
+  `create`/`set` to arrange, `run` to act, `list`/`get`/`find` to read. So
+  `driver.branch.create`, `driver.branch.setFile`, `driver.app.runComment`,
+  `driver.agent.listComments`. A name like `delivered` reads as a fact rather than a call and
+  leaves the reader guessing whether it acts or observes.
 - Generators are the driver's business, not the test's. A test says
   `driver.branch.create({ name })`; it never calls `generateBranchTestModel`. Creating an entity
   returns everything the test needs to act on it, so tests hold no assembly logic.

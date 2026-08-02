@@ -8,7 +8,7 @@ describe("tracking review progress", () => {
     const branch = await driver.branch.create()
 
     // ACT
-    const result = await driver.app.progress(branch.name)
+    const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
     expect(result.envelope).toMatchObject({ ok: true, vouched: [], total: 1 })
@@ -20,7 +20,7 @@ describe("tracking review progress", () => {
     const branch = await driver.branch.create()
 
     // ACT
-    const result = await driver.app.vouch({ branch: branch.name, file: "src/api.ts" })
+    const result = await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ASSERT
     expect(result.envelope).toMatchObject({ ok: true, vouched: ["src/api.ts"], total: 1 })
@@ -30,10 +30,10 @@ describe("tracking review progress", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
-    await driver.app.vouch({ branch: branch.name, file: "src/api.ts" })
+    await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ACT
-    const result = await driver.app.progress(branch.name)
+    const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
     expect(result.envelope).toMatchObject({ vouched: ["src/api.ts"] })
@@ -43,10 +43,10 @@ describe("tracking review progress", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
-    await driver.app.vouch({ branch: branch.name, file: "src/api.ts" })
+    await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ACT
-    const result = await driver.app.vouch({ branch: branch.name, file: "src/api.ts" })
+    const result = await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ASSERT
     expect(result.envelope).toMatchObject({ vouched: [] })
@@ -56,15 +56,15 @@ describe("tracking review progress", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
-    await driver.app.vouch({ branch: branch.name, file: "src/api.ts" })
+    await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ACT
-    await driver.branch.rewrite(branch, "src/api.ts", [
+    await driver.branch.setFile(branch, "src/api.ts", [
       "export function api() {",
       "  return 'entirely different'",
       "}",
     ])
-    const result = await driver.app.progress(branch.name)
+    const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
     expect(result.envelope).toMatchObject({ vouched: [] })
@@ -76,7 +76,7 @@ describe("tracking review progress", () => {
     const branch = await driver.branch.create()
 
     // ACT
-    const result = await driver.app.vouch({ branch: branch.name, file: "src/absent.ts" })
+    const result = await driver.app.runVouch({ branch: branch.name, file: "src/absent.ts" })
 
     // ASSERT
     expect(result.code).toBe(1)
