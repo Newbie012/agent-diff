@@ -43,18 +43,38 @@ The behavior behind each subcommand (PRDs 001–006); the runtime flags needed t
 
 ### Public contract
 
+Commands are noun-verb, so the nouns group and a new verb does not need a new top-level word:
+
 | Command | Options | Answers |
 | --- | --- | --- |
-| `branches` | `--repo` | `{ok, branches: [...]}` |
-| `comment` | `--repo --branch --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
-| `vouch` | `--repo --branch --file` | `{ok, vouched, total}` |
-| `progress` | `--repo --branch` | `{ok, vouched, total}` |
-| `take` | `--worktree [--wait <seconds>]` | `{ok, comments: [...]}` |
-| `review` | `--repo` | opens the terminal |
+| `branch list` | `--repo` | `{ok, branches: [...]}` |
+| `comment add` | `--repo --branch --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
+| `comment take` | `--worktree [--wait <seconds>]` | `{ok, comments: [...]}` |
+| `file vouch` | `--repo --branch --file` | `{ok, vouched, total}` |
+| `review progress` | `--repo --branch` | `{ok, vouched, total}` |
+| `review open` | `--repo` | opens the terminal |
+| `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 
-- **Success is `{"ok":true, …}` on stdout, exit 0.** One line, terminated by a newline.
-- **Failure is `{"ok":false,"error":{"_tag":…, …}}` on stdout, exit 1.** Failures go to stdout, not
-  stderr, because they are answers rather than diagnostics.
+- **Success is `{"ok":true, …}` on stdout, exit 0.** One line, no indentation. The caller pays for
+  every byte, so nothing is printed for a human's benefit.
+- **Failure is `{"ok":false,"error":{…}}` on stderr, with a non-zero exit.** Nothing but the answer
+  ever reaches stdout, so a caller can parse stdout unconditionally rather than sniffing it.
+- **Exit codes distinguish what to do about it**, so a caller can branch without reading the body:
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Unexpected failure. Retriable |
+| `2` | Usage or validation error. The request was malformed |
+| `3` | Not found. The branch, file, or command does not exist |
+
+- **Every error carries `type`, `retriable`, and `suggestion`.** The suggestion names the command
+  that would resolve it, so a caller can recover without reading documentation.
+- **`--fields a,b`** projects the answer down to the named fields, at every level. An agent listing
+  twenty branches to pick one by name pays for names, not for every SHA and count.
+- **`describe`** returns the catalog: each command's options, which are required, its safety
+  classification, and the key its payload sits under. Nothing about the surface has to be learned
+  from prose.
 - **Errors are named for what happened**, and carry what the caller needs:
 
 | Tag | Carries |
@@ -62,7 +82,7 @@ The behavior behind each subcommand (PRDs 001–006); the runtime flags needed t
 | `UnknownBranch` | The branch asked for, and the branches that exist |
 | `UnknownFile` | The file asked for, and the files in the diff |
 | `UnselectableRange` | The file and the range the diff does not show |
-| `UnknownCommand` | The name that was given |
+| `UnknownCommand` | The name that was given, and the commands that exist |
 | `MissingOption` | The option that was required |
 
 - **`--side` defaults to `new`.** Anything other than `old` reads as `new`.
@@ -77,7 +97,8 @@ The behavior behind each subcommand (PRDs 001–006); the runtime flags needed t
 | --- | --- |
 | A `--json`/`--human` split | Someone reading raw envelopes often enough to complain |
 | Submitting several comments in one command | A reviewer batching a review offline |
-| Machine-readable `--help` | A second consumer that needs to discover commands |
+| `--format ndjson` for streaming large answers | A branch whose answer is too large to buffer |
+| `--cursor`/`--limit` pagination | The same |
 
 ## Testing Decisions
 
@@ -90,7 +111,10 @@ Behaviors that must be covered:
 
 - Each subcommand answers with its documented envelope and exit code.
 - Each error tag is produced by the situation it names, with its context populated.
-- An unknown subcommand is refused rather than ignored.
+- An unknown subcommand is refused, and the refusal names the commands that exist.
+- A failure leaves stdout empty.
+- `--fields` returns the named fields and nothing else.
+- `describe` lists every command with its options and required flags.
 
 ## Out of Scope
 
@@ -100,6 +124,11 @@ Behaviors that must be covered:
 
 ## Further Notes
 
-The `review` subcommand is the one that does not answer in JSON, because it hands the terminal to
-the reviewer instead. It is the exception that the rule is built around: the terminal is a caller
-of the surface, not a hole in it.
+`review open` is the one command that does not answer in JSON, because it hands the terminal to
+the reviewer instead. It is the exception the rule is built around: the terminal is a caller of the
+surface, not a hole in it.
+
+The audience for this surface is an agent as much as a person, and an agent pays for every token it
+reads. That is why the answer is compact by default, why `--fields` exists, why failures stay off
+stdout, and why `describe` exists at all — an agent that can ask what the commands are does not
+need a documentation page in its context.

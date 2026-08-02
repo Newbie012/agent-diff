@@ -119,8 +119,15 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    expect(result.code).toBe(1)
-    expect(result.envelope).toMatchObject({ ok: false, error: { _tag: "UnselectableRange" } })
+    expect(result.code).toBe(2)
+    expect(result.envelope).toMatchObject({
+      ok: false,
+      error: {
+        type: "UnselectableRange",
+        retriable: false,
+        suggestion: expect.stringContaining("--side"),
+      },
+    })
     expect(await driver.agent.listComments(branch.worktree)).toHaveLength(0)
   })
 
@@ -139,10 +146,10 @@ describe("reviewing a branch", () => {
     })
 
     // ASSERT
-    expect(result.code).toBe(1)
+    expect(result.code).toBe(3)
     expect(result.envelope).toMatchObject({
       ok: false,
-      error: { _tag: "UnknownBranch", known: expect.arrayContaining(["cdr-2-real"]) },
+      error: { type: "UnknownBranch", known: expect.arrayContaining(["cdr-2-real"]) },
     })
   })
 

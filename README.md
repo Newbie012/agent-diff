@@ -7,6 +7,10 @@ You select lines on a diff the way you would on GitHub, write a comment, and the
 that branch picks it up on its next `adiff take`. No pull request, no browser, no copying file
 paths and line numbers into chat.
 
+The surface is built for agents as much as people: compact JSON, failures off stdout, exit codes
+that mean something, and `adiff describe` so a caller can discover the commands instead of being
+told about them.
+
 ## Requirements
 
 Node 26 or newer. adiff draws through opentui, which reaches its native renderer over `node:ffi` —
@@ -21,7 +25,7 @@ pnpm review
 ## Reviewing
 
 ```bash
-adiff review --repo /path/to/repo
+adiff review open --repo /path/to/repo
 ```
 
 Opens on the worktrees that have something to review. `enter` opens one, `j`/`k` move down the
@@ -31,22 +35,32 @@ files, `q` quits. The footer always lists the keys for wherever you are.
 Everything the terminal does is also a command, so nothing is trapped in the UI:
 
 ```bash
-adiff branches --repo .
-adiff comment --repo . --branch cdr-1-add-third --file src/api.ts --start 4 --end 5 --body "why"
-adiff vouch    --repo . --branch cdr-1-add-third --file src/api.ts
-adiff progress --repo . --branch cdr-1-add-third
+adiff branch list      --repo .
+adiff comment add      --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
+adiff file vouch       --repo . --branch cdr-1 --file src/api.ts
+adiff review progress  --repo . --branch cdr-1
+adiff describe                                        # the catalog, as JSON
 ```
 
-Each prints one JSON line: `{"ok":true,...}`, or `{"ok":false,"error":{"_tag":"..."}}` with a
-non-zero exit.
+Each prints one compact JSON line on stdout and exits 0. Failures go to **stderr** as
+`{"ok":false,"error":{...}}`, so stdout is always parseable, with an exit code saying what to do
+about it: `2` malformed request, `3` not found, `1` unexpected. Every error carries a `suggestion`
+naming the command that resolves it.
+
+`--fields` trims the answer to what you actually read:
+
+```bash
+adiff branch list --repo . --fields branch,files
+{"ok":true,"branches":[{"branch":"cdr-1","files":3}]}
+```
 
 ## The agent side
 
 In the worktree being reviewed:
 
 ```bash
-adiff take --worktree .            # everything written since the last take
-adiff take --worktree . --wait 300 # block until something arrives
+adiff comment take --worktree .            # everything written since the last take
+adiff comment take --worktree . --wait 300 # block until something arrives
 ```
 
 Comments come back with the exact snippet they were written against, so the agent needs no other

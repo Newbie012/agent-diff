@@ -5,11 +5,14 @@ import type { DriverState } from "../../state.ts"
 
 const exec = promisify(execFile)
 
+const NODE_FLAGS = ["--experimental-ffi", "--disable-warning=ExperimentalWarning"]
+
 const ENTRY = fileURLToPath(new URL("../../../main.ts", import.meta.url))
 
 export type CliResult = {
   readonly code: number
   readonly stdout: string
+  readonly stderr: string
   readonly envelope: unknown
 }
 
@@ -22,9 +25,9 @@ export type CommentOptions = {
   readonly side?: "old" | "new"
 }
 
-const parse = (stdout: string): unknown => {
-  const line = stdout.trim().split("\n").at(-1)
-  return line === undefined || line.length === 0 ? undefined : JSON.parse(line)
+const parse = (text: string): unknown => {
+  const line = text.split("\n").findLast((candidate) => candidate.startsWith("{"))
+  return line === undefined ? undefined : JSON.parse(line)
 }
 
 export class AppTestDriver {
@@ -37,26 +40,32 @@ export class AppTestDriver {
   async run(args: ReadonlyArray<string>): Promise<CliResult> {
     const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot }
     try {
-      const { stdout } = await exec(process.execPath, ["--experimental-ffi", ENTRY, ...args], { env, encoding: "utf8" })
-      return { code: 0, stdout, envelope: parse(stdout) }
+      const { stdout, stderr } = await exec(process.execPath, [...NODE_FLAGS, ENTRY, ...args], { env, encoding: "utf8" })
+      return { code: 0, stdout, stderr, envelope: parse(stdout) }
     } catch (cause) {
-      const failure = cause as { code?: number; stdout?: string }
-      const stdout = failure.stdout ?? ""
-      return { code: failure.code ?? 1, stdout, envelope: parse(stdout) }
+      const failed = cause as { code?: number; stdout?: string; stderr?: string }
+      const stdout = failed.stdout ?? ""
+      const stderr = failed.stderr ?? ""
+      return { code: failed.code ?? 1, stdout, stderr, envelope: parse(stderr) || parse(stdout) }
     }
   }
 
+  runDescribe(command?: string): Promise<CliResult> {
+    return this.run(command === undefined ? ["describe"] : ["describe", "--command", command])
+  }
+
   runTake(worktree: string, wait?: number): Promise<CliResult> {
-    const args = ["take", "--worktree", worktree]
+    const args = ["comment", "take", "--worktree", worktree]
     return this.run(wait === undefined ? args : [...args, "--wait", String(wait)])
   }
 
-  runBranches(): Promise<CliResult> {
-    return this.run(["branches", "--repo", this.state.repo])
+  runBranches(fields?: ReadonlyArray<string>): Promise<CliResult> {
+    return this.run(["branch", "list", "--repo", this.state.repo, ...(fields ?? [])])
   }
 
   runVouch(options: { readonly branch: string; readonly file: string }): Promise<CliResult> {
     return this.run([
+      "file",
       "vouch",
       "--repo",
       this.state.repo,
@@ -68,12 +77,13 @@ export class AppTestDriver {
   }
 
   runProgress(branch: string): Promise<CliResult> {
-    return this.run(["progress", "--repo", this.state.repo, "--branch", branch])
+    return this.run(["review", "progress", "--repo", this.state.repo, "--branch", branch])
   }
 
   runComment(options: CommentOptions): Promise<CliResult> {
     return this.run([
       "comment",
+      "add",
       "--repo",
       this.state.repo,
       "--branch",
