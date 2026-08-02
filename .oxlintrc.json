@@ -1,0 +1,66 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    "complexity": [
+      "error",
+      8
+    ],
+    "max-depth": [
+      "error",
+      3
+    ],
+    "max-lines-per-function": [
+      "error",
+      50
+    ],
+    "max-nested-callbacks": [
+      "error",
+      2
+    ],
+    "max-params": [
+      "error",
+      4
+    ],
+    "no-console": "error",
+    "eqeqeq": "error",
+    "no-else-return": "error",
+    "prefer-const": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-non-null-assertion": "error",
+    "unicorn/no-null": "error",
+    "import/no-cycle": "error"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "scripts/**/*.ts"
+      ],
+      "rules": {
+        "no-console": "off",
+        "max-lines-per-function": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.test.ts"
+      ],
+      "rules": {
+        "max-nested-callbacks": [
+          "error",
+          3
+        ],
+        "max-lines-per-function": "off"
+      }
+    }
+  ]
+}
