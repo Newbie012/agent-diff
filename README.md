@@ -28,6 +28,34 @@ pnpm 12 is a Rust rewrite and is still beta, so
 [corepack cannot install it](https://pnpm.io/installation) — install it directly, as above. The
 `packageManager` pin in `package.json` stays for CI, which reads it through `pnpm/action-setup`.
 
+## Trying it
+
+```bash
+pnpm simulate
+```
+
+Builds a throwaway repository with three branches an agent has already worked on — a new error
+type and its call sites, a React panel gaining failure states, a deleted legacy file, a new
+module — and opens the terminal on it. Nothing touches your real repos or `~/.adiff`; the
+workspace is a temp directory, removed when you quit.
+
+```bash
+pnpm simulate --branches 1   # one branch
+pnpm simulate --agent        # a fake agent reads your comments as you send them
+pnpm simulate --probe        # headless: run the whole round trip, print it, exit
+pnpm simulate --keep         # leave the workspace on disk and print its path
+```
+
+`--probe` is the fastest way to see the product without a terminal:
+
+```
+branches    {"ok":true,"branches":[{"branch":"cdr-42-distinguish-missing-incidents","files":3,"added":18,...
+vouch       {"ok":true,"vouched":["src/api/incidents.ts"],"total":3}
+agent takes {"ok":true,"comments":[{"file":"src/api/incidents.ts","side":"new","start":12,"end":13,
+             "snippet":"  if (res.status === 404) throw new IncidentNotFound(id)\n  if (!res.ok) ...",
+             "body":"Two throws where one union would do."}]}
+```
+
 ## Reviewing
 
 ```bash

@@ -21,7 +21,8 @@
     "test": "NODE_OPTIONS=--experimental-ffi vitest run",
     "test:watch": "NODE_OPTIONS=--experimental-ffi vitest",
     "dev": "node --experimental-ffi --disable-warning=ExperimentalWarning src/main.ts",
-    "review": "pnpm run dev -- review --repo ."
+    "review": "pnpm run dev -- review --repo .",
+    "simulate": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/simulate.ts"
   },
   "engines": {
     "node": ">=26"
