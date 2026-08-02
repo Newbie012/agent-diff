@@ -107,8 +107,11 @@ src/testing/
 
 Rules that keep it honest:
 
-- The driver speaks the ubiquitous language: `driver.branch.withChange`, `driver.app.comment`,
-  `driver.agent.inbox`.
+- The driver speaks the ubiquitous language: `driver.branch.create`, `driver.app.comment`,
+  `driver.agent.delivered`.
+- Generators are the driver's business, not the test's. A test says
+  `driver.branch.create({ name })`; it never calls `generateBranchTestModel`. Creating an entity
+  returns everything the test needs to act on it, so tests hold no assembly logic.
 - Driver reads are source-backed. It reads the store through the same module production uses,
   and the screen through a real terminal. No test-only back door into either.
 - Every test body carries explicit `// ARRANGE`, `// ACT`, `// ASSERT`. Assertions live in the

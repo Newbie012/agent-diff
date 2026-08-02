@@ -28,9 +28,12 @@ export const generateFileTestModel = (overrides: Partial<FileTestModel> = {}): F
   ],
 })
 
-export const generateBranchTestModel = (
-  overrides: Partial<BranchTestModel> = {},
-): BranchTestModel => ({
+export type BranchOverrides = {
+  readonly name?: string
+  readonly files?: ReadonlyArray<Partial<FileTestModel>>
+}
+
+export const generateBranchTestModel = (overrides: BranchOverrides = {}): BranchTestModel => ({
   name: overrides.name ?? "cdr-1-add-third",
-  files: overrides.files ?? [generateFileTestModel()],
+  files: (overrides.files ?? [{}]).map(generateFileTestModel),
 })

@@ -1,26 +1,36 @@
 import { mkdir, realpath, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { series, type DriverState } from "../../state.ts"
-import type { BranchTestModel } from "./model.ts"
+import { generateBranchTestModel, type BranchTestModel, type FileTestModel } from "./model.ts"
+
+export type CreateBranchOptions = {
+  readonly name?: string
+  readonly files?: ReadonlyArray<Partial<FileTestModel>>
+}
+
+export type CreatedBranch = BranchTestModel & {
+  readonly worktree: string
+}
 
 export class BranchTestDriver {
   constructor(private readonly state: DriverState) {}
 
-  async withChange(model: BranchTestModel): Promise<string> {
+  async create(options: CreateBranchOptions = {}): Promise<CreatedBranch> {
+    const model = generateBranchTestModel(options)
     await this.commitBaseline(model)
     const worktree = join(dirname(this.state.repo), model.name)
     await this.state.git(this.state.repo, ["worktree", "add", "-q", "-b", model.name, worktree])
     await Promise.all(model.files.map((file) => this.write(worktree, file.path, file.after)))
-    return realpath(worktree)
+    return { ...model, worktree: await realpath(worktree) }
   }
 
-  async commit(worktree: string, message: string): Promise<void> {
-    await this.state.git(worktree, ["add", "-A"])
-    await this.state.git(worktree, ["commit", "-q", "-m", message])
+  async commit(branch: CreatedBranch, message: string): Promise<void> {
+    await this.state.git(branch.worktree, ["add", "-A"])
+    await this.state.git(branch.worktree, ["commit", "-q", "-m", message])
   }
 
-  async rewrite(worktree: string, path: string, lines: ReadonlyArray<string>): Promise<void> {
-    await this.write(worktree, path, lines)
+  async rewrite(branch: CreatedBranch, path: string, lines: ReadonlyArray<string>): Promise<void> {
+    await this.write(branch.worktree, path, lines)
   }
 
   private async commitBaseline(model: BranchTestModel): Promise<void> {
