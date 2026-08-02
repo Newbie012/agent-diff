@@ -82,6 +82,43 @@ reaches into a sibling's internals is testing the wrong thing.
 
 A pull request that adds behaviour without a failing test that preceded it is not reviewable.
 
+## Testing
+
+Black box only. A test asserts the outcome a user or an agent can observe, never an internal
+call, an intermediate value, or a private function. There are no unit tests for `domain/`;
+domain logic is exercised through the same surfaces everything else is.
+
+adiff has exactly two observable boundaries, and the driver is built around them:
+
+| Boundary | What it answers |
+| --- | --- |
+| The terminal screen | What the reviewer sees and can act on |
+| The store | What the agent receives, and what survives a restart |
+
+```
+src/testing/
+  driver.ts            composes the domains, owns lifecycle
+  state.ts             temp repo, worktrees, store directory
+  domains/
+    branch/            ARRANGE: real git repos, worktrees, commits
+    app/               ACT: drives the real binary through a real terminal
+    agent/             ASSERT: what arrived in the store, read via its public contract
+```
+
+Rules that keep it honest:
+
+- The driver speaks the ubiquitous language: `driver.branch.withChange`, `driver.app.comment`,
+  `driver.agent.inbox`.
+- Driver reads are source-backed. It reads the store through the same module production uses,
+  and the screen through a real terminal. No test-only back door into either.
+- Every test body carries explicit `// ARRANGE`, `// ACT`, `// ASSERT`. Assertions live in the
+  test, never inside a driver helper.
+- A `TestModel` never aliases a production type. `BranchTestModel` is the test suite's shape.
+
+Fidelity is deliberately high because the failures that matter here are integration failures:
+a diff parsed correctly but anchored to the wrong line, a comment written where no agent reads
+it. Lower fidelity cannot catch either.
+
 ## Effect conventions
 
 Effect v4 (`4.0.0-beta.102`). `effect/unstable/*` may break in minor releases; treat those imports
