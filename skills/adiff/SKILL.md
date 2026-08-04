@@ -121,6 +121,20 @@ Setting a story again supersedes the previous one and bumps `version`; the story
 it was written for, and adiff reports it as `stale` once the branch moves past that commit. After
 you address a review, write the story again.
 
+## Tell the reviewer how to read it
+
+The person you are handing work to has to open the review themselves, so end your reply with the
+command and the keys. Name the repository they should point at, which is the repository the
+worktree belongs to:
+
+> Open it with `adiff review open --repo <repo>`, then press `enter` on this branch. The sidebar
+> lists the steps in reading order; `j` and `k` move between them and the diff follows. Inside a
+> step, `]` and `[` walk its files. Select lines with `v`, write a comment with `c`, stage it with
+> `ctrl+a`, and send the whole review with `S`. Press `?` for the rest.
+
+Say what you want looked at hardest, and where you are unsure. A reviewer who knows which step you
+doubt spends their attention there.
+
 ## Discovering the rest
 
 ```bash
