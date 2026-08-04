@@ -39,6 +39,7 @@ const WASH: Partial<Record<RowKind, LinePaint>> = {
 }
 
 const NOTE_MIN = 24
+const OVERSCAN = 2
 const SIGN_WIDTH = 2
 const SCROLL_ROWS = 3
 
@@ -166,7 +167,8 @@ export class DiffView {
       this.fitted = rows
       this.numbers.height = rows
       this.code.height = rows
-      this.shown = undefined
+      this.code.requestRender()
+      this.numbers.requestRender()
     }
   }
 
@@ -175,7 +177,7 @@ export class DiffView {
   }
 
   show(patch: Patch, notes: ReadonlyArray<Note>): void {
-    const room = this.noteRoom()
+    const room = notes.length === 0 ? NOTE_MIN : this.noteRoom()
     const key = [room, ...notes.map((note) => `${note.side}${note.line}:${note.body}`)].join("\u0000")
     if (patch === this.shown && key === this.noted) return
     this.pinnedText = ""
@@ -221,10 +223,13 @@ export class DiffView {
     return clamped
   }
 
-  paint(paints: ReadonlyMap<number, LinePaint>): void {
+  paint(paintOf: (row: number) => LinePaint | undefined, from: number, rows: number): void {
     const colors = new Map<number, LinePaint>()
-    for (const [index, entry] of this.display.entries()) {
-      const paint = entry.comment ? NOTE_PAINT : paints.get(entry.row)
+    const last = Math.min(this.display.length, from + rows + OVERSCAN)
+    for (let index = Math.max(0, from - OVERSCAN); index < last; index++) {
+      const entry = this.display[index]
+      if (entry === undefined) continue
+      const paint = entry.comment ? NOTE_PAINT : paintOf(entry.row)
       if (paint !== undefined) colors.set(index, paint)
     }
     this.numbers.setLineColors(colors)

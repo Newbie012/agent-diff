@@ -279,9 +279,8 @@ export class App {
     if (this.state.patchIndex !== was) await this.loadSource()
   }
 
-  private async moveFile(delta: number): Promise<void> {
-    this.commit(reduce(this.measured(), delta > 0 ? "file.next" : "file.prev"))
-    await this.loadSource()
+  private moveFile(delta: number): Promise<void> {
+    return this.commitSynced(delta > 0 ? "file.next" : "file.prev")
   }
 
   private async vouch(advance: boolean): Promise<void> {

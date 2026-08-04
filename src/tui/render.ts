@@ -675,7 +675,7 @@ export class Screen {
     const height = this.view.rows()
     const top = this.view.scrollTo(state.top, state.cursor)
     this.lastTop = top
-    this.view.paint(this.linePaints(state))
+    this.view.paint(this.linePaint(state), top, height)
     this.paintGutter(state, top, height)
   }
 
@@ -858,19 +858,18 @@ export class Screen {
     this.view.pin(chain)
   }
 
-  private linePaints(state: TuiState): Map<number, LinePaint> {
-    const colors = new Map<number, LinePaint>()
+  private linePaint(state: TuiState): (row: number) => LinePaint | undefined {
     const [from, to] = selectionRange(state)
     const selecting = state.selecting || state.screen === "compose"
     const rows = selectedPatch(state)?.rows ?? []
-    for (const row of rows) {
-      const paint = pickPaint(this.view, row.kind, {
-        cursor: row.index === state.cursor,
-        selected: selecting && row.index >= from && row.index <= to,
+    return (row) => {
+      const kind = rows[row]?.kind
+      if (kind === undefined) return undefined
+      return pickPaint(this.view, kind, {
+        cursor: row === state.cursor,
+        selected: selecting && row >= from && row <= to,
       })
-      if (paint !== undefined) colors.set(row.index, paint)
     }
-    return colors
   }
 
 
