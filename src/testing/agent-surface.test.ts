@@ -16,6 +16,8 @@ describe("using adiff without reading its documentation", () => {
       "branch list",
       "comment add",
       "comment stage",
+      "comment edit",
+      "comment drop",
       "comment take",
       "comment answer",
       "comment threads",

@@ -10,7 +10,7 @@ import {
   type StoreUnreadable,
   type StoreUnwritable,
 } from "../service/store/index.ts"
-import { EmptyReview, UnknownBranch, UnknownFile, UnselectableRange } from "./error.ts"
+import { EmptyReview, UnknownBranch, UnknownComment, UnknownFile, UnselectableRange } from "./error.ts"
 
 const CONTEXT = 3
 const WHOLE_FILE = 100_000
@@ -202,6 +202,33 @@ export const stageComment = Effect.fn("Cli.stageComment")(function* (request: Co
   return { pending: pending.length }
 })
 
+export const editStaged = Effect.fn("Cli.editStaged")(function* (request: {
+  readonly repo: string
+  readonly branch: string
+  readonly id: string
+  readonly body: string
+}) {
+  const store = yield* Store
+  const worktree = yield* findBranch(request.repo, request.branch)
+  const current = yield* store.state(worktree.path)
+  const found = current.pending.find((entry) => entry.id === request.id)
+  if (found === undefined) return yield* new UnknownComment({ id: request.id })
+  const pending = yield* store.restage(worktree.path, { ...found, body: request.body })
+  return { pending: Option.getOrElse(pending, () => current.pending).length }
+})
+
+export const dropStaged = Effect.fn("Cli.dropStaged")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const pending = yield* store.unstage(worktree.path, id)
+  if (Option.isNone(pending)) return yield* new UnknownComment({ id })
+  return { pending: pending.value.length }
+})
+
 export const listPending = Effect.fn("Cli.listPending")(function* (repo: string, branch: string) {
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
@@ -222,6 +249,7 @@ const sentOf = (
   comment: PendingComment,
   spoken: ReadonlyArray<{ readonly comment: string; readonly body: string; readonly asks: boolean }>,
   settled: Readonly<Record<string, string>>,
+  head: string,
 ) => {
   const mine = spoken.filter((entry) => entry.comment === comment.id)
   return {
@@ -231,6 +259,7 @@ const sentOf = (
     end: comment.end,
     body: comment.body,
     settled: Object.hasOwn(settled, comment.id),
+    stale: comment.head !== head,
     asks: mine.at(-1)?.asks === true,
     answers: mine.map(bodyOf),
   }
@@ -242,7 +271,7 @@ export const listSent = Effect.fn("Cli.listSent")(function* (repo: string, branc
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   return flatten(yield* store.inbox(worktree.path)).map((comment) =>
-    sentOf(comment, spoken, current.settled),
+    sentOf(comment, spoken, current.settled, worktree.head),
   )
 })
 

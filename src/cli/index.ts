@@ -3,6 +3,8 @@ export {
   fileSource,
   listBranches,
   listPatches,
+  editStaged,
+  dropStaged,
   listPending,
   listSent,
   reviewProgress,

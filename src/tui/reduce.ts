@@ -204,6 +204,8 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "compose.stage": (state) => state,
   "pending.open": (state) => state,
   "pending.submit": (state) => state,
+  "pending.edit": (state) => state,
+  "pending.drop": (state) => state,
   "pending.next": (state) => movePending(state, 1),
   "pending.prev": (state) => movePending(state, -1),
   "compose.newline": (state) => ({ ...state, draft: `${state.draft}\n` }),
@@ -361,6 +363,11 @@ export const paletteClosed = (state: TuiState): TuiState => ({
   ...state,
   screen: state.returnTo,
   query: "",
+})
+
+export const withNoticeHere = (state: TuiState, notice: string): TuiState => ({
+  ...state,
+  notice,
 })
 
 export const withNotice = (state: TuiState, notice: string): TuiState => ({

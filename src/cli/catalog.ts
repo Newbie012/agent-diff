@@ -87,6 +87,31 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: 'adiff comment stage --repo . --branch cdr-1 --file src/api.ts --start 4 --end 4 --body "why"',
   },
   {
+    name: "comment edit",
+    about: "Reword a staged comment. It keeps its id and the lines it was written against",
+    safety: "write",
+    options: [
+      repo,
+      branch,
+      { name: "id", required: true, value: "id", about: "The staged comment, as `review progress` reported it" },
+      { name: "body", required: true, value: "text", about: "What it should say instead" },
+    ],
+    dataKey: "pending",
+    example: 'adiff comment edit --repo . --branch add-teammate-invitations --id c1 --body "why is this unused"',
+  },
+  {
+    name: "comment drop",
+    about: "Take a staged comment out of the review before it is sent",
+    safety: "write",
+    options: [
+      repo,
+      branch,
+      { name: "id", required: true, value: "id", about: "The staged comment to withdraw" },
+    ],
+    dataKey: "pending",
+    example: "adiff comment drop --repo . --branch add-teammate-invitations --id c1",
+  },
+  {
     name: "comment take",
     about: "Collect the comments this worktree has not been handed yet. Exactly-once",
     safety: "write",

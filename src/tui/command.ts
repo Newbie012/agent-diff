@@ -32,6 +32,8 @@ export type Action =
   | "compose.stage"
   | "pending.open"
   | "pending.submit"
+  | "pending.edit"
+  | "pending.drop"
   | "pending.next"
   | "pending.prev"
   | "compose.newline"
@@ -299,6 +301,22 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["pending"],
     hint: "send",
     listed: false,
+  }),
+  command({
+    action: "pending.edit",
+    title: "Reword this comment",
+    category: "Review",
+    keys: ["e"],
+    screens: ["pending"],
+    hint: "reword",
+  }),
+  command({
+    action: "pending.drop",
+    title: "Withdraw this comment",
+    category: "Review",
+    keys: ["X"],
+    screens: ["pending"],
+    hint: "withdraw",
   }),
   command({
     action: "pending.next",
