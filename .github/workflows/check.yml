@@ -16,14 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
-        with:
-          version: 12.0.0-beta.3
 
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          cache: pnpm
+
+      - run: npm install -g --allow-scripts=pnpm pnpm@12.0.0-beta.3
 
       - run: pnpm install --frozen-lockfile
 
