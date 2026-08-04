@@ -51,6 +51,12 @@
   intents:
     - famous-rings-bathe
     - wide-wombats-relate
+"@eliya-oss/agent-diff@0.1.0-alpha.15":
+  dir: ""
+  intents:
+    - honest-moose-look
+    - rare-books-swim
+    - short-kiwis-sort
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
