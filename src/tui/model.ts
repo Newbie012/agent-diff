@@ -56,6 +56,7 @@ export type TuiState = {
   readonly revealed: ReadonlyArray<Reveal>
   readonly focus: "tree" | "diff"
   readonly navOpen: boolean
+  readonly wrap: boolean
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
   readonly pulls: Readonly<Record<string, string>>
@@ -93,6 +94,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   revealed: [],
   focus: "diff",
   navOpen: true,
+  wrap: false,
   layers: [],
   layersStale: false,
   pulls: {},
@@ -403,6 +405,20 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 export const hunkStarts = (state: TuiState): ReadonlyArray<number> => {
   const patch = selectedPatch(state)
   return patch === undefined ? [] : patch.hunks.map((hunk) => hunk.startRow)
+}
+
+export const changeAround = (state: TuiState): readonly [number, number] | undefined => {
+  const rows = selectedPatch(state)?.rows ?? []
+  const changed = (at: number): boolean => {
+    const row = rows[at]
+    return row !== undefined && row.kind !== "context"
+  }
+  if (!changed(state.cursor)) return undefined
+  let first = state.cursor
+  let last = state.cursor
+  while (changed(first - 1)) first -= 1
+  while (changed(last + 1)) last += 1
+  return [first, last]
 }
 
 export const nextUnreviewed = (state: TuiState, from: number): number | undefined => {

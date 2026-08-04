@@ -1,6 +1,8 @@
 import type { Screen } from "./model.ts"
 
 export type Action =
+  | "branch.first"
+  | "branch.last"
   | "branch.next"
   | "branch.prev"
   | "branch.open"
@@ -20,6 +22,7 @@ export type Action =
   | "file.prev"
   | "focus.toggle"
   | "nav.zoom"
+  | "wrap.toggle"
   | "rail.toggle"
   | "review.reload"
   | "tree.collapse"
@@ -27,6 +30,8 @@ export type Action =
   | "file.vouch"
   | "file.vouch.next"
   | "select.start"
+  | "select.hunk"
+  | "select.swap"
   | "compose.open"
   | "compose.submit"
   | "compose.stage"
@@ -193,6 +198,40 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["z", "\\"],
     screens: ["review"],
     hint: "zoom",
+  }),
+  command({
+    action: "branch.first",
+    title: "Go to the first worktree",
+    category: "Branches",
+    keys: ["g"],
+    screens: ["branches"],
+  }),
+  command({
+    action: "branch.last",
+    title: "Go to the last worktree",
+    category: "Branches",
+    keys: ["G"],
+    screens: ["branches"],
+  }),
+  command({
+    action: "select.hunk",
+    title: "Select the change under the cursor",
+    keys: ["V"],
+    screens: ["review"],
+  }),
+  command({
+    action: "select.swap",
+    title: "Grow the selection from its other end",
+    keys: ["o"],
+    screens: ["review"],
+  }),
+  command({
+    action: "wrap.toggle",
+    title: "Wrap long lines",
+    category: "General",
+    keys: ["w"],
+    screens: ["review"],
+    hint: "wrap",
   }),
   command({
     action: "review.reload",

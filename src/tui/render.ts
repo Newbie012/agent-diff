@@ -798,6 +798,7 @@ export class Screen {
     if (shown === undefined) return
     const patch = shown.patch
     this.paintSticky(state, state.top)
+    this.view.setWrap(state.wrap)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
     this.view.fit(this.diffScroll.height)
     const height = this.view.rows()
@@ -971,8 +972,11 @@ export class Screen {
   private paintGutter(state: TuiState, top: number, height: number): void {
     const [from, to] = selectionRange(state)
     const marked = markedRows(state)
+    const drawn = this.view.drawn()
+    const bare = (visual: number): boolean =>
+      visual >= drawn || this.view.isComment(visual) || this.view.isRunOn(visual)
     const rows = Array.from({ length: height }, (_, index) => {
-      if (this.view.isComment(top + index)) return `  `
+      if (bare(top + index)) return `  `
       const row = this.view.rowAt(top + index)
       const here = row === state.cursor || (state.selecting && row >= from && row <= to)
       return `${here ? marks().cursor : " "}${marked.has(row) ? marks().comment : " "}`
