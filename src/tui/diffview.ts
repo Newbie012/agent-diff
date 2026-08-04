@@ -106,6 +106,7 @@ export class DiffView {
   private starts = new Map<number, number>()
   private fitted = 1
   private wrapped = false
+  private held = 0
 
   constructor(renderer: CliRenderer) {
     this.code = new CodeRenderable(renderer, {
@@ -231,12 +232,16 @@ export class DiffView {
     this.display = layout({ patch, notes, room, gaps, prose })
     this.starts = startsOf(this.display)
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
-    this.code.content = this.display.map((entry) => entry.text).join("\n")
+    this.feed()
     this.numbers.setLineNumbers(lineNumbers(patch, this.display))
     this.numbers.setHideLineNumbers(bareOf(this.display))
     this.numbers.setLineSigns(lineSigns(patch, this.display))
     this.numbers.setLineColors(new Map())
-    const spans = noteSpans(this.display)
+  }
+
+  private feed(): void {
+    const spans = noteSpans(this.display, this.held)
+    this.code.content = textAt(this.display, this.held)
     this.code.onHighlight = (highlights) => [
       ...highlights.filter((highlight) => !spans.some(([from, to]) => highlight[0] < to && highlight[1] > from)),
       ...spans,
@@ -255,6 +260,10 @@ export class DiffView {
 
   setPan(columns: number): void {
     const wanted = this.wrapped ? 0 : Math.max(0, Math.min(this.code.maxScrollX, columns))
+    if (wanted !== this.held) {
+      this.held = wanted
+      this.feed()
+    }
     if (this.code.scrollX !== wanted) this.code.scrollX = wanted
     if (this.pinned.scrollX !== wanted) this.pinned.scrollX = wanted
   }
@@ -379,13 +388,25 @@ const groupOf = (entry: Display): string | undefined => {
   return entry.sent ? "note.sent" : "note"
 }
 
-const noteSpans = (display: ReadonlyArray<Display>): ReadonlyArray<[number, number, string]> => {
+const isChrome = (entry: Display): boolean => entry.comment || entry.gap || entry.prose
+
+const heldAt = (entry: Display, pan: number): string =>
+  isChrome(entry) && pan > 0 ? `${" ".repeat(pan)}${entry.text}` : entry.text
+
+const textAt = (display: ReadonlyArray<Display>, pan: number): string =>
+  display.map((entry) => heldAt(entry, pan)).join("\n")
+
+const noteSpans = (
+  display: ReadonlyArray<Display>,
+  pan: number,
+): ReadonlyArray<[number, number, string]> => {
   const spans: Array<[number, number, string]> = []
   let at = 0
   for (const entry of display) {
     const group = groupOf(entry)
-    if (group !== undefined) spans.push([at, at + entry.text.length, group])
-    at += entry.text.length + 1
+    const width = heldAt(entry, pan).length
+    if (group !== undefined) spans.push([at, at + width, group])
+    at += width + 1
   }
   return spans
 }
