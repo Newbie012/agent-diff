@@ -50,6 +50,7 @@ export type Command = {
   readonly hint: string
   readonly listed: boolean
   readonly whenStaged: boolean
+  readonly whenLayers: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -57,6 +58,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   hint: "",
   listed: true,
   whenStaged: false,
+  whenLayers: false,
   ...input,
 })
 
@@ -195,6 +197,8 @@ export const commands: ReadonlyArray<Command> = [
     category: "Files",
     keys: ["s"],
     screens: ["review"],
+    hint: "layers",
+    whenLayers: true,
   }),
   command({
     action: "tree.collapse",
@@ -383,8 +387,10 @@ export const displayKey = (key: string): string => {
 export const hintsFor = (
   screen: Screen,
   staged: number,
+  layers = 0,
 ): ReadonlyArray<{ key: string; hint: string; press: string }> =>
   commandsFor(screen)
     .filter((entry) => entry.hint.length > 0)
     .filter((entry) => !entry.whenStaged || staged > 0)
+    .filter((entry) => !entry.whenLayers || layers > 0)
     .map((entry) => ({ key: displayKey(entry.keys[0] ?? ""), hint: entry.hint, press: entry.keys[0] ?? "" }))

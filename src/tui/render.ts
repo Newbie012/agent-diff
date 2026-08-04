@@ -665,7 +665,7 @@ export class Screen {
 
   update(state: TuiState): void {
     this.shown = state
-    this.chips = hintsFor(state.screen, state.staged)
+    this.chips = hintsFor(state.screen, state.staged, state.layers.length)
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
