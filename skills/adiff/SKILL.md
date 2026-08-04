@@ -35,6 +35,14 @@ adiff comment take --worktree . --wait 300
 Blocks until a comment arrives or the timeout in seconds elapses, then returns the same envelope.
 An empty `comments` array means the wait expired with nothing new — that is not an error.
 
+Run the wait in the background, not in the foreground. A foreground wait holds the turn, so you
+cannot do anything else and the person you are working with cannot talk to you. Backgrounded, the
+harness brings you back the moment a comment lands.
+
+Re-arm it after each comment you handle, and keep it running while you work. A reviewer reads at
+their own pace, so comments arrive minutes apart, and the whole point is that they reach you as
+events rather than by you asking. When you finish a piece of work, say you are still listening.
+
 ## Acting on a comment
 
 Read `snippet` before opening the file: the reviewer commented on the diff, and the file may have
