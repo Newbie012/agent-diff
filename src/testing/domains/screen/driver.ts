@@ -15,6 +15,8 @@ const fgOf = (span: Span): string =>
 const bgOf = (span: Span): string =>
   `#${hex(Math.round(span.bg.r * 255))}${hex(Math.round(span.bg.g * 255))}${hex(Math.round(span.bg.b * 255))}`
 
+export type Wheel = "up" | "down" | "left" | "right"
+
 const ESCAPE_FLUSH_MS = 150
 const REST_MS = 400
 const PAINT_ATTEMPTS = 20
@@ -122,18 +124,18 @@ export class ScreenTestDriver {
     await setup.flush()
   }
 
-  async scroll(direction: "up" | "down", times = 1): Promise<void> {
+  async scroll(direction: Wheel, times = 1): Promise<void> {
     await this.burst(Array.from({ length: times }, () => direction))
   }
 
-  async scrollSlowly(direction: "up" | "down", times: number): Promise<void> {
+  async scrollSlowly(direction: Wheel, times: number): Promise<void> {
     await series(
       Array.from({ length: times }, () => direction),
       (layer) => this.burst([layer]),
     )
   }
 
-  async burst(wheel: ReadonlyArray<"up" | "down">): Promise<number> {
+  async burst(wheel: ReadonlyArray<Wheel>): Promise<number> {
     const setup = this.active()
     const x = Math.floor(WIDTH / 2) + 10
     const y = Math.floor(HEIGHT / 2)
