@@ -66,7 +66,7 @@ export const createWorkspace = async (options: WorkspaceOptions): Promise<Worksp
 
   await exec("git", ["init", "-q", "-b", "main", repo], { cwd: root })
   await series(IDENTITY, (args) => git(repo, args))
-  await write(repo, "README.md", ["# incidents", "", "A service nobody has reviewed yet."])
+  await write(repo, "README.md", ["# teamspace", "", "A small SaaS nobody has reviewed yet."])
   await git(repo, ["add", "-A"])
   await git(repo, ["commit", "-q", "-m", "baseline"])
 
@@ -80,7 +80,7 @@ export const createWorkspace = async (options: WorkspaceOptions): Promise<Worksp
     await git(repo, ["worktree", "add", "-q", "-b", fixture.name, worktree])
     await applyAfter(worktree, fixture.files)
     await git(worktree, ["add", "-A"])
-    await git(worktree, ["commit", "-q", "-m", `agent: ${fixture.name.replace(/^cdr-\d+-/, "")}`])
+    await git(worktree, ["commit", "-q", "-m", `agent: ${fixture.name.replaceAll("-", " ")}`])
     branches.push({ name: fixture.name, worktree: await realpath(worktree) })
   }
   await series(chosen, build)
