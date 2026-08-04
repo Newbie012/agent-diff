@@ -64,11 +64,13 @@ const layers = {
             "A non-2xx that no case names raises Upstream carrying the status, so nothing fails silently.",
         },
         { kind: "code", path: "src/api/invitations.ts", start: 10, end: 17 },
+        {
+          kind: "prose",
+          markdown:
+            "The settings page has to say something for each failure, so the wording lives beside the errors it describes.",
+        },
+        { kind: "code", path: "docs/invitations.md", start: 1, end: 12 },
       ],
-    },
-    {
-      title: "Write down what the settings page should do with each one",
-      spans: [{ path: "docs/invitations.md", start: 1, end: 12 }],
     },
   ],
 }
