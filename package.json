@@ -21,7 +21,7 @@
     "test": "NODE_OPTIONS=--experimental-ffi vitest run",
     "test:watch": "NODE_OPTIONS=--experimental-ffi vitest",
     "dev": "node --experimental-ffi --disable-warning=ExperimentalWarning src/main.ts",
-    "review": "pnpm run dev -- review --repo .",
+    "review": "node --experimental-ffi --disable-warning=ExperimentalWarning src/main.ts review open --repo .",
     "simulate": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/simulate.ts",
     "frames": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/frames.ts",
     "sketch": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/sketch.ts",
@@ -36,7 +36,7 @@
     "adiff": "./bin/adiff.js"
   },
   "packageManager": "pnpm@12.0.0-beta.3",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "description": "Review agent work across git worktrees like a PR, and hand the comments back to the agent.",
   "license": "MIT",
   "repository": {

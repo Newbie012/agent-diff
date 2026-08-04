@@ -46,8 +46,8 @@ const scenario = async (label: string, branchIndex: number): Promise<void> => {
   setup.renderer.destroy()
 }
 
-await scenario("cdr-84-rewrite-the-scheduler", 4)
-await scenario("cdr-99-migrate-every-handler", 6)
+await scenario("rewrite-the-invite-scheduler", 4)
+await scenario("move-invites-to-the-mailer", 6)
 
 await space.dispose()
 process.exit(0)
