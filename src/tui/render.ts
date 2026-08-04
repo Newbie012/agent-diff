@@ -5,7 +5,7 @@ import {
   TextRenderable,
   type CliRenderer,
 } from "@opentui/core"
-import { ASCIIFontRenderable, bg, fg, StyledText, t } from "@opentui/core"
+import { ASCIIFontRenderable, bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
 import { hintsFor } from "./command.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
@@ -410,6 +410,18 @@ const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
   ...notesOf(state.pending, path, false),
 ]
 
+const keptWithin = (chunks: ReadonlyArray<TextChunk>, room: number): ReadonlyArray<TextChunk> => {
+  const kept: Array<TextChunk> = []
+  let used = 0
+  for (const chunk of chunks.toReversed()) {
+    const width = chunk.text.length
+    if (used + width > room) break
+    kept.unshift(chunk)
+    used += width
+  }
+  return kept
+}
+
 const shortPath = (path: string): string => {
   const home = process.env["HOME"] ?? ""
   return home.length > 0 && path.startsWith(home) ? `~${path.slice(home.length)}` : path
@@ -733,8 +745,12 @@ export class Screen {
     const readout = selectionReadout(state)
     this.lead = readout.length === 0 ? 0 : readout.length + 3
     const lead = readout.length === 0 ? [] : [fg(palette.muted)(`${readout}   `)]
-    const notice = state.notice.length === 0 ? [] : [fg(palette.attention)(`  ${state.notice}`)]
-    return new StyledText([...lead, ...this.chipRow().chunks, ...notice])
+    if (state.notice.length === 0) return new StyledText([...lead, ...this.chipRow().chunks])
+    const tail = `  ${state.notice}`
+    const width = this.footer.width > 0 ? this.footer.width : this.renderer.width
+    const room = Math.max(0, width - this.lead - tail.length)
+    const chips = keptWithin(this.chipRow().chunks, room)
+    return new StyledText([...lead, ...chips, fg(palette.attention)(tail)])
   }
 
   private paneRoom(): number {

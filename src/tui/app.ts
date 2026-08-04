@@ -51,6 +51,7 @@ import {
   withPulls,
   withFull,
   withPatches,
+  restoredTo,
   withPending,
   withSent,
   withSource,
@@ -233,6 +234,7 @@ export class App {
       "rail.toggle": () => this.commitSynced("rail.toggle"),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
+      "review.reload": () => this.reloadBranch(),
       "pending.open": () => this.openPending(),
       "pending.submit": () => this.sendReview(),
       "report.open": () => this.commit(reduce(this.measured(), "report.open")),
@@ -286,16 +288,30 @@ export class App {
     await this.onKey({ name: "", ctrl: false, sequence: "" } as KeyEvent, chosen)
   }
 
+  private async readBranch(name: string): Promise<TuiState> {
+    const patches = await this.run(listPatches(this.repo, name))
+    const progress = await this.run(reviewProgress(this.repo, name))
+    const pending = await this.run(listPending(this.repo, name))
+    const layers = await this.run(listLayers(this.repo, name))
+    const sent = await this.loadSent(name)
+    const opened = withVouched(withPatches(this.state, patches), progress.vouched)
+    return withLayers(withSent(withPending(opened, pending, "review"), sent), layers)
+  }
+
   private async openBranch(): Promise<void> {
     const branch = selectedBranch(this.state)
     if (branch === undefined) return
-    const patches = await this.run(listPatches(this.repo, branch.branch))
-    const progress = await this.run(reviewProgress(this.repo, branch.branch))
-    const pending = await this.run(listPending(this.repo, branch.branch))
-    const layers = await this.run(listLayers(this.repo, branch.branch))
-    const opened = withVouched(withPatches(this.state, patches), progress.vouched)
-    const sent = await this.loadSent(branch.branch)
-    this.commit(withLayers(withSent(withPending(opened, pending, "review"), sent), layers))
+    this.commit(await this.readBranch(branch.branch))
+    await this.loadSource()
+  }
+
+  private async reloadBranch(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    if (branch === undefined) return
+    const path = selectedPatch(this.state)?.path
+    const line = sourceLineAt(this.state, this.state.cursor)
+    const read = await this.readBranch(branch.branch)
+    this.commit(withNotice(restoredTo(read, path, line), "read the branch again"))
     await this.loadSource()
   }
 
