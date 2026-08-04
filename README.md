@@ -6,7 +6,7 @@ Review the work an agent did in a git worktree, in your terminal, and hand your 
 the agent still sitting in that worktree. You select lines the way you would on GitHub, write a
 comment, and the agent picks it up.
 
-<pre align="center">git clone https://github.com/Newbie012/agent-diff.git && cd agent-diff && pnpm install</pre>
+<pre align="center">npm i -g @eliya-oss/agent-diff@alpha</pre>
 
 </div>
 
@@ -15,10 +15,10 @@ comment, and the agent picks it up.
 ```bash
 adiff review open      --repo .
 adiff branch list      --repo . --fields branch,files
-adiff comment add      --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
-adiff comment stage    --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
-adiff review submit    --repo . --branch cdr-1
-adiff file vouch       --repo . --branch cdr-1 --file src/api.ts
+adiff comment add      --repo . --branch add-teammate-invitations --file src/api/invitations.ts --start 4 --end 5 --body "why"
+adiff comment stage    --repo . --branch add-teammate-invitations --file src/api/invitations.ts --start 4 --end 5 --body "why"
+adiff review submit    --repo . --branch add-teammate-invitations
+adiff file vouch       --repo . --branch add-teammate-invitations --file src/api/invitations.ts
 adiff story show       --worktree . --fields covered,total,uncovered
 adiff describe
 ```
@@ -84,7 +84,7 @@ opens the terminal on it. Your real repos and `~/.adiff` are untouched, and the 
 when you quit. `pnpm simulate --probe` runs the whole round trip headless and prints it:
 
 ```
-branches    {"ok":true,"branches":[{"branch":"cdr-42-distinguish-missing-incidents","files":3,"added":18,...
+branches    {"ok":true,"branches":[{"branch":"add-teammate-invitations","files":3,"added":27,"removed":2,...
 vouch       {"ok":true,"vouched":["src/api/incidents.ts"],"total":3}
 agent takes {"ok":true,"comments":[{"file":"src/api/incidents.ts","side":"new","start":12,"end":13,
              "snippet":"  if (res.status === 404) throw new IncidentNotFound(id)\n  if (!res.ok) ...",
@@ -98,7 +98,7 @@ one compact JSON line on stdout and exits 0, and `--fields` trims the answer to 
 
 ```bash
 adiff branch list --repo . --fields branch,files
-{"ok":true,"branches":[{"branch":"cdr-42-distinguish-missing-incidents","files":3}]}
+{"ok":true,"branches":[{"branch":"add-teammate-invitations","files":3}]}
 ```
 
 Failures go to stderr as `{"ok":false,"error":{...}}`, so stdout is always parseable, with an exit
