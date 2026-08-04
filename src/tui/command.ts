@@ -252,7 +252,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Read the branch again",
     category: "Review",
     keys: ["r"],
-    screens: ["review"],
+    screens: ["branches", "review"],
     hint: "reload",
   }),
   command({
