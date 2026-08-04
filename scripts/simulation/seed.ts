@@ -61,17 +61,39 @@ const story = {
   ],
 }
 
+const settingsStory = {
+  summary: "The settings page reads invitations, and the legacy client goes",
+  steps: [
+    {
+      title: "List invitations with their state",
+      note: "Each row carries the invitation's status, so a pending invite reads differently from one a teammate has already accepted.",
+      spans: [{ path: "src/ui/InviteList.tsx", start: 1, end: 24 }],
+    },
+    {
+      title: "Drop the client nothing calls any more",
+      spans: [{ path: "src/api/legacy-invites.ts", start: 1, end: 40 }],
+    },
+  ],
+}
+
+const told: ReadonlyArray<{ branch: string; story: unknown }> = [
+  { branch: "add-teammate-invitations", story },
+  { branch: "show-invites-in-settings", story: settingsStory },
+]
+
 export const seedStory = async (space: Workspace): Promise<void> => {
-  const branch = space.branches.find((entry) => entry.name === "add-teammate-invitations")
-  if (branch === undefined) return
   const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
-  const child = execFile(
-    NODE,
-    runArgs(["story", "set", "--worktree", branch.worktree, "--json", "-"]),
-    { env, encoding: "utf8" },
-  )
-  child.stdin?.end(JSON.stringify(story))
-  await new Promise((resolve) => child.on("close", resolve))
+  await series(told, async (entry) => {
+    const branch = space.branches.find((candidate) => candidate.name === entry.branch)
+    if (branch === undefined) return
+    const child = execFile(
+      NODE,
+      runArgs(["story", "set", "--worktree", branch.worktree, "--json", "-"]),
+      { env, encoding: "utf8" },
+    )
+    child.stdin?.end(JSON.stringify(entry.story))
+    await new Promise((resolve) => child.on("close", resolve))
+  })
 }
 
 export const seedRemarks = async (space: Workspace): Promise<void> => {

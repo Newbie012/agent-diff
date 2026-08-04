@@ -79,11 +79,25 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   the step under the cursor, the other closes it. An open step shows its prose under the title,
   wrapped to the rail and set back from it. A step whose author wrote no prose says so.
 
+### A stale story is shown, and says so
+
+A story records the commit it was written against. Once the branch moves past that commit, the
+terminal keeps rendering the steps and marks them stale in both places a reviewer looks: the story
+column on the worktree list, and the head of the rail.
+
+The steps stay visible because the reading order survives a commit that the line numbers do not. An
+agent that adds a test to the last step has not invalidated the argument, and collapsing to the flat
+file view would throw away the only explanation of the change on the grounds that part of it aged.
+What the reviewer loses is the guarantee that each step still covers what it claims, so the mark
+tells them to trust the shape and check the lines.
+
+The answer from `story set` and `story show` names the commit the story was written for and the
+commit the branch is on, and says a new revision is needed. Writing one supersedes the old.
+
 ### Deferred decisions
 
 | Decision | Trigger |
 | --- | --- |
-| Whether a stale story is hidden or shown with a warning | A reviewer meeting a stale story in practice. `story show` reports `stale`; the terminal does not yet say so |
 | Whether a superseded version can be read back | Someone wanting to diff two versions of the argument |
 | Whether stories are worth their cost at all | This PRD shipping and surviving a real 90-file review |
 

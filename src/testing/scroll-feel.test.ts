@@ -42,6 +42,75 @@ describe("how scrolling feels", () => {
   })
 })
 
+const long = (mark: string): ReadonlyArray<string> => [
+  "export function scheduler() {",
+  ...steps(300, mark),
+  "}",
+]
+
+const repo = {
+  files: Array.from({ length: 24 }, (_, index) => ({
+    path: `src/jobs/worker${index}.ts`,
+    before: long("settle"),
+    after: long("resolve"),
+  })),
+}
+
+const wheel = (count: number, direction: "up" | "down"): ReadonlyArray<"up" | "down"> =>
+  Array.from({ length: count }, () => direction)
+
+const openDiff = async (driver: TestDriver): Promise<void> => {
+  await driver.branch.create(repo)
+  await driver.screen.open()
+  await driver.screen.pressKeys(["RETURN"])
+}
+
+describe("a burst of wheel events", () => {
+  it("lands where the same notches land one at a time", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await openDiff(driver)
+    await driver.screen.scrollSlowly("down", 20)
+    const slowly = firstCodeRow(await driver.screen.getFrame())
+    await driver.screen.scroll("up", 40)
+
+    // ACT
+    await driver.screen.burst(wheel(20, "down"))
+
+    // ASSERT
+    expect(firstCodeRow(await driver.screen.getFrame())).toBe(slowly)
+  })
+
+  it("nets out when the burst turns around", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await openDiff(driver)
+    await driver.screen.scroll("down", 1)
+    const oneNotch = firstCodeRow(await driver.screen.getFrame())
+    await driver.screen.scroll("up", 10)
+
+    // ACT
+    await driver.screen.burst([...wheel(30, "down"), ...wheel(29, "up")])
+
+    // ASSERT
+    expect(firstCodeRow(await driver.screen.getFrame())).toBe(oneNotch)
+  })
+
+  it("carries the whole burst in the first frame after it", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await openDiff(driver)
+
+    // ACT
+    await driver.screen.fire(wheel(600, "down"))
+    const firstFrame = firstCodeRow(await driver.screen.getFrame())
+    await driver.screen.rest()
+
+    // ASSERT
+    expect(firstCodeRow(await driver.screen.getFrame())).toBe(firstFrame)
+  })
+})
+
 describe("lines above the first change", () => {
   it("counts what the diff omits at the top of the file", async () => {
     // ARRANGE

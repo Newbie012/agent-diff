@@ -69,7 +69,7 @@ const PANE_CHROME = 3
 const BRANCH_WIDTH = 82
 const BRANCH_NAME = 44
 const BRANCH_NAME_MIN = 12
-const BRANCH_TAIL = 35
+const BRANCH_TAIL = 45
 const MODAL_MARGIN = 4
 
 const bodyRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - BODY_BORDER)
@@ -424,6 +424,7 @@ type Cells = {
   readonly files: string
   readonly added: string
   readonly gone: string
+  readonly story: string
   readonly state: string
 }
 
@@ -431,13 +432,21 @@ const nameRoom = (pane: number): number =>
   Math.max(BRANCH_NAME_MIN, Math.min(BRANCH_NAME, pane - BRANCH_TAIL))
 
 const columns = (cells: Cells, room: number): string =>
-  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}   ${cells.state}`
+  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.story.padStart(8)}   ${cells.state}`
 
 const branchHeading = (room: number): string =>
-  `  ${columns({ name: "WORKTREE", files: "FILES", added: "+", gone: "-", state: "STATE" }, room)}`
+  `  ${columns(
+    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", story: "STORY", state: "STATE" },
+    room,
+  )}`
 
 const atHome = (state: TuiState): boolean =>
   state.screen === "branches" || (state.screen === "palette" && state.returnTo === "branches")
+
+const storyCell = (branch: TuiState["branches"][number]): string => {
+  if (branch.steps === 0) return ""
+  return branch.stale ? `${branch.steps} stale` : `${branch.steps} story`
+}
 
 const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
   lead: `${here ? marks().cursor : " "} `,
@@ -445,6 +454,7 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
   files: `${branch.files}`.padStart(5),
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),
+  story: storyCell(branch),
   state: waitingLabel(branch).trim(),
 })
 
@@ -728,7 +738,10 @@ export class Screen {
       fg(stepPaint(state, row))(`${stepText(state, row, room)}\n`),
     )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
-    return new StyledText([...rows, ...more])
+    const warn = state.storyStale
+      ? [fg(palette.attention)(`  stale, the branch moved on\n\n`)]
+      : []
+    return new StyledText([...warn, ...rows, ...more])
   }
 
   private paintDiff(state: TuiState): void {
@@ -823,6 +836,7 @@ export class Screen {
         fg(palette.faint)(cells.files),
         fg(palette.added)(cells.added),
         fg(palette.removed)(cells.gone),
+        fg(palette.accent)(`  ${cells.story.padStart(8)}`),
         fg(palette.attention)(`   ${cells.state}\n`),
       ]
     })

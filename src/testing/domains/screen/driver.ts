@@ -1,3 +1,4 @@
+import { CodeRenderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { GitLive } from "../../../service/git/index.ts"
@@ -15,6 +16,7 @@ const bgOf = (span: Span): string =>
   `#${hex(Math.round(span.bg.r * 255))}${hex(Math.round(span.bg.g * 255))}${hex(Math.round(span.bg.b * 255))}`
 
 const ESCAPE_FLUSH_MS = 150
+const REST_MS = 400
 const PAINT_ATTEMPTS = 20
 const PAINT_WAIT_MS = 50
 
@@ -121,13 +123,40 @@ export class ScreenTestDriver {
   }
 
   async scroll(direction: "up" | "down", times = 1): Promise<void> {
+    await this.burst(Array.from({ length: times }, () => direction))
+  }
+
+  async scrollSlowly(direction: "up" | "down", times: number): Promise<void> {
+    await series(
+      Array.from({ length: times }, () => direction),
+      (step) => this.burst([step]),
+    )
+  }
+
+  async burst(wheel: ReadonlyArray<"up" | "down">): Promise<number> {
     const setup = this.active()
     const x = Math.floor(WIDTH / 2) + 10
     const y = Math.floor(HEIGHT / 2)
-    await series(
-      Array.from({ length: times }, (_, step) => step),
-      () => setup.mockMouse.scroll(x, y, direction),
-    )
+    const started = performance.now()
+    await Promise.all(wheel.map((direction) => setup.mockMouse.scroll(x, y, direction)))
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    const cost = performance.now() - started
+    this.guard()
+    return cost
+  }
+
+  async fire(wheel: ReadonlyArray<"up" | "down">): Promise<void> {
+    const setup = this.active()
+    const x = Math.floor(WIDTH / 2) + 10
+    const y = Math.floor(HEIGHT / 2)
+    await Promise.all(wheel.map((direction) => setup.mockMouse.scroll(x, y, direction)))
+    await setup.flush()
+  }
+
+  async rest(): Promise<void> {
+    const setup = this.active()
+    await new Promise((resolve) => setTimeout(resolve, REST_MS))
     await this.app?.settled()
     await setup.waitForVisualIdle()
     this.guard()
@@ -183,9 +212,21 @@ export class ScreenTestDriver {
     return attempt(PAINT_ATTEMPTS)
   }
 
+  private async settleHighlighting(): Promise<void> {
+    const setup = this.active()
+    const attempt = async (left: number): Promise<void> => {
+      await setup.waitForVisualIdle()
+      const found = setup.renderer.root.findDescendantById("diff-code")
+      if (left === 0 || !(found instanceof CodeRenderable) || !found.isHighlighting) return
+      await found.highlightingDone
+      return attempt(left - 1)
+    }
+    await attempt(PAINT_ATTEMPTS)
+  }
+
   async listForegroundsOn(text: string): Promise<ReadonlyArray<string>> {
     const setup = this.active()
-    await setup.waitForVisualIdle()
+    await this.settleHighlighting()
     this.guard()
     const line = setup
       .captureSpans()

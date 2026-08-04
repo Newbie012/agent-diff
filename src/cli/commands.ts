@@ -25,6 +25,8 @@ export type BranchSummary = {
   readonly removed: number
   readonly staged: number
   readonly unread: number
+  readonly steps: number
+  readonly stale: boolean
 }
 
 export type CommentRequest = {
@@ -79,7 +81,13 @@ const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
   const state = yield* store.state(worktree.path)
   const batches = yield* store.inbox(worktree.path)
-  return { staged: state.pending.length, unread: Math.max(0, batches.length - state.consumed) }
+  const told = yield* store.story(worktree.path)
+  return {
+    staged: state.pending.length,
+    unread: Math.max(0, batches.length - state.consumed),
+    steps: Option.match(told, { onNone: () => 0, onSome: (story) => story.steps.length }),
+    stale: Option.match(told, { onNone: () => false, onSome: (story) => story.head !== worktree.head }),
+  }
 })
 
 export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string) {
@@ -98,6 +106,8 @@ export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: strin
       removed: stat.removed,
       staged: waiting.staged,
       unread: waiting.unread,
+      steps: waiting.steps,
+      stale: waiting.stale,
     })
   }
   return summaries.filter((summary) => summary.files > 0)
