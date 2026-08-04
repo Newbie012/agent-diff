@@ -38,6 +38,7 @@ export type TuiState = {
   readonly selecting: boolean
   readonly draft: string
   readonly notice: string
+  readonly waiting: string
   readonly query: string
   readonly paletteIndex: number
   readonly returnTo: Screen
@@ -77,6 +78,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   selecting: false,
   draft: "",
   notice: "",
+  waiting: "",
   query: "",
   paletteIndex: 0,
   returnTo: "branches",
@@ -403,6 +405,14 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
   state.patches.flatMap((patch, index) =>
     [...state.pending, ...state.sent].some((entry) => entry.file === patch.path) ? [index] : [],
   )
+
+const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
+  comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
+
+export const spokenSince = (
+  seen: ReadonlyArray<StagedComment>,
+  now: ReadonlyArray<StagedComment>,
+): number => Math.max(0, answerCount(now) - answerCount(seen))
 
 export const hunkStarts = (state: TuiState): ReadonlyArray<number> => {
   const patch = selectedPatch(state)

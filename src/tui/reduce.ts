@@ -399,6 +399,11 @@ export const paletteClosed = (state: TuiState): TuiState => ({
   query: "",
 })
 
+export const withWaiting = (state: TuiState, waiting: string): TuiState => ({
+  ...state,
+  waiting,
+})
+
 export const withNoticeHere = (state: TuiState, notice: string): TuiState => ({
   ...state,
   notice,

@@ -757,11 +757,13 @@ export class Screen {
     const readout = selectionReadout(state)
     this.lead = readout.length === 0 ? 0 : readout.length + 3
     const lead = readout.length === 0 ? [] : [fg(palette.muted)(`${readout}   `)]
-    const tail = state.notice.length === 0 ? "" : `  ${state.notice}`
+    const said = state.notice.length === 0 ? state.waiting : state.notice
+    const tail = said.length === 0 ? "" : `  ${said}`
     const width = this.footer.width > 0 ? this.footer.width : this.renderer.width
     const room = Math.max(0, width - this.lead - tail.length)
     const chips = keptWithin(this.chipRow().chunks, room)
-    const notice = tail.length === 0 ? [] : [fg(palette.attention)(tail)]
+    const colour = state.notice.length === 0 ? palette.accent : palette.attention
+    const notice = tail.length === 0 ? [] : [fg(colour)(tail)]
     return new StyledText([...lead, ...chips, ...notice])
   }
 
@@ -913,8 +915,10 @@ export class Screen {
 
   private homeKeys(state: TuiState): StyledText {
     const chips = this.chipRow().chunks
-    if (state.notice.length === 0) return new StyledText(chips)
-    return new StyledText([...chips, fg(palette.attention)(`  ${state.notice}`)])
+    const said = state.notice.length === 0 ? state.waiting : state.notice
+    if (said.length === 0) return new StyledText(chips)
+    const colour = state.notice.length === 0 ? palette.accent : palette.attention
+    return new StyledText([...chips, fg(colour)(`  ${said}`)])
   }
 
   private chipRow(): StyledText {
