@@ -6,7 +6,7 @@ const spread = {
     {
       path: "src/api.ts",
       before: ["const keep = 0"],
-      after: ["const keep = 0", ...Array.from({ length: 30 }, (_, at) => `const step${at} = ${at}`)],
+      after: ["const keep = 0", ...Array.from({ length: 30 }, (_, at) => `const layer${at} = ${at}`)],
     },
     {
       path: "src/other.ts",
@@ -40,7 +40,7 @@ describe("walking between comments", () => {
     await driver.screen.pressKeys(["n"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const step4 = 4")).toContain("▎")
+    expect(rowWith(await driver.screen.getFrame(), "const layer4 = 4")).toContain("▎")
   })
 
   it("jumps back to the comment above", async () => {
@@ -57,7 +57,7 @@ describe("walking between comments", () => {
     await driver.screen.pressKeys(["N"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const step1 = 1")).toContain("▎")
+    expect(rowWith(await driver.screen.getFrame(), "const layer1 = 1")).toContain("▎")
   })
 
   it("carries on into the next file that has one", async () => {

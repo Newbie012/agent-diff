@@ -16,8 +16,8 @@ export const inboxPath = (root: string, worktreePath: string): string =>
 export const statePath = (root: string, worktreePath: string): string =>
   join(branchDir(root, worktreePath), "state.json")
 
-export const storyPath = (root: string, worktreePath: string): string =>
-  join(branchDir(root, worktreePath), "story.json")
+export const layersPath = (root: string, worktreePath: string): string =>
+  join(branchDir(root, worktreePath), "layers.json")
 
 export const reportsDir = (root: string): string => join(root, "reports")
 

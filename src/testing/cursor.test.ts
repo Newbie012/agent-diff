@@ -5,7 +5,7 @@ import { palette } from "../tui/index.ts"
 const numbered = {
   files: [
     {
-      path: "src/steps.ts",
+      path: "src/layers.ts",
       before: ["const zero = 0"],
       after: ["const zero = 0", "const one = 1", "const two = 2", "const three = 3"],
     },

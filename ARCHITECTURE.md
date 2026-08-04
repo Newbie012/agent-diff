@@ -15,7 +15,7 @@ uses, `.agents/prd/CONTEXT.md`; for durable technical choices, `.agents/adr/`.
         └──────────────┘
 
         ┌──────────────┐
-        │   Narrative  │  stories, versions, coverage      (depends on Patch)
+        │   Layers  │  layers, versions, coverage      (depends on Patch)
         └──────────────┘
 
         ┌──────────────┐
@@ -33,7 +33,7 @@ src/
   domain/          pure, no Effect services, no IO
     patch/         parse, rows, anchors, rendering        PRD 002
     review/        comment lifecycle, vouching, batches   PRD 005
-    narrative/     story, versions, coverage              PRD 006
+    layers/     layers, versions, coverage              PRD 006
   service/         Effect services, one directory each
     git/           worktree discovery, diffs, file reads  PRD 001
     store/         review state, inbox, read cursor       PRD 004
@@ -116,6 +116,6 @@ Lower fidelity cannot catch either.
 
 ## Runtime
 
-Node 26 or newer with `--experimental-ffi`, no build step, no bundler.
+Node 26 or newer with `--experimental-ffi`, no build layer, no bundler.
 [ADR-001](.agents/adr/ADR-001-node-26-runtime.md) explains why, and
 [PRD 009](.agents/prd/009-runtime-and-configuration.md) states the contract.

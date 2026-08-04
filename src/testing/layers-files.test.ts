@@ -9,8 +9,8 @@ const twoFiles = {
 }
 
 const backwards = {
-  summary: "One step over both files",
-  steps: [
+  summary: "One layer over both files",
+  layers: [
     {
       title: "Touch the view before the api",
       spans: [
@@ -21,12 +21,12 @@ const backwards = {
   ],
 }
 
-describe("a step that spans several files", () => {
-  it("walks them in the order the step lists", async () => {
+describe("a layer that spans several files", () => {
+  it("walks them in the order the layer lists", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.app.runStorySet(branch.worktree, backwards)
+    await driver.app.runLayersSet(branch.worktree, backwards)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
 

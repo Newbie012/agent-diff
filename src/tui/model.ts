@@ -10,9 +10,9 @@ export type StagedComment = {
 import type { Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
-import type { BranchSummary, StoryStep } from "../cli/index.ts"
+import type { BranchSummary, ReportedLayer } from "../cli/index.ts"
 
-export type StepRow = {
+export type LayerRow = {
   readonly index: number
   readonly kind: "title" | "note"
   readonly text: string
@@ -49,11 +49,11 @@ export type TuiState = {
   readonly revealed: ReadonlyArray<Reveal>
   readonly focus: "tree" | "diff"
   readonly navOpen: boolean
-  readonly steps: ReadonlyArray<StoryStep>
-  readonly storyStale: boolean
-  readonly stepIndex: number
-  readonly openSteps: ReadonlyArray<number>
-  readonly rail: "tree" | "steps"
+  readonly layers: ReadonlyArray<ReportedLayer>
+  readonly layersStale: boolean
+  readonly layerIndex: number
+  readonly openLayers: ReadonlyArray<number>
+  readonly rail: "tree" | "layers"
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
@@ -84,35 +84,35 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   revealed: [],
   focus: "diff",
   navOpen: true,
-  steps: [],
-  storyStale: false,
-  stepIndex: 0,
-  openSteps: [],
+  layers: [],
+  layersStale: false,
+  layerIndex: 0,
+  openLayers: [],
   rail: "tree",
 })
 
-export const onSteps = (state: TuiState): boolean =>
-  state.rail === "steps" && state.steps.length > 0
+export const onLayers = (state: TuiState): boolean =>
+  state.rail === "layers" && state.layers.length > 0
 
-export const selectedStep = (state: TuiState): StoryStep | undefined => state.steps[state.stepIndex]
+export const selectedLayer = (state: TuiState): ReportedLayer | undefined => state.layers[state.layerIndex]
 
-export const stepFiles = (state: TuiState, stepIndex: number): ReadonlyArray<number> => {
-  const step = state.steps[stepIndex]
-  if (step === undefined) return []
-  return step.files.flatMap((path) => {
+export const layerFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> => {
+  const layer = state.layers[layerIndex]
+  if (layer === undefined) return []
+  return layer.files.flatMap((path) => {
     const at = state.patches.findIndex((patch) => patch.path === path)
     return at === -1 ? [] : [at]
   })
 }
 
-export const stepHolding = (state: TuiState, fileIndex: number): number => {
+export const layerHolding = (state: TuiState, fileIndex: number): number => {
   const path = state.patches[fileIndex]?.path
-  const at = state.steps.findIndex((step) => step.files.includes(path ?? ""))
-  return at === -1 ? state.stepIndex : at
+  const at = state.layers.findIndex((layer) => layer.files.includes(path ?? ""))
+  return at === -1 ? state.layerIndex : at
 }
 
-export const stepOpen = (state: TuiState, stepIndex: number): boolean =>
-  state.openSteps.includes(stepIndex)
+export const layerOpen = (state: TuiState, layerIndex: number): boolean =>
+  state.openLayers.includes(layerIndex)
 
 const chunked = (word: string, room: number): ReadonlyArray<string> =>
   word.length <= room ? [word] : [word.slice(0, room), ...chunked(word.slice(room), room)]
@@ -134,39 +134,39 @@ export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
 
 export const NO_NOTE = "no note"
 
-const noteRows = (state: TuiState, stepIndex: number, room: number): ReadonlyArray<StepRow> => {
-  const lines = wrapped(state.steps[stepIndex]?.note ?? "", room)
+const noteRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
+  const lines = wrapped(state.layers[layerIndex]?.note ?? "", room)
   const shown = lines.length === 0 ? [NO_NOTE] : lines
-  return shown.map((text) => ({ index: stepIndex, kind: "note" as const, text, lead: false }))
+  return shown.map((text) => ({ index: layerIndex, kind: "note" as const, text, lead: false }))
 }
 
-const titleRows = (state: TuiState, stepIndex: number, room: number): ReadonlyArray<StepRow> =>
-  wrapped(state.steps[stepIndex]?.title ?? "", room).map((text, at) => ({
-    index: stepIndex,
+const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
+  wrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
+    index: layerIndex,
     kind: "title" as const,
     text,
     lead: at === 0,
   }))
 
-export const stepRows = (
+export const layerRows = (
   state: TuiState,
   titleRoom: number,
   noteRoom: number,
-): ReadonlyArray<StepRow> =>
-  state.steps.flatMap((_, index) =>
-    stepOpen(state, index)
+): ReadonlyArray<LayerRow> =>
+  state.layers.flatMap((_, index) =>
+    layerOpen(state, index)
       ? [...titleRows(state, index, titleRoom), ...noteRows(state, index, noteRoom)]
       : titleRows(state, index, titleRoom),
   )
 
 export const railWindow = (
-  rows: ReadonlyArray<StepRow>,
+  rows: ReadonlyArray<LayerRow>,
   height: number,
-  stepIndex: number,
-): { readonly rows: ReadonlyArray<StepRow>; readonly more: number } => {
+  layerIndex: number,
+): { readonly rows: ReadonlyArray<LayerRow>; readonly more: number } => {
   if (rows.length <= height) return { rows, more: 0 }
-  const first = Math.max(0, rows.findIndex((row) => row.index === stepIndex))
-  const block = rows.findLastIndex((row) => row.index === stepIndex) - first + 1
+  const first = Math.max(0, rows.findIndex((row) => row.index === layerIndex))
+  const block = rows.findLastIndex((row) => row.index === layerIndex) - first + 1
   const wanted = block >= height ? first : first - Math.floor((height - block) / 2)
   const start = Math.max(0, Math.min(rows.length - height, wanted))
   return { rows: rows.slice(start, start + height), more: rows.length - height }
@@ -275,7 +275,7 @@ export const WHOLE_FILE = 100_000
 
 export const CONTEXT_STEPS: ReadonlyArray<number> = [3, 10, 25, 60, WHOLE_FILE]
 
-export const stepContext = (current: number, delta: number): number => {
+export const layerContext = (current: number, delta: number): number => {
   const at = CONTEXT_STEPS.indexOf(current)
   const next = Math.max(0, Math.min(CONTEXT_STEPS.length - 1, (at === -1 ? 0 : at) + delta))
   return CONTEXT_STEPS[next] ?? current
@@ -345,11 +345,11 @@ export const countsOf = (state: TuiState, fileIndex: number): string => {
 }
 
 export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
-  onSteps(state)
-    ? stepFiles(state, state.stepIndex)
+  onLayers(state)
+    ? layerFiles(state, state.layerIndex)
     : treeRows(state).flatMap((row) => (row.fileIndex === undefined ? [] : [row.fileIndex]))
 
-export const stepFile = (state: TuiState, delta: number): number => {
+export const layerFile = (state: TuiState, delta: number): number => {
   const order = fileOrder(state)
   const position = order.indexOf(state.patchIndex)
   if (position === -1) return order[0] ?? state.patchIndex

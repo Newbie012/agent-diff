@@ -46,7 +46,7 @@ describe("reading the keys off the bottom of the screen", () => {
     expect(footerOf(await driver.screen.getFrame())).toContain("2 lines")
   })
 
-  it("clears a message on its own, so the footer does not accumulate history", async () => {
+  it("clears a message on its own, so the footer does not accumulate hilayers", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

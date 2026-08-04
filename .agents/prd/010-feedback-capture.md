@@ -27,7 +27,7 @@ can be pasted into a message or an issue without hunting for it.
 Nothing is sent anywhere. The report is a local file and a clipboard entry; where it goes next is
 the reviewer's decision.
 
-## User Stories
+## User Layers
 
 1. As a `reviewer`, I want to describe a bug in my own words while looking at it, so that the
    report happens at the moment I have the context rather than an hour later.
@@ -79,7 +79,7 @@ The keys themselves ([PRD 003](003-review-terminal.md)); the store's root
 | --- | --- |
 | Sending the report anywhere automatically | A second person using adiff |
 | Attaching the diff itself | A report where the change mattered and the paths did not identify it |
-| Recording a longer key history, or timings | A bug that the last 40 keys do not explain |
+| Recording a longer key hilayers, or timings | A bug that the last 40 keys do not explain |
 
 ## Testing Decisions
 

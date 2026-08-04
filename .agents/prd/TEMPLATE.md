@@ -17,10 +17,10 @@ Do not name modules, helpers, or file paths here.
 
 The behavior adiff provides. What the reviewer sees, what the agent receives, what adiff refuses.
 
-Two or three short paragraphs. Contracts go in **Implementation Decisions**; steps go in
+Two or three short paragraphs. Contracts go in **Implementation Decisions**; layers go in
 GitHub issues.
 
-## User Stories
+## User Layers
 
 > As a `<actor>`, I want `<capability>`, so that `<benefit>`.
 
@@ -50,7 +50,7 @@ Inputs, outputs, error tags, exit codes, key bindings, or guarantees a reader ca
 
 Any decision intentionally left open, and the trigger that resolves it.
 
-Do not include file paths, helper names, or step-by-step plans. Those go in GitHub issues.
+Do not include file paths, helper names, or layer-by-layer plans. Those go in GitHub issues.
 
 ## Testing Decisions
 

@@ -129,7 +129,7 @@ export class ScreenTestDriver {
   async scrollSlowly(direction: "up" | "down", times: number): Promise<void> {
     await series(
       Array.from({ length: times }, () => direction),
-      (step) => this.burst([step]),
+      (layer) => this.burst([layer]),
     )
   }
 

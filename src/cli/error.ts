@@ -35,10 +35,10 @@ export class UnknownWorktree extends Data.TaggedError("UnknownWorktree")<{
   readonly known: ReadonlyArray<string>
 }> {}
 
-export class MalformedStory extends Data.TaggedError("MalformedStory")<{
+export class MalformedLayers extends Data.TaggedError("MalformedLayers")<{
   readonly reason: string
 }> {}
 
-export class NoStory extends Data.TaggedError("NoStory")<{
+export class NoLayers extends Data.TaggedError("NoLayers")<{
   readonly worktree: string
 }> {}

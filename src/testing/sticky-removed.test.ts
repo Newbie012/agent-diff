@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-const steps = (count: number, mark: string): ReadonlyArray<string> =>
-  Array.from({ length: count }, (_, index) => `    const step${index} = ${mark}(${index})`)
+const layers = (count: number, mark: string): ReadonlyArray<string> =>
+  Array.from({ length: count }, (_, index) => `    const layer${index} = ${mark}(${index})`)
 
 const shaped = (mark: string): ReadonlyArray<string> => [
   "import { logger } from './logger'",
@@ -12,7 +12,7 @@ const shaped = (mark: string): ReadonlyArray<string> => [
   "}",
   "",
   "export const client = async (input: ClientInput) => {",
-  ...steps(40, mark),
+  ...layers(40, mark),
   "  return input",
   "}",
 ]
@@ -57,10 +57,10 @@ describe("lining up the sign column", () => {
 
     // ASSERT
     const context = rows.find((line) => line.includes("export const client = async"))
-    const changed = rows.find((line) => line.includes("const step0 = "))
+    const changed = rows.find((line) => line.includes("const layer0 = "))
     expect(context).toBeDefined()
     expect(changed).toBeDefined()
-    expect((changed ?? "").indexOf("const step0")).toBe(
+    expect((changed ?? "").indexOf("const layer0")).toBe(
       (context ?? "").indexOf("export const client") + 4,
     )
   })

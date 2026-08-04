@@ -20,7 +20,7 @@ the operator never has to know that a native renderer is involved. State lives i
 directory, overridable with one environment variable. The agent side is a skill in this repo,
 installed with one symlink.
 
-## User Stories
+## User Layers
 
 1. As an `operator`, I want adiff to run without me discovering a flag, so that installation is
    `npm install` and a command.
@@ -58,7 +58,7 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
 - **The agent skill ships in the repo** at `skills/adiff/SKILL.md` and is installed by symlinking
   the directory into the agent's skills path. adiff never installs it automatically; touching an
   agent's configuration is the operator's decision.
-- **TypeScript runs by type-stripping, not compilation.** There is no build step and no bundler.
+- **TypeScript runs by type-stripping, not compilation.** There is no build layer and no bundler.
   Syntax that requires emit does not run, whatever `tsc` and vitest accept — see
   [ADR-002](../adr/ADR-002-effect-v4-and-module-boundaries.md).
 

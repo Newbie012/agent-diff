@@ -1,10 +1,10 @@
 import { Option } from "effect"
 import type { Hunk, Patch } from "../patch/index.ts"
-import { REMAINDER_TITLE, type Coverage, type Span, type Step, type Story, type StoryBlock } from "./model.ts"
+import { REMAINDER_TITLE, type Coverage, type Span, type Layer, type Layers, type LayerBlock } from "./model.ts"
 
-type CodeBlock = Extract<StoryBlock, { kind: "code" }>
+type CodeBlock = Extract<LayerBlock, { kind: "code" }>
 
-type ProseBlock = Extract<StoryBlock, { kind: "prose" }>
+type ProseBlock = Extract<LayerBlock, { kind: "prose" }>
 
 const codeBlockOf = (span: Span): CodeBlock => ({
   kind: "code",
@@ -13,18 +13,18 @@ const codeBlockOf = (span: Span): CodeBlock => ({
   end: span.end,
 })
 
-export const codeBlocks = (step: Step): ReadonlyArray<CodeBlock> =>
-  step.blocks.filter((block): block is CodeBlock => block.kind === "code")
+export const codeBlocks = (layer: Layer): ReadonlyArray<CodeBlock> =>
+  layer.blocks.filter((block): block is CodeBlock => block.kind === "code")
 
-export const noteOf = (step: Step): string =>
-  step.blocks
+export const noteOf = (layer: Layer): string =>
+  layer.blocks
     .filter((block): block is ProseBlock => block.kind === "prose")
     .map((block) => block.markdown.trim())
     .filter((markdown) => markdown.length > 0)
     .join(" ")
 
-export const spansOf = (steps: ReadonlyArray<Step>): ReadonlyArray<Span> =>
-  steps.flatMap((step) => codeBlocks(step).map(({ path, start, end }) => ({ path, start, end })))
+export const spansOf = (layers: ReadonlyArray<Layer>): ReadonlyArray<Span> =>
+  layers.flatMap((layer) => codeBlocks(layer).map(({ path, start, end }) => ({ path, start, end })))
 
 const spanOfHunk = (patch: Patch, hunk: Hunk): Option.Option<Span> => {
   const lines = hunk.rows.flatMap((row) =>
@@ -37,8 +37,8 @@ const spanOfHunk = (patch: Patch, hunk: Hunk): Option.Option<Span> => {
 
 const overlaps = (a: Span, b: Span): boolean => a.path === b.path && a.start <= b.end && a.end >= b.start
 
-export const coverage = (patches: ReadonlyArray<Patch>, steps: ReadonlyArray<Step>): Coverage => {
-  const claimed = spansOf(steps)
+export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<Layer>): Coverage => {
+  const claimed = spansOf(layers)
   const hunks = patches.flatMap((patch) =>
     patch.hunks.flatMap((hunk) => Option.match(spanOfHunk(patch, hunk), { onNone: () => [], onSome: (s) => [s] })),
   )
@@ -46,10 +46,10 @@ export const coverage = (patches: ReadonlyArray<Patch>, steps: ReadonlyArray<Ste
   return { total: hunks.length, covered: hunks.length - missing.length, missing }
 }
 
-export const withFullCoverage = (patches: ReadonlyArray<Patch>, story: Story): Story => {
-  const gap = coverage(patches, story.steps)
-  if (gap.missing.length === 0) return story
-  const remainder: Step = {
+export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers): Layers => {
+  const gap = coverage(patches, layers.layers)
+  if (gap.missing.length === 0) return layers
+  const remainder: Layer = {
     title: REMAINDER_TITLE,
     blocks: [
       {
@@ -59,5 +59,5 @@ export const withFullCoverage = (patches: ReadonlyArray<Patch>, story: Story): S
       ...gap.missing.map((span) => codeBlockOf(span)),
     ],
   }
-  return { ...story, steps: [...story.steps, remainder] }
+  return { ...layers, layers: [...layers.layers, remainder] }
 }

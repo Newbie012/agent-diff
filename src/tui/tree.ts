@@ -115,7 +115,7 @@ const visit = (walk: Walk, id: number, depth: number): void => {
     fileIndex: undefined,
     files: filesUnder(walk.tree, last.id),
   })
-  if (collapsed.some((step) => walk.closed.includes(step.path))) return
+  if (collapsed.some((layer) => walk.closed.includes(layer.path))) return
   for (const child of last.children) visit(walk, child, depth + 1)
 }
 

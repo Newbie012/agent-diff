@@ -1,12 +1,12 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-const steps = (count: number, mark: string): ReadonlyArray<string> =>
-  Array.from({ length: count }, (_, index) => `    const step${index} = ${mark}(${index})`)
+const layers = (count: number, mark: string): ReadonlyArray<string> =>
+  Array.from({ length: count }, (_, index) => `    const layer${index} = ${mark}(${index})`)
 
 const shaped = (mark: string): ReadonlyArray<string> => [
   "export const client = async (input: string) => {",
-  ...steps(40, mark),
+  ...layers(40, mark),
   "  return input",
   "}",
 ]
@@ -27,11 +27,11 @@ describe("the pinned line sits over the code it names", () => {
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
     const pin = rows.find((line) => line.includes("export const client"))
-    const code = rows.find((line) => line.includes("const step3"))
+    const code = rows.find((line) => line.includes("const layer3"))
     expect(pin).toBeDefined()
     expect(code).toBeDefined()
     expect((pin ?? "").indexOf("export const client")).toBe(
-      (code ?? "").indexOf("const step3") - 4,
+      (code ?? "").indexOf("const layer3") - 4,
     )
   })
 })

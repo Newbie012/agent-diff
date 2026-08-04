@@ -10,14 +10,14 @@ import {
   fieldsOf,
   findCommand,
   listBranches,
-  MalformedStory,
+  MalformedLayers,
   narrow,
   numeric,
   optionsFrom,
   required,
   reviewProgress,
-  setStory,
-  showStory,
+  setLayers,
+  showLayers,
   stageComment,
   submitComment,
   submitReview,
@@ -117,23 +117,23 @@ const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options)
 const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
   return yield* Effect.tryPromise({
     try: () => (source === "-" ? readStream(process.stdin) : readFile(source, "utf8")),
-    catch: (cause) => new MalformedStory({ reason: String(cause) }),
+    catch: (cause) => new MalformedLayers({ reason: String(cause) }),
   })
 })
 
-const storySet = Effect.fn("Main.storySet")(function* (options: Options) {
+const layersSet = Effect.fn("Main.layersSet")(function* (options: Options) {
   const document = yield* documentAt(yield* required(options, "json"))
-  const story = yield* setStory(
+  const layers = yield* setLayers(
     yield* required(options, "worktree"),
     document,
     options["at"] ?? new Date().toISOString(),
   )
-  yield* answer(options, { story })
+  yield* answer(options, { layers })
 })
 
-const storyShow = Effect.fn("Main.storyShow")(function* (options: Options) {
-  const story = yield* showStory(yield* required(options, "worktree"))
-  yield* answer(options, { story })
+const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
+  const layers = yield* showLayers(yield* required(options, "worktree"))
+  yield* answer(options, { layers })
 })
 
 const describe = Effect.fn("Main.describe")(function* (options: Options) {
@@ -153,8 +153,8 @@ const routes = {
   "comment take": commentTake,
   "review submit": reviewSubmit,
   "review progress": reviewStatus,
-  "story set": storySet,
-  "story show": storyShow,
+  "layers set": layersSet,
+  "layers show": layersShow,
   describe,
 } as const
 

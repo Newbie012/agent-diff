@@ -359,9 +359,9 @@ const moduleBody = (
   phase: "before" | "after",
 ): ReadonlyArray<string> => {
   const header = phase === "before" ? headerBefore(titled(topic)) : headerAfter(titled(topic))
-  const bodies = Array.from({ length: Math.max(1, blocks) }, (_, step) => {
-    const slot = seed + step
-    const shape = (seed + step * 3) % 4
+  const bodies = Array.from({ length: Math.max(1, blocks) }, (_, layer) => {
+    const slot = seed + layer
+    const shape = (seed + layer * 3) % 4
     const noun = pick(NOUNS, slot, "Invite")
     const name = nameFor(noun, slot, shape)
     return phase === "before" ? blockBefore(name, noun, shape) : blockAfter(name, noun, shape)

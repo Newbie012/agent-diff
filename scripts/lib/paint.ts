@@ -41,15 +41,15 @@ const htmlShot = (shot: Shot, index: number): string =>
 
 const PLAYER = `
 const shots = [...document.querySelectorAll(".shot")]
-const steps = [...document.querySelectorAll(".step")]
+const layers = [...document.querySelectorAll(".layer")]
 let at = 0
 const show = (next) => {
   at = Math.max(0, Math.min(shots.length - 1, next))
   shots.forEach((shot, index) => { shot.hidden = index !== at })
-  steps.forEach((step, index) => step.setAttribute("aria-current", String(index === at)))
-  steps[at].scrollIntoView({ block: "nearest" })
+  layers.forEach((layer, index) => layer.setAttribute("aria-current", String(index === at)))
+  layers[at].scrollIntoView({ block: "nearest" })
 }
-steps.forEach((step, index) => step.addEventListener("click", () => show(index)))
+layers.forEach((layer, index) => layer.addEventListener("click", () => show(index)))
 const cell = () => {
   const box = screen.getBoundingClientRect()
   return { box, w: box.width / Math.max(1, cols), h: box.height / Math.max(1, rows) }
@@ -200,18 +200,18 @@ export const toHtml = (shots: ReadonlyArray<Shot>, title: string, live = false):
     "h1{grid-column:1/-1;display:flex;align-items:baseline;gap:16px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0}",
     "h1 small{font-size:11px;font-weight:400;letter-spacing:.04em;text-transform:none;color:var(--dim)}",
     "nav{display:flex;flex-direction:column;gap:1px;position:sticky;top:20px;width:max-content;max-height:88vh;overflow-y:auto}",
-    ".step{all:unset;cursor:pointer;padding:4px 12px 4px 10px;border-radius:4px;font-size:12px;white-space:nowrap;color:var(--dim);border-left:2px solid transparent}",
-    ".step:hover{color:var(--ink);background:#141821}",
-    ".step:focus-visible{outline:2px solid var(--accent);outline-offset:1px}",
-    ".step[aria-current=true]{color:var(--ink);background:#141821;border-left-color:var(--accent)}",
+    ".layer{all:unset;cursor:pointer;padding:4px 12px 4px 10px;border-radius:4px;font-size:12px;white-space:nowrap;color:var(--dim);border-left:2px solid transparent}",
+    ".layer:hover{color:var(--ink);background:#141821}",
+    ".layer:focus-visible{outline:2px solid var(--accent);outline-offset:1px}",
+    ".layer[aria-current=true]{color:var(--ink);background:#141821;border-left-color:var(--accent)}",
     "main{min-width:0}",
     "pre{margin:0;overflow-x:auto;line-height:1;font-size:clamp(8px,calc((100vw - 260px) / 70),19px);border:1px solid var(--rule);border-radius:8px;padding:12px}",
     "pre span{display:inline-block;line-height:1.35;vertical-align:top}",
     "@media (max-width:820px){body{grid-template-columns:1fr}nav{flex-direction:row;flex-wrap:wrap;position:static;width:auto}pre{font-size:clamp(7px,calc(100vw / 68),14px)}}",
     "</style>",
-    `<h1>${escape(title)}<small>← → or j / k to step through</small></h1>`,
+    `<h1>${escape(title)}<small>← → or j / k to layer through</small></h1>`,
     "<nav>",
-    ...shots.map((shot) => `<button class="step" type="button">${escape(shot.label)}</button>`),
+    ...shots.map((shot) => `<button class="layer" type="button">${escape(shot.label)}</button>`),
     "</nav>",
     "<main>",
     ...shots.map(htmlShot),

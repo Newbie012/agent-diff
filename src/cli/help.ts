@@ -8,7 +8,7 @@ const REACH = 5
 
 const manifest = (): string | undefined => {
   const here = dirname(fileURLToPath(import.meta.url))
-  const climb = Array.from({ length: REACH }, (_, step) => join(here, ...Array(step).fill("..")))
+  const climb = Array.from({ length: REACH }, (_, layer) => join(here, ...Array(layer).fill("..")))
   return climb.map((at) => join(at, "package.json")).find((path) => existsSync(path))
 }
 

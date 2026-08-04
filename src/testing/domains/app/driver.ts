@@ -16,15 +16,15 @@ export type CliResult = {
   readonly envelope: unknown
 }
 
-export type StoryStepInput = {
+export type LayerInput = {
   readonly title: string
   readonly note?: string
   readonly spans: ReadonlyArray<{ readonly path: string; readonly start: number; readonly end: number }>
 }
 
-export type StoryInput = {
+export type LayersInput = {
   readonly summary?: string
-  readonly steps: ReadonlyArray<StoryStepInput>
+  readonly layers: ReadonlyArray<LayerInput>
 }
 
 export type CommentOptions = {
@@ -83,13 +83,13 @@ export class AppTestDriver {
     })
   }
 
-  runStorySet(worktree: string, story: StoryInput | string): Promise<CliResult> {
-    const document = typeof story === "string" ? story : JSON.stringify(story)
-    return this.runWith(["story", "set", "--worktree", worktree, "--json", "-"], document)
+  runLayersSet(worktree: string, layers: LayersInput | string): Promise<CliResult> {
+    const document = typeof layers === "string" ? layers : JSON.stringify(layers)
+    return this.runWith(["layers", "set", "--worktree", worktree, "--json", "-"], document)
   }
 
-  runStoryShow(worktree: string, fields?: ReadonlyArray<string>): Promise<CliResult> {
-    return this.run(["story", "show", "--worktree", worktree, ...(fields ?? [])])
+  runLayersShow(worktree: string, fields?: ReadonlyArray<string>): Promise<CliResult> {
+    return this.run(["layers", "show", "--worktree", worktree, ...(fields ?? [])])
   }
 
   runStage(options: CommentOptions): Promise<CliResult> {

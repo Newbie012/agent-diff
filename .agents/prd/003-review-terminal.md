@@ -23,7 +23,7 @@ the change. Selecting a range and pressing a key opens a compose box; sending it
 The screen shows what is needed to act and nothing else. Every key available in the current context
 is listed in the footer, so nothing has to be memorised or discovered.
 
-## User Stories
+## User Layers
 
 1. As a `reviewer`, I want the diff highlighted, so that I can read it like code rather than like
    output.
@@ -85,7 +85,7 @@ below the last one. Every gap the file still has shows as one row of the diff th
 lines it is holding back.
 
 - **`l` opens the gap the cursor is on and `h` closes it again**, ten lines at a time. Away from a
-  gap row the same two keys still open and close the folder or the story step, so one key means
+  gap row the same two keys still open and close the folder or the layers layer, so one key means
   "open what the cursor is on" everywhere on this screen.
 - **Opening one gap leaves every other gap where it was.** The whole-file context keys `=` and `-`
   stay as they are, and setting a new context width starts the gaps over.
@@ -140,7 +140,7 @@ test that fails when an unrelated pane grows, which is a false report, not a cau
 - Editing code from the terminal.
 - Reading a branch that is not a worktree of the repo adiff was pointed at.
 - Resizing behavior beyond what the layout engine provides.
-- Reading [stories](CONTEXT.md#story) — see [PRD 006](006-narrative-review.md).
+- Reading [layers](CONTEXT.md#layers) — see [PRD 006](006-layers-review.md).
 
 ## Further Notes
 

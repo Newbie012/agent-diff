@@ -20,16 +20,16 @@ describe("using adiff without reading its documentation", () => {
       "file vouch",
       "review submit",
       "review progress",
-      "story set",
-      "story show",
+      "layers set",
+      "layers show",
       "review open",
       "describe",
     ])
     expect(commands).toContainEqual(
       expect.objectContaining({
-        name: "story set",
+        name: "layers set",
         safety: "write",
-        dataKey: "story",
+        dataKey: "layers",
         options: expect.arrayContaining([
           expect.objectContaining({ name: "json", required: true }),
         ]),

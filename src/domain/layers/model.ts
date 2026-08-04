@@ -1,22 +1,22 @@
 import type { Option } from "effect"
 
-export type StoryBlock =
+export type LayerBlock =
   | { readonly kind: "prose"; readonly markdown: string }
   | { readonly kind: "code"; readonly path: string; readonly start: number; readonly end: number }
 
-export type Step = {
+export type Layer = {
   readonly title: string
-  readonly blocks: ReadonlyArray<StoryBlock>
+  readonly blocks: ReadonlyArray<LayerBlock>
 }
 
-export type Story = {
+export type Layers = {
   readonly version: number
   readonly head: string
   readonly base: string
   readonly parent: Option.Option<number>
   readonly written: string
   readonly summary: string
-  readonly steps: ReadonlyArray<Step>
+  readonly layers: ReadonlyArray<Layer>
 }
 
 export type Span = {
@@ -31,11 +31,11 @@ export type Coverage = {
   readonly missing: ReadonlyArray<Span>
 }
 
-export type StoryStatus = {
+export type LayersStatus = {
   readonly version: number
   readonly parent: Option.Option<number>
   readonly stale: boolean
-  readonly storyHead: string
+  readonly layersHead: string
   readonly branchHead: string
   readonly uncovered: ReadonlyArray<Span>
   readonly vanished: ReadonlyArray<string>
@@ -43,4 +43,4 @@ export type StoryStatus = {
   readonly total: number
 }
 
-export const REMAINDER_TITLE = "not in any step"
+export const REMAINDER_TITLE = "not in any layer"

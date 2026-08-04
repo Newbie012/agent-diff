@@ -3,7 +3,7 @@ import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
-  Array.from({ length: count }, (_, index) => `  const step${index} = ${mark}(${index})`)
+  Array.from({ length: count }, (_, index) => `  const layer${index} = ${mark}(${index})`)
 
 const tall = {
   files: [

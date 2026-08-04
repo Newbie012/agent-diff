@@ -37,7 +37,7 @@ reached the agent that wrote the code.
 | Review progress is durable | Closing the terminal loses nothing |
 | A stale anchor is never silently wrong | Code moving under a comment is visible before it misleads |
 
-## User Stories
+## User Layers
 
 1. As a `PRD author`, I want one page that says which PRD owns a behavior, so that I don't
    redefine it in mine.
@@ -86,7 +86,7 @@ reached the agent that wrote the code.
 | [003](003-review-terminal.md) | The terminal: navigation, selection, composing a comment | `tui` |
 | [004](004-comment-delivery.md) | Filing a comment and handing it to the agent exactly once | `service/store` |
 | [005](005-vouching-and-progress.md) | Marking a file reviewed, and what lapses when the code changes | `domain/review` |
-| [006](006-narrative-review.md) | Reading a diff as an agent-authored story | `domain/narrative` |
+| [006](006-layers-review.md) | Reading a diff as an agent-authored layers | `domain/layers` |
 | [007](007-command-surface.md) | The command contract: subcommands, envelope, exit codes | `cli`, `main.ts` |
 | [008](008-tests-and-drivers.md) | What "verified" means, and the TestDriver every test speaks through | `testing` |
 | [009](009-runtime-and-configuration.md) | Runtime requirements, store root, installing the agent skill | root |
@@ -110,7 +110,7 @@ reached the agent that wrote the code.
 
 | Decision | Trigger |
 | --- | --- |
-| Whether stories earn their keep at all | [PRD 006](006-narrative-review.md) shipping and being used on a real 90-file review |
+| Whether layers earn their keep at all | [PRD 006](006-layers-review.md) shipping and being used on a real 90-file review |
 | Streaming the agent's replies back beside the comment | A review where the reviewer wants a conversation rather than a hand-over |
 | Multi-repo branch discovery | A second repo in regular use |
 
@@ -135,6 +135,6 @@ This PRD owns no runtime behavior and has no tests. Every other PRD names its co
 1. Comment-to-agent delivery is worth more than the diff viewer alone. If false, adiff is a worse
    `git diff`.
 2. An agent's narrated reading order beats file order. Unproven — gated behind
-   [PRD 006](006-narrative-review.md).
+   [PRD 006](006-layers-review.md).
 3. Line anchors survive agent edits often enough to be useful. Mitigated by carrying the blob and
    the snippet, so a stale anchor announces itself.

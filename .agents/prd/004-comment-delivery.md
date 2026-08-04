@@ -21,10 +21,10 @@ reviewer does not need the agent to be running, and the agent does not need the 
 agent does.
 
 The agent [takes](CONTEXT.md#take) what it has not seen. Delivery is exactly-once: a comment handed
-over is never handed over again, so an agent can poll without re-reading its whole history and
+over is never handed over again, so an agent can poll without re-reading its whole hilayers and
 without a comment going missing between two takes.
 
-## User Stories
+## User Layers
 
 1. As a `reviewer`, I want to write comments while the agent is busy, so that reviewing is not
    gated on the agent's attention.
