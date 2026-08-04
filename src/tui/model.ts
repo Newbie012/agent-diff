@@ -150,6 +150,29 @@ const noteRows = (state: TuiState, layerIndex: number, room: number): ReadonlyAr
   return shown.map((text) => ({ index: layerIndex, kind: "note" as const, text, lead: false }))
 }
 
+const proseRow = (layerIndex: number, text: string): LayerRow => ({
+  index: layerIndex,
+  kind: "note",
+  text,
+  lead: false,
+})
+
+const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
+  const blocks = state.layers[layerIndex]?.prose ?? []
+  const rows: Array<LayerRow> = []
+  for (const [at, block] of blocks.entries()) {
+    if (at > 0) rows.push(proseRow(layerIndex, ""))
+    for (const text of wrapped(block.markdown, room)) rows.push(proseRow(layerIndex, text))
+    rows.push({
+      index: layerIndex,
+      kind: "file",
+      text: clipEnd(block.path, Math.max(1, room - FILE_LEAD)),
+      lead: false,
+    })
+  }
+  return rows
+}
+
 const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
   wrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
     index: layerIndex,
@@ -190,8 +213,9 @@ export const layerRows = (
     layerOpen(state, index)
       ? [
           ...titleRows(state, index, titleRoom),
-          ...noteRows(state, index, noteRoom),
-          ...fileRows(state, index, noteRoom),
+          ...((state.layers[index]?.prose ?? []).length > 0
+            ? proseRows(state, index, noteRoom)
+            : [...noteRows(state, index, noteRoom), ...fileRows(state, index, noteRoom)]),
         ]
       : titleRows(state, index, titleRoom),
   )
