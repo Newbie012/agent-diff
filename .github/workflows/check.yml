@@ -14,11 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.0.0-beta.3
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -30,3 +32,5 @@ jobs:
       - run: pnpm lint
 
       - run: pnpm test
+        env:
+          NODE_OPTIONS: --experimental-ffi
