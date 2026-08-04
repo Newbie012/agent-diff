@@ -57,7 +57,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           pnpm version -r
-          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "::error::$NAME@$VERSION is already on the registry, so main is behind the registry. Bring main up to the published version and its ledger entry before releasing again."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: record the version on main
+        if: steps.plan.outputs.pending == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git add -A -- .changeset package.json
+          if git diff --cached --quiet; then
+            echo "::error::pnpm version -r left the tree unchanged, so there is no release commit to record for $VERSION."
+            exit 1
+          fi
+          git commit -m "release $VERSION"
+          for ATTEMPT in 1 2 3 4 5; do
+            git tag -f -a "v$VERSION" -m "release $VERSION"
+            if git push --atomic origin HEAD:refs/heads/main "refs/tags/v$VERSION"; then
+              echo "::notice::main and tag v$VERSION carry $VERSION."
+              exit 0
+            fi
+            echo "::warning::Push attempt $ATTEMPT of 5 was turned down. Rebasing onto main and trying again."
+            git fetch origin main
+            if ! git rebase FETCH_HEAD; then
+              git rebase --abort || true
+              echo "::error::The release commit for $VERSION does not rebase onto main, so main and this run both changed package.json or the change ledger. Nothing was published, so rerun this workflow once main is settled."
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::main moved under this run five times and the release commit for $VERSION is still not on it. Nothing was published, so rerun this workflow once main is settled."
+          exit 1
 
       - if: steps.plan.outputs.pending == 'true'
         run: pnpm build
@@ -65,8 +100,109 @@ jobs:
       - if: steps.plan.outputs.pending == 'true'
         run: pnpm publish --tag alpha --no-git-checks
 
-      - if: steps.plan.outputs.pending == 'true'
+      - name: wait for the registry
+        if: steps.plan.outputs.pending == 'true'
+        id: tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          git commit -am "release ${{ steps.version.outputs.version }}" || true
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin HEAD:main --follow-tags
+          NAME=$(node -p "require('./package.json').name")
+          for _ in $(seq 1 30); do
+            URL=$(npm view "$NAME@$VERSION" dist.tarball 2>/dev/null || true)
+            if [ -n "$URL" ]; then
+              echo "name=$NAME" >> "$GITHUB_OUTPUT"
+              echo "url=$URL" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$NAME@$VERSION did not appear on the registry within five minutes."
+          exit 1
+
+      - name: point latest at the published version
+        if: steps.plan.outputs.pending == 'true'
+        env:
+          NAME: ${{ steps.tarball.outputs.name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set +e
+          case "$VERSION" in
+            *-alpha.*) ;;
+            *)
+              echo "::notice::$VERSION is off the alpha lane, so the latest dist-tag is left as it is."
+              exit 0
+              ;;
+          esac
+
+          explain() {
+            CURRENT=$(npm view "$NAME" dist-tags.latest 2>/dev/null || echo "unknown")
+            echo "::notice::Moving the latest dist-tag needs a credential this workflow does not have, so latest still points at $CURRENT. npm said: $1 Point it at $VERSION by hand, or give the workflow an npm automation token."
+            exit 0
+          }
+
+          CLAIM=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
+            | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).value || '' } catch { '' }")
+          if [ -z "$CLAIM" ]; then
+            explain "GitHub did not return an OIDC id token for audience npm:registry.npmjs.org."
+          fi
+
+          ESCAPED=$(node -p "encodeURIComponent(process.argv[1])" "$NAME")
+          BODY=$(curl -sS -X POST -H "Authorization: Bearer $CLAIM" \
+            "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/$ESCAPED")
+          TOKEN=$(printf '%s' "$BODY" | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).token || '' } catch { '' }")
+          if [ -z "$TOKEN" ]; then
+            explain "$(printf '%s' "$BODY" | head -c 400 | tr '\n' ' ')"
+          fi
+
+          RC=$(mktemp)
+          printf '//registry.npmjs.org/:_authToken=%s\n' "$TOKEN" > "$RC"
+          OUT=$(npm dist-tag add "$NAME@$VERSION" latest --userconfig "$RC" 2>&1)
+          STATUS=$?
+          rm -f "$RC"
+          if [ "$STATUS" -ne 0 ]; then
+            explain "$(printf '%s' "$OUT" | head -c 400 | tr '\n' ' ')"
+          fi
+          echo "::notice::latest now points at $VERSION."
+
+      - name: check for the tap token
+        if: steps.plan.outputs.pending == 'true'
+        id: tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          if [ -n "$TAP_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Add a TAP_TOKEN secret to have this workflow update the Homebrew formula on every release."
+          fi
+
+      - name: update the homebrew formula
+        if: steps.plan.outputs.pending == 'true' && steps.tap.outputs.configured == 'true'
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          URL: ${{ steps.tarball.outputs.url }}
+        run: |
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/package.tgz"
+          SHA=$(sha256sum "$RUNNER_TEMP/package.tgz" | cut -d ' ' -f 1)
+
+          TAP="$RUNNER_TEMP/tap"
+          git clone --depth 1 "https://x-access-token:$TAP_TOKEN@github.com/Newbie012/homebrew-tap.git" "$TAP"
+
+          FORMULA="$TAP/Formula/adiff.rb"
+          sed -i -E "s#^  url \".*\"#  url \"$URL\"#" "$FORMULA"
+          sed -i -E "s#^  sha256 \".*\"#  sha256 \"$SHA\"#" "$FORMULA"
+          grep -qF "$URL" "$FORMULA"
+          grep -qF "$SHA" "$FORMULA"
+
+          git -C "$TAP" config user.name "github-actions[bot]"
+          git -C "$TAP" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git -C "$TAP" diff --quiet; then
+            echo "::notice::The formula already builds $VERSION."
+            exit 0
+          fi
+          git -C "$TAP" commit -am "adiff $VERSION"
+          git -C "$TAP" push
+          echo "::notice::The Homebrew formula now builds $VERSION."
