@@ -13,6 +13,8 @@ import {
   reviewProgress,
   saveReport,
   stageComment,
+  editStaged,
+  dropStaged,
   submitReview,
   submitComment,
   toggleVouch,
@@ -46,6 +48,7 @@ import {
   scrolled,
   typed,
   withNotice,
+  withNoticeHere,
   withContext,
   withBranches,
   withPulls,
@@ -197,6 +200,7 @@ export class App {
   }
 
   private commit(next: TuiState): void {
+
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     this.state = next
     this.rememberPlace(next)
@@ -236,6 +240,8 @@ export class App {
       "file.vouch.next": () => this.vouch(true),
       "review.reload": () => this.reloadBranch(),
       "pending.open": () => this.openPending(),
+      "pending.edit": () => this.editStagedComment(),
+      "pending.drop": () => this.dropStagedComment(),
       "pending.submit": () => this.sendReview(),
       "report.open": () => this.commit(reduce(this.measured(), "report.open")),
       back: () => this.goBack(),
@@ -376,6 +382,8 @@ export class App {
   }
 
   private async stage(): Promise<void> {
+    const editing = this.state.editing
+    if (editing !== undefined) return this.restage(editing)
     const request = this.request()
     if (request === undefined) return this.commit(withNotice(this.state, "nothing to stage"))
     await this.run(stageComment(request))
@@ -384,6 +392,17 @@ export class App {
       branch === undefined ? [] : await this.run(listPending(this.repo, branch.branch))
     const next = withPending(this.state, pending, "review")
     this.commit(withNotice(next, `${pending.length} staged`))
+  }
+
+  private async restage(id: string): Promise<void> {
+    const branch = selectedBranch(this.state)
+    if (branch === undefined) return
+    await this.run(
+      editStaged({ repo: this.repo, branch: branch.branch, id, body: this.state.draft }),
+    )
+    const pending = await this.run(listPending(this.repo, branch.branch))
+    const next = withPending({ ...this.state, editing: undefined, draft: "" }, pending, "pending")
+    this.commit(withNoticeHere(next, "reworded"))
   }
 
   private loadSent(branch: string): Promise<TuiState["sent"]> {
@@ -424,6 +443,29 @@ export class App {
     const pending = await this.run(listPending(this.repo, branch.branch))
     if (pending.length === 0) return this.commit(withNotice(this.state, "nothing staged"))
     this.commit(withPending(this.state, pending, "pending"))
+  }
+
+  private editStagedComment(): void {
+    const entry = this.state.pending[this.state.pendingIndex]
+    if (entry?.id === undefined) return
+    this.commit({
+      ...this.state,
+      screen: "compose",
+      draft: entry.body,
+      editing: entry.id,
+    })
+  }
+
+  private async dropStagedComment(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    const entry = this.state.pending[this.state.pendingIndex]
+    if (branch === undefined || entry?.id === undefined) return
+    await this.run(dropStaged(this.repo, branch.branch, entry.id))
+    const pending = await this.run(listPending(this.repo, branch.branch))
+    const kept = withPending(this.state, pending, pending.length === 0 ? "review" : "pending")
+    const at = Math.min(this.state.pendingIndex, Math.max(0, pending.length - 1))
+    const said = pending.length === 0 ? "nothing staged" : `withdrawn — ${pending.length} left`
+    this.commit(withNoticeHere({ ...kept, pendingIndex: at }, said))
   }
 
   private async sendReview(): Promise<void> {

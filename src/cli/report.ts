@@ -51,7 +51,7 @@ const ADVICE: Readonly<Record<string, Advice>> = {
   UnknownComment: {
     exit: NOT_FOUND,
     suggestion:
-      "No comment carries that id. Ids come from `adiff comment take`; answer a comment it handed you.",
+      "No comment carries that id. `adiff comment take` reports the ids an agent can answer, and `adiff comment threads` reports every id on a branch.",
     retriable: false,
   },
   UnselectableRange: {

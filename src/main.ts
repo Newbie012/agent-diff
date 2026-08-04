@@ -22,6 +22,8 @@ import {
   setLayers,
   showLayers,
   stageComment,
+  editStaged,
+  dropStaged,
   submitComment,
   submitReview,
   takeComments,
@@ -120,6 +122,25 @@ const commentStage = Effect.fn("Main.commentStage")(function* (options: Options)
   yield* answer(options, { pending: report.pending })
 })
 
+const commentEdit = Effect.fn("Main.commentEdit")(function* (options: Options) {
+  const report = yield* editStaged({
+    repo: yield* required(options, "repo"),
+    branch: yield* required(options, "branch"),
+    id: yield* required(options, "id"),
+    body: yield* required(options, "body"),
+  })
+  yield* answer(options, { pending: report.pending })
+})
+
+const commentDrop = Effect.fn("Main.commentDrop")(function* (options: Options) {
+  const report = yield* dropStaged(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+  )
+  yield* answer(options, { pending: report.pending })
+})
+
 const reviewSubmit = Effect.fn("Main.reviewSubmit")(function* (options: Options) {
   const report = yield* submitReview(
     yield* required(options, "repo"),
@@ -183,6 +204,8 @@ const routes = {
   "branch list": branchList,
   "comment add": commentAdd,
   "comment stage": commentStage,
+  "comment edit": commentEdit,
+  "comment drop": commentDrop,
   "comment take": commentTake,
   "comment answer": commentAnswer,
   "comment threads": commentThreads,

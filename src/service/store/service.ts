@@ -33,6 +33,14 @@ type Shape = {
     worktreePath: string,
     comment: StoredComment,
   ) => Effect.Effect<ReadonlyArray<StoredComment>, StoreUnreadable | StoreUnwritable>
+  readonly restage: (
+    worktreePath: string,
+    comment: StoredComment,
+  ) => Effect.Effect<Option.Option<ReadonlyArray<StoredComment>>, StoreUnreadable | StoreUnwritable>
+  readonly unstage: (
+    worktreePath: string,
+    id: string,
+  ) => Effect.Effect<Option.Option<ReadonlyArray<StoredComment>>, StoreUnreadable | StoreUnwritable>
   readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
   readonly layers: (
     worktreePath: string,
@@ -100,6 +108,25 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
     return pending as ReadonlyArray<StoredComment>
   })
 
+  const restage = Effect.fn("Store.restage")(function* (
+    worktreePath: string,
+    comment: StoredComment,
+  ) {
+    const current = yield* state(worktreePath)
+    if (!current.pending.some((entry) => entry.id === comment.id)) return Option.none()
+    const pending = current.pending.map((entry) => (entry.id === comment.id ? comment : entry))
+    yield* saveState(worktreePath, { ...current, pending })
+    return Option.some(pending as ReadonlyArray<StoredComment>)
+  })
+
+  const unstage = Effect.fn("Store.unstage")(function* (worktreePath: string, id: string) {
+    const current = yield* state(worktreePath)
+    if (!current.pending.some((entry) => entry.id === id)) return Option.none()
+    const pending = current.pending.filter((entry) => entry.id !== id)
+    yield* saveState(worktreePath, { ...current, pending })
+    return Option.some(pending as ReadonlyArray<StoredComment>)
+  })
+
   const take = Effect.fn("Store.take")(function* (worktreePath: string) {
     const batches = yield* inbox(worktreePath)
     const current = yield* state(worktreePath)
@@ -108,7 +135,7 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
     return pending
   })
 
-  return { stage, take }
+  return { stage, restage, unstage, take }
 }
 
 const reportOps = (root: string) =>

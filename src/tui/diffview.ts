@@ -27,6 +27,7 @@ export type Note = {
   readonly body: string
   readonly sent: boolean
   readonly settled: boolean
+  readonly stale: boolean
   readonly asks: boolean
   readonly answers: ReadonlyArray<string>
 }
@@ -314,10 +315,12 @@ const wrap = (text: string, room: number): ReadonlyArray<string> => {
 }
 
 const headOf = (note: Note): string => {
-  if (note.settled) return `${marks().sent} settled`
-  if (note.asks) return `${marks().staged} asked back`
-  if (note.answers.length > 0) return `${marks().sent} answered`
-  return note.sent ? `${marks().sent} sent` : `${marks().staged} staged`
+  const moved = note.stale ? ", the branch moved on" : ""
+  if (note.settled) return `${marks().sent} settled${moved}`
+  if (note.asks) return `${marks().staged} asked back${moved}`
+  if (note.answers.length > 0) return `${marks().sent} answered${moved}`
+  if (note.sent) return `${marks().sent} sent${moved}`
+  return `${marks().staged} staged`
 }
 
 const spokenLines = (body: string, room: number): ReadonlyArray<string> => {

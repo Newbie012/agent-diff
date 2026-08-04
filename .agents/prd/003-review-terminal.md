@@ -39,6 +39,8 @@ is listed in the footer, so nothing has to be memorised or discovered.
    everywhere, so that reading three lines above one hunk costs three lines and not a whole file.
 7. As a `reviewer`, I want to pick up the agent's newest work without leaving the review, so that
    the diff I am reading is the code that exists.
+8. As a `reviewer`, I want to fix or withdraw a comment I have staged, so that reading back what I
+   wrote is worth doing.
 
 ## Implementation Decisions
 
@@ -62,7 +64,15 @@ Three screens, and the keys each answers to:
 | Branches | `j`/`down`, `k`/`up` move · `enter` opens · `q` quits |
 | Review | `j`/`down`, `k`/`up` move the cursor · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `c`/`enter` composes · `esc` returns to branches · `q` quits |
 | Compose | typing edits the draft · `backspace` deletes · `ctrl+s` sends · `esc` discards |
+| Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
 
+- **Rewording a staged comment reopens the compose panel on its text**, and staging again replaces
+  that comment rather than adding one. The comment keeps its id and its
+  [anchor](CONTEXT.md#anchor), so it stays the comment the reviewer wrote, wherever the cursor has
+  since moved.
+- **Withdrawing is one deliberate keystroke and no confirmation.** `X` takes a shift, so it is not
+  reached by accident while scanning the list, and a prompt for every withdrawal would cost more
+  than retyping the occasional comment. The notice names what went.
 - **The footer is generated from the bindings**, never written by hand. A key that exists is
   listed; a key that is listed exists.
 - **The cursor is always on a row**, and the view follows it. Scroll position is derived from the

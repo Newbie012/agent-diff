@@ -409,6 +409,7 @@ const notesOf = (
       body: entry.body,
       sent,
       settled: entry.settled === true,
+      stale: entry.stale === true,
       asks: entry.asks === true,
       answers: entry.answers ?? [],
     }))

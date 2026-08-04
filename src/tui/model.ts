@@ -1,12 +1,14 @@
 import { Option } from "effect"
 
 export type StagedComment = {
+  readonly id?: string
   readonly file: string
   readonly side: "old" | "new"
   readonly start: number
   readonly end: number
   readonly body: string
   readonly settled?: boolean
+  readonly stale?: boolean
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
 }
@@ -45,6 +47,7 @@ export type TuiState = {
   readonly pending: ReadonlyArray<StagedComment>
   readonly sent: ReadonlyArray<StagedComment>
   readonly pendingIndex: number
+  readonly editing: string | undefined
   readonly viewport: number
   readonly context: number
   readonly top: number
@@ -81,6 +84,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   pending: [],
   sent: [],
   pendingIndex: 0,
+  editing: undefined,
   viewport: 20,
   context: 3,
   top: 0,
@@ -317,7 +321,17 @@ export const snippetOf = (state: TuiState, limit: number): ReadonlyArray<string>
 const lineOf = (row: Patch["rows"][number]): string =>
   Option.match(row.newLine, { onNone: () => "-", onSome: (line) => String(line) })
 
+export const editedComment = (state: TuiState): StagedComment | undefined =>
+  state.editing === undefined
+    ? undefined
+    : state.pending.find((entry) => entry.id === state.editing)
+
 export const composeTarget = (state: TuiState): string => {
+  const edited = editedComment(state)
+  if (edited !== undefined) {
+    const span = edited.start === edited.end ? `${edited.start}` : `${edited.start}-${edited.end}`
+    return `Comment on ${edited.file}:${span}`
+  }
   const patch = selectedPatch(state)
   if (patch === undefined) return ""
   const [from, to] = selectionRange(state)
