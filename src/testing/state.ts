@@ -6,8 +6,11 @@ import { promisify } from "node:util"
 
 const exec = promisify(execFile)
 
+export type DriverOptions = { readonly remember?: boolean }
+
 export type DriverState = {
   readonly repo: string
+  readonly sessionPath: string | undefined
   readonly storeRoot: string
   readonly git: (cwd: string, args: ReadonlyArray<string>) => Promise<string>
   readonly dispose: () => Promise<void>
@@ -29,7 +32,7 @@ export const series = async <A>(
   await series(rest, run)
 }
 
-export const createDriverState = async (): Promise<DriverState> => {
+export const createDriverState = async (options: DriverOptions = {}): Promise<DriverState> => {
   const workspace = await mkdtemp(join(tmpdir(), "adiff-"))
   const repo = join(workspace, "repo")
   const storeRoot = join(workspace, "store")
@@ -44,6 +47,7 @@ export const createDriverState = async (): Promise<DriverState> => {
 
   return {
     repo,
+    sessionPath: options.remember === true ? join(workspace, "session.json") : undefined,
     storeRoot,
     git,
     dispose: () => rm(workspace, { recursive: true, force: true }),

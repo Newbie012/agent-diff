@@ -1,26 +1,61 @@
+const ink = "#c8d0dc"
+const inkMuted = "#8b95a7"
+const inkFaint = "#5b6577"
+
+const blue = "#7aa2f7"
+const green = "#7bc275"
+const red = "#e06c75"
+const amber = "#e0af68"
+const violet = "#bb9af7"
+
 export const palette = {
-  ink: "#d8dee9",
-  faint: "#6b7280",
-  accent: "#7aa2f7",
-  cursor: "#1f2430",
-  selection: "#2c3a57",
-  overlay: "#161922",
-  added: "#7bc275",
-  removed: "#e06c75",
-  addedBg: "#12301c",
-  removedBg: "#33161a",
+  ink,
+  muted: inkMuted,
+  faint: inkFaint,
+  accent: blue,
+  attention: amber,
+  added: green,
+  removed: red,
+
+  panel: "#0e1117",
+  overlay: "#181c26",
+  scrim: "#000000a0",
+  rule: "#262b37",
+
+  note: "#9aa7c7",
+  cursor: "#232936",
+  selection: "#2b3854",
+  marker: blue,
+
+  addedBg: "#0f2a19",
+  removedBg: "#2e1418",
+  addedGutter: "#1d4a2b",
+  removedGutter: "#4a1f26",
 } as const
 
 export const syntaxTheme = {
-  keyword: { fg: "#c678dd" },
-  string: { fg: "#98c379" },
-  number: { fg: "#d19a66" },
-  comment: { fg: palette.faint, italic: true },
-  function: { fg: "#61afef" },
-  type: { fg: "#e5c07b" },
-  variable: { fg: palette.ink },
-  constant: { fg: "#d19a66" },
-  operator: { fg: "#56b6c2" },
-  punctuation: { fg: palette.faint },
-  default: { fg: palette.ink },
+  keyword: { fg: violet },
+  "keyword.function": { fg: violet },
+  "keyword.return": { fg: violet },
+  string: { fg: green },
+  number: { fg: amber },
+  boolean: { fg: amber },
+  comment: { fg: inkFaint, italic: true },
+  function: { fg: blue },
+  "function.call": { fg: blue },
+  method: { fg: blue },
+  type: { fg: "#7dcfff" },
+  constructor: { fg: "#7dcfff" },
+  property: { fg: ink },
+  variable: { fg: ink },
+  "variable.parameter": { fg: "#e0d5b7" },
+  constant: { fg: amber },
+  operator: { fg: inkMuted },
+  punctuation: { fg: inkFaint },
+  "punctuation.bracket": { fg: inkFaint },
+  "punctuation.delimiter": { fg: inkFaint },
+  note: { fg: "#9aa7c7", italic: true },
+  "note.sent": { fg: "#6d7893", italic: true },
+  "note.label": { fg: "#7aa2f7" },
+  default: { fg: ink },
 }
