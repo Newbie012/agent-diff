@@ -56,6 +56,7 @@ export const syntaxTheme = {
   "punctuation.delimiter": { fg: inkFaint },
   gap: { fg: inkFaint },
   note: { fg: "#9aa7c7", italic: true },
+  prose: { fg: "#a9b4cc" },
   "note.sent": { fg: "#6d7893", italic: true },
   "note.label": { fg: "#7aa2f7" },
   default: { fg: ink },

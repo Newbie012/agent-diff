@@ -25,6 +25,13 @@ export type Span = {
   readonly end: number
 }
 
+export type ProseAnchor = {
+  readonly path: string
+  readonly line: number
+  readonly markdown: string
+  readonly after: boolean
+}
+
 export type Coverage = {
   readonly total: number
   readonly covered: number

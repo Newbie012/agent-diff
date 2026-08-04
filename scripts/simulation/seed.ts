@@ -51,8 +51,20 @@ const layers = {
     },
     {
       title: "Raise those errors from the invitation client",
-      note: "Every call now checks the response. A non-2xx that no case names raises Upstream carrying the status, so nothing fails silently.",
-      spans: [{ path: "src/api/invitations.ts", start: 1, end: 17 }],
+      blocks: [
+        {
+          kind: "prose",
+          markdown:
+            "Every call checks the response before it returns, so a caller never reads a body that is not there.",
+        },
+        { kind: "code", path: "src/api/invitations.ts", start: 1, end: 9 },
+        {
+          kind: "prose",
+          markdown:
+            "A non-2xx that no case names raises Upstream carrying the status, so nothing fails silently.",
+        },
+        { kind: "code", path: "src/api/invitations.ts", start: 10, end: 17 },
+      ],
     },
     {
       title: "Write down what the settings page should do with each one",

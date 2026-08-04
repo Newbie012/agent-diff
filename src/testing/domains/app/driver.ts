@@ -16,10 +16,15 @@ export type CliResult = {
   readonly envelope: unknown
 }
 
+export type BlockInput =
+  | { readonly kind: "prose"; readonly markdown: string }
+  | { readonly kind: "code"; readonly path: string; readonly start: number; readonly end: number }
+
 export type LayerInput = {
   readonly title: string
   readonly note?: string
-  readonly spans: ReadonlyArray<{ readonly path: string; readonly start: number; readonly end: number }>
+  readonly blocks?: ReadonlyArray<BlockInput>
+  readonly spans?: ReadonlyArray<{ readonly path: string; readonly start: number; readonly end: number }>
 }
 
 export type LayersInput = {

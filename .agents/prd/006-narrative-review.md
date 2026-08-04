@@ -79,6 +79,22 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   the layer under the cursor, the other closes it. An open layer shows its prose under the title,
   wrapped to the rail and set back from it. A layer whose author wrote no prose says so.
 
+### Prose sits beside the code it describes
+
+A layer is an ordered list of blocks: prose, then the code that prose introduces, then more of
+each. Reading a layer in the terminal presents them in that order.
+
+- **Prose renders in the diff, above the code it introduces.** Each prose block anchors to the
+  first line of the code block that follows it, and prose written after the last code block anchors
+  below that block's last line. Prose the layer wrote about a file the branch does not touch is
+  dropped.
+- **Prose rows carry no line number and no diff sign.** They are not part of the file, so they take
+  no number in the gutter, and a selection cannot include them. Line numbers, comment anchoring and
+  gap expansion read the code rows only, so a comment written under a prose block anchors to the
+  code line it sits on.
+- **The file view stays plain.** Prose belongs to a layer, so the file tree view shows the diff
+  alone.
+
 ### A stale layers is shown, and says so
 
 A layers records the commit it was written against. Once the branch moves past that commit, the
@@ -120,6 +136,10 @@ surface in `src/testing/layers.test.ts`, the terminal in `src/testing/layers-rai
 - Opening a layer shows its prose and keeps the file count on the title line; closing it hides the
   prose again; a layer with no prose says so instead of opening onto nothing.
 - A branch with no layers shows the file tree, unchanged.
+- A layer's prose renders above the code it introduces, in the order the layer lists its blocks,
+  with no line number, and switching to the file tree leaves the diff plain.
+- A comment written on a line below a prose block comes back from `comment take` against that
+  file and line.
 
 ## Out of Scope
 
