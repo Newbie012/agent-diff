@@ -6,7 +6,8 @@ Review the work an agent did in a git worktree, in your terminal, and hand your 
 the agent still sitting in that worktree. You select lines the way you would on GitHub, write a
 comment, and the agent picks it up.
 
-<pre align="center">npm i -g @eliya-oss/agent-diff@alpha</pre>
+<pre align="center">brew install Newbie012/tap/adiff
+npm i -g @eliya-oss/agent-diff@alpha</pre>
 
 </div>
 
@@ -65,9 +66,14 @@ Teaches an agent the whole loop: collect comments, act on them, write the story.
 
 ## Requirements
 
-Node 26 or newer. adiff draws through opentui, which reaches its native renderer over `node:ffi`, a
-module Node exposes behind `--experimental-ffi` from 26 onward. Every entry point in this repo
-passes the flag for you.
+Either install gives you an `adiff` on your PATH. Brew brings a Node 26 along with it, so
+everything works the moment it finishes.
+
+The commands run on Node 22 or newer. The terminal is the one part that wants Node 26: it draws
+through opentui, which reaches its native renderer over `node:ffi`, a module Node exposes behind
+`--experimental-ffi` from 26 onward. When you open the terminal on an older Node, adiff looks for a
+Node 26 among your fnm, nvm, asdf, volta and Homebrew installs and runs the terminal on that, so a
+global npm install keeps working across a version switch.
 
 pnpm 12 is a Rust rewrite and still in beta, so
 [corepack cannot install it](https://pnpm.io/installation):
