@@ -50,6 +50,7 @@ export type TuiState = {
   readonly focus: "tree" | "diff"
   readonly navOpen: boolean
   readonly steps: ReadonlyArray<StoryStep>
+  readonly storyStale: boolean
   readonly stepIndex: number
   readonly openSteps: ReadonlyArray<number>
   readonly rail: "tree" | "steps"
@@ -84,6 +85,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   focus: "diff",
   navOpen: true,
   steps: [],
+  storyStale: false,
   stepIndex: 0,
   openSteps: [],
   rail: "tree",

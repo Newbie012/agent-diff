@@ -443,13 +443,18 @@ const branchHeading = (room: number): string =>
 const atHome = (state: TuiState): boolean =>
   state.screen === "branches" || (state.screen === "palette" && state.returnTo === "branches")
 
+const storyCell = (branch: TuiState["branches"][number]): string => {
+  if (branch.steps === 0) return ""
+  return branch.stale ? `${branch.steps} stale` : `${branch.steps} story`
+}
+
 const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
   lead: `${here ? marks().cursor : " "} `,
   name: clip(branch.branch, room).padEnd(room),
   files: `${branch.files}`.padStart(5),
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),
-  story: branch.steps > 0 ? `${branch.steps} story` : "",
+  story: storyCell(branch),
   state: waitingLabel(branch).trim(),
 })
 
@@ -733,7 +738,10 @@ export class Screen {
       fg(stepPaint(state, row))(`${stepText(state, row, room)}\n`),
     )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
-    return new StyledText([...rows, ...more])
+    const warn = state.storyStale
+      ? [fg(palette.attention)(`  stale, the branch moved on\n\n`)]
+      : []
+    return new StyledText([...warn, ...rows, ...more])
   }
 
   private paintDiff(state: TuiState): void {

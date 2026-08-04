@@ -278,10 +278,15 @@ export const withPending = (
 
 export const withSent = (state: TuiState, sent: TuiState["sent"]): TuiState => ({ ...state, sent })
 
-export const withStory = (state: TuiState, steps: TuiState["steps"]): TuiState => {
+export const withStory = (
+  state: TuiState,
+  told: { steps: TuiState["steps"]; stale: boolean },
+): TuiState => {
+  const steps = told.steps
   const opened: TuiState = {
     ...state,
     steps,
+    storyStale: told.stale,
     stepIndex: 0,
     openSteps: [],
     rail: steps.length === 0 ? "tree" : "steps",

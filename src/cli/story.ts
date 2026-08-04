@@ -221,6 +221,10 @@ export const listStorySteps = Effect.fn("Cli.listStorySteps")(function* (
 ) {
   const worktree = yield* findBranch(repo, branch)
   const found = yield* storyOf(worktree)
-  if (Option.isNone(found)) return [] as ReadonlyArray<StoryStep>
-  return stepsOf(yield* patchesOf(worktree), found.value)
+  if (Option.isNone(found)) return { steps: [] as ReadonlyArray<StoryStep>, stale: false }
+  const patches = yield* patchesOf(worktree)
+  return {
+    steps: stepsOf(patches, found.value),
+    stale: found.value.head !== worktree.head,
+  }
 })
