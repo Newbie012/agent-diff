@@ -69,7 +69,7 @@ const PANE_CHROME = 3
 const BRANCH_WIDTH = 82
 const BRANCH_NAME = 44
 const BRANCH_NAME_MIN = 12
-const BRANCH_TAIL = 35
+const BRANCH_TAIL = 45
 const MODAL_MARGIN = 4
 
 const bodyRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - BODY_BORDER)
@@ -424,6 +424,7 @@ type Cells = {
   readonly files: string
   readonly added: string
   readonly gone: string
+  readonly story: string
   readonly state: string
 }
 
@@ -431,10 +432,13 @@ const nameRoom = (pane: number): number =>
   Math.max(BRANCH_NAME_MIN, Math.min(BRANCH_NAME, pane - BRANCH_TAIL))
 
 const columns = (cells: Cells, room: number): string =>
-  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}   ${cells.state}`
+  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.story.padStart(8)}   ${cells.state}`
 
 const branchHeading = (room: number): string =>
-  `  ${columns({ name: "WORKTREE", files: "FILES", added: "+", gone: "-", state: "STATE" }, room)}`
+  `  ${columns(
+    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", story: "STORY", state: "STATE" },
+    room,
+  )}`
 
 const atHome = (state: TuiState): boolean =>
   state.screen === "branches" || (state.screen === "palette" && state.returnTo === "branches")
@@ -445,6 +449,7 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
   files: `${branch.files}`.padStart(5),
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),
+  story: branch.steps > 0 ? `${branch.steps} story` : "",
   state: waitingLabel(branch).trim(),
 })
 
@@ -823,6 +828,7 @@ export class Screen {
         fg(palette.faint)(cells.files),
         fg(palette.added)(cells.added),
         fg(palette.removed)(cells.gone),
+        fg(palette.accent)(`  ${cells.story.padStart(8)}`),
         fg(palette.attention)(`   ${cells.state}\n`),
       ]
     })
