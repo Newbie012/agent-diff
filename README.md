@@ -6,7 +6,7 @@ Review the work an agent did in a git worktree, in your terminal, and hand your 
 the agent still sitting in that worktree. You select lines the way you would on GitHub, write a
 comment, and the agent picks it up.
 
-<pre align="center">git clone https://github.com/Newbie012/agent-diff.git && cd agent-diff && pnpm install</pre>
+<pre align="center">npm i -g @eliya-oss/agent-diff@alpha</pre>
 
 </div>
 
@@ -15,10 +15,10 @@ comment, and the agent picks it up.
 ```bash
 adiff review open      --repo .
 adiff branch list      --repo . --fields branch,files
-adiff comment add      --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
-adiff comment stage    --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
-adiff review submit    --repo . --branch cdr-1
-adiff file vouch       --repo . --branch cdr-1 --file src/api.ts
+adiff comment add      --repo . --branch add-teammate-invitations --file src/api/invitations.ts --start 4 --end 5 --body "why"
+adiff comment stage    --repo . --branch add-teammate-invitations --file src/api/invitations.ts --start 4 --end 5 --body "why"
+adiff review submit    --repo . --branch add-teammate-invitations
+adiff file vouch       --repo . --branch add-teammate-invitations --file src/api/invitations.ts
 adiff story show       --worktree . --fields covered,total,uncovered
 adiff describe
 ```
