@@ -2,6 +2,7 @@ import { CodeRenderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { GitLive } from "../../../service/git/index.ts"
+import { ForgeLive } from "../../../service/forge/index.ts"
 import { storeAt } from "../../../service/store/index.ts"
 import { launch } from "../../../tui/index.ts"
 import type { App } from "../../../tui/index.ts"
@@ -54,7 +55,7 @@ export class ScreenTestDriver {
     })
     this.setup = setup
     this.watch()
-    const layer = Layer.mergeAll(GitLive, storeAt(this.state.storeRoot))
+    const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(this.state.storeRoot))
     const scope = Scope.makeUnsafe()
     this.scope = scope
     const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))

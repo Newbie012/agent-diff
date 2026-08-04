@@ -1,4 +1,6 @@
 import { execFile } from "node:child_process"
+import { mkdir, writeFile } from "node:fs/promises"
+import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import type { DriverState } from "../../state.ts"
@@ -30,6 +32,12 @@ export type LayerInput = {
 export type LayersInput = {
   readonly summary?: string
   readonly layers: ReadonlyArray<LayerInput>
+}
+
+export type PullInput = {
+  readonly branch: string
+  readonly state: "open" | "merged" | "closed"
+  readonly draft?: boolean
 }
 
 export type CommentOptions = {
@@ -86,6 +94,28 @@ export class AppTestDriver {
       )
       child.stdin?.end(input)
     })
+  }
+
+  async setPullRequests(pulls: ReadonlyArray<PullInput>, delayMs = 0): Promise<void> {
+    const bin = join(this.state.workspace, "bin")
+    await mkdir(bin, { recursive: true })
+    const rows = pulls.map((pull) => ({
+      headRefName: pull.branch,
+      state: pull.state.toUpperCase(),
+      isDraft: pull.draft === true,
+    }))
+    const script = [
+      "#!/bin/sh",
+      delayMs > 0 ? `sleep ${(delayMs / 1000).toFixed(2)}` : "",
+      `cat <<'JSON'`,
+      JSON.stringify(rows),
+      "JSON",
+    ]
+      .filter((line) => line.length > 0)
+      .join("\n")
+    const path = join(bin, "gh")
+    await writeFile(path, `${script}\n`, { mode: 0o755 })
+    process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
   }
 
   runLayersSet(worktree: string, layers: LayersInput | string): Promise<CliResult> {

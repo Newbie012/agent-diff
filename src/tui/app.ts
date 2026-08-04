@@ -19,6 +19,7 @@ import {
 } from "../cli/index.ts"
 import type { Git } from "../service/git/index.ts"
 import type { Store } from "../service/store/index.ts"
+import { Forge } from "../service/forge/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { gapAtRow, GAP_CHUNK } from "./gaps.ts"
 import {
@@ -47,6 +48,7 @@ import {
   withNotice,
   withContext,
   withBranches,
+  withPulls,
   withFull,
   withPatches,
   withPending,
@@ -58,7 +60,7 @@ import {
 import { Screen } from "./render.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
 
-type Needs = Git | Store
+type Needs = Git | Store | Forge
 
 export const NOTICE_MS = 2200
 
@@ -126,6 +128,7 @@ export class App {
     renderer.on("frame", () => this.syncGeometry())
     renderer.setFrameCallback(async () => this.applyWheel())
     const resume = options.resume
+    this.dispatchTask(() => this.loadPulls())
     if (resume !== undefined) this.dispatchTask(() => this.resume(resume))
   }
 
@@ -369,6 +372,14 @@ export class App {
 
   private loadSent(branch: string): Promise<TuiState["sent"]> {
     return this.run(listSent(this.repo, branch))
+  }
+
+  private async loadPulls(): Promise<void> {
+    const forge = await this.run(Effect.map(Forge, (service) => service))
+    const pulls = await this.run(forge.pulls(this.repo))
+    if (pulls.length === 0) return
+    const found = Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state]))
+    this.commit(withPulls(this.state, found))
   }
 
   private async loadSource(): Promise<void> {

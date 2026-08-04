@@ -463,6 +463,11 @@ const layersCell = (branch: TuiState["branches"][number]): string => {
   return branch.stale ? `${branch.layers} stale` : `${branch.layers} layers`
 }
 
+const stateCell = (state: TuiState, branch: TuiState["branches"][number]): string =>
+  [state.pulls[branch.branch] ?? "", waitingLabel(branch).trim()]
+    .filter((part) => part.length > 0)
+    .join("  ")
+
 const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
   lead: `${here ? marks().cursor : " "} `,
   name: clip(branch.branch, room).padEnd(room),
@@ -470,7 +475,7 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),
   layers: layersCell(branch),
-  state: waitingLabel(branch).trim(),
+  state: "",
 })
 
 const headerParts = (state: TuiState, branch: string, path: string): ReadonlyArray<string> => [
@@ -856,7 +861,7 @@ export class Screen {
         fg(palette.added)(cells.added),
         fg(palette.removed)(cells.gone),
         fg(palette.accent)(`  ${cells.layers.padStart(8)}`),
-        fg(palette.attention)(`   ${cells.state}\n`),
+        fg(palette.attention)(`   ${stateCell(state, branch)}\n`),
       ]
     })
     return new StyledText([...heading, ...rows])

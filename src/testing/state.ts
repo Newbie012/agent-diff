@@ -10,6 +10,7 @@ export type DriverOptions = { readonly remember?: boolean }
 
 export type DriverState = {
   readonly repo: string
+  readonly workspace: string
   readonly sessionPath: string | undefined
   readonly storeRoot: string
   readonly git: (cwd: string, args: ReadonlyArray<string>) => Promise<string>
@@ -47,6 +48,7 @@ export const createDriverState = async (options: DriverOptions = {}): Promise<Dr
 
   return {
     repo,
+    workspace,
     sessionPath: options.remember === true ? join(workspace, "session.json") : undefined,
     storeRoot,
     git,

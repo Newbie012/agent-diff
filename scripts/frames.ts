@@ -7,6 +7,7 @@ import { createTestRenderer } from "@opentui/core/testing"
 import { toAnsi, toHtml, toPlain, type Line, type Shot } from "./lib/paint.ts"
 import { Effect, Layer, Scope } from "effect"
 import { GitLive } from "../src/service/git/index.ts"
+import { ForgeLive } from "../src/service/forge/index.ts"
 import { storeAt } from "../src/service/store/index.ts"
 import { launch, type App } from "../src/tui/index.ts"
 import { seedRemarks, seedLayers } from "./simulation/seed.ts"
@@ -25,7 +26,7 @@ await seedRemarks(space)
 await seedLayers(space)
 const setup = await createTestRenderer({ width, height })
 const scope = Scope.makeUnsafe()
-const layer = Layer.mergeAll(GitLive, storeAt(space.storeRoot))
+const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot))
 const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
 const app: App = await Effect.runPromise(
   launch(space.repo, setup.renderer).pipe(Effect.provideContext(context)),
