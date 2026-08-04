@@ -1,3 +1,4 @@
+import { CodeRenderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { GitLive } from "../../../service/git/index.ts"
@@ -194,9 +195,21 @@ export class ScreenTestDriver {
     return attempt(PAINT_ATTEMPTS)
   }
 
+  private async settleHighlighting(): Promise<void> {
+    const setup = this.active()
+    const attempt = async (left: number): Promise<void> => {
+      await setup.waitForVisualIdle()
+      const found = setup.renderer.root.findDescendantById("diff-code")
+      if (left === 0 || !(found instanceof CodeRenderable) || !found.isHighlighting) return
+      await found.highlightingDone
+      return attempt(left - 1)
+    }
+    await attempt(PAINT_ATTEMPTS)
+  }
+
   async listForegroundsOn(text: string): Promise<ReadonlyArray<string>> {
     const setup = this.active()
-    await setup.waitForVisualIdle()
+    await this.settleHighlighting()
     this.guard()
     const line = setup
       .captureSpans()
