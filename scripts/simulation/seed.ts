@@ -41,6 +41,39 @@ export const remarks: ReadonlyArray<Remark> = [
   },
 ]
 
+const story = {
+  summary: "Invitations fail loudly, and the settings page can react",
+  steps: [
+    {
+      title: "Give each way an invitation can fail its own error",
+      note: "One thrown shape per failure, so a caller can tell a repeat invite from a team that has run out of seats without reading the status code.",
+      spans: [{ path: "src/api/errors.ts", start: 1, end: 21 }],
+    },
+    {
+      title: "Raise those errors from the invitation client",
+      note: "Every call now checks the response. A non-2xx that no case names raises Upstream carrying the status, so nothing fails silently.",
+      spans: [{ path: "src/api/invitations.ts", start: 1, end: 17 }],
+    },
+    {
+      title: "Write down what the settings page should do with each one",
+      spans: [{ path: "docs/invitations.md", start: 1, end: 12 }],
+    },
+  ],
+}
+
+export const seedStory = async (space: Workspace): Promise<void> => {
+  const branch = space.branches.find((entry) => entry.name === "add-teammate-invitations")
+  if (branch === undefined) return
+  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
+  const child = execFile(
+    NODE,
+    runArgs(["story", "set", "--worktree", branch.worktree, "--json", "-"]),
+    { env, encoding: "utf8" },
+  )
+  child.stdin?.end(JSON.stringify(story))
+  await new Promise((resolve) => child.on("close", resolve))
+}
+
 export const seedRemarks = async (space: Workspace): Promise<void> => {
   const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
   await series(remarks, async (remark) => {

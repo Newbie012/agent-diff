@@ -198,14 +198,14 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "tree.collapse",
-    title: "Collapse the file tree",
+    title: "Close the folder or step",
     category: "Files",
     keys: ["h"],
     screens: ["review"],
   }),
   command({
     action: "tree.expand",
-    title: "Expand the file tree",
+    title: "Open the folder or step",
     category: "Files",
     keys: ["l"],
     screens: ["review"],

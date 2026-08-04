@@ -4,6 +4,8 @@ import { REMAINDER_TITLE, type Coverage, type Span, type Step, type Story, type 
 
 type CodeBlock = Extract<StoryBlock, { kind: "code" }>
 
+type ProseBlock = Extract<StoryBlock, { kind: "prose" }>
+
 const codeBlockOf = (span: Span): CodeBlock => ({
   kind: "code",
   path: span.path,
@@ -13,6 +15,13 @@ const codeBlockOf = (span: Span): CodeBlock => ({
 
 export const codeBlocks = (step: Step): ReadonlyArray<CodeBlock> =>
   step.blocks.filter((block): block is CodeBlock => block.kind === "code")
+
+export const noteOf = (step: Step): string =>
+  step.blocks
+    .filter((block): block is ProseBlock => block.kind === "prose")
+    .map((block) => block.markdown.trim())
+    .filter((markdown) => markdown.length > 0)
+    .join(" ")
 
 export const spansOf = (steps: ReadonlyArray<Step>): ReadonlyArray<Span> =>
   steps.flatMap((step) => codeBlocks(step).map(({ path, start, end }) => ({ path, start, end })))

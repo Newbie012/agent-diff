@@ -18,8 +18,11 @@ import {
   markedRows,
   newLineAt,
   onSteps,
+  railWindow,
   selectionReadout,
-  stepWindow,
+  stepOpen,
+  stepRows,
+  type StepRow,
   snippetOf,
   reviewedCount,
   selectedBranch,
@@ -444,16 +447,43 @@ const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
 }
 
 const STEP_NUMBER = 3
+const STEP_LEAD = 8
+const NOTE_LEAD = 10
+const STEP_GAP = 1
 
-const stepLine = (state: TuiState, index: number, pane: number): string => {
-  const step = state.steps[index]
-  if (step === undefined) return ""
-  const here = index === state.stepIndex
+type StepRoom = { readonly title: number; readonly note: number; readonly tally: number }
+
+const stepRoom = (state: TuiState, pane: number): StepRoom => {
+  const tally = Math.max(1, ...state.steps.map((step) => `${step.files.length}`.length))
+  return {
+    title: Math.max(4, pane - PANE_CHROME - STEP_LEAD - STEP_GAP - tally),
+    note: Math.max(4, pane - PANE_CHROME - NOTE_LEAD),
+    tally,
+  }
+}
+
+const stepFold = (state: TuiState, index: number): string => {
+  if (stepOpen(state, index)) return "▾"
+  return (state.steps[index]?.note ?? "").length === 0 ? " " : "▸"
+}
+
+const stepHead = (state: TuiState, row: StepRow): string => {
+  if (!row.lead) return " ".repeat(STEP_LEAD)
+  const here = row.index === state.stepIndex
   const mark = here ? (state.focus === "tree" ? "▸" : "·") : " "
-  const number = `${index + 1}.`.padStart(STEP_NUMBER)
-  const tail = `${step.files.length}`
-  const room = Math.max(4, pane - PANE_CHROME - STEP_NUMBER - tail.length - 3)
-  return `${mark} ${number} ${clip(step.title, room).padEnd(room)}${tail}`
+  return `${mark} ${stepFold(state, row.index)} ${`${row.index + 1}.`.padStart(STEP_NUMBER)} `
+}
+
+const stepText = (state: TuiState, row: StepRow, room: StepRoom): string => {
+  if (row.kind === "note") return `${" ".repeat(NOTE_LEAD)}${row.text}`
+  const count = row.lead ? `${state.steps[row.index]?.files.length ?? 0}` : ""
+  const tail = count.padStart(room.tally + STEP_GAP)
+  return `${stepHead(state, row)}${row.text.padEnd(room.title)}${tail}`
+}
+
+const stepPaint = (state: TuiState, row: StepRow): string => {
+  if (row.kind === "note") return palette.faint
+  return row.index === state.stepIndex ? palette.ink : palette.muted
 }
 
 export type Mouse = {
@@ -655,13 +685,11 @@ export class Screen {
 
   private stepRail(state: TuiState): StyledText {
     const height = Math.max(1, this.listPane.height - 1)
-    const pane = this.paneRoom()
-    const window = stepWindow(state, height)
-    const rows = window.titles.map((_, offset) => {
-      const index = window.first + offset
-      const paint = index === state.stepIndex ? palette.ink : palette.muted
-      return fg(paint)(`${stepLine(state, index, pane)}\n`)
-    })
+    const room = stepRoom(state, this.paneRoom())
+    const window = railWindow(stepRows(state, room.title, room.note), height, state.stepIndex)
+    const rows = window.rows.map((row) =>
+      fg(stepPaint(state, row))(`${stepText(state, row, room)}\n`),
+    )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
     return new StyledText([...rows, ...more])
   }

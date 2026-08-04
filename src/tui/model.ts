@@ -11,6 +11,13 @@ import type { Patch } from "../domain/patch/index.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, StoryStep } from "../cli/index.ts"
 
+export type StepRow = {
+  readonly index: number
+  readonly kind: "title" | "note"
+  readonly text: string
+  readonly lead: boolean
+}
+
 export type Screen = "branches" | "review" | "compose" | "palette" | "pending" | "report"
 
 export type TuiState = {
@@ -41,6 +48,7 @@ export type TuiState = {
   readonly navOpen: boolean
   readonly steps: ReadonlyArray<StoryStep>
   readonly stepIndex: number
+  readonly openSteps: ReadonlyArray<number>
   readonly rail: "tree" | "steps"
 }
 
@@ -72,6 +80,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   navOpen: true,
   steps: [],
   stepIndex: 0,
+  openSteps: [],
   rail: "tree",
 })
 
@@ -95,14 +104,65 @@ export const stepHolding = (state: TuiState, fileIndex: number): number => {
   return at === -1 ? state.stepIndex : at
 }
 
-export const stepWindow = (
+export const stepOpen = (state: TuiState, stepIndex: number): boolean =>
+  state.openSteps.includes(stepIndex)
+
+const chunked = (word: string, room: number): ReadonlyArray<string> =>
+  word.length <= room ? [word] : [word.slice(0, room), ...chunked(word.slice(room), room)]
+
+const packed = (lines: ReadonlyArray<string>, word: string, room: number): ReadonlyArray<string> => {
+  const last = lines.at(-1)
+  if (last === undefined || last.length + 1 + word.length > room) return [...lines, word]
+  return [...lines.slice(0, -1), `${last} ${word}`]
+}
+
+export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
+  const width = Math.max(1, room)
+  return text
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .flatMap((word) => chunked(word, width))
+    .reduce<ReadonlyArray<string>>((lines, word) => packed(lines, word, width), [])
+}
+
+export const NO_NOTE = "no note"
+
+const noteRows = (state: TuiState, stepIndex: number, room: number): ReadonlyArray<StepRow> => {
+  const lines = wrapped(state.steps[stepIndex]?.note ?? "", room)
+  const shown = lines.length === 0 ? [NO_NOTE] : lines
+  return shown.map((text) => ({ index: stepIndex, kind: "note" as const, text, lead: false }))
+}
+
+const titleRows = (state: TuiState, stepIndex: number, room: number): ReadonlyArray<StepRow> =>
+  wrapped(state.steps[stepIndex]?.title ?? "", room).map((text, at) => ({
+    index: stepIndex,
+    kind: "title" as const,
+    text,
+    lead: at === 0,
+  }))
+
+export const stepRows = (
   state: TuiState,
+  titleRoom: number,
+  noteRoom: number,
+): ReadonlyArray<StepRow> =>
+  state.steps.flatMap((_, index) =>
+    stepOpen(state, index)
+      ? [...titleRows(state, index, titleRoom), ...noteRows(state, index, noteRoom)]
+      : titleRows(state, index, titleRoom),
+  )
+
+export const railWindow = (
+  rows: ReadonlyArray<StepRow>,
   height: number,
-): { readonly first: number; readonly titles: ReadonlyArray<string>; readonly more: number } => {
-  const titles = state.steps.map((step) => step.title)
-  if (titles.length <= height) return { first: 0, titles, more: 0 }
-  const start = Math.max(0, Math.min(titles.length - height, state.stepIndex - Math.floor(height / 2)))
-  return { first: start, titles: titles.slice(start, start + height), more: titles.length - height }
+  stepIndex: number,
+): { readonly rows: ReadonlyArray<StepRow>; readonly more: number } => {
+  if (rows.length <= height) return { rows, more: 0 }
+  const first = Math.max(0, rows.findIndex((row) => row.index === stepIndex))
+  const block = rows.findLastIndex((row) => row.index === stepIndex) - first + 1
+  const wanted = block >= height ? first : first - Math.floor((height - block) / 2)
+  const start = Math.max(0, Math.min(rows.length - height, wanted))
+  return { rows: rows.slice(start, start + height), more: rows.length - height }
 }
 
 export const selectedBranch = (state: TuiState): BranchSummary | undefined =>

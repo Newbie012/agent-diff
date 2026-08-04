@@ -2,6 +2,7 @@ import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import {
   codeBlocks,
+  noteOf,
   statusOf,
   withFullCoverage,
   type Span,
@@ -17,6 +18,7 @@ import { MalformedStory, NoStory, UnknownWorktree } from "./error.ts"
 
 export type StoryStep = {
   readonly title: string
+  readonly note: string
   readonly files: ReadonlyArray<string>
   readonly spans: ReadonlyArray<Span>
 }
@@ -128,6 +130,7 @@ const stepsOf = (patches: ReadonlyArray<Patch>, story: Story): ReadonlyArray<Sto
   const present = new Set(patches.map((patch) => patch.path))
   return withFullCoverage(patches, story).steps.map((step) => ({
     title: step.title,
+    note: noteOf(step),
     files: unique(spansOfStep(step).map((span) => span.path)).filter((path) => present.has(path)),
     spans: spansOfStep(step),
   }))
