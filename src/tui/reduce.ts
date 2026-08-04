@@ -88,6 +88,13 @@ const layerComment = (state: TuiState, delta: number): TuiState => {
   return here.length > 0 ? state : withNotice(state, "no comments yet")
 }
 
+const PAN_STEP = 8
+
+const panned = (state: TuiState, delta: number): TuiState => {
+  if (state.wrap) return withNotice(state, "wrapping is on, so there is nothing to pan")
+  return { ...state, pan: Math.max(0, state.pan + delta) }
+}
+
 const movePending = (state: TuiState, delta: number): TuiState => ({
   ...state,
   pendingIndex: clamp(state.pendingIndex + delta, 0, Math.max(0, state.pending.length - 1)),
@@ -236,7 +243,9 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
     navOpen: true,
   }),
   "nav.zoom": (state) => ({ ...state, navOpen: !state.navOpen, focus: "diff" }),
-  "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap }),
+  "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap, pan: 0 }),
+  "pan.right": (state) => panned(state, PAN_STEP),
+  "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
@@ -301,6 +310,9 @@ export const withPending = (
   pending: TuiState["pending"],
   screen: TuiState["screen"],
 ): TuiState => ({ ...state, pending, pendingIndex: 0, staged: pending.length, screen })
+
+export const panBy = (state: TuiState, delta: number): TuiState =>
+  state.wrap ? state : { ...state, pan: Math.max(0, state.pan + delta) }
 
 export const withSent = (state: TuiState, sent: TuiState["sent"]): TuiState => ({ ...state, sent })
 

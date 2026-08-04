@@ -55,6 +55,35 @@ const ANSWER_MARK = "↳"
 const OVERSCAN = 2
 const SIGN_WIDTH = 2
 const SCROLL_ROWS = 3
+const PAN_COLUMNS = 8
+
+type Wheel = {
+  readonly scroll?: { readonly direction?: string; readonly delta?: number }
+  readonly modifiers?: { readonly shift?: boolean }
+}
+
+type Wheeled = {
+  readonly scroll: (delta: number) => void
+  readonly pan: (delta: number) => void
+}
+
+const WAYS: Readonly<Record<string, { readonly step: number; readonly across: boolean }>> = {
+  up: { step: -1, across: false },
+  down: { step: 1, across: false },
+  left: { step: -1, across: true },
+  right: { step: 1, across: true },
+}
+
+const notchesIn = (event: Wheel): number => Math.max(1, event.scroll?.delta ?? 1)
+
+const wheelTo = (event: Wheel, handlers: Wheeled): void => {
+  const way = WAYS[event.scroll?.direction ?? ""]
+  if (way === undefined) return
+  const step = way.step * notchesIn(event)
+  const across = way.across || event.modifiers?.shift === true
+  if (across) handlers.pan(step * PAN_COLUMNS)
+  else handlers.scroll(step * SCROLL_ROWS)
+}
 
 const SIGNS: Readonly<Record<RowKind, { text: string; color: string }>> = {
   added: { text: " +", color: palette.added },
@@ -151,17 +180,12 @@ export class DiffView {
 
   listenTo(handlers: {
     readonly scroll: (delta: number) => void
+    readonly pan: (delta: number) => void
     readonly down: (y: number) => void
     readonly drag: (y: number) => void
     readonly dragEnd: (y: number) => void
   }): void {
-    this.numbers.onMouseScroll = (event: { scroll?: { direction?: string; delta?: number } }) => {
-      const way = event.scroll?.direction
-      if (way !== "up" && way !== "down") return
-      const notches = Math.max(1, event.scroll?.delta ?? 1)
-      const size = notches * SCROLL_ROWS
-      handlers.scroll(way === "up" ? -size : size)
-    }
+    this.numbers.onMouseScroll = (event: Wheel) => wheelTo(event, handlers)
     this.numbers.onMouseDown = (event: { y: number }) => handlers.down(event.y)
     this.numbers.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)
     this.numbers.onMouseDragEnd = (event: { y: number }) => handlers.dragEnd(event.y)
@@ -227,6 +251,16 @@ export class DiffView {
       this.numbers.requestRender()
     }
     this.fitWrapWidth()
+  }
+
+  setPan(columns: number): void {
+    const wanted = this.wrapped ? 0 : Math.max(0, Math.min(this.code.maxScrollX, columns))
+    if (this.code.scrollX !== wanted) this.code.scrollX = wanted
+    if (this.pinned.scrollX !== wanted) this.pinned.scrollX = wanted
+  }
+
+  panned(): number {
+    return this.code.scrollX
   }
 
   private fitWrapWidth(): void {

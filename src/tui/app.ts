@@ -47,6 +47,7 @@ import {
   paletteMoved,
   reduce,
   scrolled,
+  panBy,
   typed,
   withNotice,
   withNoticeHere,
@@ -114,6 +115,7 @@ export class App {
   private readonly keys: Array<string> = []
   private fading: ReturnType<typeof setTimeout> | undefined
   private wheel = 0
+  private sideways = 0
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -128,6 +130,7 @@ export class App {
     this.screen.update(this.state)
     this.screen.listen({
       onScroll: (delta) => this.onWheel(delta),
+      onPan: (delta) => this.onPanWheel(delta),
       onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
       onChip: (key) => this.dispatchTask(() => this.onKey(asKey(key))),
     })
@@ -192,11 +195,19 @@ export class App {
     this.renderer.requestRender()
   }
 
+  private onPanWheel(delta: number): void {
+    this.sideways += delta
+    this.renderer.requestRender()
+  }
+
   private applyWheel(): void {
-    const delta = this.wheel
-    if (delta === 0) return
+    const down = this.wheel
+    const across = this.sideways
+    if (down === 0 && across === 0) return
     this.wheel = 0
-    this.commit(scrolled(this.measured(), delta))
+    this.sideways = 0
+    const moved = down === 0 ? this.measured() : scrolled(this.measured(), down)
+    this.commit(across === 0 ? moved : panBy(moved, across))
   }
 
   private syncGeometry(): void {

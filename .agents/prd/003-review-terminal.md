@@ -80,6 +80,12 @@ Three screens, and the keys each answers to:
   itself. Wrapping breaks at the width the reader can see, so a wrapped line reads whole: no
   character sits in a column the pane never draws. The choice is remembered, so a reader who
   wraps once opens every later review wrapped, in any repository.
+- **`>` and `<` pan the diff sideways**, so a line wider than the pane can be read to its end
+  without wrapping it. Shift with the wheel does the same. Line numbers, the diff sign and the
+  cursor mark stay where they are while the code moves, and the pinned scope moves with the code it
+  mirrors. The header counts the columns the reader has moved, so a line that stops short reads as
+  panned rather than as ended. Wrapping and panning answer the same question, so panning while
+  wrapped says so and does nothing.
 - **The footer is generated from the bindings**, never written by hand. A key that exists is
   listed; a key that is listed exists.
 - **The cursor is always on a row**, and the view follows it. Scroll position is derived from the

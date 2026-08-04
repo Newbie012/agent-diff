@@ -129,6 +129,20 @@ export class ScreenTestDriver {
     await this.burst(Array.from({ length: times }, () => direction))
   }
 
+  async panWith(direction: Wheel, times: number): Promise<void> {
+    const setup = this.active()
+    const x = Math.floor(setup.renderer.width / 2) + 6
+    const y = Math.floor(setup.renderer.height / 2)
+    await Promise.all(
+      Array.from({ length: times }, () =>
+        setup.mockMouse.scroll(x, y, direction, { modifiers: { shift: true } }),
+      ),
+    )
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    this.guard()
+  }
+
   async scrollSlowly(direction: Wheel, times: number): Promise<void> {
     await series(
       Array.from({ length: times }, () => direction),

@@ -23,6 +23,8 @@ export type Action =
   | "focus.toggle"
   | "nav.zoom"
   | "wrap.toggle"
+  | "pan.right"
+  | "pan.left"
   | "rail.toggle"
   | "review.reload"
   | "tree.collapse"
@@ -232,6 +234,18 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["w"],
     screens: ["review"],
     hint: "wrap",
+  }),
+  command({
+    action: "pan.right",
+    title: "Pan the diff right",
+    keys: [">"],
+    screens: ["review"],
+  }),
+  command({
+    action: "pan.left",
+    title: "Pan the diff left",
+    keys: ["<"],
+    screens: ["review"],
   }),
   command({
     action: "review.reload",
