@@ -33,7 +33,7 @@
     "play": "node --watch --watch-path=src --watch-path=scripts --experimental-ffi --disable-warning=ExperimentalWarning scripts/play.ts"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=26"
   },
   "bin": {
     "adiff": "./bin/adiff.js"

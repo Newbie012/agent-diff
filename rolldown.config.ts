@@ -4,7 +4,7 @@ export default defineConfig({
   input: "src/main.ts",
   platform: "node",
   external: ["@opentui/core"],
-  transform: { target: "node22" },
+  transform: { target: "node26" },
   output: {
     file: "dist/main.js",
     format: "esm",
