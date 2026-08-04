@@ -1,5 +1,5 @@
 export { Store, StoreLive, storeAt } from "./service.ts"
 export { StoreUnreadable, StoreUnwritable } from "./error.ts"
-export { branchDir, defaultRoot, inboxPath, reportPath, reportsDir, slugOf, statePath, layersPath } from "./paths.ts"
+export { branchDir, defaultRoot, inboxPath, outboxPath, reportPath, reportsDir, slugOf, statePath, layersPath } from "./paths.ts"
 export { emptyBranchState } from "./model.ts"
-export type { Batch, BranchState, StoredComment, StoredLayers } from "./model.ts"
+export type { Batch, BranchState, StoredAnswer, StoredComment, StoredLayers } from "./model.ts"

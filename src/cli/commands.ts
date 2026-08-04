@@ -207,6 +207,7 @@ export const listPending = Effect.fn("Cli.listPending")(function* (repo: string,
   const worktree = yield* findBranch(repo, branch)
   const current = yield* store.state(worktree.path)
   return current.pending.map((entry) => ({
+    id: entry.id,
     file: entry.anchor.path,
     side: entry.anchor.side,
     start: entry.anchor.start,
@@ -290,6 +291,7 @@ export const listPatches = Effect.fn("Cli.listPatches")(function* (
 })
 
 export type PendingComment = {
+  readonly id: string
   readonly at: string
   readonly head: string
   readonly file: string
@@ -303,6 +305,7 @@ export type PendingComment = {
 const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =>
   batches.flatMap((batch) =>
     batch.comments.map((comment) => ({
+      id: comment.id,
       at: batch.at,
       head: batch.head,
       file: comment.anchor.path,

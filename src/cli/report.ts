@@ -48,6 +48,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "No layers has been written for this worktree. Write one with `adiff layers set`.",
     retriable: false,
   },
+  UnknownComment: {
+    exit: NOT_FOUND,
+    suggestion:
+      "No comment carries that id. Ids come from `adiff comment take`; answer a comment it handed you.",
+    retriable: false,
+  },
   UnselectableRange: {
     exit: USAGE,
     suggestion: "Those lines are not in the diff. Check --side: new is the working tree, old is the version being replaced.",

@@ -13,6 +13,9 @@ export const branchDir = (root: string, worktreePath: string): string =>
 export const inboxPath = (root: string, worktreePath: string): string =>
   join(branchDir(root, worktreePath), "inbox.jsonl")
 
+export const outboxPath = (root: string, worktreePath: string): string =>
+  join(branchDir(root, worktreePath), "outbox.jsonl")
+
 export const statePath = (root: string, worktreePath: string): string =>
   join(branchDir(root, worktreePath), "state.json")
 

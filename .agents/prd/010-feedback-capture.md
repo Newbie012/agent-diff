@@ -79,7 +79,7 @@ The keys themselves ([PRD 003](003-review-terminal.md)); the store's root
 | --- | --- |
 | Sending the report anywhere automatically | A second person using adiff |
 | Attaching the diff itself | A report where the change mattered and the paths did not identify it |
-| Recording a longer key hilayers, or timings | A bug that the last 40 keys do not explain |
+| Recording a longer key history, or timings | A bug that the last 40 keys do not explain |
 
 ## Testing Decisions
 
