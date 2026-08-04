@@ -132,3 +132,52 @@ describe("settling a thread", () => {
     expect(thread?.state).toBe("submitted")
   })
 })
+
+describe("reading a thread in the diff", () => {
+  it("shows the answer beneath the comment it belongs to", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create()
+    await driver.app.runComment({ branch: branch.name, ...comment })
+    const taken = await driver.app.runTake(branch.worktree)
+    const [handed] = handedOf(taken.envelope)
+    await driver.app.runAnswer({
+      worktree: branch.worktree,
+      id: handed?.id ?? "",
+      body: "dropped it",
+    })
+
+    // ACT
+    await driver.screen.open()
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    const rows = (await driver.screen.getFrame()).split("\n")
+    const said = rows.findIndex((row) => row.includes("why is this unused"))
+    expect(said).toBeGreaterThan(0)
+    expect(rows[said - 1]).toContain("answered")
+    expect(rows[said + 1]).toContain("dropped it")
+  })
+
+  it("marks a thread the agent is asking about", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create()
+    await driver.app.runComment({ branch: branch.name, ...comment })
+    const taken = await driver.app.runTake(branch.worktree)
+    const [handed] = handedOf(taken.envelope)
+    await driver.app.runAnswer({
+      worktree: branch.worktree,
+      id: handed?.id ?? "",
+      body: "drop it or map it",
+      asks: true,
+    })
+
+    // ACT
+    await driver.screen.open()
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("asked back")
+  })
+})

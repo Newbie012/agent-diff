@@ -95,6 +95,49 @@ const told: ReadonlyArray<{ branch: string; layers: unknown }> = [
   { branch: "show-invites-in-settings", layers: settingsLayers },
 ]
 
+const answered: ReadonlyArray<{
+  readonly branch: string
+  readonly body: string
+  readonly asks: boolean
+}> = [
+  {
+    branch: "show-invites-in-settings",
+    body: "Split it into a pending list and an accepted list, and gave each its own empty state.",
+    asks: false,
+  },
+]
+
+export const seedAnswers = async (space: Workspace): Promise<void> => {
+  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
+  await series(answered, async (entry) => {
+    const branch = space.branches.find((candidate) => candidate.name === entry.branch)
+    if (branch === undefined) return
+    const taken = await exec(NODE, runArgs(["comment", "take", "--worktree", branch.worktree]), {
+      env,
+      encoding: "utf8",
+    }).catch(() => undefined)
+    if (taken === undefined) return
+    const handed = (JSON.parse(taken.stdout) as { comments: ReadonlyArray<{ id: string }> }).comments
+    const first = handed[0]
+    if (first === undefined) return
+    await exec(
+      NODE,
+      runArgs([
+        "comment",
+        "answer",
+        "--worktree",
+        branch.worktree,
+        "--id",
+        first.id,
+        "--body",
+        entry.body,
+        ...(entry.asks ? ["--asks"] : []),
+      ]),
+      { env, encoding: "utf8" },
+    ).catch(() => undefined)
+  })
+}
+
 export const seedLayers = async (space: Workspace): Promise<void> => {
   const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
   await series(told, async (entry) => {

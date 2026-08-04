@@ -10,7 +10,7 @@ import { GitLive } from "../src/service/git/index.ts"
 import { ForgeLive } from "../src/service/forge/index.ts"
 import { storeAt } from "../src/service/store/index.ts"
 import { launch, type App } from "../src/tui/index.ts"
-import { seedRemarks, seedLayers } from "./simulation/seed.ts"
+import { seedRemarks, seedLayers, seedAnswers } from "./simulation/seed.ts"
 import { createWorkspace } from "./simulation/workspace.ts"
 
 const number = (name: string, fallback: number): number => {
@@ -24,6 +24,7 @@ const height = number("height", 26)
 const space = await createWorkspace({ branches: number("branches", 7) })
 await seedRemarks(space)
 await seedLayers(space)
+await seedAnswers(space)
 const setup = await createTestRenderer({ width, height })
 const scope = Scope.makeUnsafe()
 const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot))

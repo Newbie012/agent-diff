@@ -216,16 +216,34 @@ export const listPending = Effect.fn("Cli.listPending")(function* (repo: string,
   })) satisfies ReadonlyArray<Omit<PendingComment, "at" | "head" | "snippet">>
 })
 
-export const listSent = Effect.fn("Cli.listSent")(function* (repo: string, branch: string) {
-  const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
-  return flatten(yield* store.inbox(worktree.path)).map((comment) => ({
+const bodyOf = (entry: { readonly body: string }): string => entry.body
+
+const sentOf = (
+  comment: PendingComment,
+  spoken: ReadonlyArray<{ readonly comment: string; readonly body: string; readonly asks: boolean }>,
+  settled: Readonly<Record<string, string>>,
+) => {
+  const mine = spoken.filter((entry) => entry.comment === comment.id)
+  return {
     file: comment.file,
     side: comment.side,
     start: comment.start,
     end: comment.end,
     body: comment.body,
-  }))
+    settled: Object.hasOwn(settled, comment.id),
+    asks: mine.at(-1)?.asks === true,
+    answers: mine.map(bodyOf),
+  }
+}
+
+export const listSent = Effect.fn("Cli.listSent")(function* (repo: string, branch: string) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const spoken = yield* store.answers(worktree.path)
+  const current = yield* store.state(worktree.path)
+  return flatten(yield* store.inbox(worktree.path)).map((comment) =>
+    sentOf(comment, spoken, current.settled),
+  )
 })
 
 export const submitReview = Effect.fn("Cli.submitReview")(function* (
