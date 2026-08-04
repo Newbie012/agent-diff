@@ -38,6 +38,10 @@
   dir: ""
   intents:
     - sweet-walls-itch
+"@eliya-oss/agent-diff@0.1.0-alpha.12":
+  dir: ""
+  intents:
+    - neat-rocks-search
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
