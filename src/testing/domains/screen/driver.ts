@@ -179,6 +179,13 @@ export class ScreenTestDriver {
     await setup.waitForVisualIdle()
   }
 
+  async hoverAt(x: number, y: number): Promise<void> {
+    const setup = this.active()
+    await setup.mockMouse.moveTo(x, y)
+    await this.app?.settled()
+    await setup.flush()
+  }
+
   async pressCtrl(letter: string): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressKey(letter, { ctrl: true })

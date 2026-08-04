@@ -860,10 +860,13 @@ export class Screen {
   private chipRow(): StyledText {
     return new StyledText(
       this.chips.flatMap((chip, index) => {
-        const paint = index === this.hovered ? bg(palette.cursor) : fg(palette.faint)
+        const lit = index === this.hovered
+        const key = fg(palette.ink)(chip.key)
+        const hint = fg(lit ? palette.ink : palette.faint)(` ${chip.hint}`)
         return [
-          index === this.hovered ? paint(` ${chip.key} ${chip.hint} `) : fg(palette.ink)(chip.key),
-          index === this.hovered ? fg(palette.faint)("  ") : fg(palette.faint)(` ${chip.hint}   `),
+          lit ? bg(palette.cursor)(key) : key,
+          lit ? bg(palette.cursor)(hint) : hint,
+          fg(palette.faint)("   "),
         ]
       }),
     )
