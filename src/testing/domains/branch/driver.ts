@@ -40,7 +40,7 @@ export class BranchTestDriver {
   private async commitBaseline(model: BranchTestModel): Promise<void> {
     await series(model.files, (file) => this.write(this.state.repo, file.path, file.before))
     await this.state.git(this.state.repo, ["add", "-A"])
-    await this.state.git(this.state.repo, ["commit", "-q", "-m", "baseline"])
+    await this.state.git(this.state.repo, ["commit", "-q", "--allow-empty", "-m", "baseline"])
   }
 
   private async write(root: string, path: string, lines: ReadonlyArray<string>): Promise<void> {
