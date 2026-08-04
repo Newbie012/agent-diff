@@ -23,6 +23,7 @@ import {
   stepOpen,
   stepRows,
   type StepRow,
+  wrapped,
   snippetOf,
   reviewedCount,
   selectedBranch,
@@ -45,6 +46,8 @@ const FRAME_PAD = 1
 const MODAL_ROOM = 8
 const COMPOSE_CHROME = 3
 const COMPOSE_ACTION_ROWS = 2
+const COMPOSE_PAD = 5
+const COMPOSE_MIN_TEXT = 8
 
 const reportActions = (): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
@@ -81,6 +84,19 @@ const homeWidth = (width: number): number =>
 
 const modalWidth = (width: number, wanted: number): number =>
   Math.max(0, Math.min(wanted, width - MODAL_MARGIN))
+
+type ComposeRoom = { readonly box: number; readonly text: number }
+
+const composeRoom = (width: number): ComposeRoom => {
+  const box = modalWidth(width, COMPOSE_WIDTH)
+  return { box, text: Math.max(COMPOSE_MIN_TEXT, box - COMPOSE_PAD) }
+}
+
+const laidOut = (lines: ReadonlyArray<string>, room: number): ReadonlyArray<string> =>
+  lines.flatMap((line) => {
+    const parts = wrapped(line, room)
+    return parts.length === 0 ? [""] : parts
+  })
 
 const STICKY_MAX = 4
 
@@ -313,13 +329,24 @@ const makeComposeParts = (
   readonly body: TextRenderable
   readonly actions: TextRenderable
 } => ({
-  title: new TextRenderable(renderer, { id: "compose-title", content: "", fg: palette.ink }),
-  body: new TextRenderable(renderer, { id: "compose-body", content: "", fg: palette.ink }),
+  title: new TextRenderable(renderer, {
+    id: "compose-title",
+    content: "",
+    fg: palette.ink,
+    wrapMode: "none",
+  }),
+  body: new TextRenderable(renderer, {
+    id: "compose-body",
+    content: "",
+    fg: palette.ink,
+    wrapMode: "none",
+  }),
   actions: new TextRenderable(renderer, {
     id: "compose-actions",
     content: "",
     fg: palette.muted,
     marginTop: 1,
+    wrapMode: "none",
   }),
 })
 
@@ -850,18 +877,17 @@ export class Screen {
   private paintReport(state: TuiState): void {
     this.compose.visible = state.screen === "compose" || state.screen === "report"
     if (state.screen !== "report") return
-    const lines = [
-      "What went wrong? Everything on screen is attached for you.",
-      "",
-      `${state.draft}▌`,
-    ]
+    const room = composeRoom(this.renderer.width)
+    const lines = laidOut(
+      ["What went wrong? Everything on screen is attached for you.", "", `${state.draft}▌`],
+      room.text,
+    )
     this.composeTitle.content = "Report a bug"
     this.composeBody.content = lines.join("\n")
     this.composeActions.content = reportActions()
-    const room = modalWidth(this.renderer.width, COMPOSE_WIDTH)
     this.compose.height = lines.length + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
-    this.compose.width = room
-    this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.compose.width = room.box
+    this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))
     this.compose.top = Math.max(2, Math.floor(this.renderer.height / 4))
   }
 
@@ -907,19 +933,20 @@ export class Screen {
       this.composeBody.content = ""
       return
     }
+    const room = composeRoom(this.renderer.width)
     const snippet = snippetOf(state, SNIPPET_LINES)
     const more = selectionRange(state)[1] - selectionRange(state)[0] + 1 - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
-    const written = `${state.draft}▌`.split("\n")
-    const lines = [...snippet, ...tail, "", ...written]
-    this.composeTitle.content = composeTarget(state)
+    const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
+    const written = laidOut(`${state.draft}▌`.split("\n"), room.text)
+    const lines = [...quoted, "", ...written]
+    this.composeTitle.content = clip(composeTarget(state), room.text)
     this.composeBody.content = lines.join("\n")
     this.composeActions.content = actionsText()
     const height = lines.length + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
-    const room = modalWidth(this.renderer.width, COMPOSE_WIDTH)
     this.compose.height = height
-    this.compose.width = room
-    this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.compose.width = room.box
+    this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))
     this.compose.top = Math.max(2, Math.floor((this.renderer.height - height) / 2))
   }
 }

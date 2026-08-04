@@ -65,6 +65,9 @@ Three screens, and the keys each answers to:
   row-to-line map, not predicted from row heights.
 - **A selection started with `v` extends from where it started to wherever the cursor is.**
   Composing without a selection anchors to the cursor's single row.
+- **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
+  than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
+  a reviewer can always read back what they have typed.
 - **Sending an empty draft does nothing.** Sending a selection the diff cannot anchor reports it on
   the screen and keeps the draft.
 - **After a send the screen returns to the diff with a notice**, and the selection is cleared. The
@@ -94,6 +97,8 @@ Behaviors that must be covered:
 - adiff opens on the branches that have something to review.
 - Opening a branch shows its file and the changed lines.
 - A comment written entirely through keystrokes reaches the agent with the right anchor.
+- A comment on more than one line, and a comment on one line too wide for the panel, are both fully
+  readable in the panel, with the actions still below them, at more than one terminal width.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
