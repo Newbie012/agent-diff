@@ -29,3 +29,7 @@
   dir: ""
   intents:
     - neat-rabbits-care
+"@eliya-oss/agent-diff@0.1.0-alpha.2":
+  dir: ""
+  intents:
+    - mighty-frogs-beam
