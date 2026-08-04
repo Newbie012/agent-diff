@@ -432,7 +432,7 @@ const treeMarks = (state: TuiState, row: TreeRow): string => {
 }
 
 const treeTail = (state: TuiState, row: TreeRow): string => {
-  if (row.fileIndex === undefined) return `${row.files}f`.padStart(3)
+  if (row.fileIndex === undefined) return "  "
   const comments = commentsOn(state, row.fileIndex)
   return comments > 0 ? `${comments}${marks().tally}`.padStart(3) : "   "
 }
@@ -569,7 +569,7 @@ export class Screen {
   }
 
   private diffRows(): number {
-    return this.view.rows()
+    return Math.max(1, this.diffScroll.height)
   }
 
   update(state: TuiState): void {

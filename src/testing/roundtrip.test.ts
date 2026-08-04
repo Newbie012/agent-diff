@@ -26,7 +26,7 @@ const branch = {
 
 const body = (frame: string): string => {
   const rows = frame.split("\n")
-  return rows.slice(0, Math.max(0, rows.length - 2)).join("\n")
+  return rows.slice(0, Math.max(0, rows.length - 3)).join("\n")
 }
 
 type Pair = {

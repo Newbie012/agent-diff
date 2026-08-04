@@ -44,7 +44,9 @@ describe("reading the file tree", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(pane(await driver.screen.getFrame()).some((line) => line.includes("2f"))).toBe(true)
+    const rows = pane(await driver.screen.getFrame())
+    expect(rows.some((line) => line.includes("api"))).toBe(true)
+    expect(rows.every((line) => !/\d+f\b/.test(line))).toBe(true)
   })
 
   it("marks a file that has a comment on it", async () => {
