@@ -401,6 +401,29 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
   return rows.map((row) => row.index).toSorted((left, right) => left - right)
 }
 
+export const threadAtRow = (state: TuiState, row: number): StagedComment | undefined => {
+  const patch = selectedPatch(state)
+  const here = patch?.rows[row]
+  if (patch === undefined || here === undefined) return undefined
+  return state.sent.find(
+    (entry) =>
+      entry.file === patch.path &&
+      entry.id !== undefined &&
+      lineOnSide(here, entry.side) === entry.end,
+  )
+}
+
+export const openCommentRows = (state: TuiState): ReadonlyArray<number> => {
+  const patch = selectedPatch(state)
+  if (patch === undefined) return []
+  const open = [...state.pending, ...state.sent].filter(
+    (entry) => entry.file === patch.path && entry.settled !== true,
+  )
+  return patch.rows
+    .filter((row) => open.some((note) => lineOnSide(row, note.side) === note.end))
+    .map((row) => row.index)
+}
+
 export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
   state.patches.flatMap((patch, index) =>
     [...state.pending, ...state.sent].some((entry) => entry.file === patch.path) ? [index] : [],

@@ -253,6 +253,7 @@ const sentOf = (
 ) => {
   const mine = spoken.filter((entry) => entry.comment === comment.id)
   return {
+    id: comment.id,
     file: comment.file,
     side: comment.side,
     start: comment.start,

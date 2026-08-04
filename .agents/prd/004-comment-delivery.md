@@ -84,6 +84,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **Only the reviewer settles a thread.** An agent can answer, and can say its answer asks
   something, but a point is closed by the person who raised it. An agent that could close its own
   thread could end a conversation the reviewer never read.
+- **A thread is settled from the terminal, on the line it belongs to.** A thread appears under the
+  line it was written against, so the reviewer settles the one the cursor is on. Settling elsewhere
+  needs a thread named by id, which is what the command line is for.
+- **Walking comments stops on the open ones.** A reviewer moving through a review wants what still
+  needs them, so a settled thread is stepped over. It stays on the screen, since hiding it would
+  leave them wondering where their comment went.
 - **A thread is stale when its comment was written against an older HEAD**, the same rule
   [layers](006-narrative-review.md) use. The code under discussion has moved; the answer may no
   longer describe it.

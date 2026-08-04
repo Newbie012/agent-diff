@@ -419,17 +419,27 @@ const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
   ...notesOf(state.pending, path, false),
 ]
 
+const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<TextChunk>> => {
+  const chips: Array<ReadonlyArray<TextChunk>> = []
+  for (let at = 0; at < chunks.length; at += CHIP_CHUNKS) {
+    chips.push(chunks.slice(at, at + CHIP_CHUNKS))
+  }
+  return chips
+}
+
 const keptWithin = (chunks: ReadonlyArray<TextChunk>, room: number): ReadonlyArray<TextChunk> => {
-  const kept: Array<TextChunk> = []
+  const kept: Array<ReadonlyArray<TextChunk>> = []
   let used = 0
-  for (const chunk of chunks.toReversed()) {
-    const width = chunk.text.length
+  for (const chip of paired(chunks).toReversed()) {
+    const width = chip.reduce((total, chunk) => total + chunk.text.length, 0)
     if (used + width > room) break
-    kept.unshift(chunk)
+    kept.unshift(chip)
     used += width
   }
-  return kept
+  return kept.flat()
 }
+
+const CHIP_CHUNKS = 3
 
 const shortPath = (path: string): string => {
   const home = process.env["HOME"] ?? ""

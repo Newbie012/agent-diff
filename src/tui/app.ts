@@ -19,6 +19,7 @@ import {
   submitReview,
   submitComment,
   toggleVouch,
+  settleThread,
 } from "../cli/index.ts"
 import type { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
@@ -36,6 +37,7 @@ import {
   selectedPatch,
   selectionRange,
   spokenSince,
+  threadAtRow,
   WHOLE_FILE,
   type TuiState,
 } from "./model.ts"
@@ -290,6 +292,7 @@ export class App {
       "rail.toggle": () => this.commitSynced("rail.toggle"),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
+      "thread.settle": () => this.settleHere(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
       "pending.open": () => this.openPending(),
@@ -362,6 +365,18 @@ export class App {
     if (branch === undefined) return
     this.commit(await this.readBranch(branch.branch))
     await this.loadSource()
+  }
+
+  private async settleHere(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    const thread = threadAtRow(this.state, this.state.cursor)
+    const id = thread?.id
+    if (branch === undefined || id === undefined) {
+      return this.commit(withNotice(this.state, "no thread here"))
+    }
+    await this.run(settleThread(this.repo, branch.branch, id, new Date().toISOString()))
+    const sent = await this.loadSent(branch.branch)
+    this.commit(withNotice(withSent(this.state, sent), "settled"))
   }
 
   private async reloadList(): Promise<void> {
