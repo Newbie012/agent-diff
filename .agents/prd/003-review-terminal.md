@@ -135,6 +135,18 @@ Behaviors that must be covered:
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
 
+### A branch that already has a pull request says so
+
+The worktree list reads whether a branch has a pull request and shows its state beside what is
+waiting: open, draft, merged or closed. A merged pull request means the review happened elsewhere,
+a draft means the work is not ready for a reviewer.
+
+- **The list draws before the answer arrives.** The state is fetched once for the whole list, after
+  the screen is on, and fills in when it lands. Nothing waits on the network.
+- **Silence when nothing can answer.** No `gh`, not signed in, offline, or a remote that is not
+  GitHub leaves the column empty. adiff never reports the failure, because a reviewer did not ask
+  for it.
+
 ## Out of Scope
 
 - Editing code from the terminal.

@@ -1,6 +1,7 @@
 import { createTestRenderer } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { GitLive } from "../src/service/git/index.ts"
+import { ForgeLive } from "../src/service/forge/index.ts"
 import { storeAt } from "../src/service/store/index.ts"
 import { launch } from "../src/tui/index.ts"
 import { markSetNames, useMarks } from "../src/tui/marks.ts"
@@ -22,7 +23,7 @@ const shot = async (name: string): Promise<void> => {
   const setup = await createTestRenderer({ width: WIDTH, height: HEIGHT })
   const scope = Scope.makeUnsafe()
   const context = await Effect.runPromise(
-    Layer.buildWithScope(Layer.mergeAll(GitLive, storeAt(space.storeRoot)), scope),
+    Layer.buildWithScope(Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot)), scope),
   )
   const app = await Effect.runPromise(
     launch(space.repo, setup.renderer).pipe(Effect.provideContext(context)),

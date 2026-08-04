@@ -51,6 +51,7 @@ export type TuiState = {
   readonly navOpen: boolean
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
+  readonly pulls: Readonly<Record<string, string>>
   readonly layerIndex: number
   readonly openLayers: ReadonlyArray<number>
   readonly rail: "tree" | "layers"
@@ -86,6 +87,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   navOpen: true,
   layers: [],
   layersStale: false,
+  pulls: {},
   layerIndex: 0,
   openLayers: [],
   rail: "tree",

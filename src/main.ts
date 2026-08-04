@@ -28,6 +28,7 @@ import {
 } from "./cli/index.ts"
 import { banner, help, helpFor, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
+import { ForgeLive } from "./service/forge/index.ts"
 import { runTui } from "./tui/index.ts"
 import { storeAt, defaultRoot } from "./service/store/index.ts"
 
@@ -198,7 +199,7 @@ if (said !== undefined) {
   process.exit(0)
 }
 
-const layer = Layer.mergeAll(GitLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot()))
+const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot()))
 const exit = await Effect.runPromiseExit(
   run(nameOf(argv), optionsFrom(argv)).pipe(Effect.provide(layer)),
 )

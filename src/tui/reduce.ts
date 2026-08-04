@@ -295,6 +295,11 @@ export const withLayers = (
   return { ...opened, patchIndex: layerFiles(opened, 0)[0] ?? opened.patchIndex, cursor: 0, top: 0 }
 }
 
+export const withPulls = (
+  state: TuiState,
+  pulls: Readonly<Record<string, string>>,
+): TuiState => ({ ...state, pulls })
+
 export const withBranches = (
   state: TuiState,
   branches: TuiState["branches"],
