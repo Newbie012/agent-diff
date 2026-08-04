@@ -414,6 +414,20 @@ const shortPath = (path: string): string => {
   return home.length > 0 && path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }
 
+const KEPT_TAIL = 2
+const HOME_PATH_MIN = 24
+const HOME_PATH_CHROME = 10
+
+const elide = (path: string, room: number): string => {
+  if (path.length <= room) return path
+  const parts = path.split("/").filter((part) => part.length > 0)
+  const lead = path.startsWith("~") ? "~" : ""
+  const tail = parts.slice(-KEPT_TAIL).join("/")
+  const rooted = path.startsWith("/") ? `/${parts[0] ?? ""}` : lead
+  const middled = `${rooted}/…/${tail}`
+  return middled.length <= room ? middled : `…/${tail}`
+}
+
 const contextLabel = (context: number): string => {
   if (context === 3) return ""
   return context >= WHOLE_FILE ? "whole file" : `±${context}`
@@ -436,7 +450,7 @@ const columns = (cells: Cells, room: number): string =>
 
 const branchHeading = (room: number): string =>
   `  ${columns(
-    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", layers: "STORY", state: "STATE" },
+    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", layers: "LAYERS", state: "STATE" },
     room,
   )}`
 
@@ -656,7 +670,9 @@ export class Screen {
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
     const many = state.branches.length === 1 ? "1 worktree" : `${state.branches.length} worktrees`
-    this.landing.content = `${shortPath(this.repo)}  ·  ${many}`
+    const pane = homeWidth(this.renderer.width)
+    const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
+    this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
     this.landingKeys.content = this.chipRow()
     this.diffPane.visible = state.screen !== "branches" && !(state.screen === "palette" && state.returnTo === "branches")
     if (this.diffPane.visible) this.paintDiff(state)
