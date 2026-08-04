@@ -60,6 +60,9 @@ jobs:
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - if: steps.plan.outputs.pending == 'true'
+        run: pnpm build
+
+      - if: steps.plan.outputs.pending == 'true'
         run: pnpm publish --tag alpha --no-git-checks
 
       - if: steps.plan.outputs.pending == 'true'

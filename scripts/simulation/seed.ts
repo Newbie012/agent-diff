@@ -1,10 +1,9 @@
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
-import { fileURLToPath } from "node:url"
+import { NODE, runArgs } from "../lib/entry.ts"
 import { series, type Workspace } from "./workspace.ts"
 
 const exec = promisify(execFile)
-const ENTRY = fileURLToPath(new URL("../../bin/adiff.js", import.meta.url))
 
 export type Remark = {
   readonly branch: string
@@ -47,8 +46,8 @@ export const seedRemarks = async (space: Workspace): Promise<void> => {
   await series(remarks, async (remark) => {
     const verb = remark.send ? "add" : "stage"
     await exec(
-      ENTRY,
-      [
+      NODE,
+      runArgs([
         "comment",
         verb,
         "--repo",
@@ -63,7 +62,7 @@ export const seedRemarks = async (space: Workspace): Promise<void> => {
         String(remark.end),
         "--body",
         remark.body,
-      ],
+      ]),
       { env, encoding: "utf8" },
     ).catch(() => undefined)
   })

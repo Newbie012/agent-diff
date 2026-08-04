@@ -30,7 +30,8 @@ Keep the split clean:
 ```bash
 npm install -g --allow-scripts=pnpm pnpm@next-12   # corepack cannot install pnpm 12 yet
 pnpm install
-pnpm check          # typecheck, lint, style rules, tests
+pnpm check          # typecheck, lint, style rules, build, tests
+pnpm build          # bundle the CLI into dist/main.js, which is what an install runs
 pnpm typecheck
 pnpm lint           # oxlint + scripts/check-style.ts
 pnpm test
