@@ -96,18 +96,18 @@ describe("a burst of wheel events", () => {
     expect(firstCodeRow(await driver.screen.getFrame())).toBe(oneNotch)
   })
 
-  it("settles a long burst as quickly as a short one", async () => {
+  it("carries the whole burst in the first frame after it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openDiff(driver)
-    const short = await driver.screen.burst(wheel(8, "down"))
-    await driver.screen.scroll("up", 40)
 
     // ACT
-    const drain = await driver.screen.burst(wheel(600, "down"))
+    await driver.screen.fire(wheel(600, "down"))
+    const firstFrame = firstCodeRow(await driver.screen.getFrame())
+    await driver.screen.rest()
 
     // ASSERT
-    expect(drain).toBeLessThan(short * 3)
+    expect(firstCodeRow(await driver.screen.getFrame())).toBe(firstFrame)
   })
 })
 

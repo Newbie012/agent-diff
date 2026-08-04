@@ -16,6 +16,7 @@ const bgOf = (span: Span): string =>
   `#${hex(Math.round(span.bg.r * 255))}${hex(Math.round(span.bg.g * 255))}${hex(Math.round(span.bg.b * 255))}`
 
 const ESCAPE_FLUSH_MS = 150
+const REST_MS = 400
 const PAINT_ATTEMPTS = 20
 const PAINT_WAIT_MS = 50
 
@@ -143,6 +144,22 @@ export class ScreenTestDriver {
     const cost = performance.now() - started
     this.guard()
     return cost
+  }
+
+  async fire(wheel: ReadonlyArray<"up" | "down">): Promise<void> {
+    const setup = this.active()
+    const x = Math.floor(WIDTH / 2) + 10
+    const y = Math.floor(HEIGHT / 2)
+    await Promise.all(wheel.map((direction) => setup.mockMouse.scroll(x, y, direction)))
+    await setup.flush()
+  }
+
+  async rest(): Promise<void> {
+    const setup = this.active()
+    await new Promise((resolve) => setTimeout(resolve, REST_MS))
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    this.guard()
   }
 
   async dragOverDiff(fromY: number, toY: number): Promise<void> {
