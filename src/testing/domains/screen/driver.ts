@@ -121,16 +121,27 @@ export class ScreenTestDriver {
   }
 
   async scroll(direction: "up" | "down", times = 1): Promise<void> {
+    await this.burst(Array.from({ length: times }, () => direction))
+  }
+
+  async scrollSlowly(direction: "up" | "down", times: number): Promise<void> {
+    await series(
+      Array.from({ length: times }, () => direction),
+      (step) => this.burst([step]),
+    )
+  }
+
+  async burst(wheel: ReadonlyArray<"up" | "down">): Promise<number> {
     const setup = this.active()
     const x = Math.floor(WIDTH / 2) + 10
     const y = Math.floor(HEIGHT / 2)
-    await series(
-      Array.from({ length: times }, (_, step) => step),
-      () => setup.mockMouse.scroll(x, y, direction),
-    )
+    const started = performance.now()
+    await Promise.all(wheel.map((direction) => setup.mockMouse.scroll(x, y, direction)))
     await this.app?.settled()
     await setup.waitForVisualIdle()
+    const cost = performance.now() - started
     this.guard()
+    return cost
   }
 
   async dragOverDiff(fromY: number, toY: number): Promise<void> {

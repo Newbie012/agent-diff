@@ -104,6 +104,7 @@ export class App {
   private remembered = ""
   private readonly keys: Array<string> = []
   private fading: ReturnType<typeof setTimeout> | undefined
+  private wheel = 0
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -116,13 +117,14 @@ export class App {
     this.screen = new Screen(renderer, options.repo)
     this.screen.update(this.state)
     this.screen.listen({
-      onScroll: (delta) => this.commit(scrolled(this.measured(), delta)),
+      onScroll: (delta) => this.onWheel(delta),
       onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
       onChip: (key) => this.dispatchTask(() => this.onKey(asKey(key))),
     })
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
     renderer.on("destroy", () => this.stopFading())
     renderer.on("frame", () => this.syncGeometry())
+    renderer.setFrameCallback(async () => this.applyWheel())
     const resume = options.resume
     if (resume !== undefined) this.dispatchTask(() => this.resume(resume))
   }
@@ -166,6 +168,18 @@ export class App {
 
   settled(): Promise<void> {
     return this.pending
+  }
+
+  private onWheel(delta: number): void {
+    this.wheel += delta
+    this.renderer.requestRender()
+  }
+
+  private applyWheel(): void {
+    const delta = this.wheel
+    if (delta === 0) return
+    this.wheel = 0
+    this.commit(scrolled(this.measured(), delta))
   }
 
   private syncGeometry(): void {
