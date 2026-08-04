@@ -1,8 +1,24 @@
 import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises"
 import { Context, Effect, Layer, Option } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
-import { emptyBranchState, type Batch, type BranchState, type StoredComment, type StoredLayers } from "./model.ts"
-import { branchDir, defaultRoot, inboxPath, reportPath, reportsDir, statePath, layersPath } from "./paths.ts"
+import {
+  emptyBranchState,
+  type Batch,
+  type BranchState,
+  type StoredAnswer,
+  type StoredComment,
+  type StoredLayers,
+} from "./model.ts"
+import {
+  branchDir,
+  defaultRoot,
+  inboxPath,
+  outboxPath,
+  reportPath,
+  reportsDir,
+  statePath,
+  layersPath,
+} from "./paths.ts"
 
 type Shape = {
   readonly root: string
@@ -28,6 +44,13 @@ type Shape = {
   readonly take: (
     worktreePath: string,
   ) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable | StoreUnwritable>
+  readonly answer: (
+    worktreePath: string,
+    answer: StoredAnswer,
+  ) => Effect.Effect<void, StoreUnwritable>
+  readonly answers: (
+    worktreePath: string,
+  ) => Effect.Effect<ReadonlyArray<StoredAnswer>, StoreUnreadable>
 }
 
 export class Store extends Context.Service<Store, Shape>()("adiff/Store") {}
@@ -53,6 +76,12 @@ const parseBatches = (raw: string): ReadonlyArray<Batch> =>
     .split("\n")
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line) as Batch)
+
+const parseAnswers = (raw: string): ReadonlyArray<StoredAnswer> =>
+  raw
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => JSON.parse(line) as StoredAnswer)
 
 const parseState = (raw: string): BranchState => ({
   ...emptyBranchState,
@@ -80,6 +109,38 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
   })
 
   return { stage, take }
+}
+
+const reportOps = (root: string) =>
+  Effect.fn("Store.saveReport")(function* (stamp: string, text: string) {
+    const path = reportPath(root, stamp)
+    yield* ensureDir(reportsDir(root))
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, text, "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+    return path
+  })
+
+const answerOps = (root: string) => {
+  const answer = Effect.fn("Store.answer")(function* (worktreePath: string, entry: StoredAnswer) {
+    const path = outboxPath(root, worktreePath)
+    yield* ensureDir(branchDir(root, worktreePath))
+    yield* Effect.tryPromise({
+      try: () => appendFile(path, `${JSON.stringify(entry)}\n`, "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+  })
+
+  const answers = Effect.fn("Store.answers")(function* (worktreePath: string) {
+    const raw = yield* readOptional(outboxPath(root, worktreePath))
+    return Option.match(raw, {
+      onNone: (): ReadonlyArray<StoredAnswer> => [],
+      onSome: parseAnswers,
+    })
+  })
+
+  return { answer, answers }
 }
 
 const layersOps = (root: string) => {
@@ -135,18 +196,18 @@ const makeStore = (root: string): Shape => {
     })
   })
 
-  const saveReport = Effect.fn("Store.saveReport")(function* (stamp: string, text: string) {
-    const path = reportPath(root, stamp)
-    yield* ensureDir(reportsDir(root))
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, text, "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
-    return path
-  })
-
   const cursors = cursorOps(state, saveState, inbox)
-  return { root, submit, inbox, state, saveState, saveReport, ...layersOps(root), ...cursors }
+  return {
+    root,
+    submit,
+    inbox,
+    state,
+    saveState,
+    saveReport: reportOps(root),
+    ...answerOps(root),
+    ...layersOps(root),
+    ...cursors,
+  }
 }
 
 export const storeAt = (root: string): Layer.Layer<Store> => Layer.succeed(Store)(makeStore(root))

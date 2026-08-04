@@ -172,7 +172,7 @@ const resolve = (path: string): Promise<string> => realpath(path).catch(() => pa
 const resolveAll = (paths: ReadonlyArray<string>): Promise<ReadonlyArray<string>> =>
   Promise.all(paths.map(resolve))
 
-const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (worktreePath: string) {
+export const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (worktreePath: string) {
   const git = yield* Git
   const asked = yield* Effect.promise(() => resolve(worktreePath))
   const worktrees = yield* git.worktrees(asked)

@@ -6,6 +6,9 @@ export type StagedComment = {
   readonly start: number
   readonly end: number
   readonly body: string
+  readonly settled?: boolean
+  readonly asks?: boolean
+  readonly answers?: ReadonlyArray<string>
 }
 import type { Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"

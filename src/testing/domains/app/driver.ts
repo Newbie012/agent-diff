@@ -147,6 +147,42 @@ export class AppTestDriver {
     ])
   }
 
+  runAnswer(options: {
+    readonly worktree: string
+    readonly id: string
+    readonly body: string
+    readonly asks?: boolean
+  }): Promise<CliResult> {
+    return this.run([
+      "comment",
+      "answer",
+      "--worktree",
+      options.worktree,
+      "--id",
+      options.id,
+      "--body",
+      options.body,
+      ...(options.asks === true ? ["--asks"] : []),
+    ])
+  }
+
+  runThreads(branch: string, fields?: ReadonlyArray<string>): Promise<CliResult> {
+    return this.run(["comment", "threads", "--repo", this.state.repo, "--branch", branch, ...(fields ?? [])])
+  }
+
+  runResolve(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    return this.run([
+      "comment",
+      "resolve",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
+  }
+
   runSubmit(branch: string): Promise<CliResult> {
     return this.run(["review", "submit", "--repo", this.state.repo, "--branch", branch])
   }

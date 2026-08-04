@@ -403,7 +403,15 @@ const notesOf = (
 ): ReadonlyArray<Note> =>
   comments
     .filter((entry) => entry.file === path)
-    .map((entry) => ({ side: entry.side, line: entry.end, body: entry.body, sent }))
+    .map((entry) => ({
+      side: entry.side,
+      line: entry.end,
+      body: entry.body,
+      sent,
+      settled: entry.settled === true,
+      asks: entry.asks === true,
+      answers: entry.answers ?? [],
+    }))
 
 const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
   ...notesOf(state.sent, path, true),

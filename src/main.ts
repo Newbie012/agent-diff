@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises"
 import { text as readStream } from "node:stream/consumers"
 import { Cause, Effect, Exit, Layer } from "effect"
 import {
+  answerComment,
   awaitComments,
   catalog,
   commandNames,
@@ -10,12 +11,14 @@ import {
   fieldsOf,
   findCommand,
   listBranches,
+  listThreads,
   MalformedLayers,
   narrow,
   numeric,
   optionsFrom,
   required,
   reviewProgress,
+  settleThread,
   setLayers,
   showLayers,
   stageComment,
@@ -71,6 +74,35 @@ const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
       ? yield* awaitComments(worktree, Date.now() + wait * WAIT_UNIT)
       : yield* takeComments(worktree)
   yield* answer(options, { comments })
+})
+
+const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Options) {
+  const report = yield* answerComment({
+    worktree: yield* required(options, "worktree"),
+    id: yield* required(options, "id"),
+    body: yield* required(options, "body"),
+    asks: options["asks"] !== undefined,
+    at: options["at"] ?? new Date().toISOString(),
+  })
+  yield* answer(options, { answered: report.answered })
+})
+
+const commentThreads = Effect.fn("Main.commentThreads")(function* (options: Options) {
+  const threads = yield* listThreads(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+  )
+  yield* answer(options, { threads })
+})
+
+const commentResolve = Effect.fn("Main.commentResolve")(function* (options: Options) {
+  const report = yield* settleThread(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+    options["at"] ?? new Date().toISOString(),
+  )
+  yield* answer(options, { settled: report.settled })
 })
 
 const commentStage = Effect.fn("Main.commentStage")(function* (options: Options) {
@@ -152,6 +184,9 @@ const routes = {
   "comment add": commentAdd,
   "comment stage": commentStage,
   "comment take": commentTake,
+  "comment answer": commentAnswer,
+  "comment threads": commentThreads,
+  "comment resolve": commentResolve,
   "review submit": reviewSubmit,
   "review progress": reviewStatus,
   "layers set": layersSet,

@@ -17,6 +17,14 @@ export type StoredComment = {
   readonly body: string
 }
 
+export type StoredAnswer = {
+  readonly comment: string
+  readonly body: string
+  readonly head: string
+  readonly asks: boolean
+  readonly at: string
+}
+
 export type Batch = {
   readonly id: string
   readonly at: string
@@ -28,6 +36,12 @@ export type BranchState = {
   readonly vouches: Readonly<Record<string, string>>
   readonly consumed: number
   readonly pending: ReadonlyArray<StoredComment>
+  readonly settled: Readonly<Record<string, string>>
 }
 
-export const emptyBranchState: BranchState = { vouches: {}, consumed: 0, pending: [] }
+export const emptyBranchState: BranchState = {
+  vouches: {},
+  consumed: 0,
+  pending: [],
+  settled: {},
+}

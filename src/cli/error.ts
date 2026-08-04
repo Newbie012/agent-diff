@@ -11,6 +11,10 @@ export class UnknownFile extends Data.TaggedError("UnknownFile")<{
   readonly known: ReadonlyArray<string>
 }> {}
 
+export class UnknownComment extends Data.TaggedError("UnknownComment")<{
+  readonly id: string
+}> {}
+
 export class UnselectableRange extends Data.TaggedError("UnselectableRange")<{
   readonly file: string
   readonly start: number

@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-08-04
 
 ## Problem Statement
 
@@ -21,7 +21,7 @@ reviewer does not need the agent to be running, and the agent does not need the 
 agent does.
 
 The agent [takes](CONTEXT.md#take) what it has not seen. Delivery is exactly-once: a comment handed
-over is never handed over again, so an agent can poll without re-reading its whole hilayers and
+over is never handed over again, so an agent can poll without re-reading its whole history and
 without a comment going missing between two takes.
 
 ## User Layers
@@ -56,7 +56,8 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 
 ```text
 <root>/branches/<slug>/inbox.jsonl   append-only submissions
-<root>/branches/<slug>/state.json    vouches, and how far the agent has read
+<root>/branches/<slug>/outbox.jsonl  append-only answers
+<root>/branches/<slug>/state.json    vouches, how far the agent has read, and settled threads
 ```
 
 - **The slug is derived from the worktree's resolved path.** Any path arriving from outside is
@@ -71,6 +72,19 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **A comment handed to the agent is flattened out of its submission** into one record per comment:
   timestamp, HEAD, file, side, start, end, snippet, body. The agent never has to understand
   batching to read a comment.
+- **A comment carries its id to the agent.** The id is what an answer refers to, so a hand-over
+  without it cannot be replied to.
+- **An answer is one line of JSON** in the outbox: the comment it answers, its body, the HEAD it
+  was written against, whether it asks the reviewer something, and when. Appending never rewrites.
+- **Answers are read on demand, not handed over.** The reviewer is sitting in front of a screen and
+  re-reads the branch; the cursor exists because an agent polls and must neither miss a comment nor
+  act on one twice. A reviewer has no such problem, so there is no second cursor to corrupt.
+- **Only the reviewer settles a thread.** An agent can answer, and can say its answer asks
+  something, but a point is closed by the person who raised it. An agent that could close its own
+  thread could end a conversation the reviewer never read.
+- **A thread is stale when its comment was written against an older HEAD**, the same rule
+  [layers](006-narrative-review.md) use. The code under discussion has moved; the answer may no
+  longer describe it.
 - **Waiting is polling with a deadline.** A wait that expires returns an empty list, not an error.
 - **Missing files read as empty.** A worktree that has never been reviewed has an empty inbox and
   default state, not a failure.
@@ -80,7 +94,8 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 | Decision | Trigger |
 | --- | --- |
 | Watching the inbox rather than polling it | Poll latency being noticed in a real review loop |
-| Streaming the agent's replies back to the reviewer | A review where hand-over is not enough and a conversation is wanted |
+| Notifying the reviewer that an answer landed while they were reading | A reviewer missing answers because they did not re-read |
+| Threading a reply to an answer, rather than one exchange per comment | A comment needing more than one round to settle |
 | Pruning old inboxes | A store large enough to notice |
 
 ## Testing Decisions
@@ -94,6 +109,8 @@ Behaviors that must be covered:
 - A comment written by the reviewer is handed to the agent with its anchor intact.
 - The same comment is not handed over twice.
 - A comment written after the agent caught up is handed over on the next take.
+- An answer written by the agent reaches the reviewer against the comment it belongs to.
+- A settled thread reads as settled to both sides, and an agent cannot settle one.
 - A vouch recorded before a take survives it. This is the regression guard for the merge rule
   above, and it is the one that would have gone unnoticed.
 

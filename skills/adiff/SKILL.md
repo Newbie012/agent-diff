@@ -43,6 +43,33 @@ Re-arm it after each comment you handle, and keep it running while you work. A r
 their own pace, so comments arrive minutes apart, and the whole point is that they reach you as
 events rather than by you asking. When you finish a piece of work, say you are still listening.
 
+## Answering a comment
+
+Say what you did, against the comment you were handed:
+
+```bash
+adiff comment answer --worktree . --id <id> --body "Dropped it, and the import with it."
+```
+
+The id comes from `comment take`. The reviewer sees the answer under their own words the next time
+they read the branch, so this is how they learn a point was addressed rather than ignored.
+
+Answer when the change alone does not carry the reasoning: what you did instead of what was asked,
+what you found while doing it, or why the comment does not apply. A comment that asked a question
+deserves an answer even when nothing changed.
+
+Add `--asks` when you need the reviewer to decide before you continue:
+
+```bash
+adiff comment answer --worktree . --id <id> --asks --body "Drop it, or keep it and map the error?"
+```
+
+That marks the thread as waiting on them rather than on you. Do not use it to check in; use it when
+the work genuinely stops without an answer.
+
+Settling a thread is the reviewer's to do, not yours. They raised the point, so they decide it is
+closed.
+
 ## Acting on a comment
 
 Read `snippet` before opening the file: the reviewer commented on the diff, and the file may have
