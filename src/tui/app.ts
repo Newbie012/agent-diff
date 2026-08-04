@@ -12,6 +12,7 @@ import {
   listLayers,
   reviewProgress,
   saveReport,
+  saveWrap,
   stageComment,
   editStaged,
   dropStaged,
@@ -20,7 +21,7 @@ import {
   toggleVouch,
 } from "../cli/index.ts"
 import type { Git } from "../service/git/index.ts"
-import type { Store } from "../service/store/index.ts"
+import { Store } from "../service/store/index.ts"
 import { Forge } from "../service/forge/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { gapAtRow, GAP_CHUNK } from "./gaps.ts"
@@ -76,6 +77,7 @@ export type AppOptions = {
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
+  readonly wrap?: boolean | undefined
 }
 
 const PRINTABLE = /^[\S ]$/
@@ -108,6 +110,7 @@ export class App {
   private readonly noticeMs: number
   private readonly sessionPath: string | undefined
   private remembered = ""
+  private wrapKept = false
   private readonly keys: Array<string> = []
   private fading: ReturnType<typeof setTimeout> | undefined
   private wheel = 0
@@ -118,8 +121,9 @@ export class App {
     this.run = options.run
     this.noticeMs = options.noticeMs ?? NOTICE_MS
     this.sessionPath = options.sessionPath
+    this.wrapKept = options.wrap === true
     const { branches, renderer } = options
-    this.state = initialState(branches)
+    this.state = { ...initialState(branches), wrap: options.wrap === true }
     this.screen = new Screen(renderer, options.repo)
     this.screen.update(this.state)
     this.screen.listen({
@@ -148,6 +152,12 @@ export class App {
     const patchIndex = Math.min(session.patchIndex, Math.max(0, this.state.patches.length - 1))
     this.commit({ ...this.state, patchIndex, cursor: session.cursor, top: session.top })
     await this.loadSource()
+  }
+
+  private rememberWrap(next: TuiState): void {
+    if (next.wrap === this.wrapKept) return
+    this.wrapKept = next.wrap
+    void this.run(saveWrap(next.wrap)).catch(() => undefined)
   }
 
   private rememberPlace(next: TuiState): void {
@@ -204,6 +214,7 @@ export class App {
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     this.state = next
     this.rememberPlace(next)
+    this.rememberWrap(next)
     this.screen.update(next)
     if (appeared) this.fade()
   }
@@ -540,6 +551,8 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const branches = yield* listBranches(repo)
   const resume =
     sessionPath === undefined ? undefined : yield* Effect.promise(() => readSession(sessionPath))
+  const store = yield* Store
+  const settings = yield* store.settings()
   return new App({
     renderer,
     repo,
@@ -548,6 +561,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
     noticeMs,
     sessionPath,
     resume,
+    wrap: settings.wrap === true,
   })
 })
 

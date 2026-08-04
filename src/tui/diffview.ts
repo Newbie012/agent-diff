@@ -220,11 +220,19 @@ export class DiffView {
   }
 
   setWrap(on: boolean): void {
-    if (on === this.wrapped) return
-    this.wrapped = on
-    this.code.wrapMode = on ? "word" : "none"
-    this.code.requestRender()
-    this.numbers.requestRender()
+    if (on !== this.wrapped) {
+      this.wrapped = on
+      this.code.wrapMode = on ? "word" : "none"
+      this.code.requestRender()
+      this.numbers.requestRender()
+    }
+    this.fitWrapWidth()
+  }
+
+  private fitWrapWidth(): void {
+    const room = this.numbers.width - Math.max(0, this.code.x - this.numbers.x)
+    const wanted = this.wrapped && room > 0 ? room : "100%"
+    if (this.code.width !== wanted) this.code.width = wanted
   }
 
   private sources(): ReadonlyArray<number> {

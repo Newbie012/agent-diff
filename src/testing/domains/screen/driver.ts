@@ -68,9 +68,9 @@ export class ScreenTestDriver {
     await setup.waitForVisualIdle()
   }
 
-  async restart(): Promise<void> {
+  async restart(options: OpenOptions = {}): Promise<void> {
     await this.close()
-    await this.open()
+    await this.open(options)
   }
 
   private watch(): void {

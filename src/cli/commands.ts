@@ -397,3 +397,9 @@ export const fileSource = Effect.fn("Cli.fileSource")(function* (
   const found = yield* git.source(worktree, file)
   return Option.getOrElse(found, (): ReadonlyArray<string> => [])
 })
+
+export const saveWrap = Effect.fn("Cli.saveWrap")(function* (wrap: boolean) {
+  const store = yield* Store
+  const current = yield* store.settings()
+  yield* store.saveSettings({ ...current, wrap })
+})
