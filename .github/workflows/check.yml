@@ -14,14 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          cache: pnpm
+
+      - run: npm install -g --allow-scripts=pnpm pnpm@12.0.0-beta.3
 
       - run: pnpm install --frozen-lockfile
 
@@ -30,3 +30,5 @@ jobs:
       - run: pnpm lint
 
       - run: pnpm test
+        env:
+          NODE_OPTIONS: --experimental-ffi

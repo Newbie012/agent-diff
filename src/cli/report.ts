@@ -27,6 +27,27 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "The error lists the files this branch changed. Use one of those paths.",
     retriable: false,
   },
+  EmptyReview: {
+    exit: USAGE,
+    suggestion: "Stage a comment with `adiff comment stage` before submitting the review.",
+    retriable: false,
+  },
+  UnknownWorktree: {
+    exit: NOT_FOUND,
+    suggestion: "Run `adiff story set` from inside a worktree of the repository under review.",
+    retriable: false,
+  },
+  MalformedStory: {
+    exit: USAGE,
+    suggestion:
+      "A story is {\"summary\":\"…\",\"steps\":[{\"title\":\"…\",\"spans\":[{\"path\":\"…\",\"start\":1,\"end\":9}]}]}.",
+    retriable: false,
+  },
+  NoStory: {
+    exit: NOT_FOUND,
+    suggestion: "No story has been written for this worktree. Write one with `adiff story set`.",
+    retriable: false,
+  },
   UnselectableRange: {
     exit: USAGE,
     suggestion: "Those lines are not in the diff. Check --side: new is the working tree, old is the version being replaced.",

@@ -16,6 +16,17 @@ export type CliResult = {
   readonly envelope: unknown
 }
 
+export type StoryStepInput = {
+  readonly title: string
+  readonly note?: string
+  readonly spans: ReadonlyArray<{ readonly path: string; readonly start: number; readonly end: number }>
+}
+
+export type StoryInput = {
+  readonly summary?: string
+  readonly steps: ReadonlyArray<StoryStepInput>
+}
+
 export type CommentOptions = {
   readonly branch: string
   readonly file: string
@@ -48,6 +59,61 @@ export class AppTestDriver {
       const stderr = failed.stderr ?? ""
       return { code: failed.code ?? 1, stdout, stderr, envelope: parse(stderr) || parse(stdout) }
     }
+  }
+
+  private runWith(args: ReadonlyArray<string>, input: string): Promise<CliResult> {
+    const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot }
+    return new Promise((resolve) => {
+      const child = execFile(
+        process.execPath,
+        [...NODE_FLAGS, ENTRY, ...args],
+        { env, encoding: "utf8" },
+        (cause, stdout, stderr) => {
+          const failed = cause as { code?: number } | null
+          const code = failed === null ? 0 : Number(failed.code ?? 1)
+          resolve({
+            code,
+            stdout: String(stdout),
+            stderr: String(stderr),
+            envelope: parse(String(stderr)) || parse(String(stdout)),
+          })
+        },
+      )
+      child.stdin?.end(input)
+    })
+  }
+
+  runStorySet(worktree: string, story: StoryInput | string): Promise<CliResult> {
+    const document = typeof story === "string" ? story : JSON.stringify(story)
+    return this.runWith(["story", "set", "--worktree", worktree, "--json", "-"], document)
+  }
+
+  runStoryShow(worktree: string, fields?: ReadonlyArray<string>): Promise<CliResult> {
+    return this.run(["story", "show", "--worktree", worktree, ...(fields ?? [])])
+  }
+
+  runStage(options: CommentOptions): Promise<CliResult> {
+    return this.run([
+      "comment",
+      "stage",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--file",
+      options.file,
+      "--start",
+      String(options.start),
+      "--end",
+      String(options.end),
+      "--body",
+      options.body,
+      ...(options.side === undefined ? [] : ["--side", options.side]),
+    ])
+  }
+
+  runSubmit(branch: string): Promise<CliResult> {
+    return this.run(["review", "submit", "--repo", this.state.repo, "--branch", branch])
   }
 
   runDescribe(command?: string): Promise<CliResult> {

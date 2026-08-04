@@ -25,3 +25,20 @@ export class UnknownCommand extends Data.TaggedError("UnknownCommand")<{
 export class MissingOption extends Data.TaggedError("MissingOption")<{
   readonly option: string
 }> {}
+
+export class EmptyReview extends Data.TaggedError("EmptyReview")<{
+  readonly branch: string
+}> {}
+
+export class UnknownWorktree extends Data.TaggedError("UnknownWorktree")<{
+  readonly worktree: string
+  readonly known: ReadonlyArray<string>
+}> {}
+
+export class MalformedStory extends Data.TaggedError("MalformedStory")<{
+  readonly reason: string
+}> {}
+
+export class NoStory extends Data.TaggedError("NoStory")<{
+  readonly worktree: string
+}> {}

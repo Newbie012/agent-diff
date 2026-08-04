@@ -2,7 +2,7 @@ import { AgentTestDriver } from "./domains/agent/index.ts"
 import { AppTestDriver } from "./domains/app/index.ts"
 import { BranchTestDriver } from "./domains/branch/index.ts"
 import { ScreenTestDriver } from "./domains/screen/index.ts"
-import { createDriverState, type DriverState } from "./state.ts"
+import { createDriverState, type DriverOptions, type DriverState } from "./state.ts"
 
 export class TestDriver implements AsyncDisposable {
   readonly branch: BranchTestDriver
@@ -20,8 +20,8 @@ export class TestDriver implements AsyncDisposable {
     this.screen = new ScreenTestDriver(state)
   }
 
-  static async create(): Promise<TestDriver> {
-    return new TestDriver(await createDriverState())
+  static async create(options: DriverOptions = {}): Promise<TestDriver> {
+    return new TestDriver(await createDriverState(options))
   }
 
   async [Symbol.asyncDispose](): Promise<void> {

@@ -15,12 +15,26 @@ describe("using adiff without reading its documentation", () => {
     expect(commands.map((command) => command.name)).toEqual([
       "branch list",
       "comment add",
+      "comment stage",
       "comment take",
       "file vouch",
+      "review submit",
       "review progress",
+      "story set",
+      "story show",
       "review open",
       "describe",
     ])
+    expect(commands).toContainEqual(
+      expect.objectContaining({
+        name: "story set",
+        safety: "write",
+        dataKey: "story",
+        options: expect.arrayContaining([
+          expect.objectContaining({ name: "json", required: true }),
+        ]),
+      }),
+    )
     expect(commands).toContainEqual(
       expect.objectContaining({
         name: "comment take",

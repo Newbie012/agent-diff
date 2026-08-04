@@ -47,7 +47,10 @@ const readEntries = (porcelain: string): ReadonlyArray<Entry> => {
   return entries
 }
 
-const defaultBranch = Effect.fn("Git.defaultBranch")(function* (repo: string) {
+const baseNames = new Map<string, string>()
+const mergeBases = new Map<string, string>()
+
+const findDefaultBranch = Effect.fn("Git.findDefaultBranch")(function* (repo: string) {
   const symbolic = yield* gitOrEmpty(repo, ["symbolic-ref", "refs/remotes/origin/HEAD"])
   if (symbolic.trim().length > 0) return symbolic.trim().replace("refs/remotes/", "")
   for (const candidate of DEFAULT_BRANCH_CANDIDATES) {
@@ -57,13 +60,30 @@ const defaultBranch = Effect.fn("Git.defaultBranch")(function* (repo: string) {
   return "HEAD"
 })
 
+const defaultBranch = Effect.fn("Git.defaultBranch")(function* (repo: string) {
+  const known = baseNames.get(repo)
+  if (known !== undefined) return known
+  const found = yield* findDefaultBranch(repo)
+  baseNames.set(repo, found)
+  return found
+})
+
+const mergeBaseOf = Effect.fn("Git.mergeBase")(function* (entry: Entry, base: string) {
+  const key = `${entry.path} ${entry.head} ${base}`
+  const known = mergeBases.get(key)
+  if (known !== undefined) return known
+  const found = (yield* gitOrEmpty(entry.path, ["merge-base", base, "HEAD"])).trim()
+  mergeBases.set(key, found)
+  return found
+})
+
 const toWorktree = Effect.fn("Git.toWorktree")(function* (entry: Entry, base: string) {
-  const mergeBase = yield* gitOrEmpty(entry.path, ["merge-base", base, "HEAD"])
+  const mergeBase = yield* mergeBaseOf(entry, base)
   return {
     path: entry.path,
     branch: entry.detached ? `(detached ${entry.head.slice(0, 8)})` : entry.branch,
     head: entry.head.slice(0, 8),
-    base: mergeBase.trim().slice(0, 8),
+    base: mergeBase.slice(0, 8),
     detached: entry.detached,
   } satisfies Worktree
 })

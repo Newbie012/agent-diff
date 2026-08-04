@@ -77,7 +77,7 @@ Three screens, and the keys each answers to:
 
 | Decision | Trigger |
 | --- | --- |
-| Sticky scope lines while scrolling inside a function | The first review where the reviewer loses track of which function they are in |
+| The full enclosing scope chain, rather than one line of git's `@@` context | Reviewing a deeply nested change and needing more than the innermost scope. Attempted and reverted: rendering more than one pinned line as an absolute overlay stops the frame settling, and the chain is only correct when read from the file rather than the diff, because a diff does not contain the lines above its first hunk |
 | A file tree, and commenting from it | A branch wide enough that a flat file list stops being navigable |
 | Mouse drag selection | Keyboard selection proving slower for wide ranges |
 | Vouching from the terminal | Reviewers vouching from the command line and finding it absurd |

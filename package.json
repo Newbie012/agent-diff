@@ -21,7 +21,13 @@
     "test": "NODE_OPTIONS=--experimental-ffi vitest run",
     "test:watch": "NODE_OPTIONS=--experimental-ffi vitest",
     "dev": "node --experimental-ffi --disable-warning=ExperimentalWarning src/main.ts",
-    "review": "pnpm run dev -- review --repo ."
+    "review": "pnpm run dev -- review --repo .",
+    "simulate": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/simulate.ts",
+    "frames": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/frames.ts",
+    "sketch": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/sketch.ts",
+    "watch": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/watch.ts",
+    "serve": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/serve.ts",
+    "play": "node --watch --watch-path=src --watch-path=scripts --experimental-ffi --disable-warning=ExperimentalWarning scripts/play.ts"
   },
   "engines": {
     "node": ">=26"

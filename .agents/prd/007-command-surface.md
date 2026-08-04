@@ -52,6 +52,8 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
 | `comment take` | `--worktree [--wait <seconds>]` | `{ok, comments: [...]}` |
 | `file vouch` | `--repo --branch --file` | `{ok, vouched, total}` |
 | `review progress` | `--repo --branch` | `{ok, vouched, total}` |
+| `story set` | `--worktree --json <file\|->` | `{ok, story}` |
+| `story show` | `--worktree` | `{ok, story}` |
 | `review open` | `--repo` | opens the terminal |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 

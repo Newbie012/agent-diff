@@ -1,8 +1,8 @@
 import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises"
 import { Context, Effect, Layer, Option } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
-import { emptyBranchState, type Batch, type BranchState } from "./model.ts"
-import { branchDir, defaultRoot, inboxPath, statePath } from "./paths.ts"
+import { emptyBranchState, type Batch, type BranchState, type StoredComment, type StoredStory } from "./model.ts"
+import { branchDir, defaultRoot, inboxPath, reportPath, reportsDir, statePath, storyPath } from "./paths.ts"
 
 type Shape = {
   readonly root: string
@@ -12,6 +12,18 @@ type Shape = {
   readonly saveState: (
     worktreePath: string,
     state: BranchState,
+  ) => Effect.Effect<void, StoreUnwritable>
+  readonly stage: (
+    worktreePath: string,
+    comment: StoredComment,
+  ) => Effect.Effect<ReadonlyArray<StoredComment>, StoreUnreadable | StoreUnwritable>
+  readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
+  readonly story: (
+    worktreePath: string,
+  ) => Effect.Effect<Option.Option<StoredStory>, StoreUnreadable>
+  readonly saveStory: (
+    worktreePath: string,
+    story: StoredStory,
   ) => Effect.Effect<void, StoreUnwritable>
   readonly take: (
     worktreePath: string,
@@ -47,6 +59,50 @@ const parseState = (raw: string): BranchState => ({
   ...(JSON.parse(raw) as Partial<BranchState>),
 })
 
+type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
+type Writer = (worktreePath: string, next: BranchState) => Effect.Effect<void, StoreUnwritable>
+type Inbox = (worktreePath: string) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable>
+
+const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
+  const stage = Effect.fn("Store.stage")(function* (worktreePath: string, comment: StoredComment) {
+    const current = yield* state(worktreePath)
+    const pending = [...current.pending, comment]
+    yield* saveState(worktreePath, { ...current, pending })
+    return pending as ReadonlyArray<StoredComment>
+  })
+
+  const take = Effect.fn("Store.take")(function* (worktreePath: string) {
+    const batches = yield* inbox(worktreePath)
+    const current = yield* state(worktreePath)
+    const pending = batches.slice(current.consumed)
+    if (pending.length > 0) yield* saveState(worktreePath, { ...current, consumed: batches.length })
+    return pending
+  })
+
+  return { stage, take }
+}
+
+const storyOps = (root: string) => {
+  const story = Effect.fn("Store.story")(function* (worktreePath: string) {
+    const raw = yield* readOptional(storyPath(root, worktreePath))
+    return Option.map(raw, (text) => JSON.parse(text) as StoredStory)
+  })
+
+  const saveStory = Effect.fn("Store.saveStory")(function* (
+    worktreePath: string,
+    next: StoredStory,
+  ) {
+    const path = storyPath(root, worktreePath)
+    yield* ensureDir(branchDir(root, worktreePath))
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+  })
+
+  return { story, saveStory }
+}
+
 const makeStore = (root: string): Shape => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
     const path = inboxPath(root, worktreePath)
@@ -79,17 +135,18 @@ const makeStore = (root: string): Shape => {
     })
   })
 
-  const take = Effect.fn("Store.take")(function* (worktreePath: string) {
-    const batches = yield* inbox(worktreePath)
-    const current = yield* state(worktreePath)
-    const pending = batches.slice(current.consumed)
-    if (pending.length > 0) {
-      yield* saveState(worktreePath, { ...current, consumed: batches.length })
-    }
-    return pending
+  const saveReport = Effect.fn("Store.saveReport")(function* (stamp: string, text: string) {
+    const path = reportPath(root, stamp)
+    yield* ensureDir(reportsDir(root))
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, text, "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+    return path
   })
 
-  return { root, submit, inbox, state, saveState, take }
+  const cursors = cursorOps(state, saveState, inbox)
+  return { root, submit, inbox, state, saveState, saveReport, ...storyOps(root), ...cursors }
 }
 
 export const storeAt = (root: string): Layer.Layer<Store> => Layer.succeed(Store)(makeStore(root))

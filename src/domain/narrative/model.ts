@@ -43,4 +43,4 @@ export type StoryStatus = {
   readonly total: number
 }
 
-export const REMAINDER_TITLE = "Not in the story"
+export const REMAINDER_TITLE = "not in any step"

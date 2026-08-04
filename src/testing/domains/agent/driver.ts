@@ -1,5 +1,7 @@
+import { readdir, readFile } from "node:fs/promises"
+import { join } from "node:path"
 import { Effect } from "effect"
-import { Store, storeAt, type Batch } from "../../../service/store/index.ts"
+import { reportsDir, Store, storeAt, type Batch } from "../../../service/store/index.ts"
 import type { DriverState } from "../../state.ts"
 
 export type DeliveredComment = {
@@ -16,6 +18,12 @@ export class AgentTestDriver {
 
   constructor(state: DriverState) {
     this.state = state
+  }
+
+  async listReports(): Promise<ReadonlyArray<string>> {
+    const directory = reportsDir(this.state.storeRoot)
+    const names = await readdir(directory).catch(() => [])
+    return Promise.all(names.map((name) => readFile(join(directory, name), "utf8")))
   }
 
   async listBatches(worktree: string): Promise<ReadonlyArray<Batch>> {

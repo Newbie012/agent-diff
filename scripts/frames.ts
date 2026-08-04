@@ -1,0 +1,123 @@
+// Dump every screen of the review terminal at a realistic size.
+//
+//   pnpm frames              # all screens
+//   pnpm frames --width 140  # a wider terminal
+import { writeFile } from "node:fs/promises"
+import { createTestRenderer } from "@opentui/core/testing"
+import { toAnsi, toHtml, toPlain, type Line, type Shot } from "./lib/paint.ts"
+import { Effect, Layer, Scope } from "effect"
+import { GitLive } from "../src/service/git/index.ts"
+import { storeAt } from "../src/service/store/index.ts"
+import { launch, type App } from "../src/tui/index.ts"
+import { seedRemarks } from "./simulation/seed.ts"
+import { createWorkspace } from "./simulation/workspace.ts"
+
+const number = (name: string, fallback: number): number => {
+  const index = process.argv.indexOf(`--${name}`)
+  return index === -1 ? fallback : Number(process.argv[index + 1] ?? fallback)
+}
+
+const width = number("width", 110)
+const height = number("height", 26)
+
+const space = await createWorkspace({ branches: number("branches", 7) })
+await seedRemarks(space)
+const setup = await createTestRenderer({ width, height })
+const scope = Scope.makeUnsafe()
+const layer = Layer.mergeAll(GitLive, storeAt(space.storeRoot))
+const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
+const app: App = await Effect.runPromise(
+  launch(space.repo, setup.renderer).pipe(Effect.provideContext(context)),
+)
+
+const settle = async (): Promise<void> => {
+  await app.settled()
+  await setup.flush()
+}
+
+const press = async (keys: ReadonlyArray<string>): Promise<void> => {
+  await setup.mockInput.pressKeys([...keys])
+  await settle()
+}
+
+const type = async (text: string): Promise<void> => {
+  await setup.mockInput.typeText(text)
+  await settle()
+}
+
+const chord = async (letter: string): Promise<void> => {
+  setup.mockInput.pressKey(letter, { ctrl: true })
+  await settle()
+}
+
+const escape = async (): Promise<void> => {
+  setup.mockInput.pressEscape()
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  await settle()
+}
+
+const rule = "─".repeat(width)
+const wantsHtml = process.argv.includes("--html") || process.argv.includes("--json")
+const plain = process.argv.includes("--plain")
+const shots: Array<Shot> = []
+
+const show = async (label: string): Promise<void> => {
+  await app.settled()
+  await setup.flush()
+  const captured = setup.captureSpans() as { lines: ReadonlyArray<Line> }
+  const shot: Shot = { label, lines: captured.lines }
+  shots.push(shot)
+  if (wantsHtml) return
+  console.log(`\n${rule}\n  ${label}\n${rule}`)
+  console.log(plain ? setup.captureCharFrame() : toAnsi(shot))
+}
+
+await show("branches")
+await press(["RETURN"])
+await show("review")
+
+await press(["c"])
+await type("this needs a union")
+await show("compose")
+await chord("a")
+await show("staged")
+await press(["S"])
+await show("pending review")
+await escape()
+await escape()
+await show("branches with work waiting")
+await press(["RETURN"])
+
+await press(["]", "]"])
+await show("third file")
+await press(["G"])
+await show("scrolled into scope")
+await press(["m"])
+await show("marked reviewed")
+await press(["h"])
+await show("directory folded")
+await press(["v", "j", "j"])
+await show("selection")
+
+await chord("b")
+await type("the cursor jumps two lines")
+await show("bug report")
+await escape()
+
+await chord("p")
+await show("palette")
+await type("file")
+await show("palette filtered")
+
+setup.renderer.destroy()
+if (process.argv.includes("--html")) {
+  const out = process.argv[process.argv.indexOf("--html") + 1] ?? "frames.html"
+  await writeFile(out, toHtml(shots, "adiff — every screen"), "utf8")
+  console.log(`${shots.length} screens written to ${out}`)
+}
+if (process.argv.includes("--json")) {
+  const out = process.argv[process.argv.indexOf("--json") + 1] ?? "frames.json"
+  await writeFile(out, JSON.stringify(shots.map(toPlain)), "utf8")
+}
+await space.dispose()
+process.exit(0)
