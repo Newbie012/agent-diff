@@ -50,6 +50,7 @@ const openHunk = (draft: Draft, line: string): void => {
     marker: line,
     scope: (header?.[3] ?? "").trim(),
     startRow: draft.rows.length,
+    newStart: draft.newLine,
     rows: [],
     skipped: draft.hunks.length === 0 ? 0 : Math.max(0, draft.newLine - previousNew),
   })

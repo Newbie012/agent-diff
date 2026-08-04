@@ -38,7 +38,7 @@ describe("how scrolling feels", () => {
     // ASSERT
     const after = firstCodeRow(await driver.screen.getFrame())
     expect(before).toContain("   6 ")
-    expect(after).toContain("   9 ")
+    expect(after).toContain("   8 ")
   })
 })
 

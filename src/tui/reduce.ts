@@ -1,5 +1,6 @@
 import type { Patch } from "../domain/patch/index.ts"
 import type { Action } from "./command.ts"
+import { gapNumbered } from "./gaps.ts"
 import { searchCommands } from "./match.ts"
 import {
   crowdedOf,
@@ -239,7 +240,35 @@ export const withContext = (
   context: number,
   patches: ReadonlyArray<Patch>,
   cursor: number,
-): TuiState => ({ ...state, context, patches, cursor, anchorRow: cursor, selecting: false })
+): TuiState => ({
+  ...state,
+  context,
+  patches,
+  revealed: [],
+  cursor,
+  anchorRow: cursor,
+  selecting: false,
+})
+
+export const withFull = (state: TuiState, full: ReadonlyArray<Patch>): TuiState => ({
+  ...state,
+  full,
+})
+
+const revealsAfter = (state: TuiState, gap: number, lines: number): TuiState["revealed"] => {
+  const path = state.patches[state.patchIndex]?.path ?? ""
+  const others = state.revealed.filter((entry) => entry.file !== path || entry.gap !== gap)
+  return lines <= 0 ? others : [...others, { file: path, gap, lines }]
+}
+
+export const gapOpened = (state: TuiState, gap: number, delta: number): TuiState => {
+  const path = state.patches[state.patchIndex]?.path ?? ""
+  const now = state.revealed.find((entry) => entry.file === path && entry.gap === gap)?.lines ?? 0
+  const opened = { ...state, revealed: revealsAfter(state, gap, now + delta) }
+  const wanted = gapNumbered(opened, gap)?.row ?? state.cursor
+  const landed = clamp(wanted, 0, lastRow(selectedPatch(opened)))
+  return withCursorVisible({ ...opened, cursor: landed, anchorRow: landed, selecting: false })
+}
 
 export const withPending = (
   state: TuiState,
@@ -280,6 +309,8 @@ export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): Tui
   ...state,
   screen: "review",
   patches,
+  full: [],
+  revealed: [],
   closed: crowdedOf(patches),
   patchIndex: fileOrder({ ...state, patches, closed: crowdedOf(patches) })[0] ?? 0,
   cursor: 0,

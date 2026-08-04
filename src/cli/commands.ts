@@ -13,6 +13,7 @@ import {
 import { EmptyReview, UnknownBranch, UnknownFile, UnselectableRange } from "./error.ts"
 
 const CONTEXT = 3
+const WHOLE_FILE = 100_000
 const POLL = "500 millis"
 
 export type BranchSummary = {
@@ -47,9 +48,12 @@ export const findBranch = Effect.fn("Cli.findBranch")(function* (repo: string, b
     : Effect.succeed(found)
 })
 
-export const patchesOf = Effect.fn("Cli.patchesOf")(function* (worktree: Worktree) {
+export const patchesOf = Effect.fn("Cli.patchesOf")(function* (
+  worktree: Worktree,
+  context = CONTEXT,
+) {
   const git = yield* Git
-  const raw = yield* git.diff(worktree, CONTEXT)
+  const raw = yield* git.diff(worktree, context)
   return parsePatches(raw)
 })
 
@@ -155,7 +159,7 @@ export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
 
 const anchorRequest = Effect.fn("Cli.anchorRequest")(function* (request: CommentRequest) {
   const worktree = yield* findBranch(request.repo, request.branch)
-  const patches = yield* patchesOf(worktree)
+  const patches = yield* patchesOf(worktree, WHOLE_FILE)
   const resolved = yield* Option.match(findPatch(patches, request.file), {
     onNone: () =>
       new UnknownFile({ file: request.file, known: patches.map((candidate) => candidate.path) }),
@@ -235,7 +239,7 @@ export const submitReview = Effect.fn("Cli.submitReview")(function* (
 export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {
   const store = yield* Store
   const worktree = yield* findBranch(request.repo, request.branch)
-  const patches = yield* patchesOf(worktree)
+  const patches = yield* patchesOf(worktree, WHOLE_FILE)
   const patch = findPatch(patches, request.file)
 
   const resolved = yield* Option.match(patch, {

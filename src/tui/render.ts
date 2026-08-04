@@ -9,6 +9,7 @@ import { ASCIIFontRenderable, bg, fg, StyledText, t } from "@opentui/core"
 import { hintsFor } from "./command.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
+import { gapRowSet, shownOf } from "./gaps.ts"
 import { paletteMatches } from "./reduce.ts"
 import {
   composeTarget,
@@ -100,17 +101,26 @@ const laidOut = (lines: ReadonlyArray<string>, room: number): ReadonlyArray<stri
 
 const STICKY_MAX = 4
 
-type PaintFlags = { readonly cursor: boolean; readonly selected: boolean }
+type PaintFlags = {
+  readonly cursor: boolean
+  readonly selected: boolean
+  readonly gap: boolean
+}
 
 const pickPaint = (view: DiffView, kind: RowKind, flags: PaintFlags): LinePaint | undefined => {
   if (flags.cursor) return { gutter: ACCENT, content: CURSOR }
   if (flags.selected) return { gutter: SELECTION, content: SELECTION }
+  if (flags.gap) return GAP_PAINT
   return view.washOf(kind)
 }
 
 const SELECTION = RGBA.fromHex(palette.selection)
 const CURSOR = RGBA.fromHex(palette.cursor)
 const ACCENT = RGBA.fromHex(palette.accent)
+const GAP_PAINT: LinePaint = {
+  gutter: RGBA.fromHex(palette.overlay),
+  content: RGBA.fromHex(palette.overlay),
+}
 
 const bar = (renderer: CliRenderer, id: string, color: string): TextRenderable =>
   new TextRenderable(renderer, {
@@ -722,10 +732,11 @@ export class Screen {
   }
 
   private paintDiff(state: TuiState): void {
-    const patch = selectedPatch(state)
-    if (patch === undefined) return
+    const shown = shownOf(state)
+    if (shown === undefined) return
+    const patch = shown.patch
     this.paintSticky(state, state.top)
-    this.view.show(patch, notesFor(state, patch.path))
+    this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown))
     this.view.fit(this.diffScroll.height)
     const height = this.view.rows()
     const top = this.view.scrollTo(state.top, state.cursor)
@@ -915,13 +926,16 @@ export class Screen {
   private linePaint(state: TuiState): (row: number) => LinePaint | undefined {
     const [from, to] = selectionRange(state)
     const selecting = state.selecting || state.screen === "compose"
-    const rows = selectedPatch(state)?.rows ?? []
+    const shown = shownOf(state)
+    const rows = shown?.patch.rows ?? []
+    const gaps = shown === undefined ? new Set<number>() : gapRowSet(shown)
     return (row) => {
       const kind = rows[row]?.kind
       if (kind === undefined) return undefined
       return pickPaint(this.view, kind, {
         cursor: row === state.cursor,
         selected: selecting && row >= from && row <= to,
+        gap: gaps.has(row),
       })
     }
   }

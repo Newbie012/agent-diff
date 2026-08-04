@@ -20,6 +20,7 @@ import {
 import type { Git } from "../service/git/index.ts"
 import type { Store } from "../service/store/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
+import { gapAtRow, GAP_CHUNK } from "./gaps.ts"
 import {
   initialState,
   nextUnreviewed,
@@ -29,12 +30,14 @@ import {
   selectedBranch,
   selectedPatch,
   selectionRange,
+  WHOLE_FILE,
   type TuiState,
 } from "./model.ts"
 import {
   atFile,
   backspaced,
   draggedTo,
+  gapOpened,
   paletteChoice,
   paletteClosed,
   paletteMoved,
@@ -44,6 +47,7 @@ import {
   withNotice,
   withContext,
   withBranches,
+  withFull,
   withPatches,
   withPending,
   withSent,
@@ -219,7 +223,25 @@ export class App {
       "report.send": () => this.sendReport(),
       "context.more": () => this.expand(1),
       "context.less": () => this.expand(-1),
+      "tree.expand": () => this.unfold(1),
+      "tree.collapse": () => this.unfold(-1),
     }
+  }
+
+  private async unfold(delta: number): Promise<void> {
+    const gap =
+      this.state.focus === "diff" ? gapAtRow(this.state, this.state.cursor) : undefined
+    const action: Action = delta > 0 ? "tree.expand" : "tree.collapse"
+    if (gap === undefined) return this.commit(reduce(this.measured(), action))
+    if (delta > 0) await this.loadFull()
+    this.commit(gapOpened(this.measured(), gap.index, delta * GAP_CHUNK))
+  }
+
+  private async loadFull(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    if (branch === undefined || this.state.full.length > 0) return
+    const full = await this.run(listPatches(this.repo, branch.branch, WHOLE_FILE))
+    this.commit(withFull(this.state, full))
   }
 
   private async onKey(key: KeyEvent, forced?: Action): Promise<void> {
@@ -349,7 +371,8 @@ export class App {
     if (branch === undefined || next === this.state.context) return
     const line = sourceLineAt(this.state, this.state.cursor)
     const patches = await this.run(listPatches(this.repo, branch.branch, next))
-    const patch = patches[this.state.patchIndex]
+    const widened = withContext(this.state, next, patches, 0)
+    const patch = selectedPatch(widened)
     const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)
     this.commit(withContext(this.state, next, patches, cursor))
   }

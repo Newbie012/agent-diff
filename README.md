@@ -34,6 +34,10 @@ sends the whole set as one wake-up, so the agent reads a review rather than a st
 a comment, `ctrl+s` sends it and `ctrl+a` adds it to the review instead. `m` marks a file reviewed,
 `ctrl+p` finds any command by name, and the footer lists the keys for wherever you are.
 
+Where the diff leaves lines out, a row says how many. Put the cursor on it and `l` brings ten of
+them back where you are standing, `h` puts them away again, and the rest of the file stays as small
+as it was. Opened lines are ordinary lines: you can select them and comment on them.
+
 ## The agent side
 
 In the worktree being reviewed:
