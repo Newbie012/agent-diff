@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto"
+import { readFile } from "node:fs/promises"
+import { text as readStream } from "node:stream/consumers"
 import { Cause, Effect, Exit, Layer } from "effect"
 import {
   awaitComments,
@@ -8,12 +10,17 @@ import {
   fieldsOf,
   findCommand,
   listBranches,
+  MalformedStory,
   narrow,
   numeric,
   optionsFrom,
   required,
   reviewProgress,
+  setStory,
+  showStory,
+  stageComment,
   submitComment,
+  submitReview,
   takeComments,
   toggleVouch,
   UnknownCommand,
@@ -64,6 +71,31 @@ const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
   yield* answer(options, { comments })
 })
 
+const commentStage = Effect.fn("Main.commentStage")(function* (options: Options) {
+  const report = yield* stageComment({
+    repo: yield* required(options, "repo"),
+    branch: yield* required(options, "branch"),
+    file: yield* required(options, "file"),
+    start: yield* numeric(options, "start"),
+    end: yield* numeric(options, "end"),
+    body: yield* required(options, "body"),
+    side: options["side"] === "old" ? "old" : "new",
+    id: options["id"] ?? randomUUID(),
+    at: options["at"] ?? new Date().toISOString(),
+  })
+  yield* answer(options, { pending: report.pending })
+})
+
+const reviewSubmit = Effect.fn("Main.reviewSubmit")(function* (options: Options) {
+  const report = yield* submitReview(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    options["id"] ?? randomUUID(),
+    options["at"] ?? new Date().toISOString(),
+  )
+  yield* answer(options, { submitted: report.submitted })
+})
+
 const fileVouch = Effect.fn("Main.fileVouch")(function* (options: Options) {
   const report = yield* toggleVouch({
     repo: yield* required(options, "repo"),
@@ -78,7 +110,29 @@ const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options)
     yield* required(options, "repo"),
     yield* required(options, "branch"),
   )
-  yield* answer(options, { vouched: report.vouched, total: report.total })
+  yield* answer(options, { vouched: report.vouched, total: report.total, pending: report.pending })
+})
+
+const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
+  return yield* Effect.tryPromise({
+    try: () => (source === "-" ? readStream(process.stdin) : readFile(source, "utf8")),
+    catch: (cause) => new MalformedStory({ reason: String(cause) }),
+  })
+})
+
+const storySet = Effect.fn("Main.storySet")(function* (options: Options) {
+  const document = yield* documentAt(yield* required(options, "json"))
+  const story = yield* setStory(
+    yield* required(options, "worktree"),
+    document,
+    options["at"] ?? new Date().toISOString(),
+  )
+  yield* answer(options, { story })
+})
+
+const storyShow = Effect.fn("Main.storyShow")(function* (options: Options) {
+  const story = yield* showStory(yield* required(options, "worktree"))
+  yield* answer(options, { story })
 })
 
 const describe = Effect.fn("Main.describe")(function* (options: Options) {
@@ -91,14 +145,25 @@ const describe = Effect.fn("Main.describe")(function* (options: Options) {
   yield* answer(options, { commands: found === undefined ? catalog : [found] })
 })
 
+const routes = {
+  "branch list": branchList,
+  "comment add": commentAdd,
+  "comment stage": commentStage,
+  "comment take": commentTake,
+  "review submit": reviewSubmit,
+  "review progress": reviewStatus,
+  "story set": storySet,
+  "story show": storyShow,
+  describe,
+} as const
+
 const run = Effect.fn("Main.run")(function* (name: string, options: Options) {
-  if (name === "branch list") return yield* branchList(options)
-  if (name === "comment add") return yield* commentAdd(options)
-  if (name === "comment take") return yield* commentTake(options)
+  const route = Object.hasOwn(routes, name) ? routes[name as keyof typeof routes] : undefined
+  if (route !== undefined) return yield* route(options)
   if (name === "file vouch") return yield* fileVouch(options)
-  if (name === "review progress") return yield* reviewStatus(options)
-  if (name === "review open") return yield* runTui(yield* required(options, "repo"))
-  if (name === "describe") return yield* describe(options)
+  if (name === "review open") {
+    return yield* runTui(yield* required(options, "repo"), process.env["ADIFF_SESSION"])
+  }
   return yield* new UnknownCommand({ name, known: commandNames })
 })
 

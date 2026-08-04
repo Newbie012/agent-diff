@@ -2,9 +2,15 @@ import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import { anchorFor, lineOn, parsePatches, type Patch, type Side } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
-import { isVouched, vouch } from "../domain/review/index.ts"
-import { Store, type Batch, type StoreUnreadable, type StoreUnwritable } from "../service/store/index.ts"
-import { UnknownBranch, UnknownFile, UnselectableRange } from "./error.ts"
+import { commentOn, isVouched, stage, submitAll, vouch } from "../domain/review/index.ts"
+import {
+  Store,
+  type Batch,
+  type StoredComment,
+  type StoreUnreadable,
+  type StoreUnwritable,
+} from "../service/store/index.ts"
+import { EmptyReview, UnknownBranch, UnknownFile, UnselectableRange } from "./error.ts"
 
 const CONTEXT = 3
 const POLL = "500 millis"
@@ -16,6 +22,8 @@ export type BranchSummary = {
   readonly files: number
   readonly added: number
   readonly removed: number
+  readonly staged: number
+  readonly unread: number
 }
 
 export type CommentRequest = {
@@ -30,7 +38,7 @@ export type CommentRequest = {
   readonly at: string
 }
 
-const findBranch = Effect.fn("Cli.findBranch")(function* (repo: string, branch: string) {
+export const findBranch = Effect.fn("Cli.findBranch")(function* (repo: string, branch: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const found = worktrees.find((worktree) => worktree.branch === branch)
@@ -39,7 +47,7 @@ const findBranch = Effect.fn("Cli.findBranch")(function* (repo: string, branch: 
     : Effect.succeed(found)
 })
 
-const patchesOf = Effect.fn("Cli.patchesOf")(function* (worktree: Worktree) {
+export const patchesOf = Effect.fn("Cli.patchesOf")(function* (worktree: Worktree) {
   const git = yield* Git
   const raw = yield* git.diff(worktree, CONTEXT)
   return parsePatches(raw)
@@ -63,12 +71,20 @@ const rowsCovering = (
     )
     .map((row) => row.index)
 
+const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
+  const store = yield* Store
+  const state = yield* store.state(worktree.path)
+  const batches = yield* store.inbox(worktree.path)
+  return { staged: state.pending.length, unread: Math.max(0, batches.length - state.consumed) }
+})
+
 export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const summaries: Array<BranchSummary> = []
   for (const worktree of worktrees) {
     const stat = yield* git.stat(worktree)
+    const waiting = yield* waitingOn(worktree)
     summaries.push({
       branch: worktree.branch,
       path: worktree.path,
@@ -76,6 +92,8 @@ export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: strin
       files: stat.files,
       added: stat.added,
       removed: stat.removed,
+      staged: waiting.staged,
+      unread: waiting.unread,
     })
   }
   return summaries.filter((summary) => summary.files > 0)
@@ -91,6 +109,8 @@ export type VouchReport = {
   readonly vouched: ReadonlyArray<string>
   readonly total: number
 }
+
+export type ProgressReport = VouchReport & { readonly pending: number }
 
 const blobOf = (patches: ReadonlyArray<Patch>, file: string): Option.Option<string> =>
   Option.map(findPatch(patches, file), (patch) => patch.blob)
@@ -129,7 +149,87 @@ export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
   return {
     vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
     total: patches.length,
-  } satisfies VouchReport
+    pending: current.pending.length,
+  }
+})
+
+const anchorRequest = Effect.fn("Cli.anchorRequest")(function* (request: CommentRequest) {
+  const worktree = yield* findBranch(request.repo, request.branch)
+  const patches = yield* patchesOf(worktree)
+  const resolved = yield* Option.match(findPatch(patches, request.file), {
+    onNone: () =>
+      new UnknownFile({ file: request.file, known: patches.map((candidate) => candidate.path) }),
+    onSome: Effect.succeed,
+  })
+  const rows = rowsCovering(resolved, request.side, request.start, request.end)
+  const first = rows[0]
+  const last = rows.at(-1)
+  const found =
+    first === undefined || last === undefined ? Option.none() : anchorFor(resolved, first, last)
+  const anchor = yield* Option.match(found, {
+    onNone: () =>
+      new UnselectableRange({ file: request.file, start: request.start, end: request.end }),
+    onSome: Effect.succeed,
+  })
+  return { worktree, anchor }
+})
+
+export const stageComment = Effect.fn("Cli.stageComment")(function* (request: CommentRequest) {
+  const store = yield* Store
+  const { worktree, anchor } = yield* anchorRequest(request)
+  const staged = stage([], commentOn(request.id, anchor, request.body))
+  const first = staged[0]
+  const entry: StoredComment = {
+    id: request.id,
+    anchor,
+    body: first === undefined ? request.body : first.body,
+  }
+  const pending = yield* store.stage(worktree.path, entry)
+  return { pending: pending.length }
+})
+
+export const listPending = Effect.fn("Cli.listPending")(function* (repo: string, branch: string) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const current = yield* store.state(worktree.path)
+  return current.pending.map((entry) => ({
+    file: entry.anchor.path,
+    side: entry.anchor.side,
+    start: entry.anchor.start,
+    end: entry.anchor.end,
+    body: entry.body,
+  })) satisfies ReadonlyArray<Omit<PendingComment, "at" | "head" | "snippet">>
+})
+
+export const listSent = Effect.fn("Cli.listSent")(function* (repo: string, branch: string) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  return flatten(yield* store.inbox(worktree.path)).map((comment) => ({
+    file: comment.file,
+    side: comment.side,
+    start: comment.start,
+    end: comment.end,
+    body: comment.body,
+  }))
+})
+
+export const submitReview = Effect.fn("Cli.submitReview")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+  at: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const current = yield* store.state(worktree.path)
+  if (current.pending.length === 0) return yield* new EmptyReview({ branch })
+  const comments = submitAll(
+    current.pending.map((entry) => commentOn(entry.id, entry.anchor, entry.body)),
+  ).map((comment) => ({ id: comment.id, anchor: comment.anchor, body: comment.body }))
+  const batch: Batch = { id, at, head: worktree.head, comments }
+  yield* store.submit(worktree.path, batch)
+  yield* store.saveState(worktree.path, { ...current, pending: [] })
+  return { submitted: comments.length }
 })
 
 export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {
@@ -165,9 +265,14 @@ export const submitComment = Effect.fn("Cli.submitComment")(function* (request: 
   return batch
 })
 
-export const listPatches = Effect.fn("Cli.listPatches")(function* (repo: string, branch: string) {
+export const listPatches = Effect.fn("Cli.listPatches")(function* (
+  repo: string,
+  branch: string,
+  context = CONTEXT,
+) {
   const worktree = yield* findBranch(repo, branch)
-  return yield* patchesOf(worktree)
+  const git = yield* Git
+  return parsePatches(yield* git.diff(worktree, context))
 })
 
 export type PendingComment = {
@@ -212,3 +317,19 @@ export const awaitComments = (
         : Effect.sleep(POLL).pipe(Effect.flatMap(() => awaitComments(worktree, deadline))),
     ),
   )
+
+export const saveReport = Effect.fn("Cli.saveReport")(function* (stamp: string, text: string) {
+  const store = yield* Store
+  return yield* store.saveReport(stamp, text)
+})
+
+export const fileSource = Effect.fn("Cli.fileSource")(function* (
+  repo: string,
+  branch: string,
+  file: string,
+) {
+  const git = yield* Git
+  const worktree = yield* findBranch(repo, branch)
+  const found = yield* git.source(worktree, file)
+  return Option.getOrElse(found, (): ReadonlyArray<string> => [])
+})
