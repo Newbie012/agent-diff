@@ -57,6 +57,10 @@
     - honest-moose-look
     - rare-books-swim
     - short-kiwis-sort
+"@eliya-oss/agent-diff@0.1.0-alpha.16":
+  dir: ""
+  intents:
+    - sweet-tables-sneeze
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
