@@ -7,14 +7,13 @@
 //   pnpm simulate --keep          # leave the workspace on disk and print its path
 import { execFile, spawn } from "node:child_process"
 import { promisify } from "node:util"
-import { fileURLToPath } from "node:url"
+import { NODE, runArgs } from "./lib/entry.ts"
 import { seedRemarks } from "./simulation/seed.ts"
 import { createWorkspace, series, type Branch, type Workspace } from "./simulation/workspace.ts"
 
 const exec = promisify(execFile)
 
 type Comment = { readonly body: string; readonly file: string }
-const ENTRY = fileURLToPath(new URL("../bin/adiff.js", import.meta.url))
 
 type Args = {
   branches: number
@@ -59,7 +58,7 @@ const adiff = async (
   cwd: string,
 ): Promise<Envelope | undefined> => {
   const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
-  const { stdout } = await exec(ENTRY, [...args], { cwd, env, encoding: "utf8" })
+  const { stdout } = await exec(NODE, runArgs(args), { cwd, env, encoding: "utf8" })
   const line = stdout.split("\n").findLast((candidate) => candidate.startsWith("{"))
   return line === undefined ? undefined : (JSON.parse(line) as Envelope)
 }
@@ -103,7 +102,7 @@ const probe = async (space: Workspace): Promise<void> => {
 
 const openTerminal = (space: Workspace): Promise<number> =>
   new Promise((resolve) => {
-    const child = spawn(ENTRY, ["review", "open", "--repo", space.repo], {
+    const child = spawn(NODE, runArgs(["review", "open", "--repo", space.repo]), {
       cwd: space.repo,
       env: { ...process.env, ADIFF_ROOT: space.storeRoot },
       stdio: "inherit",

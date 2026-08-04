@@ -2,11 +2,10 @@ import { spawn } from "node:child_process"
 import { access, mkdir, rm } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { fileURLToPath } from "node:url"
+import { ENTRY, FLAGS } from "./lib/entry.ts"
 import { seedRemarks } from "./simulation/seed.ts"
 import { createWorkspace } from "./simulation/workspace.ts"
 
-const ENTRY = fileURLToPath(new URL("../bin/adiff.js", import.meta.url))
 const HOME = join(homedir(), ".cache", "adiff", "watch")
 const fresh = process.argv.includes("--fresh")
 const branches = Number(process.argv[process.argv.indexOf("--branches") + 1] || 7)
@@ -33,8 +32,7 @@ const child = spawn(
   [
     "--watch",
     "--watch-path=src",
-    "--experimental-ffi",
-    "--disable-warning=ExperimentalWarning",
+    ...FLAGS,
     ENTRY,
     "review",
     "open",
