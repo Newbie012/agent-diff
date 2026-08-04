@@ -757,12 +757,12 @@ export class Screen {
     const readout = selectionReadout(state)
     this.lead = readout.length === 0 ? 0 : readout.length + 3
     const lead = readout.length === 0 ? [] : [fg(palette.muted)(`${readout}   `)]
-    if (state.notice.length === 0) return new StyledText([...lead, ...this.chipRow().chunks])
-    const tail = `  ${state.notice}`
+    const tail = state.notice.length === 0 ? "" : `  ${state.notice}`
     const width = this.footer.width > 0 ? this.footer.width : this.renderer.width
     const room = Math.max(0, width - this.lead - tail.length)
     const chips = keptWithin(this.chipRow().chunks, room)
-    return new StyledText([...lead, ...chips, fg(palette.attention)(tail)])
+    const notice = tail.length === 0 ? [] : [fg(palette.attention)(tail)]
+    return new StyledText([...lead, ...chips, ...notice])
   }
 
   private paneRoom(): number {
