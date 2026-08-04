@@ -28,6 +28,7 @@ type Display = {
   readonly comment: boolean
   readonly sent: boolean
   readonly label: boolean
+  readonly gap: boolean
 }
 
 const WASH: Partial<Record<RowKind, LinePaint>> = {
@@ -176,14 +177,14 @@ export class DiffView {
     return this.fitted
   }
 
-  show(patch: Patch, notes: ReadonlyArray<Note>): void {
+  show(patch: Patch, notes: ReadonlyArray<Note>, gaps: ReadonlySet<number>): void {
     const room = notes.length === 0 ? NOTE_MIN : this.noteRoom()
     const key = [room, ...notes.map((note) => `${note.side}${note.line}:${note.body}`)].join("\u0000")
     if (patch === this.shown && key === this.noted) return
     this.pinnedText = ""
     this.shown = patch
     this.noted = key
-    this.display = layout(patch, notes, room)
+    this.display = layout(patch, notes, room, gaps)
     this.starts = new Map()
     for (const [index, entry] of this.display.entries()) {
       if (!entry.comment && !this.starts.has(entry.row)) this.starts.set(entry.row, index)
@@ -192,7 +193,9 @@ export class DiffView {
     this.code.content = this.display.map((entry) => entry.text).join("\n")
     this.numbers.setLineNumbers(lineNumbers(patch, this.display))
     this.numbers.setHideLineNumbers(
-      new Set(this.display.flatMap((entry, index) => (entry.comment ? [index] : []))),
+      new Set(
+        this.display.flatMap((entry, index) => (entry.comment || entry.gap ? [index] : [])),
+      ),
     )
     this.numbers.setLineSigns(lineSigns(patch, this.display))
     this.numbers.setLineColors(new Map())
@@ -240,14 +243,19 @@ export class DiffView {
   }
 }
 
+const groupOf = (entry: Display): string | undefined => {
+  if (entry.gap) return "gap"
+  if (!entry.comment) return undefined
+  if (entry.label) return "note.label"
+  return entry.sent ? "note.sent" : "note"
+}
+
 const noteSpans = (display: ReadonlyArray<Display>): ReadonlyArray<[number, number, string]> => {
   const spans: Array<[number, number, string]> = []
   let at = 0
   for (const entry of display) {
-    if (entry.comment) {
-      const group = entry.label ? "note.label" : entry.sent ? "note.sent" : "note"
-      spans.push([at, at + entry.text.length, group])
-    }
+    const group = groupOf(entry)
+    if (group !== undefined) spans.push([at, at + entry.text.length, group])
     at += entry.text.length + 1
   }
   return spans
@@ -282,16 +290,25 @@ const noteRows = (note: Note, row: number, room: number): ReadonlyArray<Display>
     comment: true,
     sent: note.sent,
     label: index === 0,
+    gap: false,
   }))
 
 const layout = (
   patch: Patch,
   notes: ReadonlyArray<Note>,
   room: number,
+  gaps: ReadonlySet<number>,
 ): ReadonlyArray<Display> => {
   const display: Array<Display> = []
   for (const row of patch.rows) {
-    display.push({ text: row.text, row: row.index, comment: false, sent: false, label: false })
+    display.push({
+      text: row.text,
+      row: row.index,
+      comment: false,
+      sent: false,
+      label: false,
+      gap: gaps.has(row.index),
+    })
     for (const note of notes) {
       if (sideLineOf(row, note.side) === note.line) {
         display.push(...noteRows(note, row.index, room))

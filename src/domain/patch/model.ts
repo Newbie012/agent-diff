@@ -23,6 +23,7 @@ export type Hunk = {
   readonly marker: string
   readonly scope: string
   readonly startRow: number
+  readonly newStart: number
   readonly rows: ReadonlyArray<Row>
   readonly skipped: number
 }

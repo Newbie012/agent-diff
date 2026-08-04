@@ -70,6 +70,12 @@ notice or invalidate it.
 The git object SHA of a file's contents on the branch side of the diff. adiff uses it as the
 staleness signal: same blob means the reviewer and the agent are looking at the same bytes.
 
+### Gap
+
+A run of file lines a [patch](#patch) leaves out: above its first [hunk](#hunk), between two of
+them, or below the last. A gap knows how many lines it holds back and can hand them back a chunk at
+a time without touching any other gap.
+
 ### Hunk
 
 A contiguous `@@` group within a [patch](#patch). The unit of coverage.

@@ -123,6 +123,40 @@ const docsAfter = [
   "Any other non-2xx raises `Upstream` carrying the status.",
 ]
 
+const tokenClock = (expiry: string): ReadonlyArray<string> => [
+  "import { addHours, isBefore } from 'date-fns'",
+  "import { db } from '../db'",
+  "import type { Invite, Token } from './types'",
+  "",
+  "export type TokenRow = {",
+  "  readonly token: string",
+  "  readonly inviteId: string",
+  "  readonly issuedAt: Date",
+  "}",
+  "",
+  "export const toToken = (row: TokenRow): Token => ({",
+  "  value: row.token,",
+  "  inviteId: row.inviteId,",
+  "  issuedAt: row.issuedAt,",
+  "})",
+  "",
+  "export const issue = async (invite: Invite): Promise<Token> => {",
+  "  const row = await db.tokens.insert({ inviteId: invite.id, issuedAt: new Date() })",
+  "  return toToken(row)",
+  "}",
+  "",
+  "export const forInvite = async (inviteId: string): Promise<Token | undefined> => {",
+  "  const row = await db.tokens.byInvite(inviteId)",
+  "  return row === undefined ? undefined : toToken(row)",
+  "}",
+  "",
+  "export const expiresAt = (token: Token): Date =>",
+  `  addHours(token.issuedAt, ${expiry})`,
+  "",
+  "export const isExpired = (token: Token, at: Date): boolean =>",
+  "  isBefore(expiresAt(token), at)",
+]
+
 export const fixtures: ReadonlyArray<BranchFixture> = [
   {
     name: "add-teammate-invitations",
@@ -161,6 +195,11 @@ export const fixtures: ReadonlyArray<BranchFixture> = [
           "  }",
           "}",
         ],
+      },
+      {
+        path: "src/api/invite-tokens.ts",
+        before: tokenClock("72"),
+        after: tokenClock("24"),
       },
     ],
   },

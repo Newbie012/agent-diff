@@ -8,6 +8,7 @@ export type StagedComment = {
   readonly body: string
 }
 import type { Patch } from "../domain/patch/index.ts"
+import { shownOf, type Reveal } from "./gaps.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, StoryStep } from "../cli/index.ts"
 
@@ -44,6 +45,8 @@ export type TuiState = {
   readonly context: number
   readonly top: number
   readonly source: ReadonlyArray<string>
+  readonly full: ReadonlyArray<Patch>
+  readonly revealed: ReadonlyArray<Reveal>
   readonly focus: "tree" | "diff"
   readonly navOpen: boolean
   readonly steps: ReadonlyArray<StoryStep>
@@ -76,6 +79,8 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   context: 3,
   top: 0,
   source: [],
+  full: [],
+  revealed: [],
   focus: "diff",
   navOpen: true,
   steps: [],
@@ -168,7 +173,7 @@ export const railWindow = (
 export const selectedBranch = (state: TuiState): BranchSummary | undefined =>
   state.branches[state.branchIndex]
 
-export const selectedPatch = (state: TuiState): Patch | undefined => state.patches[state.patchIndex]
+export const selectedPatch = (state: TuiState): Patch | undefined => shownOf(state)?.patch
 
 export const treeOf = (state: TuiState): Tree =>
   buildTree(state.patches.map((patch) => patch.path))
@@ -213,25 +218,8 @@ export const commentsOn = (state: TuiState, fileIndex: number): number => {
   return state.pending.filter((entry) => entry.file === patch.path).length
 }
 
-const firstShownLine = (patch: Patch): number => {
-  const found = patch.rows.find((row) => Option.isSome(row.newLine))
-  return found === undefined ? 1 : Option.getOrElse(found.newLine, () => 1)
-}
-
-const lastShownLine = (patch: Patch): number => {
-  const found = patch.rows.findLast((row) => Option.isSome(row.newLine))
-  return found === undefined ? 0 : Option.getOrElse(found.newLine, () => 0)
-}
-
-export const hiddenLines = (state: TuiState): number => {
-  const patch = selectedPatch(state)
-  if (patch === undefined) return 0
-  const between = patch.hunks.reduce((total, hunk) => total + hunk.skipped, 0)
-  const above = Math.max(0, firstShownLine(patch) - 1)
-  const lines = state.source.at(-1)?.trim() === "" ? state.source.length - 1 : state.source.length
-  const below = lines === 0 ? 0 : Math.max(0, lines - lastShownLine(patch))
-  return between + above + below
-}
+export const hiddenLines = (state: TuiState): number =>
+  shownOf(state)?.gaps.reduce((total, gap) => total + gap.hidden, 0) ?? 0
 
 export const markedRows = (state: TuiState): ReadonlySet<number> => {
   const patch = selectedPatch(state)
@@ -317,7 +305,8 @@ const lineOnSide = (row: Patch["rows"][number], side: "old" | "new"): number | u
   Option.getOrUndefined(side === "old" ? row.oldLine : row.newLine)
 
 export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray<number> => {
-  const patch = state.patches[fileIndex]
+  const patch =
+    fileIndex === state.patchIndex ? selectedPatch(state) : state.patches[fileIndex]
   if (patch === undefined) return []
   const notes = [...state.pending, ...state.sent].filter((entry) => entry.file === patch.path)
   const rows = patch.rows.filter((row) =>

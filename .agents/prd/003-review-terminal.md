@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-08-04
 
 ## Problem Statement
 
@@ -35,6 +35,8 @@ is listed in the footer, so nothing has to be memorised or discovered.
    that reviewing a ten-file branch is one continuous pass.
 5. As a `reviewer`, I want to leave without sending, so that starting to write a comment is not a
    commitment.
+6. As a `reviewer`, I want to open the lines a diff leaves out at one place without opening them
+   everywhere, so that reading three lines above one hunk costs three lines and not a whole file.
 
 ## Implementation Decisions
 
@@ -56,7 +58,7 @@ Three screens, and the keys each answers to:
 | Screen | Keys |
 | --- | --- |
 | Branches | `j`/`down`, `k`/`up` move · `enter` opens · `q` quits |
-| Review | `j`/`down`, `k`/`up` move the cursor · `[`/`]` previous and next file · `v` starts a selection · `c`/`enter` composes · `esc` returns to branches · `q` quits |
+| Review | `j`/`down`, `k`/`up` move the cursor · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `c`/`enter` composes · `esc` returns to branches · `q` quits |
 | Compose | typing edits the draft · `backspace` deletes · `ctrl+s` sends · `esc` discards |
 
 - **The footer is generated from the bindings**, never written by hand. A key that exists is
@@ -76,6 +78,30 @@ Three screens, and the keys each answers to:
   a diff, submitting a comment — happens outside it, so no screen can be in a state that no key
   could have produced.
 
+#### Gaps
+
+A **gap** is a run of file lines the diff leaves out: above the first hunk, between two hunks, or
+below the last one. Every gap the file still has shows as one row of the diff that says how many
+lines it is holding back.
+
+- **`l` opens the gap the cursor is on and `h` closes it again**, ten lines at a time. Away from a
+  gap row the same two keys still open and close the folder or the story step, so one key means
+  "open what the cursor is on" everywhere on this screen.
+- **Opening one gap leaves every other gap where it was.** The whole-file context keys `=` and `-`
+  stay as they are, and setting a new context width starts the gaps over.
+- **Ten lines is one press**, matching the second rung of the context ladder, so a press of `l`
+  buys about what a press of `=` used to buy, in one place instead of the whole file.
+- **The cursor stops on a gap row**, because the row is the control. It carries no line number and
+  cannot be commented on; a selection that crosses it quotes only the code around it.
+- **The row stays under the cursor while the gap empties**, so `l` can be held down. Above and
+  between hunks the lines nearest the following change come back first and pile up below the row;
+  below the last hunk they come back downward and the row rides beneath them.
+- **A gap that runs out stops being a row.** Once no lines are held back anywhere in the file, the
+  header stops counting them too.
+- **Opened lines are ordinary rows.** They come from git rather than from the file on disk, so they
+  carry the same line numbers, are selectable, and a comment on one reaches the agent anchored to
+  the file line it names.
+
 ### Deferred decisions
 
 | Decision | Trigger |
@@ -84,7 +110,8 @@ Three screens, and the keys each answers to:
 | A file tree, and commenting from it | A branch wide enough that a flat file list stops being navigable |
 | Mouse drag selection | Keyboard selection proving slower for wide ranges |
 | Vouching from the terminal | Reviewers vouching from the command line and finding it absurd |
-| Expanding context at a hunk boundary | A change that cannot be judged from three lines of context, owned by [PRD 002](002-diff-and-anchoring.md) |
+| Opening a gap by clicking its row | Reviewers reaching for the mouse on a gap row and finding nothing happens |
+| Opening a gap downward as well as upward | A reviewer wanting the lines that follow a hunk more often than the lines that precede the next one |
 
 ## Testing Decisions
 
@@ -99,6 +126,11 @@ Behaviors that must be covered:
 - A comment written entirely through keystrokes reaches the agent with the right anchor.
 - A comment on more than one line, and a comment on one line too wide for the panel, are both fully
   readable in the panel, with the actions still below them, at more than one terminal width.
+- Opening one gap brings back the lines next to it and leaves the other gaps counting the same
+  number they counted before.
+- A gap opened often enough runs out and its row goes.
+- A comment written on a line that only exists because a gap was opened reaches the agent against
+  the right file and the right line numbers.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
