@@ -28,12 +28,14 @@ Keep the split clean:
 ## Commands
 
 ```bash
+npm install -g --allow-scripts=pnpm pnpm@next-12   # corepack cannot install pnpm 12 yet
 pnpm install
 pnpm check          # typecheck, lint, style rules, tests
 pnpm typecheck
 pnpm lint           # oxlint + scripts/check-style.ts
 pnpm test
-pnpm review         # adiff review --repo .
+pnpm review            # the terminal, on this repo
+pnpm simulate          # the terminal, on a synthetic repo (--probe for headless)
 ```
 
 Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entry point in the

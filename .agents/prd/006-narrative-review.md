@@ -2,9 +2,10 @@
 
 > Reading a diff in the order an agent chose to explain it, instead of alphabetically by file.
 
-- **Status:** `draft` — domain implemented, no surface exposes it
+- **Status:** `active` — an agent writes a story on the command surface, a reviewer walks it in the
+  terminal
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-08-04
 
 ## Problem Statement
 
@@ -44,8 +45,9 @@ The story record, its versioning and staleness, and [coverage](CONTEXT.md#covera
 
 ### Does not own
 
-Rendering a story ([PRD 003](003-review-terminal.md), deferred); how an agent writes one — no
-authoring surface exists yet; anchoring inside one ([PRD 002](002-diff-and-anchoring.md)).
+The shape of the review terminal around the story ([PRD 003](003-review-terminal.md)); the envelope
+and error conventions the story commands answer in ([PRD 007](007-command-surface.md)); anchoring
+inside one ([PRD 002](002-diff-and-anchoring.md)).
 
 ### Public contract
 
@@ -59,35 +61,55 @@ authoring surface exists yet; anchoring inside one ([PRD 002](002-diff-and-ancho
   reported as covering the whole diff, and one that does not says so.
 - **A story is optional and additive.** Every behavior in PRDs 001–005 works identically with no
   story present.
+- **An agent writes a story for its own worktree.** `adiff story set --worktree . --json <file|->`
+  takes a summary and ordered steps, each a title with prose and spans of files. adiff assigns the
+  version, the parent, and the commit; the agent supplies only the argument.
+- **The answer to writing a story is its coverage.** `story set` and `story show` both answer with
+  `covered`/`total` hunks, the `uncovered` spans no step claims, and the `vanished` paths a step
+  points at that the branch does not change. A story cannot be written without being told what it
+  skipped.
+- **A branch with a story reads by step.** The review terminal replaces the file tree with the
+  story's numbered steps and their file counts; moving to a step scopes the diff to that step's
+  files, and one key switches back to the file tree. The hunks no step claims appear as a final
+  step, `not in any step`, so a story can never hide code from the reviewer.
 
 ### Deferred decisions
 
 | Decision | Trigger |
 | --- | --- |
-| How an agent submits a story | The first agent that wants to write one |
-| How a story is read in the terminal | Same |
-| Whether a stale story is hidden or shown with a warning | A reviewer meeting a stale story in practice |
+| Whether a stale story is hidden or shown with a warning | A reviewer meeting a stale story in practice. `story show` reports `stale`; the terminal does not yet say so |
+| Whether a step's prose is shown in the terminal | A reviewer asking what a step claims, not just which files it covers |
+| Whether a superseded version can be read back | Someone wanting to diff two versions of the argument |
 | Whether stories are worth their cost at all | This PRD shipping and surviving a real 90-file review |
 
 ## Testing Decisions
 
-Currently untested, which is the honest status: the domain has no surface, and this repo does not
-unit-test domain code. Nothing here is verified until an issue exposes it at the store or the
-terminal boundary, at which point this section names the behaviors.
+Covered at the two boundaries ([ADR-003](../adr/ADR-003-blackbox-testdriver.md)): the command
+surface in `src/testing/story.test.ts`, the terminal in `src/testing/story-rail.test.ts`.
 
-When exposed, coverage must include: reading a branch that has a story, reading one that does not,
-a story whose commit has moved on being reported stale, and a story that does not cover the whole
-diff saying so.
+- An agent writes a story and a reviewer reads back the same steps in the same order.
+- A story that claims one of two changed files reports the other as uncovered, on writing and on
+  reading.
+- Writing a story again supersedes the previous version and records its parent.
+- A story is reported stale once the branch moves past the commit it describes.
+- A step pointing at a path the branch does not change is reported as vanished.
+- Reading a branch with no story fails as `NoStory` rather than answering with an empty one.
+- The terminal lists numbered steps with file counts instead of the file tree, scopes the diff to
+  the selected step, groups unclaimed files under `not in any step`, and switches back to the tree
+  on one key.
+- A branch with no story shows the file tree, unchanged.
 
 ## Out of Scope
 
-- Generating a story. adiff stores and reads; the agent writes.
+- Generating a story. adiff stores, checks and reads; the agent writes.
 - Editing a story from the terminal.
 - Stories that span branches.
+- Commenting on a step rather than on lines. Comments stay anchored to code.
 
 ## Further Notes
 
-This PRD is the reason the module exists but is currently unreachable from any command or screen.
-That is a real cost — unreferenced code rots and cannot be trusted — and a
-GitHub issue tracks closing it or deleting the module. Leaving it in this state indefinitely is
-not one of the options.
+The narrative domain had no caller for as long as this PRD sat in draft. It has one now:
+`story set` and `story show` on the command surface, and the step rail in the review terminal. The
+coverage rule is the load-bearing part — an agent narrating its own diff has every incentive to
+narrate the flattering two thirds of it, so adiff computes what the story skipped rather than
+believing the story, and shows the remainder to the reviewer whether the agent named it or not.

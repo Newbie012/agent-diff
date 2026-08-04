@@ -7,6 +7,10 @@ You select lines on a diff the way you would on GitHub, write a comment, and the
 that branch picks it up on its next `adiff take`. No pull request, no browser, no copying file
 paths and line numbers into chat.
 
+`comment add` sends immediately; `comment stage` holds a comment back until `review submit` sends
+the whole set as one batch, so the agent wakes once for a review rather than once per remark —
+the difference between a chat message and a pull request review.
+
 The surface is built for agents as much as people: compact JSON, failures off stdout, exit codes
 that mean something, and `adiff describe` so a caller can discover the commands instead of being
 told about them.
@@ -18,8 +22,79 @@ a module Node only exposes behind `--experimental-ffi`, and only from 26 onward.
 in this repo passes the flag for you.
 
 ```bash
+corepack disable pnpm
+npm install -g --allow-scripts=pnpm pnpm@next-12
 pnpm install
 pnpm review
+```
+
+pnpm 12 is a Rust rewrite and is still beta, so
+[corepack cannot install it](https://pnpm.io/installation) — install it directly, as above. The
+`packageManager` pin in `package.json` stays for CI, which reads it through `pnpm/action-setup`.
+
+## Working on the look
+
+```bash
+pnpm watch
+```
+
+Builds the seven-branch workspace once under `~/.cache/adiff/watch`, then runs the terminal under
+`node --watch`. Save a file in `src/` and it restarts, resuming on the same branch, file and line
+you were looking at — the review remembers where you were whenever `ADIFF_SESSION` says where to.
+`pnpm watch --fresh` throws the workspace away and builds it again.
+
+```bash
+pnpm serve             # localhost:4319 — every screen, repainting as you save
+pnpm play              # localhost:4320 — the terminal itself, in the browser
+```
+
+`play` keeps a real review running on the server against the same headless renderer the tests use,
+sends your keys and mouse to it, and paints back what it drew. It is not a mock: the branches are
+real worktrees and a comment written in the browser lands in the store like any other. Dragging
+selects lines, the wheel scrolls, and saving a file in `src/` restarts it on the file you were
+reading.
+
+The browser is the fastest way to work on the look: `serve` watches `src/`, recaptures every
+screen in a fresh process on each save, and pushes a reload down an event stream. Colours are the
+real ones, span by span, so a wrong shade shows up instead of hiding in a character dump. Nothing
+of adiff runs in the page — it is a recording, not the terminal.
+
+```bash
+pnpm sketch            # every glyph set, rendered side by side
+pnpm sketch ring dot   # just these two
+ADIFF_MARKS=bubble pnpm simulate
+```
+
+Glyphs live in one place, `src/tui/marks.ts`. `sketch` renders the same diff once per set so a
+choice can be made by looking at it rather than by imagining it.
+
+## Trying it
+
+```bash
+pnpm simulate
+```
+
+Builds a throwaway repository with four branches an agent has already worked on — a new error type
+and its call sites, a React panel gaining failure states, a deleted legacy file, a new module, and
+a 42-file migration of just over a thousand lines each way — and opens the terminal on it. Nothing touches your real repos or `~/.adiff`; the
+workspace is a temp directory, removed when you quit.
+
+```bash
+pnpm simulate --small        # drop the large branch
+pnpm simulate --files 80 --lines 40   # bigger still
+pnpm simulate --agent        # a fake agent reads your comments as you send them
+pnpm simulate --probe        # headless: run the whole round trip, print it, exit
+pnpm simulate --keep         # leave the workspace on disk and print its path
+```
+
+`--probe` is the fastest way to see the product without a terminal:
+
+```
+branches    {"ok":true,"branches":[{"branch":"cdr-42-distinguish-missing-incidents","files":3,"added":18,...
+vouch       {"ok":true,"vouched":["src/api/incidents.ts"],"total":3}
+agent takes {"ok":true,"comments":[{"file":"src/api/incidents.ts","side":"new","start":12,"end":13,
+             "snippet":"  if (res.status === 404) throw new IncidentNotFound(id)\n  if (!res.ok) ...",
+             "body":"Two throws where one union would do."}]}
 ```
 
 ## Reviewing
@@ -37,8 +112,11 @@ Everything the terminal does is also a command, so nothing is trapped in the UI:
 ```bash
 adiff branch list      --repo .
 adiff comment add      --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
+adiff comment stage    --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"
+adiff review submit    --repo . --branch cdr-1        # sends the staged comments as one review
 adiff file vouch       --repo . --branch cdr-1 --file src/api.ts
 adiff review progress  --repo . --branch cdr-1
+adiff story show       --worktree .                   # the story of a diff, and what it skips
 adiff describe                                        # the catalog, as JSON
 ```
 
@@ -61,7 +139,14 @@ In the worktree being reviewed:
 ```bash
 adiff comment take --worktree .            # everything written since the last take
 adiff comment take --worktree . --wait 300 # block until something arrives
+adiff story set --worktree . --json -      # the reading order for the work just done
 ```
+
+A story is an ordered set of steps over the diff — "add the data model", "add the API", "build the
+UI" — each covering spans of files. Where a branch has one, the terminal lists its steps instead of
+the file tree and scopes the diff to the step you are on. adiff computes coverage itself and
+answers with the hunks no step claims, so a story can never hide part of the change: whatever the
+agent left out shows up under `not in any step`.
 
 Comments come back with the exact snippet they were written against, so the agent needs no other
 reference. `skills/adiff/SKILL.md` teaches an agent the loop — symlink it into `~/.claude/skills/`

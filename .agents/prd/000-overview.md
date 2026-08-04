@@ -90,6 +90,7 @@ reached the agent that wrote the code.
 | [007](007-command-surface.md) | The command contract: subcommands, envelope, exit codes | `cli`, `main.ts` |
 | [008](008-tests-and-drivers.md) | What "verified" means, and the TestDriver every test speaks through | `testing` |
 | [009](009-runtime-and-configuration.md) | Runtime requirements, store root, installing the agent skill | root |
+| [010](010-feedback-capture.md) | Reporting a bug from inside the terminal, with the context attached | `tui`, `service/store` |
 
 ### Cross-cutting concerns every PRD inherits
 

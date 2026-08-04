@@ -86,10 +86,22 @@ a visible diff.
 
 ## Known beta behavior
 
-`pnpm version -r` on a lane produces a prerelease of the *current* version rather than of the
-bumped one: at `0.1.0` a minor intent yields `0.1.0-alpha.0`, not `0.2.0-alpha.0`. The alpha train
-is coherent — `0.1.0-alpha.0`, `.1`, `.2`, then `0.1.0` on leaving the lane — so this is recorded
-rather than worked around. Re-check it before the first stable release.
+Two things in `12.0.0-beta.3` differ from the documentation, both verified rather than assumed.
+
+**Corepack cannot install pnpm 12.** It is a Rust rewrite and does not expose the JavaScript entry
+point corepack looks for, so a `packageManager` pin of `pnpm@12.0.0-beta.3` fails locally for
+anyone with corepack enabled. pnpm's own docs say so, and prescribe
+`npm install -g --allow-scripts=pnpm pnpm@next-12`. The pin stays, because CI reads it through
+`pnpm/action-setup` and corepack will catch up; the install command is documented in the README.
+
+**Lane versions ignore the bump.** [`pnpm lane`](https://pnpm.io/cli/lane) documents `X.Y.Z-<lane>.N`
+where `X.Y.Z` is "the stable version the lane is building toward", and gives `2.0.0` plus a minor
+intent producing `2.1.0-alpha.0`. This beta produces `2.0.0-alpha.0` — it prereleases the current
+version and drops the bump. Confirmed at `2.0.0`, `1.4.2`, and `0.1.0`.
+
+The first release is unaffected: `0.1.0` is the version being built toward, so `0.1.0-alpha.0` is
+correct by accident. It matters from the second stable release onward, when graduating a lane would
+land on the version it started from. Re-check before leaving alpha, and report it upstream.
 
 ## Revisit When
 
