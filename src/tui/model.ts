@@ -407,6 +407,20 @@ export const hunkStarts = (state: TuiState): ReadonlyArray<number> => {
   return patch === undefined ? [] : patch.hunks.map((hunk) => hunk.startRow)
 }
 
+export const changeAround = (state: TuiState): readonly [number, number] | undefined => {
+  const rows = selectedPatch(state)?.rows ?? []
+  const changed = (at: number): boolean => {
+    const row = rows[at]
+    return row !== undefined && row.kind !== "context"
+  }
+  if (!changed(state.cursor)) return undefined
+  let first = state.cursor
+  let last = state.cursor
+  while (changed(first - 1)) first -= 1
+  while (changed(last + 1)) last += 1
+  return [first, last]
+}
+
 export const nextUnreviewed = (state: TuiState, from: number): number | undefined => {
   const order = fileOrder(state)
   const start = Math.max(0, order.indexOf(from))

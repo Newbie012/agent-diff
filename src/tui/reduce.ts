@@ -6,6 +6,7 @@ import {
   crowdedOf,
   directoryOfFile,
   fileOrder,
+  changeAround,
   hunkStarts,
   onLayers,
   selectedPatch,
@@ -140,6 +141,22 @@ const moveFile = (state: TuiState, delta: number): TuiState => ({
   selecting: false,
 })
 
+const selectHunk = (state: TuiState): TuiState => {
+  const found = changeAround(state)
+  if (found === undefined) return withNotice(state, "no change under the cursor")
+  return withCursorVisible({ ...state, selecting: true, anchorRow: found[0], cursor: found[1] })
+}
+
+const swapEnds = (state: TuiState): TuiState =>
+  state.selecting
+    ? withCursorVisible({ ...state, anchorRow: state.cursor, cursor: state.anchorRow })
+    : state
+
+const atBranch = (state: TuiState, at: number): TuiState => ({
+  ...state,
+  branchIndex: clamp(at, 0, Math.max(0, state.branches.length - 1)),
+})
+
 const startSelection = (state: TuiState): TuiState => ({
   ...state,
   selecting: true,
@@ -181,6 +198,8 @@ export const paletteChoice = (state: TuiState): Action | undefined =>
   paletteMatches(state)[state.paletteIndex]?.action
 
 const transitions: Record<Action, (state: TuiState) => TuiState> = {
+  "branch.first": (state) => atBranch(state, 0),
+  "branch.last": (state) => atBranch(state, state.branches.length - 1),
   "branch.next": (state) => moveBranch(state, 1),
   "branch.prev": (state) => moveBranch(state, -1),
   "branch.open": (state) => state,
@@ -199,6 +218,8 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "file.next": (state) => moveFile(state, 1),
   "file.prev": (state) => moveFile(state, -1),
   "select.start": startSelection,
+  "select.hunk": selectHunk,
+  "select.swap": swapEnds,
   "compose.open": openCompose,
   "compose.submit": (state) => state,
   "compose.stage": (state) => state,
