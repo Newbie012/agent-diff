@@ -15,6 +15,7 @@ import {
   type TuiState,
   commentRowsIn,
   filesWithComments,
+  rowAtSourceLine,
 } from "./model.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -212,6 +213,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
     navOpen: true,
   }),
   "nav.zoom": (state) => ({ ...state, navOpen: !state.navOpen, focus: "diff" }),
+  "review.reload": (state) => state,
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,
@@ -314,6 +316,21 @@ export const withVouched = (state: TuiState, vouched: ReadonlyArray<string>): Tu
   ...state,
   vouched,
 })
+
+export const restoredTo = (
+  state: TuiState,
+  path: string | undefined,
+  line: number | undefined,
+): TuiState => {
+  const index = state.patches.findIndex((patch) => patch.path === path)
+  const patch = state.patches[index]
+  if (patch === undefined) return state
+  return withCursorVisible({
+    ...state,
+    patchIndex: index,
+    cursor: line === undefined ? 0 : rowAtSourceLine(patch, line),
+  })
+}
 
 export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => ({
   ...state,

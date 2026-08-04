@@ -37,6 +37,8 @@ is listed in the footer, so nothing has to be memorised or discovered.
    commitment.
 6. As a `reviewer`, I want to open the lines a diff leaves out at one place without opening them
    everywhere, so that reading three lines above one hunk costs three lines and not a whole file.
+7. As a `reviewer`, I want to pick up the agent's newest work without leaving the review, so that
+   the diff I am reading is the code that exists.
 
 ## Implementation Decisions
 
@@ -74,6 +76,10 @@ Three screens, and the keys each answers to:
   the screen and keeps the draft.
 - **After a send the screen returns to the diff with a notice**, and the selection is cleared. The
   reviewer stays where they were reading.
+- **`r` reads the branch again.** The agent commits while the review is open, so the diff, the
+  comments, the reviewed files and the layers are all read from disk again on request. The reviewer
+  keeps their place: the same file by path, and the same source line by number. A file that the
+  branch no longer changes lands the reader on the first file that it does.
 - **State transitions are a pure function of state and action.** Everything asynchronous — reading
   a diff, submitting a comment — happens outside it, so no screen can be in a state that no key
   could have produced.

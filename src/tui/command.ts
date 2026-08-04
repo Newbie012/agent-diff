@@ -21,6 +21,7 @@ export type Action =
   | "focus.toggle"
   | "nav.zoom"
   | "rail.toggle"
+  | "review.reload"
   | "tree.collapse"
   | "tree.expand"
   | "file.vouch"
@@ -190,6 +191,14 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["z", "\\"],
     screens: ["review"],
     hint: "zoom",
+  }),
+  command({
+    action: "review.reload",
+    title: "Read the branch again",
+    category: "Review",
+    keys: ["r"],
+    screens: ["review"],
+    hint: "reload",
   }),
   command({
     action: "rail.toggle",
