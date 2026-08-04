@@ -536,6 +536,7 @@ const layerHead = (state: TuiState, row: LayerRow): string => {
 }
 
 const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
+  if (row.kind === "file") return `${" ".repeat(NOTE_LEAD)}${marks().file} ${row.text}`
   if (row.kind === "note") return `${" ".repeat(NOTE_LEAD)}${row.text}`
   const count = row.lead ? `${state.layers[row.index]?.files.length ?? 0}` : ""
   const tail = count.padStart(room.tally + STEP_GAP)
@@ -543,6 +544,7 @@ const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
 }
 
 const layerPaint = (state: TuiState, row: LayerRow): string => {
+  if (row.kind === "file") return palette.ink
   if (row.kind === "note") return palette.faint
   return row.index === state.layerIndex ? palette.ink : palette.muted
 }

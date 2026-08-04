@@ -14,7 +14,7 @@ import type { BranchSummary, ReportedLayer } from "../cli/index.ts"
 
 export type LayerRow = {
   readonly index: number
-  readonly kind: "title" | "note"
+  readonly kind: "title" | "note" | "file"
   readonly text: string
   readonly lead: boolean
 }
@@ -148,6 +148,29 @@ const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
     lead: at === 0,
   }))
 
+const clipEnd = (text: string, room: number): string => {
+  if (text.length <= room) return text
+  const parts = text.split("/")
+  const kept: Array<string> = []
+  for (const part of parts.toReversed()) {
+    const wanted = [part, ...kept].join("/")
+    if (wanted.length + 2 > room) break
+    kept.unshift(part)
+  }
+  const tail = kept.length === 0 ? (parts.at(-1) ?? text) : kept.join("/")
+  return `…/${tail}`
+}
+
+const FILE_LEAD = 2
+
+const fileRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
+  (state.layers[layerIndex]?.files ?? []).map((path) => ({
+    index: layerIndex,
+    kind: "file" as const,
+    text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
+    lead: false,
+  }))
+
 export const layerRows = (
   state: TuiState,
   titleRoom: number,
@@ -155,7 +178,11 @@ export const layerRows = (
 ): ReadonlyArray<LayerRow> =>
   state.layers.flatMap((_, index) =>
     layerOpen(state, index)
-      ? [...titleRows(state, index, titleRoom), ...noteRows(state, index, noteRoom)]
+      ? [
+          ...titleRows(state, index, titleRoom),
+          ...noteRows(state, index, noteRoom),
+          ...fileRows(state, index, noteRoom),
+        ]
       : titleRows(state, index, titleRoom),
   )
 
