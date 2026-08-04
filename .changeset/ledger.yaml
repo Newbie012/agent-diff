@@ -63,3 +63,7 @@
   intents:
     - curly-foxes-eat
     - itchy-fireants-scream
+"@eliya-oss/agent-diff@0.1.0-alpha.9":
+  dir: ""
+  intents:
+    - strong-socks-act
