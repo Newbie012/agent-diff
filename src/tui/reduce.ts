@@ -215,6 +215,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
     navOpen: true,
   }),
   "nav.zoom": (state) => ({ ...state, navOpen: !state.navOpen, focus: "diff" }),
+  "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap }),
   "review.reload": (state) => state,
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,

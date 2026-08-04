@@ -56,6 +56,7 @@ export type TuiState = {
   readonly revealed: ReadonlyArray<Reveal>
   readonly focus: "tree" | "diff"
   readonly navOpen: boolean
+  readonly wrap: boolean
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
   readonly pulls: Readonly<Record<string, string>>
@@ -93,6 +94,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   revealed: [],
   focus: "diff",
   navOpen: true,
+  wrap: false,
   layers: [],
   layersStale: false,
   pulls: {},

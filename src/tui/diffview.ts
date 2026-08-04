@@ -76,6 +76,7 @@ export class DiffView {
   private display: ReadonlyArray<Display> = []
   private starts = new Map<number, number>()
   private fitted = 1
+  private wrapped = false
 
   constructor(renderer: CliRenderer) {
     this.code = new CodeRenderable(renderer, {
@@ -218,20 +219,69 @@ export class DiffView {
     ]
   }
 
-  rowAt(display: number): number {
-    const at = Math.max(0, Math.min(this.display.length - 1, display))
+  setWrap(on: boolean): void {
+    if (on === this.wrapped) return
+    this.wrapped = on
+    this.code.wrapMode = on ? "word" : "none"
+    this.code.requestRender()
+    this.numbers.requestRender()
+  }
+
+  private sources(): ReadonlyArray<number> {
+    const reported = this.code.lineInfo?.lineSources
+    return this.wrapped && reported !== undefined && reported.length > 0 ? reported : []
+  }
+
+  private lineAt(visual: number): number {
+    const sources = this.sources()
+    if (sources.length === 0) return visual
+    const at = Math.max(0, Math.min(sources.length - 1, visual))
+    return sources[at] ?? visual
+  }
+
+  private visualOf(line: number): number {
+    const sources = this.sources()
+    if (sources.length === 0) return line
+    let low = 0
+    let high = sources.length
+    while (low < high) {
+      const mid = (low + high) >> 1
+      if ((sources[mid] ?? 0) < line) low = mid + 1
+      else high = mid
+    }
+    return low
+  }
+
+  private tallest(): number {
+    return this.sources().length === 0 ? this.display.length : this.sources().length
+  }
+
+  drawn(): number {
+    return this.tallest()
+  }
+
+  rowAt(visual: number): number {
+    const line = this.lineAt(visual)
+    const at = Math.max(0, Math.min(this.display.length - 1, line))
     return this.display[at]?.row ?? 0
   }
 
-  isComment(display: number): boolean {
-    const entry = this.display[display]
+  isComment(visual: number): boolean {
+    const entry = this.display[this.lineAt(visual)]
     return entry?.comment === true || entry?.prose === true
   }
 
+  isRunOn(visual: number): boolean {
+    const sources = this.sources()
+    if (sources.length === 0) return false
+    return visual > 0 && sources[visual] === sources[visual - 1]
+  }
+
   scrollTo(row: number, cursor: number): number {
-    const highest = Math.max(0, this.display.length - this.rows())
-    const wanted = this.starts.get(row) ?? row
-    const at = this.starts.get(cursor)
+    const highest = Math.max(0, this.tallest() - this.rows())
+    const wanted = this.visualOf(this.starts.get(row) ?? row)
+    const line = this.starts.get(cursor)
+    const at = line === undefined ? undefined : this.visualOf(line)
     const expected = cursor >= row && cursor < row + this.rows()
     const kept = expected && at !== undefined ? Math.max(wanted, at - this.rows() + 1) : wanted
     const clamped = Math.max(0, Math.min(highest, kept))
@@ -241,8 +291,9 @@ export class DiffView {
 
   paint(paintOf: (row: number) => LinePaint | undefined, from: number, rows: number): void {
     const colors = new Map<number, LinePaint>()
-    const last = Math.min(this.display.length, from + rows + OVERSCAN)
-    for (let index = Math.max(0, from - OVERSCAN); index < last; index++) {
+    const first = this.lineAt(Math.max(0, from - OVERSCAN))
+    const last = Math.min(this.display.length, this.lineAt(from + rows + OVERSCAN) + 1)
+    for (let index = first; index < last; index++) {
       const entry = this.display[index]
       if (entry === undefined) continue
       const paint = entry.comment || entry.prose ? NOTE_PAINT : paintOf(entry.row)

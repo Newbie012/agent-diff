@@ -20,6 +20,7 @@ export type Action =
   | "file.prev"
   | "focus.toggle"
   | "nav.zoom"
+  | "wrap.toggle"
   | "rail.toggle"
   | "review.reload"
   | "tree.collapse"
@@ -193,6 +194,14 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["z", "\\"],
     screens: ["review"],
     hint: "zoom",
+  }),
+  command({
+    action: "wrap.toggle",
+    title: "Wrap long lines",
+    category: "General",
+    keys: ["w"],
+    screens: ["review"],
+    hint: "wrap",
   }),
   command({
     action: "review.reload",
