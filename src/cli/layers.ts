@@ -18,6 +18,9 @@ import { Store, type StoredLayers } from "../service/store/index.ts"
 import { findBranch, patchesOf } from "./commands.ts"
 import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
 
+const STALE_ADVICE =
+  "These layers describe an older commit. Read the diff again and write a new revision with layers set."
+
 export type ReportedLayer = {
   readonly title: string
   readonly note: string
@@ -32,6 +35,7 @@ export type LayersReport = {
   readonly head: string
   readonly branchHead: string
   readonly stale: boolean
+  readonly advice?: string
   readonly written: string
   readonly summary: string
   readonly covered: number
@@ -152,6 +156,7 @@ const reportOf = (
     head: status.layersHead,
     branchHead: status.branchHead,
     stale: status.stale,
+    ...(status.stale ? { advice: STALE_ADVICE } : {}),
     written: layers.written,
     summary: layers.summary,
     covered: status.covered,
