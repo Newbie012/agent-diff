@@ -72,13 +72,18 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   story's numbered steps and their file counts; moving to a step scopes the diff to that step's
   files, and one key switches back to the file tree. The hunks no step claims appear as a final
   step, `not in any step`, so a story can never hide code from the reviewer.
+- **A step's title is readable in full.** The rail wraps a title over as many lines as it needs.
+  The step number leads the first line and the file count closes it. Nothing is cut off, because a
+  title the reviewer can only half read is a title that cannot be checked against the code.
+- **A step opens to show its prose.** The same keys that fold the file tree fold a step: one opens
+  the step under the cursor, the other closes it. An open step shows its prose under the title,
+  wrapped to the rail and set back from it. A step whose author wrote no prose says so.
 
 ### Deferred decisions
 
 | Decision | Trigger |
 | --- | --- |
 | Whether a stale story is hidden or shown with a warning | A reviewer meeting a stale story in practice. `story show` reports `stale`; the terminal does not yet say so |
-| Whether a step's prose is shown in the terminal | A reviewer asking what a step claims, not just which files it covers |
 | Whether a superseded version can be read back | Someone wanting to diff two versions of the argument |
 | Whether stories are worth their cost at all | This PRD shipping and surviving a real 90-file review |
 
@@ -97,6 +102,9 @@ surface in `src/testing/story.test.ts`, the terminal in `src/testing/story-rail.
 - The terminal lists numbered steps with file counts instead of the file tree, scopes the diff to
   the selected step, groups unclaimed files under `not in any step`, and switches back to the tree
   on one key.
+- A step title longer than the rail wraps rather than truncating.
+- Opening a step shows its prose and keeps the file count on the title line; closing it hides the
+  prose again; a step with no prose says so instead of opening onto nothing.
 - A branch with no story shows the file tree, unchanged.
 
 ## Out of Scope

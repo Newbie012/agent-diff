@@ -116,6 +116,14 @@ const foldDirectory = (state: TuiState, shut: boolean): TuiState => {
   return { ...state, closed: shut ? [...closed, directory] : closed }
 }
 
+const foldStep = (state: TuiState, shut: boolean): TuiState => {
+  const open = state.openSteps.filter((index) => index !== state.stepIndex)
+  return { ...state, openSteps: shut ? open : [...open, state.stepIndex] }
+}
+
+const fold = (state: TuiState, shut: boolean): TuiState =>
+  onSteps(state) ? foldStep(state, shut) : foldDirectory(state, shut)
+
 const moveBranch = (state: TuiState, delta: number): TuiState => ({
   ...state,
   branchIndex: clamp(state.branchIndex + delta, 0, Math.max(0, state.branches.length - 1)),
@@ -206,8 +214,8 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,
-  "tree.collapse": (state) => foldDirectory(state, true),
-  "tree.expand": (state) => foldDirectory(state, false),
+  "tree.collapse": (state) => fold(state, true),
+  "tree.expand": (state) => fold(state, false),
   "report.open": (state) => ({ ...state, screen: "report", draft: "", returnTo: state.screen }),
   "report.send": (state) => state,
   "palette.open": openPalette,
@@ -246,6 +254,7 @@ export const withStory = (state: TuiState, steps: TuiState["steps"]): TuiState =
     ...state,
     steps,
     stepIndex: 0,
+    openSteps: [],
     rail: steps.length === 0 ? "tree" : "steps",
   }
   if (steps.length === 0) return opened
