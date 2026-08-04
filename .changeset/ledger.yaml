@@ -43,3 +43,8 @@
   dir: ""
   intents:
     - sour-eagles-cheer
+"@eliya-oss/agent-diff@0.1.0-alpha.5":
+  dir: ""
+  intents:
+    - good-tips-joke
+    - quick-sheep-rhyme
