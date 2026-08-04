@@ -88,11 +88,11 @@ const probe = async (space: Workspace): Promise<void> => {
   if (branch === undefined) return
   const listed = await adiff(space, ["branch", "list", "--repo", "."], space.repo)
   console.log("branches   ", JSON.stringify(listed))
-  const file = "src/api/incidents.ts"
+  const file = "src/api/invitations.ts"
   await adiff(
     space,
     ["comment", "add", "--repo", ".", "--branch", branch.name, "--file", file,
-     "--start", "12", "--end", "13", "--body", "Two throws where one union would do."],
+     "--start", "12", "--end", "13", "--body", "Three status checks in a row. One error shape would do."],
     space.repo,
   )
   console.log("vouch      ", JSON.stringify(await adiff(space, ["file", "vouch", "--repo", ".", "--branch", branch.name, "--file", file], space.repo)))

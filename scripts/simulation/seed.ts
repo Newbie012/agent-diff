@@ -17,27 +17,27 @@ export type Remark = {
 
 export const remarks: ReadonlyArray<Remark> = [
   {
-    branch: "cdr-42-distinguish-missing-incidents",
-    file: "src/api/incidents.ts",
+    branch: "add-teammate-invitations",
+    file: "src/api/invitations.ts",
     start: 12,
     end: 13,
-    body: "Two throws where one union would do. Can these share a result type?",
+    body: "Three status checks in a row. Can the server send one error shape instead?",
     send: false,
   },
   {
-    branch: "cdr-42-distinguish-missing-incidents",
+    branch: "add-teammate-invitations",
     file: "src/api/errors.ts",
     start: 2,
     end: 4,
-    body: "Worth carrying the tenant here too, otherwise the log line is ambiguous.",
+    body: "Carry the team id here too, otherwise support cannot tell which team ran out.",
     send: false,
   },
   {
-    branch: "cdr-57-panel-handles-failure",
-    file: "src/ui/IncidentPanel.tsx",
+    branch: "show-invites-in-settings",
+    file: "src/ui/InviteList.tsx",
     start: 4,
     end: 5,
-    body: "This renders before the retry lands. Does the empty state flash?",
+    body: "The upgrade prompt renders before the retry lands. Does it flash on a slow network?",
     send: true,
   },
 ]
