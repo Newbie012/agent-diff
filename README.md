@@ -84,7 +84,7 @@ opens the terminal on it. Your real repos and `~/.adiff` are untouched, and the 
 when you quit. `pnpm simulate --probe` runs the whole round trip headless and prints it:
 
 ```
-branches    {"ok":true,"branches":[{"branch":"cdr-42-distinguish-missing-incidents","files":3,"added":18,...
+branches    {"ok":true,"branches":[{"branch":"add-teammate-invitations","files":3,"added":27,"removed":2,...
 vouch       {"ok":true,"vouched":["src/api/incidents.ts"],"total":3}
 agent takes {"ok":true,"comments":[{"file":"src/api/incidents.ts","side":"new","start":12,"end":13,
              "snippet":"  if (res.status === 404) throw new IncidentNotFound(id)\n  if (!res.ok) ...",
@@ -98,7 +98,7 @@ one compact JSON line on stdout and exits 0, and `--fields` trims the answer to 
 
 ```bash
 adiff branch list --repo . --fields branch,files
-{"ok":true,"branches":[{"branch":"cdr-42-distinguish-missing-incidents","files":3}]}
+{"ok":true,"branches":[{"branch":"add-teammate-invitations","files":3}]}
 ```
 
 Failures go to stderr as `{"ok":false,"error":{...}}`, so stdout is always parseable, with an exit
