@@ -705,7 +705,7 @@ export class Screen {
     const pane = homeWidth(this.renderer.width)
     const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
-    this.landingKeys.content = this.chipRow()
+    this.landingKeys.content = this.homeKeys(state)
     this.diffPane.visible = state.screen !== "branches" && !(state.screen === "palette" && state.returnTo === "branches")
     if (this.diffPane.visible) this.paintDiff(state)
     this.paintPane(state)
@@ -909,6 +909,12 @@ export class Screen {
     this.hovered = found
     this.landingKeys.content = this.chipRow()
     if (this.shown !== undefined) this.footer.content = this.footerText(this.shown)
+  }
+
+  private homeKeys(state: TuiState): StyledText {
+    const chips = this.chipRow().chunks
+    if (state.notice.length === 0) return new StyledText(chips)
+    return new StyledText([...chips, fg(palette.attention)(`  ${state.notice}`)])
   }
 
   private chipRow(): StyledText {

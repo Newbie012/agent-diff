@@ -260,7 +260,8 @@ export class App {
       "rail.toggle": () => this.commitSynced("rail.toggle"),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
-      "review.reload": () => this.reloadBranch(),
+      "review.reload": () =>
+        this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
       "pending.open": () => this.openPending(),
       "pending.edit": () => this.editStagedComment(),
       "pending.drop": () => this.dropStagedComment(),
@@ -331,6 +332,16 @@ export class App {
     if (branch === undefined) return
     this.commit(await this.readBranch(branch.branch))
     await this.loadSource()
+  }
+
+  private async reloadList(): Promise<void> {
+    const here = selectedBranch(this.state)?.branch
+    const branches = await this.run(listBranches(this.repo))
+    const read = withBranches(this.state, branches)
+    const at = branches.findIndex((candidate) => candidate.branch === here)
+    const kept = at === -1 ? read : { ...read, branchIndex: at }
+    this.commit(withNoticeHere(kept, "read the list again"))
+    this.dispatchTask(() => this.loadPulls())
   }
 
   private async reloadBranch(): Promise<void> {
