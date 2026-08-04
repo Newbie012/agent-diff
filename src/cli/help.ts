@@ -1,0 +1,48 @@
+import { existsSync, readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { catalog, findCommand, type CommandSpec } from "./catalog.ts"
+
+const NAME_ROOM = 18
+const REACH = 5
+
+const manifest = (): string | undefined => {
+  const here = dirname(fileURLToPath(import.meta.url))
+  const climb = Array.from({ length: REACH }, (_, step) => join(here, ...Array(step).fill("..")))
+  return climb.map((at) => join(at, "package.json")).find((path) => existsSync(path))
+}
+
+export const version = (): string => {
+  const path = manifest()
+  if (path === undefined) return "unknown"
+  const raw = readFileSync(path, "utf8")
+  return (JSON.parse(raw) as { version?: string }).version ?? "unknown"
+}
+
+const line = (command: CommandSpec): string =>
+  `  ${command.name.padEnd(NAME_ROOM)}${command.about}`
+
+export const banner = (): string =>
+  [
+    `adiff ${version()}`,
+    "",
+    "Review the work an agent did in a git worktree, and hand your comments back.",
+    "",
+    "  adiff review open --repo .        open the terminal on this repository",
+    "  adiff comment take --worktree .   collect the comments left for you",
+    "",
+    "adiff --help lists every command. adiff describe answers the same as JSON.",
+  ].join("\n")
+
+export const help = (): string =>
+  ["adiff, for reviewing an agent's work in a worktree", "", "Commands:", ...catalog.map(line), "", "Run `adiff help <command>` for its options."].join("\n")
+
+const option = (spec: CommandSpec["options"][number]): string =>
+  `  --${spec.name.padEnd(NAME_ROOM - 2)}${spec.about}${spec.required ? " (required)" : ""}`
+
+export const helpFor = (name: string): string | undefined => {
+  const command = findCommand(name)
+  if (command === undefined) return undefined
+  const options = command.options.length === 0 ? [] : ["", "Options:", ...command.options.map(option)]
+  return [`adiff ${command.name}`, "", command.about, ...options].join("\n")
+}

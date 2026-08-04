@@ -26,6 +26,7 @@ import {
   UnknownCommand,
   type Options,
 } from "./cli/index.ts"
+import { banner, help, helpFor, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
 import { runTui } from "./tui/index.ts"
 import { storeAt, defaultRoot } from "./service/store/index.ts"
@@ -174,6 +175,29 @@ const nameOf = (argv: ReadonlyArray<string>): string => {
 }
 
 const argv = process.argv.slice(2)
+
+const ASKS: Readonly<Record<string, () => string>> = {
+  "--version": version,
+  "-v": version,
+  "--help": help,
+  "-h": help,
+}
+
+const spoken = (words: ReadonlyArray<string>): string | undefined => {
+  const [first, ...rest] = words
+  if (first === undefined) return banner()
+  const asked = ASKS[first]
+  if (asked !== undefined) return asked()
+  if (first !== "help") return undefined
+  return rest.length === 0 ? help() : (helpFor(rest.join(" ")) ?? help())
+}
+
+const said = spoken(argv)
+if (said !== undefined) {
+  process.stdout.write(`${said}\n`)
+  process.exit(0)
+}
+
 const layer = Layer.mergeAll(GitLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot()))
 const exit = await Effect.runPromiseExit(
   run(nameOf(argv), optionsFrom(argv)).pipe(Effect.provide(layer)),
