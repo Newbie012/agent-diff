@@ -3,12 +3,14 @@ import { Effect, Option } from "effect"
 import {
   codeBlocks,
   noteOf,
+  proseAnchors,
   statusOf,
   withFullCoverage,
   type Span,
   type Layer,
   type Layers,
   type LayerBlock,
+  type ProseAnchor,
 } from "../domain/layers/index.ts"
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
@@ -21,6 +23,7 @@ export type ReportedLayer = {
   readonly note: string
   readonly files: ReadonlyArray<string>
   readonly spans: ReadonlyArray<Span>
+  readonly prose: ReadonlyArray<ProseAnchor>
 }
 
 export type LayersReport = {
@@ -133,6 +136,7 @@ const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): Readonly
     note: noteOf(layer),
     files: unique(spansOfLayer(layer).map((span) => span.path)).filter((path) => present.has(path)),
     spans: spansOfLayer(layer),
+    prose: proseAnchors(layer).filter((anchor) => present.has(anchor.path)),
   }))
 }
 

@@ -15,6 +15,12 @@ import { palette, syntaxTheme } from "./theme.ts"
 
 export type LinePaint = { readonly gutter: RGBA; readonly content: RGBA }
 
+export type Prose = {
+  readonly line: number
+  readonly markdown: string
+  readonly after: boolean
+}
+
 export type Note = {
   readonly side: "old" | "new"
   readonly line: number
@@ -29,6 +35,7 @@ type Display = {
   readonly sent: boolean
   readonly label: boolean
   readonly gap: boolean
+  readonly prose: boolean
 }
 
 const WASH: Partial<Record<RowKind, LinePaint>> = {
@@ -179,26 +186,24 @@ export class DiffView {
     return this.fitted
   }
 
-  show(patch: Patch, notes: ReadonlyArray<Note>, gaps: ReadonlySet<number>): void {
-    const room = notes.length === 0 ? NOTE_MIN : this.noteRoom()
-    const key = [room, ...notes.map((note) => `${note.side}${note.line}:${note.body}`)].join("\u0000")
+  show(
+    patch: Patch,
+    notes: ReadonlyArray<Note>,
+    gaps: ReadonlySet<number>,
+    prose: ReadonlyArray<Prose> = [],
+  ): void {
+    const room = notes.length === 0 && prose.length === 0 ? NOTE_MIN : this.noteRoom()
+    const key = keyOf(room, notes, prose)
     if (patch === this.shown && key === this.noted) return
     this.pinnedText = ""
     this.shown = patch
     this.noted = key
-    this.display = layout(patch, notes, room, gaps)
-    this.starts = new Map()
-    for (const [index, entry] of this.display.entries()) {
-      if (!entry.comment && !this.starts.has(entry.row)) this.starts.set(entry.row, index)
-    }
+    this.display = layout({ patch, notes, room, gaps, prose })
+    this.starts = startsOf(this.display)
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
     this.code.content = this.display.map((entry) => entry.text).join("\n")
     this.numbers.setLineNumbers(lineNumbers(patch, this.display))
-    this.numbers.setHideLineNumbers(
-      new Set(
-        this.display.flatMap((entry, index) => (entry.comment || entry.gap ? [index] : [])),
-      ),
-    )
+    this.numbers.setHideLineNumbers(bareOf(this.display))
     this.numbers.setLineSigns(lineSigns(patch, this.display))
     this.numbers.setLineColors(new Map())
     const spans = noteSpans(this.display)
@@ -214,7 +219,8 @@ export class DiffView {
   }
 
   isComment(display: number): boolean {
-    return this.display[display]?.comment === true
+    const entry = this.display[display]
+    return entry?.comment === true || entry?.prose === true
   }
 
   scrollTo(row: number, cursor: number): number {
@@ -234,7 +240,7 @@ export class DiffView {
     for (let index = Math.max(0, from - OVERSCAN); index < last; index++) {
       const entry = this.display[index]
       if (entry === undefined) continue
-      const paint = entry.comment ? NOTE_PAINT : paintOf(entry.row)
+      const paint = entry.comment || entry.prose ? NOTE_PAINT : paintOf(entry.row)
       if (paint !== undefined) colors.set(index, paint)
     }
     this.numbers.setLineColors(colors)
@@ -245,7 +251,30 @@ export class DiffView {
   }
 }
 
+const startsOf = (display: ReadonlyArray<Display>): Map<number, number> => {
+  const starts = new Map<number, number>()
+  for (const [index, entry] of display.entries()) {
+    if (!entry.comment && !starts.has(entry.row)) starts.set(entry.row, index)
+  }
+  return starts
+}
+
+const bareOf = (display: ReadonlyArray<Display>): Set<number> =>
+  new Set(display.flatMap((entry, index) => (entry.comment || entry.gap || entry.prose ? [index] : [])))
+
+const keyOf = (
+  room: number,
+  notes: ReadonlyArray<Note>,
+  prose: ReadonlyArray<Prose>,
+): string =>
+  [
+    room,
+    ...notes.map((note) => `${note.side}${note.line}:${note.body}`),
+    ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
+  ].join("\u0000")
+
 const groupOf = (entry: Display): string | undefined => {
+  if (entry.prose) return "prose"
   if (entry.gap) return "gap"
   if (!entry.comment) return undefined
   if (entry.label) return "note.label"
@@ -293,59 +322,84 @@ const noteRows = (note: Note, row: number, room: number): ReadonlyArray<Display>
     sent: note.sent,
     label: index === 0,
     gap: false,
+    prose: false,
   }))
 
-const layout = (
-  patch: Patch,
-  notes: ReadonlyArray<Note>,
-  room: number,
-  gaps: ReadonlySet<number>,
-): ReadonlyArray<Display> => {
-  const display: Array<Display> = []
-  for (const row of patch.rows) {
-    display.push({
-      text: row.text,
-      row: row.index,
-      comment: false,
-      sent: false,
-      label: false,
-      gap: gaps.has(row.index),
-    })
-    for (const note of notes) {
-      if (sideLineOf(row, note.side) === note.line) {
-        display.push(...noteRows(note, row.index, room))
-      }
-    }
-  }
-  return display
+const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<Display> =>
+  [...entry.markdown.split("\n").flatMap((line) => wrap(line, room - 2)), ""].map((line) => ({
+    text: line.length === 0 ? "" : `  ${line}`,
+    row,
+    comment: false,
+    sent: false,
+    label: false,
+    gap: false,
+    prose: true,
+  }))
+
+type Plan = {
+  readonly patch: Patch
+  readonly notes: ReadonlyArray<Note>
+  readonly room: number
+  readonly gaps: ReadonlySet<number>
+  readonly prose: ReadonlyArray<Prose>
 }
+
+const proseAt = (plan: Plan, row: Row, after: boolean): ReadonlyArray<Prose> => {
+  const line = sideLineOf(row, "new")
+  if (line === undefined) return []
+  return plan.prose.filter((entry) => entry.after === after && entry.line === line)
+}
+
+const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>
+  plan.notes
+    .filter((note) => sideLineOf(row, note.side) === note.line)
+    .flatMap((note) => noteRows(note, row.index, plan.room))
+
+const codeRow = (plan: Plan, row: Row): Display => ({
+  text: row.text,
+  row: row.index,
+  comment: false,
+  sent: false,
+  label: false,
+  gap: plan.gaps.has(row.index),
+  prose: false,
+})
+
+const rowsFor = (plan: Plan, row: Row): ReadonlyArray<Display> => [
+  ...proseAt(plan, row, false).flatMap((entry) => proseRows(entry, row.index, plan.room)),
+  codeRow(plan, row),
+  ...notesAt(plan, row),
+  ...proseAt(plan, row, true).flatMap((entry) => proseRows(entry, row.index, plan.room)),
+]
+
+const layout = (plan: Plan): ReadonlyArray<Display> =>
+  plan.patch.rows.flatMap((row) => rowsFor(plan, row))
 
 const lineNumbers = (patch: Patch, display: ReadonlyArray<Display>): Map<number, number> => {
   const numbers = new Map<number, number>()
   const rows = new Map(patch.rows.map((row) => [row.index, row]))
   for (const [index, entry] of display.entries()) {
-    const row = entry.comment ? undefined : rows.get(entry.row)
+    const row = entry.comment || entry.prose ? undefined : rows.get(entry.row)
     const line = row === undefined ? undefined : numberFor(row)
     if (line !== undefined) numbers.set(index, line)
   }
   return numbers
 }
 
-const lineSigns = (
-  patch: Patch,
-  display: ReadonlyArray<Display>,
-): Map<number, { after: string; afterColor: string }> => {
-  const signs = new Map<number, { after: string; afterColor: string }>()
+type Sign = { after: string; afterColor: string }
+
+const BARE_SIGN: Sign = { after: "  ", afterColor: palette.accent }
+
+const signFor = (entry: Display, rows: ReadonlyMap<number, Row>): Sign => {
+  if (entry.comment || entry.prose) return BARE_SIGN
+  const row = rows.get(entry.row)
+  const sign = row === undefined ? undefined : SIGNS[row.kind]
+  return sign === undefined ? BARE_SIGN : { after: sign.text, afterColor: sign.color }
+}
+
+const lineSigns = (patch: Patch, display: ReadonlyArray<Display>): Map<number, Sign> => {
   const rows = new Map(patch.rows.map((row) => [row.index, row]))
-  for (const [index, entry] of display.entries()) {
-    const row = rows.get(entry.row)
-    const sign = entry.comment || row === undefined ? undefined : SIGNS[row.kind]
-    signs.set(index, {
-      after: sign?.text ?? "  ",
-      afterColor: sign?.color ?? palette.accent,
-    })
-  }
-  return signs
+  return new Map(display.map((entry, index) => [index, signFor(entry, rows)]))
 }
 
 export const sideLineOf = (row: Row, side: "old" | "new"): number | undefined =>

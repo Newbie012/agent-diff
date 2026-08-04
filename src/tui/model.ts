@@ -11,6 +11,7 @@ import type { Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, ReportedLayer } from "../cli/index.ts"
+import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
   readonly index: number
@@ -95,6 +96,13 @@ export const onLayers = (state: TuiState): boolean =>
   state.rail === "layers" && state.layers.length > 0
 
 export const selectedLayer = (state: TuiState): ReportedLayer | undefined => state.layers[state.layerIndex]
+
+export const proseFor = (state: TuiState, path: string): ReadonlyArray<ProseAnchor> => {
+  if (!onLayers(state)) return []
+  const layer = selectedLayer(state)
+  if (layer === undefined) return []
+  return layer.prose.filter((anchor) => anchor.path === path)
+}
 
 export const layerFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> => {
   const layer = state.layers[layerIndex]

@@ -34,6 +34,7 @@ import {
   type TuiState,
   WHOLE_FILE,
   type StagedComment,
+  proseFor,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import { marks } from "./marks.ts"
@@ -767,7 +768,7 @@ export class Screen {
     if (shown === undefined) return
     const patch = shown.patch
     this.paintSticky(state, state.top)
-    this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown))
+    this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
     this.view.fit(this.diffScroll.height)
     const height = this.view.rows()
     const top = this.view.scrollTo(state.top, state.cursor)

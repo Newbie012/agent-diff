@@ -1,6 +1,14 @@
 import { Option } from "effect"
 import type { Hunk, Patch } from "../patch/index.ts"
-import { REMAINDER_TITLE, type Coverage, type Span, type Layer, type Layers, type LayerBlock } from "./model.ts"
+import {
+  REMAINDER_TITLE,
+  type Coverage,
+  type Span,
+  type Layer,
+  type Layers,
+  type LayerBlock,
+  type ProseAnchor,
+} from "./model.ts"
 
 type CodeBlock = Extract<LayerBlock, { kind: "code" }>
 
@@ -60,4 +68,27 @@ export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers):
     ],
   }
   return { ...layers, layers: [...layers.layers, remainder] }
+}
+
+export const proseAnchors = (layer: Layer): ReadonlyArray<ProseAnchor> => {
+  const anchors: Array<ProseAnchor> = []
+  let pending: Array<string> = []
+  let last: CodeBlock | undefined
+  for (const block of layer.blocks) {
+    if (block.kind === "prose") {
+      const markdown = block.markdown.trim()
+      if (markdown.length > 0) pending.push(markdown)
+      continue
+    }
+    for (const markdown of pending) {
+      anchors.push({ path: block.path, line: block.start, markdown, after: false })
+    }
+    pending = []
+    last = block
+  }
+  if (last === undefined) return anchors
+  return [
+    ...anchors,
+    ...pending.map((markdown) => ({ path: last.path, line: last.end, markdown, after: true })),
+  ]
 }
