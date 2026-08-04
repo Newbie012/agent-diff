@@ -9,6 +9,7 @@ export {
   listSent,
   reviewProgress,
   saveReport,
+  saveWrap,
   stageComment,
   submitComment,
   submitReview,

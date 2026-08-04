@@ -45,3 +45,7 @@ export const emptyBranchState: BranchState = {
   pending: [],
   settled: {},
 }
+
+export type Settings = {
+  readonly wrap?: boolean
+}

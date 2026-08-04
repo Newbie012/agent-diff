@@ -7,6 +7,7 @@ import {
   type BranchState,
   type StoredAnswer,
   type StoredComment,
+  type Settings,
   type StoredLayers,
 } from "./model.ts"
 import {
@@ -16,6 +17,7 @@ import {
   outboxPath,
   reportPath,
   reportsDir,
+  settingsPath,
   statePath,
   layersPath,
 } from "./paths.ts"
@@ -42,6 +44,8 @@ type Shape = {
     id: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<StoredComment>>, StoreUnreadable | StoreUnwritable>
   readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
+  readonly settings: () => Effect.Effect<Settings, StoreUnreadable>
+  readonly saveSettings: (next: Settings) => Effect.Effect<void, StoreUnwritable>
   readonly layers: (
     worktreePath: string,
   ) => Effect.Effect<Option.Option<StoredLayers>, StoreUnreadable>
@@ -78,6 +82,11 @@ const readOptional = Effect.fn("Store.readOptional")(function* (path: string) {
 })
 
 const missing = Effect.succeed(Option.none<string>())
+
+const parseSettings = (raw: string): Settings => {
+  const parsed = JSON.parse(raw) as Partial<Settings>
+  return typeof parsed.wrap === "boolean" ? { wrap: parsed.wrap } : {}
+}
 
 const parseBatches = (raw: string): ReadonlyArray<Batch> =>
   raw
@@ -136,6 +145,24 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
   })
 
   return { stage, restage, unstage, take }
+}
+
+const settingsOps = (root: string) => {
+  const settings = Effect.fn("Store.settings")(function* () {
+    const raw = yield* readOptional(settingsPath(root))
+    return Option.match(raw, { onNone: (): Settings => ({}), onSome: parseSettings })
+  })
+
+  const saveSettings = Effect.fn("Store.saveSettings")(function* (next: Settings) {
+    const path = settingsPath(root)
+    yield* ensureDir(root)
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, JSON.stringify(next), "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+  })
+
+  return { settings, saveSettings }
 }
 
 const reportOps = (root: string) =>
@@ -231,6 +258,7 @@ const makeStore = (root: string): Shape => {
     state,
     saveState,
     saveReport: reportOps(root),
+    ...settingsOps(root),
     ...answerOps(root),
     ...layersOps(root),
     ...cursors,

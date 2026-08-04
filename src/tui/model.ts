@@ -57,6 +57,7 @@ export type TuiState = {
   readonly focus: "tree" | "diff"
   readonly navOpen: boolean
   readonly wrap: boolean
+  readonly pan: number
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
   readonly pulls: Readonly<Record<string, string>>
@@ -95,6 +96,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   focus: "diff",
   navOpen: true,
   wrap: false,
+  pan: 0,
   layers: [],
   layersStale: false,
   pulls: {},

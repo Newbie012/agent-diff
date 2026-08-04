@@ -507,6 +507,7 @@ const headerParts = (state: TuiState, branch: string, path: string): ReadonlyArr
   state.staged === 0 ? "" : `${state.staged} staged`,
   contextLabel(state.context),
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} lines hidden`,
+  state.pan === 0 ? "" : `→ ${state.pan} columns`,
 ]
 
 const fallbackScope = (state: TuiState, top: number): ReadonlyArray<string> => {
@@ -578,6 +579,7 @@ const layerPaint = (state: TuiState, row: LayerRow): string => {
 
 export type Mouse = {
   readonly onScroll: (delta: number) => void
+  readonly onPan: (delta: number) => void
   readonly onDrag: (from: number, to: number, done: boolean) => void
   readonly onChip: (key: string) => void
 }
@@ -664,6 +666,7 @@ export class Screen {
     this.mouse = mouse
     this.view.listenTo({
       scroll: (delta) => this.mouse?.onScroll(delta),
+      pan: (delta) => this.mouse?.onPan(delta),
       down: (y) => {
         this.dragFrom = this.rowAtY(y)
         this.mouse?.onDrag(this.dragFrom, this.dragFrom, false)
@@ -754,12 +757,12 @@ export class Screen {
     const readout = selectionReadout(state)
     this.lead = readout.length === 0 ? 0 : readout.length + 3
     const lead = readout.length === 0 ? [] : [fg(palette.muted)(`${readout}   `)]
-    if (state.notice.length === 0) return new StyledText([...lead, ...this.chipRow().chunks])
-    const tail = `  ${state.notice}`
+    const tail = state.notice.length === 0 ? "" : `  ${state.notice}`
     const width = this.footer.width > 0 ? this.footer.width : this.renderer.width
     const room = Math.max(0, width - this.lead - tail.length)
     const chips = keptWithin(this.chipRow().chunks, room)
-    return new StyledText([...lead, ...chips, fg(palette.attention)(tail)])
+    const notice = tail.length === 0 ? [] : [fg(palette.attention)(tail)]
+    return new StyledText([...lead, ...chips, ...notice])
   }
 
   private paneRoom(): number {
@@ -799,6 +802,7 @@ export class Screen {
     const patch = shown.patch
     this.paintSticky(state, state.top)
     this.view.setWrap(state.wrap)
+    this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
     this.view.fit(this.diffScroll.height)
     const height = this.view.rows()
