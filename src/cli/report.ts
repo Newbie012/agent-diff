@@ -34,18 +34,18 @@ const ADVICE: Readonly<Record<string, Advice>> = {
   },
   UnknownWorktree: {
     exit: NOT_FOUND,
-    suggestion: "Run `adiff story set` from inside a worktree of the repository under review.",
+    suggestion: "Run `adiff layers set` from inside a worktree of the repository under review.",
     retriable: false,
   },
-  MalformedStory: {
+  MalformedLayers: {
     exit: USAGE,
     suggestion:
-      "A story is {\"summary\":\"…\",\"steps\":[{\"title\":\"…\",\"spans\":[{\"path\":\"…\",\"start\":1,\"end\":9}]}]}.",
+      "A layers is {\"summary\":\"…\",\"layers\":[{\"title\":\"…\",\"spans\":[{\"path\":\"…\",\"start\":1,\"end\":9}]}]}.",
     retriable: false,
   },
-  NoStory: {
+  NoLayers: {
     exit: NOT_FOUND,
-    suggestion: "No story has been written for this worktree. Write one with `adiff story set`.",
+    suggestion: "No layers has been written for this worktree. Write one with `adiff layers set`.",
     retriable: false,
   },
   UnselectableRange: {

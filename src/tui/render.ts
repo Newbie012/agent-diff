@@ -18,12 +18,12 @@ import {
   isReviewed,
   markedRows,
   newLineAt,
-  onSteps,
+  onLayers,
   railWindow,
   selectionReadout,
-  stepOpen,
-  stepRows,
-  type StepRow,
+  layerOpen,
+  layerRows,
+  type LayerRow,
   wrapped,
   snippetOf,
   reviewedCount,
@@ -414,6 +414,20 @@ const shortPath = (path: string): string => {
   return home.length > 0 && path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }
 
+const KEPT_TAIL = 2
+const HOME_PATH_MIN = 24
+const HOME_PATH_CHROME = 10
+
+const elide = (path: string, room: number): string => {
+  if (path.length <= room) return path
+  const parts = path.split("/").filter((part) => part.length > 0)
+  const lead = path.startsWith("~") ? "~" : ""
+  const tail = parts.slice(-KEPT_TAIL).join("/")
+  const rooted = path.startsWith("/") ? `/${parts[0] ?? ""}` : lead
+  const middled = `${rooted}/…/${tail}`
+  return middled.length <= room ? middled : `…/${tail}`
+}
+
 const contextLabel = (context: number): string => {
   if (context === 3) return ""
   return context >= WHOLE_FILE ? "whole file" : `±${context}`
@@ -424,7 +438,7 @@ type Cells = {
   readonly files: string
   readonly added: string
   readonly gone: string
-  readonly story: string
+  readonly layers: string
   readonly state: string
 }
 
@@ -432,20 +446,20 @@ const nameRoom = (pane: number): number =>
   Math.max(BRANCH_NAME_MIN, Math.min(BRANCH_NAME, pane - BRANCH_TAIL))
 
 const columns = (cells: Cells, room: number): string =>
-  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.story.padStart(8)}   ${cells.state}`
+  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.layers.padStart(8)}   ${cells.state}`
 
 const branchHeading = (room: number): string =>
   `  ${columns(
-    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", story: "STORY", state: "STATE" },
+    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", layers: "LAYERS", state: "STATE" },
     room,
   )}`
 
 const atHome = (state: TuiState): boolean =>
   state.screen === "branches" || (state.screen === "palette" && state.returnTo === "branches")
 
-const storyCell = (branch: TuiState["branches"][number]): string => {
-  if (branch.steps === 0) return ""
-  return branch.stale ? `${branch.steps} stale` : `${branch.steps} story`
+const layersCell = (branch: TuiState["branches"][number]): string => {
+  if (branch.layers === 0) return ""
+  return branch.stale ? `${branch.layers} stale` : `${branch.layers} layers`
 }
 
 const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
@@ -454,7 +468,7 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
   files: `${branch.files}`.padStart(5),
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),
-  story: storyCell(branch),
+  layers: layersCell(branch),
   state: waitingLabel(branch).trim(),
 })
 
@@ -498,10 +512,10 @@ const STEP_LEAD = 8
 const NOTE_LEAD = 10
 const STEP_GAP = 1
 
-type StepRoom = { readonly title: number; readonly note: number; readonly tally: number }
+type LayerRoom = { readonly title: number; readonly note: number; readonly tally: number }
 
-const stepRoom = (state: TuiState, pane: number): StepRoom => {
-  const tally = Math.max(1, ...state.steps.map((step) => `${step.files.length}`.length))
+const layerRoom = (state: TuiState, pane: number): LayerRoom => {
+  const tally = Math.max(1, ...state.layers.map((layer) => `${layer.files.length}`.length))
   return {
     title: Math.max(4, pane - PANE_CHROME - STEP_LEAD - STEP_GAP - tally),
     note: Math.max(4, pane - PANE_CHROME - NOTE_LEAD),
@@ -509,28 +523,30 @@ const stepRoom = (state: TuiState, pane: number): StepRoom => {
   }
 }
 
-const stepFold = (state: TuiState, index: number): string => {
-  if (stepOpen(state, index)) return "▾"
-  return (state.steps[index]?.note ?? "").length === 0 ? " " : "▸"
+const layerFold = (state: TuiState, index: number): string => {
+  if (layerOpen(state, index)) return "▾"
+  return (state.layers[index]?.note ?? "").length === 0 ? " " : "▸"
 }
 
-const stepHead = (state: TuiState, row: StepRow): string => {
+const layerHead = (state: TuiState, row: LayerRow): string => {
   if (!row.lead) return " ".repeat(STEP_LEAD)
-  const here = row.index === state.stepIndex
+  const here = row.index === state.layerIndex
   const mark = here ? (state.focus === "tree" ? "▸" : "·") : " "
-  return `${mark} ${stepFold(state, row.index)} ${`${row.index + 1}.`.padStart(STEP_NUMBER)} `
+  return `${mark} ${layerFold(state, row.index)} ${`${row.index + 1}.`.padStart(STEP_NUMBER)} `
 }
 
-const stepText = (state: TuiState, row: StepRow, room: StepRoom): string => {
+const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
+  if (row.kind === "file") return `${" ".repeat(NOTE_LEAD)}${marks().file} ${row.text}`
   if (row.kind === "note") return `${" ".repeat(NOTE_LEAD)}${row.text}`
-  const count = row.lead ? `${state.steps[row.index]?.files.length ?? 0}` : ""
+  const count = row.lead ? `${state.layers[row.index]?.files.length ?? 0}` : ""
   const tail = count.padStart(room.tally + STEP_GAP)
-  return `${stepHead(state, row)}${row.text.padEnd(room.title)}${tail}`
+  return `${layerHead(state, row)}${row.text.padEnd(room.title)}${tail}`
 }
 
-const stepPaint = (state: TuiState, row: StepRow): string => {
+const layerPaint = (state: TuiState, row: LayerRow): string => {
+  if (row.kind === "file") return palette.ink
   if (row.kind === "note") return palette.faint
-  return row.index === state.stepIndex ? palette.ink : palette.muted
+  return row.index === state.layerIndex ? palette.ink : palette.muted
 }
 
 export type Mouse = {
@@ -651,12 +667,14 @@ export class Screen {
 
   update(state: TuiState): void {
     this.shown = state
-    this.chips = hintsFor(state.screen, state.staged)
+    this.chips = hintsFor(state.screen, state.staged, state.layers.length)
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
     const many = state.branches.length === 1 ? "1 worktree" : `${state.branches.length} worktrees`
-    this.landing.content = `${shortPath(this.repo)}  ·  ${many}`
+    const pane = homeWidth(this.renderer.width)
+    const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
+    this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
     this.landingKeys.content = this.chipRow()
     this.diffPane.visible = state.screen !== "branches" && !(state.screen === "palette" && state.returnTo === "branches")
     if (this.diffPane.visible) this.paintDiff(state)
@@ -719,7 +737,7 @@ export class Screen {
 
   private listText(state: TuiState): string | StyledText {
     if (atHome(state)) return this.branchTable(state)
-    if (onSteps(state)) return this.stepRail(state)
+    if (onLayers(state)) return this.layerRail(state)
     const height = Math.max(1, this.listPane.height - 1)
     const pane = this.paneRoom()
     const window = treeWindow(state, height)
@@ -730,15 +748,15 @@ export class Screen {
     return new StyledText([...rows, ...more])
   }
 
-  private stepRail(state: TuiState): StyledText {
+  private layerRail(state: TuiState): StyledText {
     const height = Math.max(1, this.listPane.height - 1)
-    const room = stepRoom(state, this.paneRoom())
-    const window = railWindow(stepRows(state, room.title, room.note), height, state.stepIndex)
+    const room = layerRoom(state, this.paneRoom())
+    const window = railWindow(layerRows(state, room.title, room.note), height, state.layerIndex)
     const rows = window.rows.map((row) =>
-      fg(stepPaint(state, row))(`${stepText(state, row, room)}\n`),
+      fg(layerPaint(state, row))(`${layerText(state, row, room)}\n`),
     )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
-    const warn = state.storyStale
+    const warn = state.layersStale
       ? [fg(palette.attention)(`  stale, the branch moved on\n\n`)]
       : []
     return new StyledText([...warn, ...rows, ...more])
@@ -836,7 +854,7 @@ export class Screen {
         fg(palette.faint)(cells.files),
         fg(palette.added)(cells.added),
         fg(palette.removed)(cells.gone),
-        fg(palette.accent)(`  ${cells.story.padStart(8)}`),
+        fg(palette.accent)(`  ${cells.layers.padStart(8)}`),
         fg(palette.attention)(`   ${cells.state}\n`),
       ]
     })
@@ -860,10 +878,13 @@ export class Screen {
   private chipRow(): StyledText {
     return new StyledText(
       this.chips.flatMap((chip, index) => {
-        const paint = index === this.hovered ? bg(palette.cursor) : fg(palette.faint)
+        const lit = index === this.hovered
+        const key = fg(palette.ink)(chip.key)
+        const hint = fg(lit ? palette.ink : palette.faint)(` ${chip.hint}`)
         return [
-          index === this.hovered ? paint(` ${chip.key} ${chip.hint} `) : fg(palette.ink)(chip.key),
-          index === this.hovered ? fg(palette.faint)("  ") : fg(palette.faint)(` ${chip.hint}   `),
+          lit ? bg(palette.cursor)(key) : key,
+          lit ? bg(palette.cursor)(hint) : hint,
+          fg(palette.faint)("   "),
         ]
       }),
     )

@@ -7,11 +7,11 @@ import {
   directoryOfFile,
   fileOrder,
   hunkStarts,
-  onSteps,
+  onLayers,
   selectedPatch,
-  stepFile,
-  stepFiles,
-  stepHolding,
+  layerFile,
+  layerFiles,
+  layerHolding,
   type TuiState,
   commentRowsIn,
   filesWithComments,
@@ -52,7 +52,7 @@ export const draggedTo = (state: TuiState, from: number, to: number): TuiState =
 const atRow = (state: TuiState, row: number): TuiState =>
   withCursorVisible({ ...state, cursor: clamp(row, 0, lastRow(selectedPatch(state))) })
 
-const stepHunk = (state: TuiState, delta: number): TuiState => {
+const layerHunk = (state: TuiState, delta: number): TuiState => {
   const starts = hunkStarts(state)
   const target =
     delta > 0
@@ -74,7 +74,7 @@ const atComment = (state: TuiState, file: number, delta: number): TuiState => {
   return landing === undefined ? moved : atRow(moved, landing)
 }
 
-const stepComment = (state: TuiState, delta: number): TuiState => {
+const layerComment = (state: TuiState, delta: number): TuiState => {
   const here = commentRowsIn(state, state.patchIndex)
   const target =
     delta > 0
@@ -91,23 +91,23 @@ const movePending = (state: TuiState, delta: number): TuiState => ({
   pendingIndex: clamp(state.pendingIndex + delta, 0, Math.max(0, state.pending.length - 1)),
 })
 
-const moveStep = (state: TuiState, delta: number): TuiState => {
-  const stepIndex = clamp(state.stepIndex + delta, 0, Math.max(0, state.steps.length - 1))
-  const landed = { ...state, stepIndex }
-  const patchIndex = stepFiles(landed, stepIndex)[0] ?? landed.patchIndex
+const moveLayer = (state: TuiState, delta: number): TuiState => {
+  const layerIndex = clamp(state.layerIndex + delta, 0, Math.max(0, state.layers.length - 1))
+  const landed = { ...state, layerIndex }
+  const patchIndex = layerFiles(landed, layerIndex)[0] ?? landed.patchIndex
   return { ...landed, patchIndex, top: 0, cursor: 0, anchorRow: 0, selecting: false }
 }
 
 const inRail = (state: TuiState, delta: number): TuiState =>
-  onSteps(state) ? moveStep(state, delta) : moveFile(state, delta)
+  onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
-const stepDown = (state: TuiState, delta: number): TuiState =>
+const layerDown = (state: TuiState, delta: number): TuiState =>
   state.focus === "tree" ? inRail(state, delta) : moveCursor(state, delta)
 
 const toggleRail = (state: TuiState): TuiState => {
-  if (state.steps.length === 0) return withNotice(state, "no story for this branch")
-  if (state.rail === "steps") return { ...state, rail: "tree" }
-  return { ...state, rail: "steps", stepIndex: stepHolding(state, state.patchIndex) }
+  if (state.layers.length === 0) return withNotice(state, "no layers for this branch")
+  if (state.rail === "layers") return { ...state, rail: "tree" }
+  return { ...state, rail: "layers", layerIndex: layerHolding(state, state.patchIndex) }
 }
 
 const foldDirectory = (state: TuiState, shut: boolean): TuiState => {
@@ -117,13 +117,13 @@ const foldDirectory = (state: TuiState, shut: boolean): TuiState => {
   return { ...state, closed: shut ? [...closed, directory] : closed }
 }
 
-const foldStep = (state: TuiState, shut: boolean): TuiState => {
-  const open = state.openSteps.filter((index) => index !== state.stepIndex)
-  return { ...state, openSteps: shut ? open : [...open, state.stepIndex] }
+const foldLayer = (state: TuiState, shut: boolean): TuiState => {
+  const open = state.openLayers.filter((index) => index !== state.layerIndex)
+  return { ...state, openLayers: shut ? open : [...open, state.layerIndex] }
 }
 
 const fold = (state: TuiState, shut: boolean): TuiState =>
-  onSteps(state) ? foldStep(state, shut) : foldDirectory(state, shut)
+  onLayers(state) ? foldLayer(state, shut) : foldDirectory(state, shut)
 
 const moveBranch = (state: TuiState, delta: number): TuiState => ({
   ...state,
@@ -132,7 +132,7 @@ const moveBranch = (state: TuiState, delta: number): TuiState => ({
 
 const moveFile = (state: TuiState, delta: number): TuiState => ({
   ...state,
-  patchIndex: stepFile(state, delta),
+  patchIndex: layerFile(state, delta),
   top: 0,
   cursor: 0,
   anchorRow: 0,
@@ -183,18 +183,18 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "branch.next": (state) => moveBranch(state, 1),
   "branch.prev": (state) => moveBranch(state, -1),
   "branch.open": (state) => state,
-  "cursor.next": (state) => stepDown(state, 1),
+  "cursor.next": (state) => layerDown(state, 1),
   "cursor.top": (state) => atRow(state, 0),
   "cursor.bottom": (state) => atRow(state, lastRow(selectedPatch(state))),
   "cursor.pageDown": (state) => moveCursor(state, Math.max(1, Math.floor(state.viewport / 2))),
   "cursor.pageUp": (state) => moveCursor(state, -Math.max(1, Math.floor(state.viewport / 2))),
   "context.more": (state) => state,
   "context.less": (state) => state,
-  "comment.next": (state) => stepComment(state, 1),
-  "comment.prev": (state) => stepComment(state, -1),
-  "hunk.next": (state) => stepHunk(state, 1),
-  "hunk.prev": (state) => stepHunk(state, -1),
-  "cursor.prev": (state) => stepDown(state, -1),
+  "comment.next": (state) => layerComment(state, 1),
+  "comment.prev": (state) => layerComment(state, -1),
+  "hunk.next": (state) => layerHunk(state, 1),
+  "hunk.prev": (state) => layerHunk(state, -1),
+  "cursor.prev": (state) => layerDown(state, -1),
   "file.next": (state) => moveFile(state, 1),
   "file.prev": (state) => moveFile(state, -1),
   "select.start": startSelection,
@@ -278,21 +278,21 @@ export const withPending = (
 
 export const withSent = (state: TuiState, sent: TuiState["sent"]): TuiState => ({ ...state, sent })
 
-export const withStory = (
+export const withLayers = (
   state: TuiState,
-  told: { steps: TuiState["steps"]; stale: boolean },
+  told: { layers: TuiState["layers"]; stale: boolean },
 ): TuiState => {
-  const steps = told.steps
+  const layers = told.layers
   const opened: TuiState = {
     ...state,
-    steps,
-    storyStale: told.stale,
-    stepIndex: 0,
-    openSteps: [],
-    rail: steps.length === 0 ? "tree" : "steps",
+    layers,
+    layersStale: told.stale,
+    layerIndex: 0,
+    openLayers: [],
+    rail: layers.length === 0 ? "tree" : "layers",
   }
-  if (steps.length === 0) return opened
-  return { ...opened, patchIndex: stepFiles(opened, 0)[0] ?? opened.patchIndex, cursor: 0, top: 0 }
+  if (layers.length === 0) return opened
+  return { ...opened, patchIndex: layerFiles(opened, 0)[0] ?? opened.patchIndex, cursor: 0, top: 0 }
 }
 
 export const withBranches = (

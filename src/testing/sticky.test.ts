@@ -4,7 +4,7 @@ import { TestDriver } from "./index.ts"
 const kept = Array.from({ length: 20 }, (_, index) => `    const kept${index} = ${index}`)
 
 const body = (mark: string): ReadonlyArray<string> =>
-  Array.from({ length: 40 }, (_, index) => `    step${index}("${mark}")`)
+  Array.from({ length: 40 }, (_, index) => `    layer${index}("${mark}")`)
 
 const nested = (mark: string): ReadonlyArray<string> => [
   "export function outer(input: string) {",

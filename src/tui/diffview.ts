@@ -143,9 +143,11 @@ export class DiffView {
     readonly dragEnd: (y: number) => void
   }): void {
     this.numbers.onMouseScroll = (event: { scroll?: { direction?: string; delta?: number } }) => {
+      const way = event.scroll?.direction
+      if (way !== "up" && way !== "down") return
       const notches = Math.max(1, event.scroll?.delta ?? 1)
       const size = notches * SCROLL_ROWS
-      handlers.scroll(event.scroll?.direction === "up" ? -size : size)
+      handlers.scroll(way === "up" ? -size : size)
     }
     this.numbers.onMouseDown = (event: { y: number }) => handlers.down(event.y)
     this.numbers.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)

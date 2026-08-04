@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import type { StoryInput } from "./index.ts"
+import type { LayersInput } from "./index.ts"
 
 const change = (path: string, name: string) => ({
   path,
@@ -16,9 +16,9 @@ const threeFiles = {
   ],
 }
 
-const story: StoryInput = {
+const layers: LayersInput = {
   summary: "Invitations, end to end",
-  steps: [
+  layers: [
     {
       title: "Add the invitation data model",
       spans: [{ path: "src/model.ts", start: 1, end: 2 }],
@@ -30,9 +30,9 @@ const story: StoryInput = {
   ],
 }
 
-const noted: StoryInput = {
+const noted: LayersInput = {
   summary: "Invitations, end to end",
-  steps: [
+  layers: [
     {
       title: "Let a rule write carry the team id through the queue",
       note: "The queue dropped the team id, so support could not tell which team ran out of seats.",
@@ -54,11 +54,11 @@ const railRows = (frame: string): ReadonlyArray<string> =>
 const paneOf = (frame: string): string => railRows(frame).join("\n")
 
 describe("walking a review by the argument instead of the filesystem", () => {
-  it("lists the story's steps, numbered and counted, in place of the file tree", async () => {
+  it("lists the layers's layers, numbered and counted, in place of the file tree", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, story)
+    await driver.app.runLayersSet(branch.worktree, layers)
     await driver.screen.open()
 
     // ACT
@@ -71,25 +71,25 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(pane).not.toContain("Panel.tsx")
   })
 
-  it("puts the files no step claims in a group of their own, so nothing hides", async () => {
+  it("puts the files no layer claims in a group of their own, so nothing hides", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, story)
+    await driver.app.runLayersSet(branch.worktree, layers)
     await driver.screen.open()
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(paneOf(await driver.screen.getFrame())).toContain("not in any step")
+    expect(paneOf(await driver.screen.getFrame())).toContain("not in any layer")
   })
 
-  it("scopes the diff to the step the reviewer is standing on", async () => {
+  it("scopes the diff to the layer the reviewer is standing on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, story)
+    await driver.app.runLayersSet(branch.worktree, layers)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     expect(await driver.screen.getFrame()).toContain("src/model.ts")
@@ -108,7 +108,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, story)
+    await driver.app.runLayersSet(branch.worktree, layers)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
 
@@ -125,7 +125,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, noted)
+    await driver.app.runLayersSet(branch.worktree, noted)
     await driver.screen.open()
 
     // ACT
@@ -138,11 +138,11 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(rail).not.toContain("…")
   })
 
-  it("opens a step onto the prose that explains it, and closes it again", async () => {
+  it("opens a layer onto the prose that explains it, and closes it again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, noted)
+    await driver.app.runLayersSet(branch.worktree, noted)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     expect(paneOf(await driver.screen.getFrame())).not.toContain("dropped")
@@ -162,11 +162,11 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(paneOf(await driver.screen.getFrame())).not.toContain("dropped")
   })
 
-  it("keeps the file count on the title line while the step is open", async () => {
+  it("keeps the file count on the title line while the layer is open", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, noted)
+    await driver.app.runLayersSet(branch.worktree, noted)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
 
@@ -179,11 +179,11 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(title?.endsWith("1")).toBe(true)
   })
 
-  it("says so when a step carries no prose, rather than opening onto nothing", async () => {
+  it("says so when a layer carries no prose, rather than opening onto nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
-    await driver.app.runStorySet(branch.worktree, noted)
+    await driver.app.runLayersSet(branch.worktree, noted)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
 
@@ -194,7 +194,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(paneOf(await driver.screen.getFrame())).toContain("no note")
   })
 
-  it("shows the file tree when the branch has no story at all", async () => {
+  it("shows the file tree when the branch has no layers at all", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)
@@ -206,6 +206,6 @@ describe("walking a review by the argument instead of the filesystem", () => {
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
     expect(pane).toContain("Panel.tsx")
-    expect(pane).not.toContain("not in any step")
+    expect(pane).not.toContain("not in any layer")
   })
 })

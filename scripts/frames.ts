@@ -9,7 +9,7 @@ import { Effect, Layer, Scope } from "effect"
 import { GitLive } from "../src/service/git/index.ts"
 import { storeAt } from "../src/service/store/index.ts"
 import { launch, type App } from "../src/tui/index.ts"
-import { seedRemarks, seedStory } from "./simulation/seed.ts"
+import { seedRemarks, seedLayers } from "./simulation/seed.ts"
 import { createWorkspace } from "./simulation/workspace.ts"
 
 const number = (name: string, fallback: number): number => {
@@ -22,7 +22,7 @@ const height = number("height", 26)
 
 const space = await createWorkspace({ branches: number("branches", 7) })
 await seedRemarks(space)
-await seedStory(space)
+await seedLayers(space)
 const setup = await createTestRenderer({ width, height })
 const scope = Scope.makeUnsafe()
 const layer = Layer.mergeAll(GitLive, storeAt(space.storeRoot))
@@ -78,9 +78,9 @@ await press(["RETURN"])
 await show("review")
 
 await press(["l"])
-await show("step opened")
+await show("layer opened")
 await press(["TAB", "j", "j", "l"])
-await show("step without a note opened")
+await show("layer without a note opened")
 await press(["h", "s"])
 await show("back to the file tree")
 

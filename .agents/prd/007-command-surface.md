@@ -21,7 +21,7 @@ test, and an agent all consume adiff the same way.
 Failures answer in the same shape as successes, with a tag naming what went wrong and the context
 needed to fix it.
 
-## User Stories
+## User Layers
 
 1. As a `reviewer`, I want to comment from a script, so that a repetitive review is automatable.
 2. As an `agent`, I want machine-readable answers, so that I can consume adiff without parsing
@@ -52,8 +52,8 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
 | `comment take` | `--worktree [--wait <seconds>]` | `{ok, comments: [...]}` |
 | `file vouch` | `--repo --branch --file` | `{ok, vouched, total}` |
 | `review progress` | `--repo --branch` | `{ok, vouched, total}` |
-| `story set` | `--worktree --json <file\|->` | `{ok, story}` |
-| `story show` | `--worktree` | `{ok, story}` |
+| `layers set` | `--worktree --json <file\|->` | `{ok, layers}` |
+| `layers show` | `--worktree` | `{ok, layers}` |
 | `review open` | `--repo` | opens the terminal |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 

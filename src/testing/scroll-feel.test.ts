@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-const steps = (count: number, mark: string): ReadonlyArray<string> =>
-  Array.from({ length: count }, (_, index) => `  const step${index} = ${mark}(${index})`)
+const layers = (count: number, mark: string): ReadonlyArray<string> =>
+  Array.from({ length: count }, (_, index) => `  const layer${index} = ${mark}(${index})`)
 
 const buried = (mark: string): ReadonlyArray<string> => [
   "import { logger } from './logger'",
@@ -13,7 +13,7 @@ const buried = (mark: string): ReadonlyArray<string> => [
   "}",
   "",
   "export const run = async (options: Options) => {",
-  ...steps(40, mark),
+  ...layers(40, mark),
   "}",
 ]
 
@@ -44,7 +44,7 @@ describe("how scrolling feels", () => {
 
 const long = (mark: string): ReadonlyArray<string> => [
   "export function scheduler() {",
-  ...steps(300, mark),
+  ...layers(300, mark),
   "}",
 ]
 

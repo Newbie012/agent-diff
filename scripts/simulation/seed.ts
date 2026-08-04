@@ -41,9 +41,9 @@ export const remarks: ReadonlyArray<Remark> = [
   },
 ]
 
-const story = {
+const layers = {
   summary: "Invitations fail loudly, and the settings page can react",
-  steps: [
+  layers: [
     {
       title: "Give each way an invitation can fail its own error",
       note: "One thrown shape per failure, so a caller can tell a repeat invite from a team that has run out of seats without reading the status code.",
@@ -61,9 +61,9 @@ const story = {
   ],
 }
 
-const settingsStory = {
+const settingsLayers = {
   summary: "The settings page reads invitations, and the legacy client goes",
-  steps: [
+  layers: [
     {
       title: "List invitations with their state",
       note: "Each row carries the invitation's status, so a pending invite reads differently from one a teammate has already accepted.",
@@ -76,22 +76,22 @@ const settingsStory = {
   ],
 }
 
-const told: ReadonlyArray<{ branch: string; story: unknown }> = [
-  { branch: "add-teammate-invitations", story },
-  { branch: "show-invites-in-settings", story: settingsStory },
+const told: ReadonlyArray<{ branch: string; layers: unknown }> = [
+  { branch: "add-teammate-invitations", layers },
+  { branch: "show-invites-in-settings", layers: settingsLayers },
 ]
 
-export const seedStory = async (space: Workspace): Promise<void> => {
+export const seedLayers = async (space: Workspace): Promise<void> => {
   const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
   await series(told, async (entry) => {
     const branch = space.branches.find((candidate) => candidate.name === entry.branch)
     if (branch === undefined) return
     const child = execFile(
       NODE,
-      runArgs(["story", "set", "--worktree", branch.worktree, "--json", "-"]),
+      runArgs(["layers", "set", "--worktree", branch.worktree, "--json", "-"]),
       { env, encoding: "utf8" },
     )
-    child.stdin?.end(JSON.stringify(entry.story))
+    child.stdin?.end(JSON.stringify(entry.layers))
     await new Promise((resolve) => child.on("close", resolve))
   })
 }

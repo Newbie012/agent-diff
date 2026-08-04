@@ -21,7 +21,7 @@ genuinely nothing waiting, which is a useful answer rather than a failure.
 The diff for a branch is read from its merge base against the working tree, so uncommitted work
 counts. The reviewer sees what the agent has done, not what it has committed.
 
-## User Stories
+## User Layers
 
 1. As a `reviewer`, I want the branches with changes and their sizes, so that I can pick what to
    review without visiting five directories.

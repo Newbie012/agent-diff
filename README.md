@@ -20,7 +20,7 @@ adiff comment add      --repo . --branch add-teammate-invitations --file src/api
 adiff comment stage    --repo . --branch add-teammate-invitations --file src/api/invitations.ts --start 4 --end 5 --body "why"
 adiff review submit    --repo . --branch add-teammate-invitations
 adiff file vouch       --repo . --branch add-teammate-invitations --file src/api/invitations.ts
-adiff story show       --worktree . --fields covered,total,uncovered
+adiff layers show       --worktree . --fields covered,total,uncovered
 adiff describe
 ```
 
@@ -50,14 +50,14 @@ adiff comment take --worktree . --wait 300 # block until something arrives
 Each comment carries the exact snippet it was written against, the side of the diff, and the commit
 the diff was read at, so the agent needs no other reference. A comment is handed over once.
 
-An agent can also record the reading order for its own work as a story: ordered steps over spans of
-files, set with `adiff story set --worktree . --json -`. Where a branch has one, the terminal lists
-its steps and scopes the diff to the step you are on. adiff computes the coverage itself, so a story
+An agent can also record the reading order for its own work as a layers: ordered layers over spans of
+files, set with `adiff layers set --worktree . --json -`. Where a branch has one, the terminal lists
+its layers and scopes the diff to the layer you are on. adiff computes the coverage itself, so a layers
 cannot hide code:
 
 ```bash
-adiff story show --worktree . --fields covered,total,uncovered
-{"ok":true,"story":{"covered":1,"total":3,"uncovered":[{"path":"docs/incidents.md","start":1,"end":6},{"path":"src/api/errors.ts","start":1,"end":11}]}}
+adiff layers show --worktree . --fields covered,total,uncovered
+{"ok":true,"layers":{"covered":1,"total":3,"uncovered":[{"path":"docs/incidents.md","start":1,"end":6},{"path":"src/api/errors.ts","start":1,"end":11}]}}
 ```
 
 ## Skill
@@ -66,7 +66,7 @@ adiff story show --worktree . --fields covered,total,uncovered
 npx skills add Newbie012/agent-diff --skill adiff
 ```
 
-Teaches an agent the whole loop: collect comments, act on them, write the story.
+Teaches an agent the whole loop: collect comments, act on them, write the layers.
 
 ## Requirements
 

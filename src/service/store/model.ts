@@ -1,14 +1,14 @@
 import type { Anchor } from "../../domain/patch/index.ts"
-import type { Step } from "../../domain/narrative/index.ts"
+import type { Layer } from "../../domain/layers/index.ts"
 
-export type StoredStory = {
+export type StoredLayers = {
   readonly version: number
   readonly head: string
   readonly base: string
   readonly parent: number | undefined
   readonly written: string
   readonly summary: string
-  readonly steps: ReadonlyArray<Step>
+  readonly layers: ReadonlyArray<Layer>
 }
 
 export type StoredComment = {

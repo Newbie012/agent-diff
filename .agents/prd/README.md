@@ -16,7 +16,7 @@ PRDs are not the place for every implementation detail. Use the split below:
 - Read `CONTEXT.md` next. The glossary defines the vocabulary every PRD reuses. adiff has a short
   language on purpose; a synonym invented in a PRD is a defect.
 - Read the PRD that owns the behavior. Follow its links to ADRs for durable choices and issues for
-  implementation steps.
+  implementation layers.
 
 ## How to write a new PRD
 
@@ -64,7 +64,7 @@ Before treating a PRD as ready:
 
 - [ ] Problem stated from the reviewer's or the agent's perspective, not the code's.
 - [ ] Solution stated as observable behavior, before any implementation choice is named.
-- [ ] User stories cover the happy path, the empty result, the refusal, and the stale case.
+- [ ] User layers cover the happy path, the empty result, the refusal, and the stale case.
 - [ ] Implementation Decisions are concrete enough that two engineers would build interchangeable
       implementations.
 - [ ] File paths, helper names, and rollout order live in GitHub issues.

@@ -95,11 +95,11 @@ describe("how a comment row reads", () => {
   })
 })
 
-const stageEvery = async (driver: TestDriver, steps: ReadonlyArray<number>): Promise<void> => {
-  const [step, ...rest] = steps
-  if (step === undefined) return
+const stageEvery = async (driver: TestDriver, layers: ReadonlyArray<number>): Promise<void> => {
+  const [layer, ...rest] = layers
+  if (layer === undefined) return
   await driver.screen.pressKeys(["j"])
-  await stage(driver, `note ${step} spelled out over a whole line of talking`)
+  await stage(driver, `note ${layer} spelled out over a whole line of talking`)
   await stageEvery(driver, rest)
 }
 
@@ -108,7 +108,7 @@ const many = {
     {
       path: "src/api.ts",
       before: ["const keep = 0"],
-      after: ["const keep = 0", ...Array.from({ length: 30 }, (_, at) => `const step${at} = ${at}`)],
+      after: ["const keep = 0", ...Array.from({ length: 30 }, (_, at) => `const layer${at} = ${at}`)],
     },
   ],
 }
@@ -126,6 +126,6 @@ describe("reading a diff full of comments", () => {
     await driver.screen.pressKeys(["G"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const step29 = 29")).toContain("▎")
+    expect(rowWith(await driver.screen.getFrame(), "const layer29 = 29")).toContain("▎")
   })
 })

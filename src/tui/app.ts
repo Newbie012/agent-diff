@@ -9,7 +9,7 @@ import {
   fileSource,
   listPending,
   listSent,
-  listStorySteps,
+  listLayers,
   reviewProgress,
   saveReport,
   stageComment,
@@ -26,7 +26,7 @@ import {
   nextUnreviewed,
   rowAtSourceLine,
   sourceLineAt,
-  stepContext,
+  layerContext,
   selectedBranch,
   selectedPatch,
   selectionRange,
@@ -52,7 +52,7 @@ import {
   withPending,
   withSent,
   withSource,
-  withStory,
+  withLayers,
   withVouched,
 } from "./reduce.ts"
 import { Screen } from "./render.ts"
@@ -289,10 +289,10 @@ export class App {
     const patches = await this.run(listPatches(this.repo, branch.branch))
     const progress = await this.run(reviewProgress(this.repo, branch.branch))
     const pending = await this.run(listPending(this.repo, branch.branch))
-    const steps = await this.run(listStorySteps(this.repo, branch.branch))
+    const layers = await this.run(listLayers(this.repo, branch.branch))
     const opened = withVouched(withPatches(this.state, patches), progress.vouched)
     const sent = await this.loadSent(branch.branch)
-    this.commit(withStory(withSent(withPending(opened, pending, "review"), sent), steps))
+    this.commit(withLayers(withSent(withPending(opened, pending, "review"), sent), layers))
     await this.loadSource()
   }
 
@@ -381,7 +381,7 @@ export class App {
 
   private async expand(delta: number): Promise<void> {
     const branch = selectedBranch(this.state)
-    const next = stepContext(this.state.context, delta)
+    const next = layerContext(this.state.context, delta)
     if (branch === undefined || next === this.state.context) return
     const line = sourceLineAt(this.state, this.state.cursor)
     const patches = await this.run(listPatches(this.repo, branch.branch, next))

@@ -47,7 +47,7 @@ is nothing for the operator to decide.
 - Contributors need Node 26. `.node-version` makes that automatic for fnm and nvm users.
 - The flag is invisible in normal use and unavoidable in abnormal use: `node src/main.ts` without
   it fails on Node's own error, which is clearer than the renderer's.
-- Node runs TypeScript by stripping types. There is no build step, and syntax requiring emit does
+- Node runs TypeScript by stripping types. There is no build layer, and syntax requiring emit does
   not run — see [ADR-002](ADR-002-effect-v4-and-module-boundaries.md).
 - adiff inherits an experimental API. A breaking change to `node:ffi` breaks the terminal, though
   not the command surface.

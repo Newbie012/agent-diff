@@ -1,6 +1,6 @@
 ---
 name: adiff
-description: Pick up review comments left on this worktree's diff in the adiff terminal, act on them, and write the story that explains the diff. Use when the user says they left comments, asks you to check adiff, asks you to watch for review feedback, or asks you to hand work over for review.
+description: Pick up review comments left on this worktree's diff in the adiff terminal, act on them, and write the layers that explains the diff. Use when the user says they left comments, asks you to check adiff, asks you to watch for review feedback, or asks you to hand work over for review.
 ---
 
 # adiff
@@ -66,21 +66,21 @@ Read `suggestion` before doing anything else — it names the command that resol
 Retry only when `retriable` is true. `UnknownBranch` means this worktree is not one adiff knows
 about, because the reviewer has not opened it; report that rather than looping.
 
-## Handing work over: write the story
+## Handing work over: write the layers
 
 You know the order the change was built in. The reviewer does not, and rebuilding it by reading
 every file is the most expensive way to learn something you already have. When you finish a piece
-of work, write a **story**: an ordered set of steps over the diff, each one a claim about a span of
+of work, write a **layers**: an ordered set of layers over the diff, each one a claim about a span of
 code. The reviewer then walks the argument instead of the filesystem.
 
 ```bash
-adiff story set --worktree . --json - <<'JSON'
+adiff layers set --worktree . --json - <<'JSON'
 {
   "summary": "Team invitations, end to end",
-  "steps": [
+  "layers": [
     {
       "title": "Add the invitation data model",
-      "note": "The record every later step leans on",
+      "note": "The record every later layer leans on",
       "spans": [{ "path": "src/db/invites.ts", "start": 1, "end": 48 }]
     },
     {
@@ -99,35 +99,35 @@ adiff story set --worktree . --json - <<'JSON'
 JSON
 ```
 
-Rules that make a story worth reading:
+Rules that make a layers worth reading:
 
-- **Order is the point.** Step 1 is what the reader must understand before step 2 makes sense.
+- **Order is the point.** Layer 1 is what the reader must understand before layer 2 makes sense.
   Data model, then the code that uses it, then the surface, then the mechanical bits last.
 - **A title is a claim, not a file name.** "Add the invitation API", never "changes to
   src/api/invites.ts".
 - **Line numbers are the new side of the diff**, the same numbers `adiff comment take` reports.
-- **Cover everything.** adiff computes coverage itself and answers with the hunks no step claims;
-  those show up for the reviewer under "not in any step" whatever you do. A story that quietly
-  skips a third of the diff is worse than no story, so put the leftovers in a final step and say
+- **Cover everything.** adiff computes coverage itself and answers with the hunks no layer claims;
+  those show up for the reviewer under "not in any layer" whatever you do. A layers that quietly
+  skips a third of the diff is worse than no layers, so put the leftovers in a final layer and say
   they are mechanical.
 
-The answer to `story set` is the honest report — check it before you claim to be done:
+The answer to `layers set` is the honest report — check it before you claim to be done:
 
 ```json
-{"ok":true,"story":{"version":1,"stale":false,"covered":7,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"steps":[{"title":"Add the invitation data model","files":["src/db/invites.ts"]}]}}
+{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"]}]}}
 ```
 
-`covered`/`total` count hunks. `uncovered` names the ones no step claims — claim them and set the
-story again. `vanished` names paths a step points at that this branch does not change, which
+`covered`/`total` count hunks. `uncovered` names the ones no layer claims — claim them and set the
+layers again. `vanished` names paths a layer points at that this branch does not change, which
 usually means a typo in a path. Read it back at any time with:
 
 ```bash
-adiff story show --worktree . --fields covered,total,uncovered
+adiff layers show --worktree . --fields covered,total,uncovered
 ```
 
-Setting a story again supersedes the previous one and bumps `version`; the story records the commit
+Setting a layers again supersedes the previous one and bumps `version`; the layers records the commit
 it was written for, and adiff reports it as `stale` once the branch moves past that commit. After
-you address a review, write the story again.
+you address a review, write the layers again.
 
 ## Tell the reviewer how to read it
 
@@ -136,11 +136,11 @@ command and the keys. Name the repository they should point at, which is the rep
 worktree belongs to:
 
 > Open it with `adiff review open --repo <repo>`, then press `enter` on this branch. The sidebar
-> lists the steps in reading order; `j` and `k` move between them and the diff follows. Inside a
-> step, `]` and `[` walk its files. Select lines with `v`, write a comment with `c`, stage it with
+> lists the layers in reading order; `j` and `k` move between them and the diff follows. Inside a
+> layer, `]` and `[` walk its files. Select lines with `v`, write a comment with `c`, stage it with
 > `ctrl+a`, and send the whole review with `S`. Press `?` for the rest.
 
-Say what you want looked at hardest, and where you are unsure. A reviewer who knows which step you
+Say what you want looked at hardest, and where you are unsure. A reviewer who knows which layer you
 doubt spends their attention there.
 
 ## Discovering the rest

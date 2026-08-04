@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
-  Array.from({ length: count }, (_, index) => `  const step${index} = ${mark}(${index})`)
+  Array.from({ length: count }, (_, index) => `  const layer${index} = ${mark}(${index})`)
 
 const branch = {
   files: [

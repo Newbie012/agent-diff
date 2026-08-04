@@ -111,15 +111,15 @@ never handed over again.
 
 ---
 
-## Narrative
+## Layers
 
-### Story
+### Layers
 
 An agent-authored reading order over the same diff — a beginning, a middle, an end — instead of
 alphabetical file order. Optional, versioned, and pinned to a commit, so a reader can tell when the
-story describes code that has since changed.
+layers describes code that has since changed.
 
 ### Coverage
 
-How much of a [branch](#branch)'s rows a [story](#story) accounts for. A story that skips half the
-diff is worse than no story, because it reads as complete.
+How much of a [branch](#branch)'s rows a [layers](#layers) accounts for. A layers that skips half the
+diff is worse than no layers, because it reads as complete.

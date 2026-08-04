@@ -1,21 +1,21 @@
 import { Option } from "effect"
 import type { Patch } from "../patch/index.ts"
 import { codeBlocks, coverage, spansOf, withFullCoverage } from "./coverage.ts"
-import type { Step, Story, StoryStatus } from "./model.ts"
+import type { Layer, Layers, LayersStatus } from "./model.ts"
 
 export const statusOf = (
   patches: ReadonlyArray<Patch>,
-  story: Story,
+  layers: Layers,
   branchHead: string,
-): StoryStatus => {
-  const gap = coverage(patches, story.steps)
+): LayersStatus => {
+  const gap = coverage(patches, layers.layers)
   const present = new Set(patches.map((patch) => patch.path))
-  const mentioned = new Set(spansOf(story.steps).map((span) => span.path))
+  const mentioned = new Set(spansOf(layers.layers).map((span) => span.path))
   return {
-    version: story.version,
-    parent: story.parent,
-    stale: story.head !== branchHead,
-    storyHead: story.head,
+    version: layers.version,
+    parent: layers.parent,
+    stale: layers.head !== branchHead,
+    layersHead: layers.head,
     branchHead,
     uncovered: gap.missing,
     vanished: [...mentioned].filter((path) => !present.has(path)),
@@ -24,9 +24,9 @@ export const statusOf = (
   }
 }
 
-export const describeStatus = (status: StoryStatus): { line: string; warn: boolean } => {
+export const describeStatus = (status: LayersStatus): { line: string; warn: boolean } => {
   if (status.stale) {
-    return { line: `v${status.version} written for ${status.storyHead}, head is ${status.branchHead}`, warn: true }
+    return { line: `v${status.version} written for ${status.layersHead}, head is ${status.branchHead}`, warn: true }
   }
   if (status.uncovered.length > 0) {
     return { line: `v${status.version} covers ${status.covered}/${status.total} hunks`, warn: true }
@@ -39,18 +39,18 @@ export const describeStatus = (status: StoryStatus): { line: string; warn: boole
 }
 
 export const reviseFor = (
-  previous: Story,
+  previous: Layers,
   branchHead: string,
   patches: ReadonlyArray<Patch>,
   written: string,
-): Story => {
+): Layers => {
   const present = new Set(patches.map((patch) => patch.path))
-  const kept: ReadonlyArray<Step> = previous.steps
-    .map((step) => ({
-      ...step,
-      blocks: step.blocks.filter((block) => block.kind === "prose" || present.has(block.path)),
+  const kept: ReadonlyArray<Layer> = previous.layers
+    .map((layer) => ({
+      ...layer,
+      blocks: layer.blocks.filter((block) => block.kind === "prose" || present.has(block.path)),
     }))
-    .filter((step) => codeBlocks(step).length > 0)
+    .filter((layer) => codeBlocks(layer).length > 0)
 
   return withFullCoverage(patches, {
     ...previous,
@@ -58,6 +58,6 @@ export const reviseFor = (
     parent: Option.some(previous.version),
     head: branchHead,
     written,
-    steps: kept,
+    layers: kept,
   })
 }

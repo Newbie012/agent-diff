@@ -22,7 +22,7 @@ counting — nothing has to notice, invalidate, or clean up.
 
 Vouching is a toggle, because the reviewer changes their mind.
 
-## User Stories
+## User Layers
 
 1. As a `reviewer`, I want to mark a file reviewed, so that coming back tomorrow I know where I
    stopped.
@@ -79,7 +79,7 @@ Behaviors that must be covered:
 - A vouched file is reported as vouched.
 - Vouching the same file again un-vouches it.
 - A vouch survives adiff exiting.
-- A vouch lapses when the file's content changes, with no explicit invalidation step.
+- A vouch lapses when the file's content changes, with no explicit invalidation layer.
 - Vouching a file outside the diff is refused and names the known files.
 
 ## Out of Scope
@@ -91,6 +91,6 @@ Behaviors that must be covered:
 
 ## Further Notes
 
-The staleness rule is the whole design. An explicit invalidation step would need something to
+The staleness rule is the whole design. An explicit invalidation layer would need something to
 notice the file changed — a watcher, a hook, a scheduled check — and every one of those can miss.
 Comparing blobs at read time cannot miss, because there is nothing to miss.

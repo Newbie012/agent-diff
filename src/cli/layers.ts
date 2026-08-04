@@ -6,24 +6,24 @@ import {
   statusOf,
   withFullCoverage,
   type Span,
-  type Step,
-  type Story,
-  type StoryBlock,
-} from "../domain/narrative/index.ts"
+  type Layer,
+  type Layers,
+  type LayerBlock,
+} from "../domain/layers/index.ts"
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
-import { Store, type StoredStory } from "../service/store/index.ts"
+import { Store, type StoredLayers } from "../service/store/index.ts"
 import { findBranch, patchesOf } from "./commands.ts"
-import { MalformedStory, NoStory, UnknownWorktree } from "./error.ts"
+import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
 
-export type StoryStep = {
+export type ReportedLayer = {
   readonly title: string
   readonly note: string
   readonly files: ReadonlyArray<string>
   readonly spans: ReadonlyArray<Span>
 }
 
-export type StoryReport = {
+export type LayersReport = {
   readonly version: number
   readonly parent: number | undefined
   readonly head: string
@@ -35,10 +35,10 @@ export type StoryReport = {
   readonly total: number
   readonly uncovered: ReadonlyArray<Span>
   readonly vanished: ReadonlyArray<string>
-  readonly steps: ReadonlyArray<StoryStep>
+  readonly layers: ReadonlyArray<ReportedLayer>
 }
 
-type StepInput = {
+type LayerInput = {
   readonly title?: unknown
   readonly note?: unknown
   readonly blocks?: unknown
@@ -47,8 +47,8 @@ type StepInput = {
 
 const unique = (paths: ReadonlyArray<string>): ReadonlyArray<string> => [...new Set(paths)]
 
-const spansOfStep = (step: Step): ReadonlyArray<Span> =>
-  codeBlocks(step).map(({ path, start, end }) => ({ path, start, end }))
+const spansOfLayer = (layer: Layer): ReadonlyArray<Span> =>
+  codeBlocks(layer).map(({ path, start, end }) => ({ path, start, end }))
 
 const isSpan = (value: unknown): value is Span => {
   const span = value as Partial<Span> | undefined
@@ -59,31 +59,31 @@ const isSpan = (value: unknown): value is Span => {
   )
 }
 
-const isBlock = (value: unknown): value is StoryBlock => {
+const isBlock = (value: unknown): value is LayerBlock => {
   const block = value as { kind?: unknown; markdown?: unknown } | undefined
   if (block?.kind === "prose") return typeof block.markdown === "string"
   return block?.kind === "code" && isSpan(value)
 }
 
-const codeBlockOf = (span: Span): StoryBlock => ({
+const codeBlockOf = (span: Span): LayerBlock => ({
   kind: "code",
   path: span.path,
   start: span.start,
   end: span.end,
 })
 
-const blocksOf = (step: StepInput): ReadonlyArray<StoryBlock> => {
-  if (Array.isArray(step.blocks)) return step.blocks.filter(isBlock)
-  const note = typeof step.note === "string" ? [{ kind: "prose" as const, markdown: step.note }] : []
-  const spans = Array.isArray(step.spans) ? step.spans.filter(isSpan) : []
+const blocksOf = (layer: LayerInput): ReadonlyArray<LayerBlock> => {
+  if (Array.isArray(layer.blocks)) return layer.blocks.filter(isBlock)
+  const note = typeof layer.note === "string" ? [{ kind: "prose" as const, markdown: layer.note }] : []
+  const spans = Array.isArray(layer.spans) ? layer.spans.filter(isSpan) : []
   return [...note, ...spans.map(codeBlockOf)]
 }
 
-const stepOf = (value: unknown): Option.Option<Step> => {
-  const step = value as StepInput | undefined
-  const title = typeof step?.title === "string" ? step.title.trim() : ""
-  if (step === undefined || title.length === 0) return Option.none()
-  const blocks = blocksOf(step)
+const layerOf = (value: unknown): Option.Option<Layer> => {
+  const layer = value as LayerInput | undefined
+  const title = typeof layer?.title === "string" ? layer.title.trim() : ""
+  if (layer === undefined || title.length === 0) return Option.none()
+  const blocks = blocksOf(layer)
   return blocks.length === 0 ? Option.none() : Option.some({ title, blocks })
 }
 
@@ -98,63 +98,63 @@ const parsed = (text: string): Option.Option<Record<string, unknown>> => {
   }
 }
 
-export const readStory = Effect.fn("Cli.readStory")(function* (text: string) {
+export const readLayers = Effect.fn("Cli.readLayers")(function* (text: string) {
   const document = yield* Option.match(parsed(text), {
-    onNone: () => new MalformedStory({ reason: "the story is not a JSON object" }),
+    onNone: () => new MalformedLayers({ reason: "the layers is not a JSON object" }),
     onSome: Effect.succeed,
   })
-  const raw = document["steps"]
-  const steps = (Array.isArray(raw) ? raw : []).flatMap((entry) =>
-    Option.match(stepOf(entry), { onNone: (): ReadonlyArray<Step> => [], onSome: (step) => [step] }),
+  const raw = document["layers"]
+  const layers = (Array.isArray(raw) ? raw : []).flatMap((entry) =>
+    Option.match(layerOf(entry), { onNone: (): ReadonlyArray<Layer> => [], onSome: (layer) => [layer] }),
   )
-  if (steps.length === 0) {
-    return yield* new MalformedStory({
-      reason: "every step needs a title and at least one span or block",
+  if (layers.length === 0) {
+    return yield* new MalformedLayers({
+      reason: "every layer needs a title and at least one span or block",
     })
   }
   const summary = document["summary"]
-  return { summary: typeof summary === "string" ? summary : "", steps }
+  return { summary: typeof summary === "string" ? summary : "", layers }
 })
 
-const fromStored = (stored: StoredStory): Story => ({
+const fromStored = (stored: StoredLayers): Layers => ({
   ...stored,
   parent: Option.fromNullishOr(stored.parent),
 })
 
-const toStored = (story: Story): StoredStory => ({
-  ...story,
-  parent: Option.getOrUndefined(story.parent),
+const toStored = (layers: Layers): StoredLayers => ({
+  ...layers,
+  parent: Option.getOrUndefined(layers.parent),
 })
 
-const stepsOf = (patches: ReadonlyArray<Patch>, story: Story): ReadonlyArray<StoryStep> => {
+const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): ReadonlyArray<ReportedLayer> => {
   const present = new Set(patches.map((patch) => patch.path))
-  return withFullCoverage(patches, story).steps.map((step) => ({
-    title: step.title,
-    note: noteOf(step),
-    files: unique(spansOfStep(step).map((span) => span.path)).filter((path) => present.has(path)),
-    spans: spansOfStep(step),
+  return withFullCoverage(patches, layers).layers.map((layer) => ({
+    title: layer.title,
+    note: noteOf(layer),
+    files: unique(spansOfLayer(layer).map((span) => span.path)).filter((path) => present.has(path)),
+    spans: spansOfLayer(layer),
   }))
 }
 
 const reportOf = (
   patches: ReadonlyArray<Patch>,
-  story: Story,
+  layers: Layers,
   branchHead: string,
-): StoryReport => {
-  const status = statusOf(patches, story, branchHead)
+): LayersReport => {
+  const status = statusOf(patches, layers, branchHead)
   return {
     version: status.version,
     parent: Option.getOrUndefined(status.parent),
-    head: status.storyHead,
+    head: status.layersHead,
     branchHead: status.branchHead,
     stale: status.stale,
-    written: story.written,
-    summary: story.summary,
+    written: layers.written,
+    summary: layers.summary,
     covered: status.covered,
     total: status.total,
     uncovered: status.uncovered,
     vanished: status.vanished,
-    steps: stepsOf(patches, story),
+    layers: reportedLayers(patches, layers),
   }
 }
 
@@ -176,55 +176,55 @@ const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (worktreePath: string) 
     : Effect.succeed(found)
 })
 
-const storyOf = Effect.fn("Cli.storyOf")(function* (worktree: Worktree) {
+const storedLayers = Effect.fn("Cli.storedLayers")(function* (worktree: Worktree) {
   const store = yield* Store
-  return Option.map(yield* store.story(worktree.path), fromStored)
+  return Option.map(yield* store.layers(worktree.path), fromStored)
 })
 
-export const setStory = Effect.fn("Cli.setStory")(function* (
+export const setLayers = Effect.fn("Cli.setLayers")(function* (
   worktreePath: string,
   text: string,
   written: string,
 ) {
   const store = yield* Store
   const worktree = yield* worktreeAt(worktreePath)
-  const input = yield* readStory(text)
+  const input = yield* readLayers(text)
   const patches = yield* patchesOf(worktree)
-  const previous = yield* storyOf(worktree)
-  const story: Story = {
+  const previous = yield* storedLayers(worktree)
+  const layers: Layers = {
     version: Option.match(previous, { onNone: () => 1, onSome: (old) => old.version + 1 }),
     parent: Option.map(previous, (old) => old.version),
     head: worktree.head,
     base: worktree.base,
     written,
     summary: input.summary,
-    steps: input.steps,
+    layers: input.layers,
   }
-  yield* store.saveStory(worktree.path, toStored(story))
-  return reportOf(patches, story, worktree.head)
+  yield* store.saveLayers(worktree.path, toStored(layers))
+  return reportOf(patches, layers, worktree.head)
 })
 
-export const showStory = Effect.fn("Cli.showStory")(function* (worktreePath: string) {
+export const showLayers = Effect.fn("Cli.showLayers")(function* (worktreePath: string) {
   const worktree = yield* worktreeAt(worktreePath)
   const patches = yield* patchesOf(worktree)
-  const found = yield* storyOf(worktree)
-  const story = yield* Option.match(found, {
-    onNone: () => new NoStory({ worktree: worktree.path }),
+  const found = yield* storedLayers(worktree)
+  const layers = yield* Option.match(found, {
+    onNone: () => new NoLayers({ worktree: worktree.path }),
     onSome: Effect.succeed,
   })
-  return reportOf(patches, story, worktree.head)
+  return reportOf(patches, layers, worktree.head)
 })
 
-export const listStorySteps = Effect.fn("Cli.listStorySteps")(function* (
+export const listLayers = Effect.fn("Cli.listLayers")(function* (
   repo: string,
   branch: string,
 ) {
   const worktree = yield* findBranch(repo, branch)
-  const found = yield* storyOf(worktree)
-  if (Option.isNone(found)) return { steps: [] as ReadonlyArray<StoryStep>, stale: false }
+  const found = yield* storedLayers(worktree)
+  if (Option.isNone(found)) return { layers: [] as ReadonlyArray<ReportedLayer>, stale: false }
   const patches = yield* patchesOf(worktree)
   return {
-    steps: stepsOf(patches, found.value),
+    layers: reportedLayers(patches, found.value),
     stale: found.value.head !== worktree.head,
   }
 })
