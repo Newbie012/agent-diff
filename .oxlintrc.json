@@ -120,6 +120,7 @@
     {
       "files": [
         "src/main.ts",
+        "src/tui/app.ts",
         "src/testing/domains/agent/driver.ts"
       ],
       "rules": {

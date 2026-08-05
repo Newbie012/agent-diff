@@ -693,7 +693,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const wrap = settings.wrap === true
   const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
   const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap })
-  const painting = Effect.runFork(
+  const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )
   return new App({

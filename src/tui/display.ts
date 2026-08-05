@@ -11,17 +11,21 @@ export type Shape = {
 
 export class Display extends Context.Service<Display, Shape>()("adiff/Display") {}
 
-export const displayOn = (renderer: CliRenderer, repo: string): Layer.Layer<Display> =>
-  Layer.sync(Display)(() => {
-    const screen = new Screen(renderer, repo)
-
-    const paint = Effect.fn("Display.paint")(function* (state: TuiState) {
-      yield* Effect.sync(() => screen.update(state))
-    })
-
-    const listen = Effect.fn("Display.listen")(function* (mouse: Mouse) {
-      yield* Effect.sync(() => screen.listen(mouse))
-    })
-
-    return { paint, rows: Effect.sync(() => screen.viewportRows()), listen }
+const paintWith = (screen: Screen): Shape["paint"] =>
+  Effect.fn("Tui.paint")(function* (state: TuiState) {
+    yield* Effect.sync(() => screen.update(state))
   })
+
+const listenWith = (screen: Screen): Shape["listen"] =>
+  Effect.fn("Tui.listen")(function* (mouse: Mouse) {
+    yield* Effect.sync(() => screen.listen(mouse))
+  })
+
+const shapeOf = (screen: Screen): Shape => ({
+  paint: paintWith(screen),
+  rows: Effect.sync(() => screen.viewportRows()),
+  listen: listenWith(screen),
+})
+
+export const displayOn = (renderer: CliRenderer, repo: string): Layer.Layer<Display> =>
+  Layer.sync(Display)(() => shapeOf(new Screen(renderer, repo)))
