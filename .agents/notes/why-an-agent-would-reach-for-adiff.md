@@ -4,201 +4,230 @@ A proposal on adoption. No code changes here.
 
 ## The short answer
 
-An agent in a fresh session with no priming will not choose adiff, and no amount of work on the
-CLI will change that. An agent picks a tool for exactly three reasons: the tool is already in its
-context when the session starts, the user names it, or it trips over something that names it while
-doing something else. It does not browse PATH, it does not read your README, and it has no reason
-to wonder whether a review terminal exists.
+An agent in a fresh session with no priming will not choose adiff, and no work on the CLI will
+change that. An agent picks a tool for exactly three reasons: it is already in context when the
+session starts, the user names it, or it trips over something that names it while doing something
+else. Agents do not browse PATH, do not read your README, and have no reason to wonder whether a
+review terminal exists.
 
-So the goal as stated is the wrong goal. The tractable version is this: **the reviewer is a human
-who already chose adiff. Make that choice reach the agent for free.** Every proposal below is
-judged on how much of the human's decision it carries across to the agent side without a second
-decision from anyone.
+So the goal as stated is the wrong goal. The tractable version: **the reviewer is a human who
+already chose adiff. Make that choice reach every future agent session for free.** The good news
+is that this is now a solved problem in the ecosystem, and adiff is one afternoon away from
+solving it. The bad news is in the next section.
 
-Ranked by effect per unit of work, the answer is short: one line in `AGENTS.md` does most of it,
-a session hook does the rest for the people who want it, and everything else is a rounding error.
+## The competitor is not the paste pattern
 
-## What actually puts a tool in front of an agent
+The brief assumes tuicr's play is clipboard export with no agent-side cooperation. That was true
+once. Today tuicr ships all three layers:
 
-There are four channels and no others.
+- **Clipboard.** `y` or `:clip` copies structured markdown, numbered, with file and line anchors.
+  "Paste it back to any coding agent (Claude, Codex, Cursor, etc)."
+- **A skill**, at `skills/tuicr/SKILL.md`, described as "Use tuicr's review CLI to read and add
+  comments in active TUI review sessions, and launch tuicr in tmux, Zellij, or Herdr when a user
+  needs an interactive review pane."
+- **A JSON CLI for agents.** `tuicr review` lists sessions, adds comments and prints stored
+  comments "for agent and script integrations". The skill has the agent poll
+  `tuicr review comments --repo <path> --session <slug>` about every 30 seconds and compare comment
+  ids to spot new ones.
 
-**Files the agent reads before it acts.** `AGENTS.md` and `CLAUDE.md` are loaded at session start
-in every harness that supports them. This is the only channel that works for any agent, needs no
-install on the agent's machine, and travels with the repository. It is also the only one where
-adiff can state the loop in its own words rather than hoping a description matches.
+So the honest competitive picture is not convenience against principle. It is two tools with the
+same architecture, where the competitor has 2.4k stars, a one-line curl install, a Homebrew
+formula, and support for git, jj and mercurial plus GitHub, GitLab and Bitbucket.
 
-**Skills.** A skill's name and description sit in the agent's context for the whole session; the
-body loads only when the description matches what the user asked. That makes the description the
-entire adoption surface, and adiff's is good: it names the situations ("the user says they left
-comments", "asks you to check adiff") rather than describing the tool. The limits are that the
-skill has to be installed on the machine, which is a decision by the human, and that skill support
-is not universal across agents.
+What tuicr does not have, as far as its README and skill show: no answering a comment, no thread
+state, no settled or unsettled, no `--asks` to hand a decision back, no exactly-once delivery, no
+layers, no coverage check, no `AGENTS.md` story, no MCP.
 
-**MCP tool definitions.** Once a server is configured, its tools are in context every session
-whether or not they are relevant. That is real always-on presence, and it is why MCP feels like the
-answer. It is also the most expensive channel: you pay context in every unrelated session, you
-maintain a second surface beside the CLI, and the user still has to install it. Harnesses have
-started deferring tool schemas until they are searched for, which quietly removes the one advantage
-MCP had over a skill.
-
-**Things the agent trips over.** Error messages, help text, a command that fails and explains
-itself. Zero reach for an agent that has never typed `adiff`, high value for one that has.
-
-Notice what is common to the first three: a human installs something. There is no channel where an
-agent finds a tool nobody told it about. Any proposal that claims otherwise is either wrong or a
-dark pattern.
+And it has one thing adiff does not: **the agent opens the review itself**, in a tmux or Zellij
+split pane, when the work is done. That inverts the handover. adiff's skill currently ends by
+telling the agent to write a paragraph asking the human to go run a command.
 
 ## Is the differentiator strong enough to matter to an agent?
 
 Partly, and it is worth being precise about which part.
 
-Comment ids, threads and settled state are real, but they are worth more to the human than to the
-agent. An agent handed a markdown block with a path, a line range, a snippet and a sentence can act
-on it perfectly well. It does not need an id to fix a bug. Ids start earning their keep when the
-agent needs to push back and wait, or when a review is long enough that the reviewer has lost track
-of what was answered. That is a genuine capability the paste pattern cannot reach, but it is not
-what makes an agent reach for the tool on day one.
+Threads with answers and settled state are the real thing, and tuicr has no answer to them. But
+they are worth more to the human than to the agent. An agent handed a path, a line range, a snippet
+and a sentence can act perfectly well; it does not need an id to fix a bug. Ids start earning their
+keep when the agent needs to push back and wait, which is what `comment answer --asks` is for, and
+when a review runs long enough that the reviewer has lost track of what was addressed. Genuine
+capability, not a day-one adoption driver.
 
-Layers are further from an adoption driver than they look. Writing the reading order is work the
-agent does for someone else's benefit; it already knows the order the change was built in. An agent
-optimising for its own turn has no reason to write layers, and coverage checking is a constraint on
-it rather than a service to it. Layers sell adiff to the human who has to read a 42-file diff. They
-do not sell it to the agent.
+Blocking `--wait` is a quieter but sharper advantage. Polling every 30 seconds burns a turn each
+time and still adds latency; a backgrounded blocking wait costs nothing until a comment lands.
+That is a better loop, and it is cheap to explain.
+
+Layers are further from an adoption driver than they look. Read PRD-006: every user story starts
+"as a reviewer". Writing the reading order is work the agent does for someone else, since it
+already knows the order it built the change in, and coverage checking is a constraint on the agent
+rather than a service to it. Layers sell adiff to the human facing a 42-file diff. They do not sell
+it to the agent, and no amount of framing will make an agent want to be audited.
 
 The honest reading: adiff's differentiator is a reason a **person** installs adiff. That is not a
-weakness. The person is the one who installs things. It does mean the adoption work belongs on the
+weakness, since people are what install things. It does mean the adoption work belongs on the
 handover, not on making the agent want it.
 
-## Where the paste pattern actually wins, and where it does not
+## What actually puts a tool in front of an agent
 
-Give tuicr its due. It needs nothing on the agent's side: no install, no protocol, no cooperation.
-It works with an agent that has never heard of it, in a harness that has no skills, on a machine
-where nothing was configured. That is a real and large advantage, and adiff will never match it on
-that axis.
+Four channels, and no others.
 
-What paste cannot do:
+**Files the agent reads before it acts.** `AGENTS.md` is now a Linux Foundation format under the
+Agentic AI Foundation, with 20-plus compatible agents and 60k-plus repositories using it. It has no
+required fields and always applies. This is the only channel that needs nothing installed anywhere
+and travels with the repository.
 
-- The human has to leave the review, switch windows, paste, and wait. With `comment take --wait`
-  running in the agent's background, the reviewer never leaves the terminal and comments land as
-  events rather than as a batch the human hand-carries.
-- A pasted comment is a one-way message. There is nowhere for the agent to say "I did something
-  else and here is why", and nowhere for the reviewer to see it. `comment answer` and `--asks` are
-  the part with no paste equivalent.
-- Paste has no memory. Comment twice on the same code across two sessions and the second paste
-  carries nothing about the first.
+**Skills, and they are no longer a Claude thing.** The open standard at agentskills.io defines
+SKILL.md with six frontmatter fields, and the client list runs to roughly forty: Claude Code,
+Cursor, Codex, Gemini CLI, Copilot, VS Code, OpenCode, Goose, Junie, Amp and on. Only `name` and
+`description` load at startup, about 100 tokens, and the description is the entire matching
+surface. adiff's SKILL.md uses exactly `name` and `description`, so it is already spec-clean and
+portable with no work.
 
-So the fair claim is not "adiff beats paste". It is "paste is the floor, and adiff is worth the
-install to a reviewer with more than one worktree in flight". Pretending otherwise in the README
-will cost more credibility than it buys installs.
+The part worth sitting up for: **a skill committed into a repository is picked up with no install
+step**. Claude Code loads `.claude/skills/` from the launch directory up to the repo root; Cursor
+reads `.agents/skills/` and `.cursor/skills/` and keeps legacy compatibility with `.claude/skills/`;
+Codex scans `.agents/skills/` from cwd up to the repo root. One directory committed once reaches
+every agent every teammate runs, forever, with auto-triggering on description match. That is
+strictly more powerful than an `AGENTS.md` line and it costs the same single decision.
+
+**MCP tool definitions.** Configured once, present every session. That used to be the one channel
+with genuinely automatic presence. It is much weaker now: harnesses defer tool schemas until
+something searches for them, so MCP tools are no more present than a skill description while still
+costing a second surface to build, version and keep in step with the CLI. Codex, Cursor and Claude
+Code all support MCP, and registries exist, but a registry entry is not discovery; nobody browses
+for a tool they do not know they need.
+
+**Things the agent trips over.** Error messages and help text. Zero reach for an agent that never
+typed `adiff`, high value for one that just did.
+
+Common to the first three: a human installs something. There is no channel where an agent finds a
+tool nobody told it about. Any tactic claiming otherwise is either wrong or a dark pattern.
 
 ## The proposals
 
-Ranked by effect per unit of work. Cheap means an afternoon. Project means a week or more.
+Ranked by effect per unit of work.
 
-### 1. Say the loop in `AGENTS.md`, and have `adiff init` offer to write it (cheap)
+### 1. `adiff init` commits the skill and an AGENTS.md line into the repo being reviewed (cheap, highest leverage)
 
-Highest leverage by a wide margin. Four lines in a repo's `AGENTS.md` reach every agent in every
-harness with no install, no skill, no MCP, and no trigger matching. Something like:
+This is the whole proposal, and everything else is a rounding error next to it.
+
+Write `.claude/skills/adiff/SKILL.md` (widest reach: native for Claude Code, legacy-compatible for
+Cursor and Codex) or `.agents/skills/adiff/SKILL.md`, plus four lines in `AGENTS.md` naming the
+loop for agents that read instructions but not skills. Commit both. From then on, every agent any
+teammate runs in that repository knows the loop, with no per-machine install, no registry, no MCP,
+and no one having to say the word adiff.
+
+The `AGENTS.md` text wants to be short:
 
 > Review of work in this repository happens in adiff. Before you say you are done, run
 > `adiff comment take --worktree . --wait 300` in the background and handle what arrives. Answer
-> comments with `adiff comment answer`. Run `adiff describe` for the rest.
+> with `adiff comment answer`. `adiff describe` lists the rest.
 
-`adiff init` is legitimate under one condition: it shows the exact text, asks, appends rather than
-rewrites, and never runs from a postinstall script. A CLI that asks a human before touching a file
-the human owns is normal. One that writes on install is not, and the repo already commits to that
-line in PRD-009 for the skill. Hold it here too.
+Legitimate under conditions that are not negotiable: it shows the exact text, it asks, it appends
+rather than rewrites, and it never runs from a postinstall script. A CLI that asks before touching
+files the user owns is normal. PRD-009 already draws that line for the skill symlink. Hold it here.
 
-The honest limit: this only helps in repositories where somebody ran it. It converts one human's
-decision into every future agent session in that repo, which is exactly the multiplier worth
-having, and it does nothing for strangers.
+Two things to get right. Committing a skill directory into someone else's repo is a bigger
+imposition than one line of markdown, so `adiff init` should offer them separately and let someone
+take the `AGENTS.md` line alone. And the skill should degrade honestly: an agent that reads it on a
+machine with no adiff should get a clear "not installed" rather than a confusing failure.
 
-### 2. An opt-in session hook that surfaces waiting comments (cheap, per harness)
+### 2. Let the agent open the review (cheap, and it closes the loop)
+
+tuicr's best idea, and adiff has no equivalent. Today the skill tells the agent to write a
+paragraph asking the human to run `adiff review open`. That paragraph is the weakest link in the
+handover, because it depends on a human reading, switching context and typing.
+
+Instead: when the agent finishes and a multiplexer is running, it opens `adiff review open --repo
+<repo>` in a split pane beside itself. The reviewer's next action is to look right, not to run
+something. Combined with a backgrounded `comment take --wait`, the round trip is a human selecting
+lines and an agent responding, with nobody switching windows.
+
+This is a skill change plus a small launcher, not a rewrite. It is also the single most visible
+difference a person would feel in the first five minutes.
+
+### 3. An opt-in session hook that surfaces waiting comments (cheap, per harness)
 
 The one way an agent notices unprompted. `adiff comment take --worktree .` on a worktree with
-nothing waiting answers `{"ok":true,"comments":[]}` and exits 0, so probing costs nothing and
-cannot fail loudly. Wire that into a session-start or pre-response hook and the agent sees the
-comments in its context without anyone naming adiff.
+nothing waiting answers `{"ok":true,"comments":[]}` and exits 0, so probing is free and cannot fail
+loudly. Wire that into a session-start hook and the agent sees comments in context without anyone
+naming adiff.
 
-This is real automatic discovery, and it is honest as long as the user installed the hook
-themselves. `adiff init --hooks` should print what it will add, ask, and be trivially removable.
-It is harness-specific, so it will not generalise the way `AGENTS.md` does. Start with the one
-harness the maintainer uses and treat the rest as demand-driven.
+Honest as long as the user installs the hook themselves. `adiff init --hooks` should print what it
+adds, ask, and be trivially removable. It is harness-specific and will not generalise the way the
+skill does, so build it for the one harness the maintainer uses and let demand drive the rest.
 
-### 3. Make first contact teach the loop, not the catalog (cheap)
+### 4. Make first contact teach the loop, not the catalog (cheap)
 
-`adiff describe` returns about 8KB. That answers "what commands exist", which is not the question
-an agent has. The question is "what am I supposed to do here". Bare `adiff` already answers it
-well in four lines, naming `review open` and `comment take`, and that is the best piece of
-first-contact copy in the project. Push more of it into the places an agent actually lands:
+`adiff describe` is 7,903 bytes. It answers "what commands exist", which is not the question an
+agent has. The question is "what am I supposed to do here". Bare `adiff` already answers it in four
+lines, naming `review open` and `comment take`, and that is the best first-contact copy in the
+project. Push more of it where agents actually land:
 
 - Add a `hint` to the empty `comment take` answer naming `--wait` and `comment answer`. One field,
-  paid for only when the array is empty.
-- Extend `suggestion` on `UnknownBranch` to say why: the reviewer has not opened this branch, so
-  there is nothing filed against it yet. An error that teaches is worth more than a doc page nobody
-  fetched.
-- `adiff describe --command 'comment take'` is 440 bytes. Say so in the bare-`adiff` output, so an
-  agent knows it can ask about one command instead of pulling the whole catalog.
+  paid for only when the array is empty, and the empty answer is exactly where a confused agent
+  ends up.
+- Say in the bare-`adiff` output that `describe --command 'comment take'` is 440 bytes, so an agent
+  knows it can ask about one command instead of pulling the whole catalog.
+- Keep doing what `NoLayers` already does. Its suggestion reads "No layers has been written for
+  this worktree. Write one with `adiff layers set`." An error that teaches beats a doc nobody
+  fetched, and this one is the model for the rest.
 
-Renaming is not worth it. `adiff` is short, unclaimed, and already on people's machines. A better
-name would not have been discovered either.
+Renaming is not worth it. `adiff` is short, unclaimed and already installed. A better name would
+not have been discovered either.
 
-### 4. Publish the skill where skills are looked for (cheap, low ceiling)
+### 5. Keep publishing the skill for per-machine install (nearly free, low ceiling)
 
-`npx skills add Newbie012/agent-diff --skill adiff` already works and the README says so. Listing
-in whatever index exists is close to free and worth doing on that basis alone. Do not expect much
-from it: people install a skill for a tool they already have, so the index converts installs into
-better installs rather than creating new ones.
+`npx skills add Newbie012/agent-diff --skill adiff` already works, and that CLI covers 75-plus
+agents, so this is genuinely cross-agent rather than a Claude-only path. Keep it in the README.
 
-The skill itself is in good shape. The one thing worth adding is a line telling the agent to
-mention adiff when it hands work over, so the loop closes from the agent's side too.
+Do not expect discovery from it. skills.sh has no submission or review flow: listing and ranking
+come from anonymous install telemetry, so you appear there after people already install you. It is
+a scoreboard, not a shop window. Publishing converts existing users into better-configured users,
+which is worth having and is not a growth channel.
 
-### 5. An MCP server (project, and probably not worth it)
+### 6. An MCP server (project, and not now)
 
-It would put adiff's verbs in front of agents in sessions where nobody mentioned adiff, which is
-the thing being asked for. Against that: a second surface to keep in step with the CLI, a transport
-and lifecycle to maintain, context paid in every unrelated session, and the user still has to
-install it. The commands are already single-line JSON with a machine-readable catalog, which is
-most of what an MCP server would wrap. And deferred tool loading in modern harnesses means MCP
-tools are increasingly no more present than a skill.
+It would put adiff's verbs in sessions where nobody mentioned adiff, which is nominally the ask.
+Against it: a second surface to keep in step with the CLI, a transport and lifecycle to maintain,
+and the user still has to install it. The commands are already one-line JSON with a machine-readable
+catalog, which is most of what a server would wrap, and deferred tool loading has removed the
+always-present advantage MCP had over a skill.
 
-Recommendation: not now. Revisit if a harness appears that supports MCP and not skills, and where
-someone actually wants adiff.
-
-### 6. Make the handover message the product (cheap, underrated)
-
-The skill already tells the agent to end its reply with the command and the keys. That message is
-the single most-read piece of adiff documentation, because it arrives at the exact moment someone
-is deciding how to review. Treat it as copy worth editing, not as boilerplate: name the repo, name
-what to look at hardest, and keep it to the two keys that matter.
+Revisit if a harness appears that supports MCP and not skills, and where someone actually wants
+adiff. That is not the situation today.
 
 ## What to rule out
 
 These would move the number and should not be done.
 
-- **Writing `AGENTS.md` or `CLAUDE.md` from a postinstall script.** It works, it is silent, and it
-  is the thing that gets a package a bad reputation in one news cycle.
-- **Symlinking the skill into the agent's skills directory on install.** Same category. PRD-009
-  already rules this out; keep it ruled out.
+- **Writing `AGENTS.md`, `CLAUDE.md` or a skill directory from a postinstall script.** It works, it
+  is silent, and it is the kind of thing a package gets remembered for.
+- **Symlinking the skill into the agent's skills path on install.** Same category. PRD-009 already
+  rules it out. Keep it ruled out.
 - **Advertising in unrelated command output.** A line about layers printed by `branch list` costs
   the caller tokens for the maintainer's benefit.
-- **Claiming a generic binary name** (`review`, `git-review`) hoping an agent guesses it. It is
-  squatting, it does not actually work, and an agent that guesses a name still does not know the
-  loop.
-- **Emitting output shaped like something else's**, for instance a message an agent would read as
-  coming from git or from the harness. Deceptive, and it breaks the moment anyone looks.
+- **Claiming a generic binary name** (`review`, `git-review`) hoping an agent guesses it. Squatting,
+  it does not actually work, and an agent that guesses a name still does not know the loop.
+- **Output shaped like something else's**, for instance a message an agent would read as coming from
+  git or from its own harness. Deceptive, and it breaks the first time anyone looks.
+- **A skill description written to match more than adiff does**, so it triggers on any mention of
+  review. It would raise invocations and burn the trust that makes the next skill work.
 
 ## How you would know it worked
 
-Not by installs. The measure is whether an agent runs `comment take` in a session where nobody
-said the word adiff. That is one thing to count, and it is countable locally: the store already
-knows every take, and a take in a repository whose `AGENTS.md` names adiff is the outcome this
-whole proposal is aimed at.
+Not installs. The measure is whether an agent runs `comment take` in a session where nobody said
+the word adiff, and that is countable locally: the store already records every take, and a take in
+a repository whose committed skill names adiff is exactly the outcome this is aimed at.
 
 ## Bottom line
 
-Do 1 and 3 this week. Do 2 if the maintainer wants it for himself, which is a good enough reason.
-Do 4 because it is nearly free. Skip 5.
+Ship 1 and 2 this week; between them they are the difference between a tool people are told about
+and a tool that works by default. Do 4 alongside, it is an hour. Do 3 if the maintainer wants it
+for himself, which is reason enough. Skip 6.
 
-And keep the claim honest: adiff is not a tool an agent discovers. It is a tool a reviewer chooses,
-and the work is making sure the agent on the other side never has to be told twice.
+And drop the framing that the competition is a clipboard. It is a tool with the same shape, more
+stars and an easier install, which already does the agent loop. adiff's answer is that a review is
+a conversation the agent can answer into and a reading order the agent has to prove covers the
+diff. That is a real difference and it is worth saying plainly, to the person choosing the tool,
+because the agent was never the one deciding.
