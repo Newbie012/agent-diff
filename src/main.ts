@@ -197,7 +197,7 @@ const describe = Effect.fn("Main.describe")(function* (options: Options) {
   if (asked !== undefined && found === undefined) {
     return yield* new UnknownCommand({ name: asked, known: commandNames })
   }
-  yield* answer(options, { commands: found === undefined ? catalog : [found] })
+  return yield* answer(options, { commands: found === undefined ? catalog : [found] })
 })
 
 const routes = {

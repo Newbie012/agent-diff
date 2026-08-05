@@ -223,7 +223,7 @@ export class ScreenTestDriver {
     const rows = (): ReadonlyArray<string> =>
       setup
         .captureSpans()
-        .lines.filter((line) => line.spans.some((span) => read(span as Span) === wanted))
+        .lines.filter((line) => line.spans.some((span) => read(span) === wanted))
         .map((line) => line.spans.map((span) => span.text).join("").trimEnd())
     const attempt = async (left: number): Promise<ReadonlyArray<string>> => {
       await setup.waitForVisualIdle()
@@ -263,7 +263,7 @@ export class ScreenTestDriver {
     const painted: Array<string> = []
     for (const span of line.spans) {
       const ends = at + span.text.length
-      if (at < to && ends > from && span.text.trim().length > 0) painted.push(fgOf(span as Span))
+      if (at < to && ends > from && span.text.trim().length > 0) painted.push(fgOf(span))
       at = ends
     }
     return [...new Set(painted)]

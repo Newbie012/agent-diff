@@ -69,7 +69,7 @@ const FALLBACK: Advice = {
 
 const tagOf = (failure: unknown): string =>
   typeof failure === "object" && failure !== null && "_tag" in failure
-    ? String((failure as { _tag: unknown })._tag)
+    ? String(failure._tag)
     : "Unknown"
 
 const project = (value: unknown, fields: ReadonlyArray<string>): unknown => {

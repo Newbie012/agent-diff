@@ -623,7 +623,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const resume =
     sessionPath === undefined ? undefined : yield* Effect.promise(() => readSession(sessionPath))
   const store = yield* Store
-  const settings = yield* store.settings()
+  const settings = yield* store.settings
   return new App({
     renderer,
     repo,
