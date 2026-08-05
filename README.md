@@ -6,8 +6,9 @@ Review the work an agent did in a git worktree, in your terminal, and hand your 
 the agent still sitting in that worktree. You select lines the way you would on GitHub, write a
 comment, and the agent picks it up.
 
-<pre align="center">brew install Newbie012/tap/adiff
-npm i -g @eliya-oss/agent-diff@alpha</pre>
+<pre align="center">npm i -g @eliya-oss/agent-diff@alpha</pre>
+
+<p align="center"><a href="docs/install.md">Other ways to install</a></p>
 
 <img src="assets/terminal.webp" alt="The adiff worktree list, showing seven branches with their sizes, layers and review state" width="820">
 
