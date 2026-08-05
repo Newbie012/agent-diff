@@ -1,9 +1,10 @@
 import type { KeyEvent } from "@opentui/core"
 import { Data, type Deferred } from "effect"
+import type { Work } from "./needs.ts"
 
 export type Intent = Data.TaggedEnum<{
   Key: { readonly key: KeyEvent }
-  Task: { readonly run: () => Promise<void> }
+  Task: { readonly run: Work }
   Ping: { readonly done: Deferred.Deferred<void> }
 }>
 
