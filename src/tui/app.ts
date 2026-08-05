@@ -236,7 +236,7 @@ export class App {
     const line = JSON.stringify(session)
     if (line === this.remembered) return
     this.remembered = line
-    void writeSession(this.sessionPath, session)
+    Effect.runFork(writeSession(this.sessionPath, session))
   }
 
   private dispatch(key: KeyEvent): void {
@@ -721,7 +721,9 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const context = yield* Effect.context<Needs>()
   const branches = yield* listBranches(repo)
   const resume =
-    sessionPath === undefined ? undefined : yield* Effect.promise(() => readSession(sessionPath))
+    sessionPath === undefined
+      ? Option.none<Session>()
+      : yield* readSession(sessionPath)
   const store = yield* Store
   const settings = yield* store.settings
   const wrap = settings.wrap === true
@@ -740,7 +742,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
     painting,
     noticeMs,
     sessionPath,
-    resume,
+    resume: Option.getOrUndefined(resume),
     wrap,
     storeRoot: store.root,
     intents,
