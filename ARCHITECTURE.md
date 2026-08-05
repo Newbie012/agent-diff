@@ -79,8 +79,9 @@ v4 differs from v3 in ways worth checking rather than assuming: `Effect.callback
 
 ## Enforced style
 
-`npm run lint` is oxlint plus `scripts/check-style.ts`. The second exists for three rules the first
-cannot express:
+`npm run lint` is oxlint, with the project's own rules in the plugin at `tools/oxlint-adiff.ts`, and
+then `scripts/check-rules.ts`, which proves every one of those rules still fires on a file that
+violates it. `.agents/EFFECT.md` is the contract they enforce. Among them:
 
 - **No comments in `src/`.** Only `// ARRANGE`, `// ACT`, `// ASSERT` in `*.test.ts`. A comment
   explaining code is a defect report against its naming; extract a named function instead. Design

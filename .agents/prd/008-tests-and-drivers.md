@@ -91,7 +91,7 @@ driver.agent     ASSERT: what reached the store, read through its public contrac
 
 ## Testing Decisions
 
-This PRD is verified by the suite obeying it. `scripts/check-style.ts` enforces the parts a linter
+This PRD is verified by the suite obeying it. The oxlint plugin at `tools/oxlint-adiff.ts` enforces the parts a general linter
 can see; the rest is a review concern.
 
 ## Out of Scope
