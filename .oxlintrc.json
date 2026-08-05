@@ -98,7 +98,8 @@
     {
       "files": [
         "src/domain/**/*.ts",
-        "src/service/**/*.ts"
+        "src/service/**/*.ts",
+        "src/tui/**/*.ts"
       ],
       "rules": {
         "adiff/effect-not-promises": "error"

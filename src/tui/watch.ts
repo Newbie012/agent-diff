@@ -1,33 +1,38 @@
-import { watch, type FSWatcher } from "node:fs"
-import { mkdirSync } from "node:fs"
+import { mkdirSync, watch, type FSWatcher } from "node:fs"
 import { join } from "node:path"
+import { Data, Effect, Queue, Stream, type Cause } from "effect"
 
 const OUTBOX = "outbox.jsonl"
 const SETTLE_MS = 120
 
-export type Watching = { readonly stop: () => void }
+export class WatchUnavailable extends Data.TaggedError("WatchUnavailable")<{
+  readonly root: string
+  readonly reason: string
+}> {}
 
 const answered = (name: string | null): boolean => name !== null && name.endsWith(OUTBOX)
 
-export const watchAnswers = (root: string, arrived: () => void): Watching => {
-  const branches = join(root, "branches")
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let watcher: FSWatcher | undefined
-  try {
-    mkdirSync(branches, { recursive: true })
-    watcher = watch(branches, { recursive: true }, (_event, name) => {
-      if (!answered(name)) return
-      if (timer !== undefined) clearTimeout(timer)
-      timer = setTimeout(arrived, SETTLE_MS)
-    })
-    watcher.on("error", () => undefined)
-  } catch {
-    watcher = undefined
-  }
-  return {
-    stop: () => {
-      if (timer !== undefined) clearTimeout(timer)
-      watcher?.close()
-    },
-  }
+const opened = (branches: string, queue: Queue.Queue<void, Cause.Done>): FSWatcher => {
+  mkdirSync(branches, { recursive: true })
+  const watcher = watch(branches, { recursive: true }, (_event, name) => {
+    if (answered(name)) Queue.offerUnsafe(queue, undefined)
+  })
+  watcher.on("error", () => undefined)
+  return watcher
 }
+
+const holding = (branches: string, queue: Queue.Queue<void, Cause.Done>) =>
+  Effect.acquireRelease(
+    Effect.try({
+      try: () => opened(branches, queue),
+      catch: (cause) => new WatchUnavailable({ root: branches, reason: String(cause) }),
+    }),
+    (watcher) => Effect.sync(() => watcher.close()),
+  )
+
+export const answers = (root: string): Stream.Stream<void> =>
+  Stream.callback<void>((queue) =>
+    holding(join(root, "branches"), queue).pipe(
+      Effect.catchTag("WatchUnavailable", () => Effect.void),
+    ),
+  ).pipe(Stream.debounce(SETTLE_MS))
