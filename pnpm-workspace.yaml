@@ -1,3 +1,9 @@
+minimumReleaseAgeExclude:
+  - oxlint
+  - "@effect/tsgo"
+  - oxlint-tsgolint
+  - "@effect/tsgo-*"
+  - "oxlint-tsgolint-*"
 allowBuilds:
   msgpackr-extract: true
 versioning:
