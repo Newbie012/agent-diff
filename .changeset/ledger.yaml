@@ -69,6 +69,10 @@
   dir: ""
   intents:
     - wide-tigers-occur
+"@eliya-oss/agent-diff@0.1.0-alpha.19":
+  dir: ""
+  intents:
+    - lucky-eels-sin
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
