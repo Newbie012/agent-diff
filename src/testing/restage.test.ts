@@ -34,7 +34,7 @@ describe("fixing a comment before the review goes", () => {
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("Comment on src/api.ts")
     expect(frame).toContain("why frist")
-    expect(frame).not.toContain("one wake-up")
+    expect(frame).not.toContain("waking the agent once")
   })
 
   it("replaces the comment rather than adding another", async () => {
@@ -105,7 +105,7 @@ describe("withdrawing a comment before the review goes", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("one wake-up")
+    expect(frame).toContain("waking the agent once")
     expect(frame).not.toContain("why first")
     expect(frame).toContain("why second")
   })
@@ -124,7 +124,7 @@ describe("withdrawing a comment before the review goes", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).not.toContain("one wake-up")
+    expect(frame).not.toContain("waking the agent once")
     expect(frame).toContain("nothing staged")
   })
 

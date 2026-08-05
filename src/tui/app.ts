@@ -519,7 +519,7 @@ export class App {
     const pending =
       branch === undefined ? [] : await this.run(listPending(this.repo, branch.branch))
     const next = withPending(this.state, pending, "review")
-    this.commit(withNotice(next, `${pending.length} staged`))
+    this.commit(withNotice(next, `${pending.length} staged, press S to send`))
   }
 
   private async restage(id: string): Promise<void> {

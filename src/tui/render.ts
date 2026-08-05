@@ -878,7 +878,7 @@ export class Screen {
     }
     const count = state.pending.length
     const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
-    this.pendingTitle.content = `Review — ${count} comment${count === 1 ? "" : "s"}, one wake-up`
+    this.pendingTitle.content = `Send ${count} comment${count === 1 ? "" : "s"} as one review, waking the agent once`
     this.pendingChoices.options = state.pending.map((entry) => ({
       name: clip(
         `${entry.file}:${entry.start}-${entry.end}  ${entry.body.split("\n")[0] ?? ""}`,

@@ -52,7 +52,7 @@ describe("what the footer is for", () => {
     await driver.branch.create(oneFile)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
-    expect(footerOf(await driver.screen.getFrame())).not.toContain("S review")
+    expect(footerOf(await driver.screen.getFrame())).not.toContain("S send")
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -60,6 +60,6 @@ describe("what the footer is for", () => {
     await driver.screen.pressCtrl("a")
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("S review")
+    expect(footerOf(await driver.screen.getFrame())).toContain("S send 1")
   })
 })
