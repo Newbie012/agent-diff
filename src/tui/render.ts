@@ -558,6 +558,11 @@ const STEP_GAP = 1
 
 type LayerRoom = { readonly title: number; readonly note: number; readonly tally: number }
 
+const staleBanner = (room: number): string =>
+  wrapped("stale, the branch moved on", room)
+    .map((line) => `  ${line}`)
+    .join("\n")
+
 const layerRoom = (state: TuiState, pane: number): LayerRoom => {
   const tally = Math.max(1, ...state.layers.map((layer) => `${layer.files.length}`.length))
   return {
@@ -809,7 +814,7 @@ export class Screen {
     )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
     const warn = state.layersStale
-      ? [fg(palette.attention)(`  stale, the branch moved on\n\n`)]
+      ? [fg(palette.attention)(`${staleBanner(room.note)}\n`)]
       : []
     return new StyledText([...warn, ...rows, ...more])
   }
