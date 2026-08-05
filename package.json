@@ -2,11 +2,12 @@
   "name": "@eliya-oss/agent-diff",
   "type": "module",
   "devDependencies": {
-    "@effect/tsgo": "^0.28.0",
+    "@effect/tsgo": "^0.31.0",
     "@effect/vitest": "^4.0.0-beta.102",
     "@types/node": "^26.1.2",
     "effect": "^4.0.0-beta.102",
-    "oxlint": "^1.76.0",
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "rolldown": "^1.2.1",
     "vitest": "^4.1.10"
   },
@@ -21,7 +22,7 @@
     "build": "rolldown -c rolldown.config.ts",
     "prepack": "pnpm run build",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint && node scripts/check-rules.ts && pnpm run lint:effect",
+    "lint": "oxlint && node scripts/check-rules.ts",
     "test": "NODE_OPTIONS=--experimental-ffi vitest run",
     "test:watch": "NODE_OPTIONS=--experimental-ffi vitest",
     "dev": "node --experimental-ffi --disable-warning=ExperimentalWarning src/main.ts",
@@ -32,7 +33,7 @@
     "watch": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/watch.ts",
     "serve": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/serve.ts",
     "play": "node --watch --watch-path=src --watch-path=scripts --experimental-ffi --disable-warning=ExperimentalWarning scripts/play.ts",
-    "lint:effect": "effect-tsgo diagnostics --project tsconfig.json --format text --severity error,warning --lspconfig '{\"diagnostics\":{\"floatingEffect\":\"error\",\"missingEffectError\":\"error\",\"missingEffectContext\":\"error\",\"classSelfMismatch\":\"error\",\"anyUnknownInErrorContext\":\"error\",\"genericEffectServices\":\"error\",\"effectFnImplicitAny\":\"error\"}}'"
+    "prepare": "effect-tsgo patch --oxlint"
   },
   "engines": {
     "node": ">=22"
