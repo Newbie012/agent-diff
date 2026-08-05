@@ -26,4 +26,26 @@ if (missed.length > 0) {
   process.exit(1)
 }
 
-console.log(`check-rules: ${expected.length} rules each caught their violation`)
+const EFFECT_FIXTURES = "tools/effect-fixtures"
+const EFFECT_CONFIG = "tools/effect-rules.json"
+
+const typeAware = await exec(
+  "npx",
+  ["oxlint", "-c", EFFECT_CONFIG, "--tsconfig", `${EFFECT_FIXTURES}/tsconfig.json`, EFFECT_FIXTURES],
+  { encoding: "utf8" },
+).catch((error: { stdout?: string }) => ({ stdout: error.stdout ?? "" }))
+
+const effectRules = globSync(`${EFFECT_FIXTURES}/*.ts`).map(ruleOf).toSorted()
+const effectFired = new Set([...typeAware.stdout.matchAll(/effecttsgo\(([a-z-]+)\)/g)].map((m) => m[1]))
+const effectMissed = effectRules.filter((rule) => !effectFired.has(rule))
+
+if (effectMissed.length > 0) {
+  for (const rule of effectMissed) {
+    console.log(`check-rules: effect rule ${rule} did not fire, so type-aware linting is not running`)
+  }
+  process.exit(1)
+}
+
+console.log(
+  `check-rules: ${expected.length} project rules and ${effectRules.length} type-aware rules each caught their violation`,
+)

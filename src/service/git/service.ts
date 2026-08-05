@@ -105,7 +105,7 @@ const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
   const entries = readEntries(porcelain)
   const found: Array<Worktree> = []
   for (const entry of entries) found.push(yield* toWorktree(entry, base))
-  return found as ReadonlyArray<Worktree>
+  return found
 })
 
 const readDiff = Effect.fn("Git.diff")(function* (worktree: Worktree, context: number) {

@@ -1,0 +1,13 @@
+{
+  "$schema": "../node_modules/@effect/tsgo/oxlint-schema.json",
+  "options": {
+    "typeAware": true
+  },
+  "plugins": [
+    "effecttsgo"
+  ],
+  "categories": {},
+  "rules": {
+    "effecttsgo/floating-effect": "error"
+  }
+}

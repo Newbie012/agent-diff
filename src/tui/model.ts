@@ -325,7 +325,7 @@ export const snippetOf = (state: TuiState, limit: number): ReadonlyArray<string>
   return patch.rows
     .slice(from, to + 1)
     .slice(0, limit)
-    .map((row) => `${String(lineOf(row)).padStart(4)} ${row.text}`)
+    .map((row) => `${lineOf(row).padStart(4)} ${row.text}`)
 }
 
 const lineOf = (row: Patch["rows"][number]): string =>

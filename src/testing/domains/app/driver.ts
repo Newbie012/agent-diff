@@ -83,12 +83,12 @@ export class AppTestDriver {
         { env, encoding: "utf8" },
         (cause, stdout, stderr) => {
           const failed = cause as { code?: number } | null
-          const code = failed === null ? 0 : Number(failed.code ?? 1)
+          const code = failed === null ? 0 : (failed.code ?? 1)
           resolve({
             code,
-            stdout: String(stdout),
-            stderr: String(stderr),
-            envelope: parse(String(stderr)) || parse(String(stdout)),
+            stdout,
+            stderr,
+            envelope: parse(stderr) || parse(stdout),
           })
         },
       )

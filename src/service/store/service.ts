@@ -44,7 +44,7 @@ type Shape = {
     id: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<StoredComment>>, StoreUnreadable | StoreUnwritable>
   readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
-  readonly settings: () => Effect.Effect<Settings, StoreUnreadable>
+  readonly settings: Effect.Effect<Settings, StoreUnreadable>
   readonly saveSettings: (next: Settings) => Effect.Effect<void, StoreUnwritable>
   readonly layers: (
     worktreePath: string,
@@ -114,7 +114,7 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
     const current = yield* state(worktreePath)
     const pending = [...current.pending, comment]
     yield* saveState(worktreePath, { ...current, pending })
-    return pending as ReadonlyArray<StoredComment>
+    return pending
   })
 
   const restage = Effect.fn("Store.restage")(function* (
@@ -125,7 +125,7 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
     if (!current.pending.some((entry) => entry.id === comment.id)) return Option.none()
     const pending = current.pending.map((entry) => (entry.id === comment.id ? comment : entry))
     yield* saveState(worktreePath, { ...current, pending })
-    return Option.some(pending as ReadonlyArray<StoredComment>)
+    return Option.some(pending)
   })
 
   const unstage = Effect.fn("Store.unstage")(function* (worktreePath: string, id: string) {
@@ -133,7 +133,7 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
     if (!current.pending.some((entry) => entry.id === id)) return Option.none()
     const pending = current.pending.filter((entry) => entry.id !== id)
     yield* saveState(worktreePath, { ...current, pending })
-    return Option.some(pending as ReadonlyArray<StoredComment>)
+    return Option.some(pending)
   })
 
   const take = Effect.fn("Store.take")(function* (worktreePath: string) {
@@ -148,10 +148,10 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
 }
 
 const settingsOps = (root: string) => {
-  const settings = Effect.fn("Store.settings")(function* () {
+  const settings = Effect.gen(function* () {
     const raw = yield* readOptional(settingsPath(root))
     return Option.match(raw, { onNone: (): Settings => ({}), onSome: parseSettings })
-  })
+  }).pipe(Effect.withSpan("Store.settings"))
 
   const saveSettings = Effect.fn("Store.saveSettings")(function* (next: Settings) {
     const path = settingsPath(root)

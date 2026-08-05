@@ -401,6 +401,6 @@ export const fileSource = Effect.fn("Cli.fileSource")(function* (
 
 export const saveWrap = Effect.fn("Cli.saveWrap")(function* (wrap: boolean) {
   const store = yield* Store
-  const current = yield* store.settings()
+  const current = yield* store.settings
   yield* store.saveSettings({ ...current, wrap })
 })

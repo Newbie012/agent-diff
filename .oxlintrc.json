@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "$schema": "./node_modules/@effect/tsgo/oxlint-schema.json",
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -42,12 +42,21 @@
           "_tag"
         ]
       }
-    ]
+    ],
+    "effecttsgo/floating-effect": "error",
+    "effecttsgo/missing-effect-error": "error",
+    "effecttsgo/missing-effect-context": "error",
+    "effecttsgo/class-self-mismatch": "error",
+    "effecttsgo/any-unknown-in-error-context": "error",
+    "effecttsgo/generic-effect-services": "error",
+    "effecttsgo/effect-fn-implicit-any": "error",
+    "typescript/no-unsafe-type-assertion": "off"
   },
   "ignorePatterns": [
     "node_modules",
     "dist",
-    "tools/fixtures"
+    "tools/fixtures",
+    "tools/effect-fixtures"
   ],
   "overrides": [
     {
@@ -107,9 +116,36 @@
           }
         ]
       }
+    },
+    {
+      "files": [
+        "src/main.ts",
+        "src/testing/domains/agent/driver.ts"
+      ],
+      "rules": {
+        "effecttsgo/strict-effect-provide": "off"
+      }
+    },
+    {
+      "files": [
+        "src/domain/**/*.ts"
+      ],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "error"
+      }
     }
   ],
   "jsPlugins": [
     "./tools/oxlint-adiff.ts"
+  ],
+  "options": {
+    "typeAware": true
+  },
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "import",
+    "oxc",
+    "effecttsgo"
   ]
 }
