@@ -83,9 +83,11 @@ Three screens, and the keys each answers to:
 - **`>` and `<` pan the diff sideways**, so a line wider than the pane can be read to its end
   without wrapping it. Shift with the wheel does the same. Line numbers, the diff sign and the
   cursor mark stay where they are while the code moves, and the pinned scope moves with the code it
-  mirrors. The header counts the columns the reader has moved, so a line that stops short reads as
-  panned rather than as ended. Wrapping and panning answer the same question, so panning while
-  wrapped says so and does nothing.
+  mirrors. Panning reaches as far as the widest line on the screen, counting the pinned scope as
+  well as the body, so a long signature held above a file of short lines can still be read to its
+  end. The header counts the columns the reader has moved and stops at the last one that reveals
+  anything, so a line that stops short reads as panned rather than as ended. Wrapping and panning
+  answer the same question, so panning while wrapped says so and does nothing.
 - **What is not code holds its columns while the code pans.** A comment, an answer, a layer's prose
   and a row counting hidden lines are all written for the reader rather than read from the file, so
   they stay where they are. Panning to read the end of a line does not cost the reader the comment
@@ -96,6 +98,9 @@ Three screens, and the keys each answers to:
   row-to-line map, not predicted from row heights.
 - **A selection started with `v` extends from where it started to wherever the cursor is.**
   Composing without a selection anchors to the cursor's single row.
+- **The command palette opens wherever a reader is moving around**, over the diff and over the
+  review list. It stays shut where a reader is typing, since a draft is not a place to run a
+  command from, and on the worktree list, whose three actions are already on screen.
 - **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
   than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
   a reviewer can always read back what they have typed.

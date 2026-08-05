@@ -261,18 +261,18 @@ export class DiffView {
     this.fitWrapWidth()
   }
 
+  panLimit(): number {
+    return this.wrapped ? 0 : Math.max(this.code.maxScrollX, this.pinned.maxScrollX)
+  }
+
   setPan(columns: number): void {
-    const wanted = this.wrapped ? 0 : Math.max(0, Math.min(this.code.maxScrollX, columns))
+    const wanted = Math.max(0, Math.min(this.panLimit(), columns))
     if (wanted !== this.held) {
       this.held = wanted
       this.feed()
     }
     if (this.code.scrollX !== wanted) this.code.scrollX = wanted
     if (this.pinned.scrollX !== wanted) this.pinned.scrollX = wanted
-  }
-
-  panned(): number {
-    return this.code.scrollX
   }
 
   private fitWrapWidth(): void {
