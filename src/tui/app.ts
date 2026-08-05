@@ -156,7 +156,7 @@ export class App {
     renderer.on("destroy", () => this.stopPainting())
     renderer.on("destroy", () => this.stopConsuming())
     renderer.on("frame", () => this.syncGeometry())
-    renderer.setFrameCallback(async () => this.applyWheel())
+    renderer.setFrameCallback(() => Effect.runPromise(this.applying()))
     const resume = options.resume
     this.dispatchTask(this.loadPulls())
     if (resume !== undefined) this.dispatchTask(this.resume(resume))
@@ -270,6 +270,10 @@ export class App {
   private onPanWheel(delta: number): void {
     this.sideways += delta
     this.renderer.requestRender()
+  }
+
+  private applying(): Effect.Effect<void> {
+    return Effect.sync(() => this.applyWheel())
   }
 
   private applyWheel(): void {
