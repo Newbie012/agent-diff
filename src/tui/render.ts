@@ -20,6 +20,7 @@ import {
   newLineAt,
   onLayers,
   railWindow,
+  matchHere,
   selectionReadout,
   layerOpen,
   layerRows,
@@ -298,7 +299,20 @@ const makeHome = (renderer: CliRenderer) => ({
 const makeModals = (renderer: CliRenderer) => ({
   palette: makePaletteParts(renderer),
   staged: makePendingParts(renderer),
+  found: makeFoundParts(renderer),
 })
+
+const makeFoundParts = (renderer: CliRenderer): PaletteParts => {
+  const box = makePalette(renderer)
+  const title = bar(renderer, "found-title", palette.faint)
+  const query = bar(renderer, "found-peek", palette.muted)
+  const choices = makeChoices(renderer)
+  box.id = "found"
+  box.add(title)
+  box.add(choices)
+  box.add(query)
+  return { box, title, query, choices }
+}
 
 const FONTS = ["tiny", "block", "shade", "slick", "huge", "grid", "pallet"] as const
 
@@ -640,6 +654,10 @@ export class Screen {
   private readonly pending: BoxRenderable
   private readonly pendingTitle: TextRenderable
   private readonly pendingChoices: SelectRenderable
+  private readonly found: BoxRenderable
+  private readonly foundTitle: TextRenderable
+  private readonly foundPeek: TextRenderable
+  private readonly foundChoices: SelectRenderable
 
   private readonly renderer: CliRenderer
 
@@ -684,6 +702,10 @@ export class Screen {
     this.pending = modals.staged.box
     this.pendingTitle = modals.staged.title
     this.pendingChoices = modals.staged.choices
+    this.found = modals.found.box
+    this.foundTitle = modals.found.title
+    this.foundPeek = modals.found.query
+    this.foundChoices = modals.found.choices
 
     this.assemble(renderer)
   }
@@ -738,6 +760,7 @@ export class Screen {
     this.paintCompose(state)
     this.paintPalette(state)
     this.paintPending(state)
+    this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
   }
@@ -889,6 +912,7 @@ export class Screen {
       this.compose,
       this.palette,
       this.pending,
+      this.found,
     ])
   }
 
@@ -995,6 +1019,37 @@ export class Screen {
     this.footer.visible = !onBranches
     this.body.justifyContent = place
     this.listPane.justifyContent = place
+  }
+
+  private paintFound(state: TuiState): void {
+    this.found.visible = state.screen === "search"
+    if (state.screen !== "search") {
+      this.foundTitle.content = ""
+      this.foundPeek.content = ""
+      this.foundChoices.options = []
+      return
+    }
+    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
+    const here = matchHere(state)
+    this.foundTitle.content = `${state.term}  ·  ${state.matches.length} elsewhere`
+    this.foundChoices.options = state.matches.map((match) => ({
+      name: clip(
+        `${match.changed ? marks().comment : " "} ${match.path}:${match.line}  ${match.text}`,
+        Math.max(1, room - MODAL_ROOM),
+      ),
+      description: "",
+      value: match.path,
+    }))
+    this.foundChoices.selectedIndex = state.matchIndex
+    this.foundPeek.content = (here?.around ?? [])
+      .map((line) => clip(line, Math.max(1, room - MODAL_ROOM)))
+      .join("\n")
+    const peekRows = here?.around.length ?? 0
+    this.foundPeek.height = peekRows
+    this.found.height = Math.min(PALETTE_MAX, state.matches.length + peekRows + PALETTE_CHROME)
+    this.found.width = room
+    this.found.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.found.top = Math.max(2, Math.floor(this.renderer.height / 5))
   }
 
   private paintReport(state: TuiState): void {
