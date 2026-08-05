@@ -99,6 +99,9 @@ Three screens, and the keys each answers to:
 - **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
   than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
   a reviewer can always read back what they have typed.
+- **The panel opens only where a comment can land.** A row of hidden lines and a layer's prose
+  carry no line of their own, so composing on one reports that there is no line to comment on and
+  the reader stays in the diff.
 - **Sending an empty draft does nothing.** Sending a selection the diff cannot anchor reports it on
   the screen and keeps the draft.
 - **After a send the screen returns to the diff with a notice**, and the selection is cleared. The
