@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { createCliRenderer, type CliRenderer, type KeyEvent } from "@opentui/core"
-import { Effect, Fiber, Option, Stream, SubscriptionRef } from "effect"
+import { Cause, Deferred, Effect, Fiber, Option, Queue, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
@@ -75,6 +75,7 @@ import {
   withVouched,
 } from "./reduce.ts"
 import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
+import { Intent } from "./intent.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
 
 type Needs = Git | Store | Forge
@@ -87,6 +88,7 @@ export type AppOptions = {
   readonly run: <A>(effect: Effect.Effect<A, unknown, Needs>) => Promise<A>
   readonly display: DisplayShape
   readonly state: SubscriptionRef.SubscriptionRef<TuiState>
+  readonly intents: Queue.Queue<Intent>
   readonly painting: Fiber.Fiber<void>
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
@@ -117,7 +119,8 @@ export class App {
   private readonly held: SubscriptionRef.SubscriptionRef<TuiState>
   private readonly display: DisplayShape
   private readonly painting: Fiber.Fiber<void>
-  private pending: Promise<void> = Promise.resolve()
+  private readonly intents: Queue.Queue<Intent>
+  private consuming: Fiber.Fiber<void> | undefined
   private failure = ""
 
   private readonly renderer: CliRenderer
@@ -143,6 +146,7 @@ export class App {
     this.held = options.state
     this.display = options.display
     this.painting = options.painting
+    this.intents = options.intents
     const { renderer } = options
     Effect.runSync(
       this.display.listen({
@@ -156,6 +160,7 @@ export class App {
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
     renderer.on("destroy", () => this.stopPainting())
+    renderer.on("destroy", () => this.stopConsuming())
     renderer.on("frame", () => this.syncGeometry())
     renderer.setFrameCallback(async () => this.applyWheel())
     const resume = options.resume
@@ -188,7 +193,25 @@ export class App {
   }
 
   private dispatchTask(task: () => Promise<void>): void {
-    this.pending = this.pending.then(task).catch((cause: unknown) => this.fail(cause))
+    Queue.offerUnsafe(this.intents, Intent.Task({ run: task }))
+  }
+
+  consume(): Effect.Effect<void> {
+    return Stream.runForEach(Stream.fromQueue(this.intents), (intent) => this.act(intent))
+  }
+
+  private act(intent: Intent): Effect.Effect<void> {
+    return this.answer(intent).pipe(
+      Effect.catchCause((cause) => Effect.sync(() => this.fail(Cause.squash(cause)))),
+    )
+  }
+
+  private answer(intent: Intent): Effect.Effect<void> {
+    return Intent.$match(intent, {
+      Key: ({ key }) => Effect.promise(() => this.onKey(key)),
+      Task: ({ run }) => Effect.promise(run),
+      Ping: ({ done }) => Deferred.succeed(done, undefined),
+    })
   }
 
   private async resume(session: Session): Promise<void> {
@@ -217,9 +240,7 @@ export class App {
   }
 
   private dispatch(key: KeyEvent): void {
-    this.pending = this.pending
-      .then(() => this.onKey(key))
-      .catch((cause: unknown) => this.fail(cause))
+    Queue.offerUnsafe(this.intents, Intent.Key({ key }))
   }
 
   private fail(cause: unknown): void {
@@ -231,7 +252,10 @@ export class App {
   }
 
   settled(): Promise<void> {
-    return this.pending
+    if (this.consuming === undefined) return Promise.resolve()
+    const done = Deferred.makeUnsafe<void>()
+    Queue.offerUnsafe(this.intents, Intent.Ping({ done }))
+    return Effect.runPromise(Deferred.await(done))
   }
 
   private onWheel(delta: number): void {
@@ -282,6 +306,16 @@ export class App {
 
   private stopPainting(): void {
     Effect.runFork(Fiber.interrupt(this.painting))
+  }
+
+  private stopConsuming(): void {
+    const fiber = this.consuming
+    this.consuming = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
+  }
+
+  watch(fiber: Fiber.Fiber<void>): void {
+    this.consuming = fiber
   }
 
   private stopFading(): void {
@@ -696,7 +730,8 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )
-  return new App({
+  const intents = yield* Queue.unbounded<Intent>()
+  const app = new App({
     renderer,
     repo,
     run: Effect.runPromiseWith(context),
@@ -708,7 +743,10 @@ export const launch = Effect.fn("Tui.launch")(function* (
     resume,
     wrap,
     storeRoot: store.root,
+    intents,
   })
+  app.watch(yield* Effect.forkDetach(app.consume()))
+  return app
 })
 
 const untilDestroyed = (renderer: CliRenderer): Effect.Effect<void> =>
