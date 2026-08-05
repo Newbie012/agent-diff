@@ -37,6 +37,19 @@ export class BranchTestDriver {
     await this.write(branch.worktree, path, lines)
   }
 
+  async setOwnFile(path: string, lines: ReadonlyArray<string>): Promise<void> {
+    await this.write(this.state.repo, path, lines)
+  }
+
+  async commitOwn(message: string): Promise<void> {
+    await this.state.git(this.state.repo, ["add", "-A"])
+    await this.state.git(this.state.repo, ["commit", "-q", "-m", message])
+  }
+
+  ownPath(): Promise<string> {
+    return realpath(this.state.repo)
+  }
+
   private async commitBaseline(model: BranchTestModel): Promise<void> {
     await series(model.files, (file) => this.write(this.state.repo, file.path, file.before))
     await this.state.git(this.state.repo, ["add", "-A"])

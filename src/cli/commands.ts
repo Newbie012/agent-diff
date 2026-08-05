@@ -27,6 +27,7 @@ export type BranchSummary = {
   readonly unread: number
   readonly layers: number
   readonly stale: boolean
+  readonly own: boolean
 }
 
 export type CommentRequest = {
@@ -108,6 +109,7 @@ export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: strin
       unread: waiting.unread,
       layers: waiting.layers,
       stale: waiting.stale,
+      own: worktree.own,
     })
   }
   return summaries.filter((summary) => summary.files > 0)

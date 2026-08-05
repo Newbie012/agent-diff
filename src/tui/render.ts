@@ -73,6 +73,7 @@ const BRANCH_WIDTH = 82
 const BRANCH_NAME = 44
 const BRANCH_NAME_MIN = 12
 const BRANCH_TAIL = 45
+const EMPTY_LIST = "  nothing to review. No worktree differs from the branch it started from."
 const MODAL_MARGIN = 4
 
 const bodyRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - BODY_BORDER)
@@ -515,7 +516,7 @@ const layersCell = (branch: TuiState["branches"][number]): string => {
 }
 
 const stateCell = (state: TuiState, branch: TuiState["branches"][number]): string =>
-  [state.pulls[branch.branch] ?? "", waitingLabel(branch).trim()]
+  [branch.own ? "here" : "", state.pulls[branch.branch] ?? "", waitingLabel(branch).trim()]
     .filter((part) => part.length > 0)
     .join("  ")
 
@@ -937,6 +938,7 @@ export class Screen {
 
   private branchTable(state: TuiState): StyledText {
     const room = nameRoom(homeWidth(this.renderer.width))
+    if (state.branches.length === 0) return new StyledText([fg(palette.muted)(EMPTY_LIST)])
     const heading = [fg(palette.faint)(`${branchHeading(room)}\n\n`)]
     const rows = state.branches.flatMap((branch, index) => {
       const here = index === state.branchIndex
