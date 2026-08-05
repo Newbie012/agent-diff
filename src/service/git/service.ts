@@ -80,7 +80,7 @@ const mergeBaseOf = Effect.fn("Git.mergeBase")(function* (entry: Entry, base: st
   return found
 })
 
-const toWorktree = Effect.fn("Git.toWorktree")(function* (entry: Entry, base: string) {
+const toWorktree = Effect.fn("Git.toWorktree")(function* (entry: Entry, base: string, own: boolean) {
   const mergeBase = yield* mergeBaseOf(entry, base)
   return {
     path: entry.path,
@@ -88,6 +88,7 @@ const toWorktree = Effect.fn("Git.toWorktree")(function* (entry: Entry, base: st
     head: entry.head.slice(0, 8),
     base: mergeBase.slice(0, 8),
     detached: entry.detached,
+    own,
   } satisfies Worktree
 })
 
@@ -107,7 +108,7 @@ const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
   const base = yield* defaultBranch(repo)
   const entries = readEntries(porcelain)
   const found: Array<Worktree> = []
-  for (const entry of entries) found.push(yield* toWorktree(entry, base))
+  for (const [index, entry] of entries.entries()) found.push(yield* toWorktree(entry, base, index === 0))
   return found
 })
 

@@ -73,6 +73,7 @@ const BRANCH_WIDTH = 82
 const BRANCH_NAME = 44
 const BRANCH_NAME_MIN = 12
 const BRANCH_TAIL = 45
+const EMPTY_LIST = "  nothing to review. No worktree differs from the branch it started from."
 const MODAL_MARGIN = 4
 
 const bodyRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - BODY_BORDER)
@@ -515,7 +516,7 @@ const layersCell = (branch: TuiState["branches"][number]): string => {
 }
 
 const stateCell = (state: TuiState, branch: TuiState["branches"][number]): string =>
-  [state.pulls[branch.branch] ?? "", waitingLabel(branch).trim()]
+  [branch.own ? "here" : "", state.pulls[branch.branch] ?? "", waitingLabel(branch).trim()]
     .filter((part) => part.length > 0)
     .join("  ")
 
@@ -877,7 +878,7 @@ export class Screen {
     }
     const count = state.pending.length
     const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
-    this.pendingTitle.content = `Review — ${count} comment${count === 1 ? "" : "s"}, one wake-up`
+    this.pendingTitle.content = `Send ${count} comment${count === 1 ? "" : "s"} as one review, waking the agent once`
     this.pendingChoices.options = state.pending.map((entry) => ({
       name: clip(
         `${entry.file}:${entry.start}-${entry.end}  ${entry.body.split("\n")[0] ?? ""}`,
@@ -937,6 +938,7 @@ export class Screen {
 
   private branchTable(state: TuiState): StyledText {
     const room = nameRoom(homeWidth(this.renderer.width))
+    if (state.branches.length === 0) return new StyledText([fg(palette.muted)(EMPTY_LIST)])
     const heading = [fg(palette.faint)(`${branchHeading(room)}\n\n`)]
     const rows = state.branches.flatMap((branch, index) => {
       const here = index === state.branchIndex

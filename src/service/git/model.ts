@@ -4,6 +4,7 @@ export type Worktree = {
   readonly head: string
   readonly base: string
   readonly detached: boolean
+  readonly own: boolean
 }
 
 export type DiffStat = {

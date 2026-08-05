@@ -21,6 +21,10 @@ genuinely nothing waiting, which is a useful answer rather than a failure.
 The diff for a branch is read from its merge base against the working tree, so uncommitted work
 counts. The reviewer sees what the agent has done, not what it has committed.
 
+The repository's own working tree is one of those branches. It earns its row by the same rule, so a
+reviewer can look over work in the checkout they are standing in, and it is marked `here` so it
+reads as the checkout it is rather than as a worktree someone prepared.
+
 ## User Layers
 
 1. As a `reviewer`, I want the branches with changes and their sizes, so that I can pick what to
@@ -31,6 +35,8 @@ counts. The reviewer sees what the agent has done, not what it has committed.
    up" from "adiff is broken".
 4. As a `reviewer` on a detached worktree, I want it identified by its commit rather than skipped,
    so that nothing silently disappears.
+5. As a `reviewer`, I want the checkout I am standing in listed and marked, so that I can review my
+   own work without moving it to a worktree first.
 
 ## Implementation Decisions
 
@@ -54,11 +60,16 @@ Each branch reports:
 | `head` | Short SHA of the worktree's HEAD |
 | `files` | Files changed against the merge base |
 | `added` / `removed` | Lines added and removed |
+| `own` | True for the repository's own working tree |
 
 - The base is the merge base of the worktree's HEAD and the repo's default branch. The default
   branch is resolved from `origin/HEAD`, falling back to `origin/master`, `origin/main`, `master`,
   `main`, then `HEAD`.
 - A branch with `files` of zero is omitted.
+- `own` marks the repository's own working tree, which git reports first.
+- A checkout sitting on the repository's default branch has that branch as its own base, so its
+  merge base is its HEAD and only uncommitted work counts. Where a remote exists the default
+  resolves to `origin/<branch>`, and commits the reviewer has not pushed count too.
 - A git command that fails is treated as producing no output rather than as an error. Discovery
   degrades to "nothing to review here" instead of taking the whole list down with it.
 - Worktree paths are used verbatim as git reports them. On macOS git reports the resolved path
@@ -83,6 +94,7 @@ Behaviors that must be covered:
 - A branch with changes appears with its file and line counts.
 - A branch with no changes does not appear.
 - A repo with no reviewable branches answers with an empty list and a zero exit.
+- The repository's own working tree appears once it carries uncommitted work, marked `own`.
 
 ## Out of Scope
 

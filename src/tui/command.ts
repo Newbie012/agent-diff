@@ -66,6 +66,7 @@ export type Command = {
   readonly hint: string
   readonly listed: boolean
   readonly whenStaged: boolean
+  readonly counted: boolean
   readonly whenLayers: boolean
 }
 
@@ -74,6 +75,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   hint: "",
   listed: true,
   whenStaged: false,
+  counted: false,
   whenLayers: false,
   ...input,
 })
@@ -392,11 +394,12 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "pending.open",
-    title: "Review what is staged",
+    title: "Send what is staged",
     keys: ["S"],
     screens: ["review"],
-    hint: "review",
+    hint: "send",
     whenStaged: true,
+    counted: true,
   }),
   command({
     action: "pending.submit",
@@ -524,4 +527,8 @@ export const hintsFor = (
     .filter((entry) => entry.hint.length > 0)
     .filter((entry) => !entry.whenStaged || staged > 0)
     .filter((entry) => !entry.whenLayers || layers > 0)
-    .map((entry) => ({ key: displayKey(entry.keys[0] ?? ""), hint: entry.hint, press: entry.keys[0] ?? "" }))
+    .map((entry) => ({
+      key: displayKey(entry.keys[0] ?? ""),
+      hint: entry.counted ? `${entry.hint} ${staged}` : entry.hint,
+      press: entry.keys[0] ?? "",
+    }))
