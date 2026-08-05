@@ -12,7 +12,7 @@ export type StagedComment = {
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
 }
-import type { Patch } from "../domain/patch/index.ts"
+import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, ReportedLayer } from "../cli/index.ts"
@@ -318,15 +318,22 @@ export const markedRows = (state: TuiState): ReadonlySet<number> => {
   return new Set(rows)
 }
 
-export const snippetOf = (state: TuiState, limit: number): ReadonlyArray<string> => {
+const carriesLine = (row: Patch["rows"][number]): boolean =>
+  Option.isSome(row.newLine) || Option.isSome(row.oldLine)
+
+const selectedRows = (state: TuiState): ReadonlyArray<Patch["rows"][number]> => {
   const patch = selectedPatch(state)
   if (patch === undefined) return []
   const [from, to] = selectionRange(state)
-  return patch.rows
-    .slice(from, to + 1)
+  return patch.rows.slice(from, to + 1).filter(carriesLine)
+}
+
+export const snippetOf = (state: TuiState, limit: number): ReadonlyArray<string> =>
+  selectedRows(state)
     .slice(0, limit)
     .map((row) => `${lineOf(row).padStart(4)} ${row.text}`)
-}
+
+export const selectedLineCount = (state: TuiState): number => selectedRows(state).length
 
 const lineOf = (row: Patch["rows"][number]): string =>
   Option.match(row.newLine, { onNone: () => "-", onSome: (line) => String(line) })
@@ -345,18 +352,19 @@ export const composeTarget = (state: TuiState): string => {
   const patch = selectedPatch(state)
   if (patch === undefined) return ""
   const [from, to] = selectionRange(state)
-  const first = sourceLineAt(state, from) ?? from + 1
-  const last = sourceLineAt(state, to) ?? to + 1
-  const span = first === last ? `${first}` : `${first}-${last}`
-  return `Comment on ${patch.path}:${span}`
+  const anchor = anchorFor(patch, from, to)
+  const span = Option.match(anchor, {
+    onNone: () => "",
+    onSome: (found) => (found.start === found.end ? `${found.start}` : `${found.start}-${found.end}`),
+  })
+  return span === "" ? `Comment on ${patch.path}` : `Comment on ${patch.path}:${span}`
 }
 
 export const selectionReadout = (state: TuiState): string => {
   const patch = selectedPatch(state)
   if (patch === undefined || !state.selecting) return ""
-  const [from, to] = selectionRange(state)
-  const lines = to - from + 1
-  return `${patch.path}  ${lines} lines`
+  const lines = selectedRows(state).length
+  return `${patch.path}  ${lines} ${lines === 1 ? "line" : "lines"}`
 }
 
 export const WHOLE_FILE = 100_000

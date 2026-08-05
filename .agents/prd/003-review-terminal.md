@@ -99,6 +99,9 @@ Three screens, and the keys each answers to:
 - **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
   than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
   a reviewer can always read back what they have typed.
+- **What the panel says is what the agent gets.** A selection that reaches over a row of hidden
+  lines names the lines it will comment on, quotes only those lines, and counts only those lines,
+  so the reader is never shown a range the comment does not carry.
 - **The panel opens only where a comment can land.** A row of hidden lines and a layer's prose
   carry no line of their own, so composing on one reports that there is no line to comment on and
   the reader stays in the diff.

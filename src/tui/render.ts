@@ -25,6 +25,7 @@ import {
   layerRows,
   type LayerRow,
   wrapped,
+  selectedLineCount,
   snippetOf,
   reviewedCount,
   selectedBranch,
@@ -1051,7 +1052,7 @@ export class Screen {
     }
     const room = composeRoom(this.renderer.width)
     const snippet = snippetOf(state, SNIPPET_LINES)
-    const more = selectionRange(state)[1] - selectionRange(state)[0] + 1 - snippet.length
+    const more = selectedLineCount(state) - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
     const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
     const written = laidOut(`${state.draft}▌`.split("\n"), room.text)
