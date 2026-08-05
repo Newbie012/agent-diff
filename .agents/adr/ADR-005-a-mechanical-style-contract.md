@@ -35,10 +35,11 @@ not when that script was written.
 exactly the rule it is named after, and fails if any rule does not fire. `pnpm lint` runs that proof
 before it lints real code.
 
-Type-aware Effect diagnostics run too, from `@effect/tsgo`, as `pnpm lint:effect` inside `pnpm lint`.
-Seven of its rules are errors here, among them `floatingEffect`, `missingEffectError` and
-`missingEffectContext`, which catch exactly the silence ADR-002 was written about: an Effect that is
-never run, an error channel nobody handles, a requirement nobody provides.
+Type-aware Effect diagnostics run in that same oxlint pass, from `@effect/tsgo` through its oxlint
+patch, so one command carries both the project rules and Effect's. Seven of its rules are errors
+here, among them `floatingEffect`, `missingEffectError` and `missingEffectContext`, which catch
+exactly the silence ADR-002 was written about: an Effect that is never run, an error channel nobody
+handles, a requirement nobody provides.
 
 Only judgement calls stay prose: how much belongs in one `Effect.gen`, and when a failure earns its
 own tag. Both are stated with an example of each side.
@@ -70,9 +71,10 @@ caught a real break while it was being written: inverting one condition in the p
 - **`@effect/language-service` inside oxlint.** Two dead ends and one road. Its diagnostics need the
   TypeScript type checker, and an oxlint JS plugin sees an AST with no type information, so it cannot
   run as a plugin. It also refuses this repo outright: it supports TypeScript 5 and 6, and adiff is on
-  7. Its successor for TypeScript 7 is `@effect/tsgo`, which is what we use. That does ship an oxlint
-  patch for surfacing its rules through oxlint, but its own CLI already reports in oxlint's format and
-  needs no patching, so the patch buys nothing here.
+  7. Its successor for TypeScript 7 is `@effect/tsgo`, which is what we use, and its oxlint patch is
+  how its rules reach the same lint run as the project rules. Reading it as redundant because the CLI
+  already prints in oxlint's format cost a round trip: a second command with matching output is not
+  one lint pass.
 - **Prettier or dprint for the spacing rules.** A formatter settles blank lines and import order more
   reliably than a rule and ends the argument. It would also reformat all 143 files at once, because
   the repo has no formatter and its line breaks are hand-placed, often better than a formatter's
@@ -90,9 +92,9 @@ caught a real break while it was being written: inverting one condition in the p
 - A new rule costs a fixture. That is the price of the proof and it is the right price.
 - oxlint's JS plugins are alpha and not under semver, so an oxlint upgrade can break the plugin. The
   proof turns that from a silent loss of enforcement into a failed build.
-- `pnpm lint` now typechecks twice over, once for `tsc` and once for the Effect diagnostics, which
-  costs a few seconds. `@effect/tsgo` can run inside the `tsc` pass instead, which is worth doing if
-  the wait starts to matter.
+- `pnpm lint` typechecks to answer the Effect diagnostics, so it costs more than a syntactic lint.
+  `@effect/tsgo` can run inside the `tsc` pass instead, which is worth doing if the wait starts to
+  matter.
 
 ## Revisit When
 
