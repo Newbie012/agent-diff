@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { text as readStream } from "node:stream/consumers"
-import { Cause, Effect, Exit, Layer } from "effect"
+import { Cause, Effect, Layer } from "effect"
 import {
   answerComment,
   awaitComments,
@@ -258,12 +258,14 @@ if (said !== undefined) {
 }
 
 const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot()))
-const exit = await Effect.runPromiseExit(
-  run(nameOf(argv), optionsFrom(argv)).pipe(Effect.provide(layer)),
-)
 
-if (Exit.isFailure(exit)) {
-  const reported = failure(Cause.squash(exit.cause))
-  process.stderr.write(`${reported.line}\n`)
-  process.exitCode = reported.exit
-}
+const reportFailure = (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
+  Effect.sync(() => {
+    const reported = failure(Cause.squash(cause))
+    process.stderr.write(`${reported.line}\n`)
+    process.exitCode = reported.exit
+  })
+
+Effect.runFork(
+  run(nameOf(argv), optionsFrom(argv)).pipe(Effect.provide(layer), Effect.catchCause(reportFailure)),
+)
