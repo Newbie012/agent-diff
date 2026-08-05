@@ -8,7 +8,7 @@ comment, and the agent picks it up.
 
 <pre align="center">npm i -g @eliya-oss/agent-diff@alpha</pre>
 
-[Other ways to install](docs/install.md)
+<p align="center"><a href="docs/install.md">Other ways to install</a></p>
 
 <img src="assets/terminal.webp" alt="The adiff worktree list, showing seven branches with their sizes, layers and review state" width="820">
 
