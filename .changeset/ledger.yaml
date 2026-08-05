@@ -85,6 +85,12 @@
   dir: ""
   intents:
     - great-mails-collect
+"@eliya-oss/agent-diff@0.1.0-alpha.22":
+  dir: ""
+  intents:
+    - weak-dodos-care
+    - wicked-toys-beg
+    - wide-squids-learn
 "@eliya-oss/agent-diff@0.1.0-alpha.3":
   dir: ""
   intents:
