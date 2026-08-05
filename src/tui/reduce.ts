@@ -1,4 +1,5 @@
-import type { Patch } from "../domain/patch/index.ts"
+import { Option } from "effect"
+import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import type { Action } from "./command.ts"
 import { gapNumbered } from "./gaps.ts"
 import { searchCommands } from "./match.ts"
@@ -10,6 +11,7 @@ import {
   hunkStarts,
   onLayers,
   selectedPatch,
+  selectionRange,
   layerFile,
   layerFiles,
   layerHolding,
@@ -199,12 +201,18 @@ const startSelection = (state: TuiState): TuiState => ({
   anchorRow: state.cursor,
 })
 
-const openCompose = (state: TuiState): TuiState => ({
-  ...state,
-  screen: "compose",
-  draft: "",
-  anchorRow: state.selecting ? state.anchorRow : state.cursor,
-})
+const openCompose = (state: TuiState): TuiState => {
+  const patch = selectedPatch(state)
+  const [from, to] = selectionRange(state)
+  const anchored = patch !== undefined && Option.isSome(anchorFor(patch, from, to))
+  if (!anchored) return withNoticeHere(state, "no line here to comment on")
+  return {
+    ...state,
+    screen: "compose",
+    draft: "",
+    anchorRow: state.selecting ? state.anchorRow : state.cursor,
+  }
+}
 
 const goBack = (state: TuiState): TuiState => {
   if (state.screen === "pending") return { ...state, screen: "review" }

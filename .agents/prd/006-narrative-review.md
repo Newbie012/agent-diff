@@ -101,6 +101,9 @@ A layers records the commit it was written against. Once the branch moves past t
 terminal keeps rendering the layers and marks them stale in both places a reviewer looks: the layers
 column on the worktree list, and the head of the rail.
 
+The mark at the head of the rail wraps to the width of the pane, so the sentence reads in full at
+any terminal size rather than stopping part way.
+
 The layers stay visible because the reading order survives a commit that the line numbers do not. An
 agent that adds a test to the last layer has not invalidated the argument, and collapsing to the flat
 file view would throw away the only explanation of the change on the grounds that part of it aged.

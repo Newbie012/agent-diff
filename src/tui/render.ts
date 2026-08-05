@@ -25,6 +25,7 @@ import {
   layerRows,
   type LayerRow,
   wrapped,
+  selectedLineCount,
   snippetOf,
   reviewedCount,
   selectedBranch,
@@ -557,6 +558,11 @@ const STEP_GAP = 1
 
 type LayerRoom = { readonly title: number; readonly note: number; readonly tally: number }
 
+const staleBanner = (room: number): string =>
+  wrapped("stale, the branch moved on", room)
+    .map((line) => `  ${line}`)
+    .join("\n")
+
 const layerRoom = (state: TuiState, pane: number): LayerRoom => {
   const tally = Math.max(1, ...state.layers.map((layer) => `${layer.files.length}`.length))
   return {
@@ -808,7 +814,7 @@ export class Screen {
     )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
     const warn = state.layersStale
-      ? [fg(palette.attention)(`  stale, the branch moved on\n\n`)]
+      ? [fg(palette.attention)(`${staleBanner(room.note)}\n`)]
       : []
     return new StyledText([...warn, ...rows, ...more])
   }
@@ -1051,7 +1057,7 @@ export class Screen {
     }
     const room = composeRoom(this.renderer.width)
     const snippet = snippetOf(state, SNIPPET_LINES)
-    const more = selectionRange(state)[1] - selectionRange(state)[0] + 1 - snippet.length
+    const more = selectedLineCount(state) - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
     const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
     const written = laidOut(`${state.draft}▌`.split("\n"), room.text)
