@@ -42,6 +42,15 @@ And it has one thing adiff does not: **the agent opens the review itself**, in a
 split pane, when the work is done. That inverts the handover. adiff's skill currently ends by
 telling the agent to write a paragraph asking the human to go run a command.
 
+Worth knowing where those stars came from, because it is not where you would guess. Every Hacker
+News submission flopped: the Show HN got 2 points and no comments. The repo is seven months old and
+grew through LinkedIn and through people recommending it inside other people's threads. The
+recurring line in those recommendations is that the review is local and the feedback goes straight
+back to the agent. tuicr does not even ship an installer for its skill; adopters copy the directory
+into `~/.claude/skills/` by hand, and someone else published a `review-tuicr` skill through
+`npx skills add` to close that gap. Two lessons: launch posts are not the channel, and the skill is
+what people actually pass around.
+
 ## Is the differentiator strong enough to matter to an agent?
 
 Partly, and it is worth being precise about which part.
@@ -71,10 +80,18 @@ handover, not on making the agent want it.
 
 Four channels, and no others.
 
-**Files the agent reads before it acts.** `AGENTS.md` is now a Linux Foundation format under the
-Agentic AI Foundation, with 20-plus compatible agents and 60k-plus repositories using it. It has no
-required fields and always applies. This is the only channel that needs nothing installed anywhere
-and travels with the repository.
+**Files the agent reads before it acts.** `AGENTS.md` is stewarded by the Agentic AI Foundation
+under the Linux Foundation and lists roughly 23 compatible tools, though that list is vendor-claimed
+and the "60k repositories" figure on the site is self-reported with no methodology. It is a
+convention, not a spec: plain markdown, no required fields, always applied, nearest file in the
+tree wins.
+
+One trap worth stating before anyone writes code against it. **Claude Code does not read
+`AGENTS.md`.** Its docs say so outright and point you at two workarounds: a `CLAUDE.md` containing
+an `@AGENTS.md` import line, or a symlink. There is no setting to repoint the filename, and the
+tracking issue has been open since August 2025 with no commitment. So "put a line in AGENTS.md" is
+not the universal move it looks like, and any `adiff init` has to handle both filenames or it will
+miss the harness the maintainer actually uses.
 
 **Skills, and they are no longer a Claude thing.** The open standard at agentskills.io defines
 SKILL.md with six frontmatter fields, and the client list runs to roughly forty: Claude Code,
@@ -107,17 +124,22 @@ tool nobody told it about. Any tactic claiming otherwise is either wrong or a da
 
 Ranked by effect per unit of work.
 
-### 1. `adiff init` commits the skill and an AGENTS.md line into the repo being reviewed (cheap, highest leverage)
+### 1. `adiff init` commits the skill and an instruction line into the repo being reviewed (cheap, highest leverage)
 
 This is the whole proposal, and everything else is a rounding error next to it.
 
 Write `.claude/skills/adiff/SKILL.md` (widest reach: native for Claude Code, legacy-compatible for
-Cursor and Codex) or `.agents/skills/adiff/SKILL.md`, plus four lines in `AGENTS.md` naming the
+Cursor and Codex) or `.agents/skills/adiff/SKILL.md`, plus a few lines of instruction naming the
 loop for agents that read instructions but not skills. Commit both. From then on, every agent any
 teammate runs in that repository knows the loop, with no per-machine install, no registry, no MCP,
 and no one having to say the word adiff.
 
-The `AGENTS.md` text wants to be short:
+The instruction file is where the AGENTS.md trap bites. Write `AGENTS.md` if it is absent, and for
+Claude Code either add a `CLAUDE.md` with an `@AGENTS.md` import or append the same lines there.
+Anthropic's own docs recommend the import shape, so it is the sanctioned way to serve both without
+duplicating text.
+
+The text wants to be short:
 
 > Review of work in this repository happens in adiff. Before you say you are done, run
 > `adiff comment take --worktree . --wait 300` in the background and handle what arrives. Answer
@@ -126,6 +148,18 @@ The `AGENTS.md` text wants to be short:
 Legitimate under conditions that are not negotiable: it shows the exact text, it asks, it appends
 rather than rewrites, and it never runs from a postinstall script. A CLI that asks before touching
 files the user owns is normal. PRD-009 already draws that line for the skill symlink. Hold it here.
+
+The prior art says the same. Sentry's CLI installs agent skills with an explicit `--no-agent-skills`
+opt-out, and shadcn ships skills people install by naming them. The counterexample is Task Master,
+whose `init` writes rule files for every agent by default when you omit the flag; the open
+complaint against it is context overhead from rules injected broadly, and it has gone unanswered.
+The convention that has settled where tools do write is a `BEGIN`/`END` sentinel block, an
+idempotent re-run, and refusing to touch a file that lacks your sentinels. Use it.
+
+Anthropic's guidance also argues for putting the substance in the skill rather than the memory
+file: create a skill when a section of `CLAUDE.md` has become a procedure rather than a fact,
+because a skill's body loads only when used. The adiff loop is a procedure. So the instruction file
+gets a few lines and a pointer, and the skill carries the rest.
 
 Two things to get right. Committing a skill directory into someone else's repo is a bigger
 imposition than one line of markdown, so `adiff init` should offer them separately and let someone
@@ -146,7 +180,26 @@ lines and an agent responding, with nobody switching windows.
 This is a skill change plus a small launcher, not a rewrite. It is also the single most visible
 difference a person would feel in the first five minutes.
 
-### 3. An opt-in session hook that surfaces waiting comments (cheap, per harness)
+### 3. Discovery at the keyboard, and where the line already is (cheap, per harness)
+
+The brief asks where helpful becomes a dark pattern. That line has been drawn for you, and it is
+worth building against rather than reasoning from first principles.
+
+Claude Code ships a hint protocol for exactly this case. Your CLI notices it is running under an
+agent (`CLAUDECODE=1`) and writes one tagged line to **stderr** suggesting a plugin. Claude Code
+strips the line before the model ever sees it, so it costs no tokens and cannot be read as an
+instruction, checks the plugin against a marketplace it controls, and shows the user a one-time
+prompt. It is rate-limited to one prompt per plugin ever, at most one per session on the machine,
+and it times out to No. The documentation is blunt about the guarantee: Claude Code never installs
+a plugin automatically, and the user always confirms.
+
+That is the shape to copy. The suggestion goes to the human, not to the model; it is stripped
+rather than injected; it happens once; and the default is no. If adiff ever wants to announce
+itself from inside a session, this is the sanctioned way, and the cost of entry is publishing adiff
+as a plugin in the community marketplace. Anything that instead prints a line hoping the *model*
+reads it is prompt injection into your own user's session, whatever the intent.
+
+### 4. An opt-in session hook that surfaces waiting comments (cheap, per harness)
 
 The one way an agent notices unprompted. `adiff comment take --worktree .` on a worktree with
 nothing waiting answers `{"ok":true,"comments":[]}` and exits 0, so probing is free and cannot fail
@@ -157,7 +210,7 @@ Honest as long as the user installs the hook themselves. `adiff init --hooks` sh
 adds, ask, and be trivially removable. It is harness-specific and will not generalise the way the
 skill does, so build it for the one harness the maintainer uses and let demand drive the rest.
 
-### 4. Make first contact teach the loop, not the catalog (cheap)
+### 5. Make first contact teach the loop, not the catalog (cheap)
 
 `adiff describe` is 7,903 bytes. It answers "what commands exist", which is not the question an
 agent has. The question is "what am I supposed to do here". Bare `adiff` already answers it in four
@@ -176,23 +229,50 @@ project. Push more of it where agents actually land:
 Renaming is not worth it. `adiff` is short, unclaimed and already installed. A better name would
 not have been discovered either.
 
-### 5. Keep publishing the skill for per-machine install (nearly free, low ceiling)
+### 6. Keep publishing the skill for per-machine install (nearly free, low ceiling)
 
 `npx skills add Newbie012/agent-diff --skill adiff` already works, and that CLI covers 75-plus
 agents, so this is genuinely cross-agent rather than a Claude-only path. Keep it in the README.
 
-Do not expect discovery from it. skills.sh has no submission or review flow: listing and ranking
-come from anonymous install telemetry, so you appear there after people already install you. It is
-a scoreboard, not a shop window. Publishing converts existing users into better-configured users,
-which is worth having and is not a growth channel.
+Do not expect discovery from it. skills.sh has no submission or review flow at all: entries appear
+from anonymous install telemetry when someone runs `npx skills add`, and the leaderboard ranks by
+total installs, with the top entries in the hundreds of thousands to millions. You appear there
+after people already install you, and common advice is to ignore anything under a thousand
+installs. It is a scoreboard for the already-popular, not a shop window for a new entrant.
+Publishing converts existing users into better-configured users, which is worth having and is not
+a growth channel.
 
-### 6. An MCP server (project, and not now)
+### 7. An MCP server (project, and not now)
 
 It would put adiff's verbs in sessions where nobody mentioned adiff, which is nominally the ask.
-Against it: a second surface to keep in step with the CLI, a transport and lifecycle to maintain,
-and the user still has to install it. The commands are already one-line JSON with a machine-readable
-catalog, which is most of what a server would wrap, and deferred tool loading has removed the
-always-present advantage MCP had over a skill.
+The evidence says do not.
+
+Deferred loading is real and it is on by default. Claude Code's docs say MCP tools are deferred
+rather than loaded upfront, that only tool names and server instructions load at session start, and
+that adding more servers has minimal context impact. That is the same "descriptor always present,
+body on demand" shape a skill has, so the one structural advantage MCP had is gone. Two caveats
+that cut both ways: it is Claude Code specific, so Codex and Cursor users still pay the full
+definition cost, and Anthropic notes that a server's instructions field now works much like a
+skill's description. If MCP has converged on being a skill with more machinery, build the skill.
+
+The machinery is not cheap. The spec has had five dated revisions in under two years, and the
+2026-07-28 one removes sessions and the `initialize` handshake, adds a mandatory `server/discover`,
+and deprecates roots, sampling and logging. A stdio server wrapping an existing CLI is a weekend;
+anything remote makes you an OAuth 2.1 resource server with audience validation. Meanwhile a
+committed `.mcp.json` is not even a frictionless install any more, since a cloned repo cannot
+approve its own servers in an untrusted folder.
+
+Registry listing is not discovery. The official registry is still in preview and says outright it
+is not meant to be consumed by host applications directly. Directories hold anywhere from 7k to
+68k servers depending on who is counting, none publish install attribution, and the only public
+traffic numbers show Anthropic's own reference servers far behind the handful of famous ones. A new
+server is at noise level.
+
+The strongest evidence is that the competitor already ran this decision. tuicr rejected an in-repo
+MCP server in a public issue, citing security surface and protocol-specific maintenance, and chose
+a CLI because its arguments, exit codes and file writes can be inspected directly. Three MCP pull
+requests are sitting unmerged. adiff's commands are already one-line JSON with a machine-readable
+catalog, which is most of what a server would wrap.
 
 Revisit if a harness appears that supports MCP and not skills, and where someone actually wants
 adiff. That is not the situation today.
@@ -213,6 +293,11 @@ These would move the number and should not be done.
   git or from its own harness. Deceptive, and it breaks the first time anyone looks.
 - **A skill description written to match more than adiff does**, so it triggers on any mention of
   review. It would raise invocations and burn the trust that makes the next skill work.
+- **Printing a line into stderr or stdout designed for the model to read** as an instruction. This
+  one deserves naming because it is the tactic that would work best and looks harmless. It is
+  prompt injection into your own user's session, and it is the exact thing Claude Code's hint
+  protocol is built to make unnecessary: the hint is stripped before the model sees it and shown to
+  the human instead. Suggest to the person, never to the agent.
 
 ## How you would know it worked
 
@@ -223,8 +308,9 @@ a repository whose committed skill names adiff is exactly the outcome this is ai
 ## Bottom line
 
 Ship 1 and 2 this week; between them they are the difference between a tool people are told about
-and a tool that works by default. Do 4 alongside, it is an hour. Do 3 if the maintainer wants it
-for himself, which is reason enough. Skip 6.
+and a tool that works by default. Do 5 alongside, it is an hour. Do 4 if the maintainer wants it
+for himself, which is reason enough. Read 3 before writing any of it, because it settles the
+question of what is allowed. Skip 7.
 
 And drop the framing that the competition is a clipboard. It is a tool with the same shape, more
 stars and an easier install, which already does the agent loop. adiff's answer is that a review is
