@@ -46,7 +46,8 @@
   },
   "ignorePatterns": [
     "node_modules",
-    "dist"
+    "dist",
+    "tools/fixtures"
   ],
   "overrides": [
     {
@@ -69,6 +70,46 @@
         ],
         "max-lines-per-function": "off"
       }
+    },
+    {
+      "files": [
+        "src/**/*.ts"
+      ],
+      "rules": {
+        "adiff/no-comments": "error",
+        "adiff/module-boundary": "error",
+        "adiff/no-parameter-properties": "error",
+        "adiff/one-blank-line": "error",
+        "adiff/blank-at-edges": "error",
+        "adiff/import-order": "error",
+        "adiff/span-name": "error",
+        "adiff/service-tag": "error"
+      }
+    },
+    {
+      "files": [
+        "src/domain/**/*.ts",
+        "src/service/**/*.ts"
+      ],
+      "rules": {
+        "adiff/effect-not-promises": "error"
+      }
+    },
+    {
+      "files": [
+        "src/**/*.test.ts"
+      ],
+      "rules": {
+        "adiff/no-comments": [
+          "error",
+          {
+            "sections": true
+          }
+        ]
+      }
     }
+  ],
+  "jsPlugins": [
+    "./tools/oxlint-adiff.ts"
   ]
 }

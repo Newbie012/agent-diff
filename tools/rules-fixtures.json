@@ -1,0 +1,18 @@
+{
+  "jsPlugins": [
+    "./oxlint-adiff.ts"
+  ],
+  "plugins": [],
+  "categories": {},
+  "rules": {
+    "adiff/no-comments": "error",
+    "adiff/module-boundary": "error",
+    "adiff/no-parameter-properties": "error",
+    "adiff/one-blank-line": "error",
+    "adiff/blank-at-edges": "error",
+    "adiff/import-order": "error",
+    "adiff/span-name": "error",
+    "adiff/service-tag": "error",
+    "adiff/effect-not-promises": "error"
+  }
+}
