@@ -15,7 +15,7 @@ export type StagedComment = {
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
-import type { BranchSummary, ReportedLayer } from "../cli/index.ts"
+import type { BranchSummary, Match, ReportedLayer } from "../cli/index.ts"
 import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
@@ -25,7 +25,7 @@ export type LayerRow = {
   readonly lead: boolean
 }
 
-export type Screen = "branches" | "review" | "compose" | "palette" | "pending" | "report"
+export type Screen = "branches" | "review" | "compose" | "palette" | "pending" | "report" | "search"
 
 export type TuiState = {
   readonly screen: Screen
@@ -67,6 +67,9 @@ export type TuiState = {
   readonly layerIndex: number
   readonly openLayers: ReadonlyArray<number>
   readonly rail: "tree" | "layers"
+  readonly term: string
+  readonly matches: ReadonlyArray<Match>
+  readonly matchIndex: number
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
@@ -108,6 +111,9 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   pulls: {},
   layerIndex: 0,
   openLayers: [],
+  term: "",
+  matches: [],
+  matchIndex: 0,
   rail: "tree",
 })
 
@@ -359,6 +365,39 @@ export const composeTarget = (state: TuiState): string => {
   })
   return span === "" ? `Comment on ${patch.path}` : `Comment on ${patch.path}:${span}`
 }
+
+export const selectedLines = (state: TuiState): ReadonlyArray<string> => {
+  const patch = selectedPatch(state)
+  if (patch === undefined) return []
+  const [from, to] = selectionRange(state)
+  return patch.rows.slice(from, to + 1).map((row) => row.text)
+}
+
+const KEYWORDS = new Set([
+  "const", "let", "var", "function", "return", "export", "import", "from", "type", "interface",
+  "class", "extends", "implements", "async", "await", "new", "this", "if", "else", "for", "while",
+  "switch", "case", "default", "break", "continue", "throw", "try", "catch", "finally", "typeof",
+  "readonly", "public", "private", "static", "true", "false", "null", "undefined", "void", "string",
+  "number", "boolean", "any", "unknown", "never",
+])
+
+const NAME = /[A-Za-z_$][\w$]*/g
+
+const longestName = (line: string): string | undefined =>
+  [...line.matchAll(NAME)]
+    .map((found) => found[0])
+    .filter((name) => !KEYWORDS.has(name))
+    .toSorted((left, right) => right.length - left.length)[0]
+
+export const searchTerm = (state: TuiState): string => {
+  const line = selectedLines(state)
+    .map((text) => text.trim())
+    .find((text) => text.length > 0)
+  if (line === undefined) return ""
+  return longestName(line) ?? line
+}
+
+export const matchHere = (state: TuiState): Match | undefined => state.matches[state.matchIndex]
 
 export const selectionReadout = (state: TuiState): string => {
   const patch = selectedPatch(state)

@@ -215,6 +215,7 @@ const openCompose = (state: TuiState): TuiState => {
 }
 
 const goBack = (state: TuiState): TuiState => {
+  if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "" }
   if (state.screen === "pending") return { ...state, screen: "review" }
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
@@ -222,6 +223,11 @@ const goBack = (state: TuiState): TuiState => {
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
 }
+
+const walkMatches = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  matchIndex: clamp(state.matchIndex + delta, 0, Math.max(0, state.matches.length - 1)),
+})
 
 const openPalette = (state: TuiState): TuiState => ({
   ...state,
@@ -294,6 +300,11 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "report.send": (state) => state,
   "palette.open": openPalette,
   "palette.run": (state) => state,
+  "search.open": (state) => state,
+  "search.jump": (state) => state,
+  "match.next": (state) => walkMatches(state, 1),
+  "match.prev": (state) => walkMatches(state, -1),
+  "selection.copy": (state) => state,
   back: goBack,
   quit: (state) => state,
 }
@@ -440,6 +451,15 @@ export const paletteClosed = (state: TuiState): TuiState => ({
 export const withWaiting = (state: TuiState, waiting: string): TuiState => ({
   ...state,
   waiting,
+})
+
+export const withMatches = (state: TuiState, matches: TuiState["matches"], term: string): TuiState => ({
+  ...state,
+  screen: "search",
+  matches,
+  matchIndex: 0,
+  term,
+  selecting: false,
 })
 
 export const withNoticeHere = (state: TuiState, notice: string): TuiState => ({
