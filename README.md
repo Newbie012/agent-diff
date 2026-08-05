@@ -9,6 +9,8 @@ comment, and the agent picks it up.
 <pre align="center">brew install Newbie012/tap/adiff
 npm i -g @eliya-oss/agent-diff@alpha</pre>
 
+<img src="assets/terminal.webp" alt="The adiff worktree list, showing seven branches with their sizes, layers and review state" width="820">
+
 </div>
 
 ## Usage
