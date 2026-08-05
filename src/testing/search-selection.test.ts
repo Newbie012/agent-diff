@@ -46,7 +46,7 @@ describe("taking a selection somewhere", () => {
 
     // ACT
     await driver.screen.pressKeys(["y"])
-    await driver.screen.waitForNoticeToClear()
+    await driver.screen.waitForNoticeToClear("copied")
 
     // ASSERT
     expect(await driver.screen.getFrame()).not.toContain("2 lines")
