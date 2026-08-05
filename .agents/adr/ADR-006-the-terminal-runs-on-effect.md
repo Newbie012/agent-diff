@@ -1,6 +1,6 @@
 # ADR-006 - The terminal runs on Effect
 
-- **Status:** `accepted`
+- **Status:** `done`
 - **Date:** 2026-08-05
 - **ADRs:** completes [ADR-002](ADR-002-effect-v4-and-module-boundaries.md), follows
   [ADR-005](ADR-005-a-mechanical-style-contract.md)
@@ -104,6 +104,47 @@ handled, not as a `catch` that returns nothing.
 
 *Risk:* this is the step that reveals whether the previous three were honest. A rule that has to be
 scoped around three files means the conversion is not finished.
+
+## What the steps did
+
+All four are done. The product runs on Effect: `main.ts`, `cli`, `domain`, `service` and `tui` are
+covered by `adiff/effect-not-promises` and report zero. The entry point is one `Effect.runFork` whose
+program reports its own failure and sets the exit code, so no promise remains at the process
+boundary.
+
+Three things came out differently from the plan, and each is recorded here rather than left in a pull
+request nobody will read again.
+
+**The test harness keeps its promises, deliberately.** The rule covers the product and stops at
+`src/testing`. The harness is 87 test files making 1,663 calls of the form
+`await driver.screen.pressKeys(["j"])`, against six drivers that spawn a process, drive a mutable
+renderer and read a temporary directory. Converting the drivers would convert every call site with
+them, because a driver returning an effect forces `Effect.gen` on its caller.
+
+That is a rewrite of the suite, and the suite is what makes this conversion safe: ADR-006 stages the
+work so a regression is attributable to a diff, which only holds while the tests are the fixed point.
+Rewriting them for consistency would spend the safety net on the thing it exists to protect. ADR-003
+also chose a blackbox harness on purpose, and a test that reads as a script of user actions is the
+clearest form that choice can take. The drivers sit on genuinely imperative boundaries, so a promise
+there is honest rather than lazy.
+
+The cost of the exclusion is that a driver cannot express a typed failure, and a leaked scope in the
+harness would not be caught by a rule. `open` builds a scope by hand and `close` releases it, which
+is correct today because `TestDriver` is an `AsyncDisposable` and the tests use `await using`.
+
+**Cancellation was not taken, in step 2 or since.** The plan expected it to arrive with the intent
+queue, and it did not, for a reason worth keeping: the queue processes one intent at a time and
+nothing forks inside a handler, which is what preserves the ordering the promise chain used to give.
+Interrupting a handler mid-flight would break that ordering, and the two want separate thought. A
+file load still cannot be abandoned when the reader moves on. Nothing acquired cancellation by
+accident, which was the other half of the goal.
+
+**Three `strict-effect-provide` exemptions remain, and all three are entry points.** `src/main.ts`
+provides the CLI's layers once. `launch` in `src/tui/app.ts` provides the display layer, which is
+bound to a renderer and so cannot exist before one does; moving the call up to `runTui` keeps it in
+the same file, so it would move the exemption rather than remove it. The agent driver provides the
+store for a test that stands in for an entry point. The rule asks for layers composed where the
+program starts, and these are the three places a program starts.
 
 ## Alternatives Considered
 

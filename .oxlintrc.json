@@ -97,6 +97,8 @@
     },
     {
       "files": [
+        "src/main.ts",
+        "src/cli/**/*.ts",
         "src/domain/**/*.ts",
         "src/service/**/*.ts",
         "src/tui/**/*.ts"
