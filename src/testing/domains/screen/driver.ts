@@ -18,10 +18,10 @@ const bgOf = (span: Span): string =>
 
 export type Wheel = "up" | "down" | "left" | "right"
 
-const ESCAPE_FLUSH_MS = 150
-const REST_MS = 400
-const PAINT_ATTEMPTS = 20
-const PAINT_WAIT_MS = 50
+const PUMP_MS = 4
+const PUMP_ATTEMPTS = 250
+const REST_PASSES = 4
+const HIGHLIGHT_LINES = 40
 
 type Span = { readonly fg: Channels; readonly bg: Channels }
 
@@ -41,6 +41,8 @@ export class ScreenTestDriver {
   private app: App | undefined
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
+  private keysSeen = 0
+  private counting: (() => void) | undefined
 
   private readonly state: DriverState
 
@@ -55,6 +57,7 @@ export class ScreenTestDriver {
     })
     this.setup = setup
     this.watch()
+    this.countKeys(setup)
     const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(this.state.storeRoot))
     const scope = Scope.makeUnsafe()
     this.scope = scope
@@ -81,6 +84,33 @@ export class ScreenTestDriver {
     this.watching = record
     process.on("uncaughtException", record)
     process.on("unhandledRejection", record)
+  }
+
+  private countKeys(setup: TestRendererSetup): void {
+    const count = (): void => {
+      this.keysSeen += 1
+    }
+    this.counting = count
+    setup.renderer.keyInput.on("keypress", count)
+  }
+
+  private stopCounting(): void {
+    const count = this.counting
+    if (count === undefined) return
+    this.setup?.renderer.keyInput.off("keypress", count)
+    this.counting = undefined
+  }
+
+  private async pump(ready: () => boolean, attempts = PUMP_ATTEMPTS): Promise<boolean> {
+    const setup = this.active()
+    const settle = async (left: number): Promise<boolean> => {
+      await setup.flush()
+      if (ready()) return true
+      if (left === 0) return false
+      await new Promise((resolve) => setTimeout(resolve, PUMP_MS))
+      return settle(left - 1)
+    }
+    return settle(attempts)
   }
 
   private stopWatching(): void {
@@ -119,10 +149,10 @@ export class ScreenTestDriver {
     await setup.flush()
   }
 
-  async waitForNoticeToClear(): Promise<void> {
+  async waitForNoticeToClear(notice: string): Promise<void> {
     const setup = this.active()
-    await new Promise((resolve) => setTimeout(resolve, NOTICE_MS + 300))
-    await setup.flush()
+    await this.pump(() => !setup.captureCharFrame().includes(notice))
+    this.guard()
   }
 
   async scroll(direction: Wheel, times = 1): Promise<void> {
@@ -173,7 +203,10 @@ export class ScreenTestDriver {
 
   async rest(): Promise<void> {
     const setup = this.active()
-    await new Promise((resolve) => setTimeout(resolve, REST_MS))
+    await series(
+      Array.from({ length: REST_PASSES }, (_, pass) => pass),
+      () => setup.waitForVisualIdle(),
+    )
     await this.app?.settled()
     await setup.waitForVisualIdle()
     this.guard()
@@ -190,8 +223,9 @@ export class ScreenTestDriver {
 
   async pressEscape(): Promise<void> {
     const setup = this.active()
+    const before = this.keysSeen
     setup.mockInput.pressEscape()
-    await new Promise((resolve) => setTimeout(resolve, ESCAPE_FLUSH_MS))
+    await this.pump(() => this.keysSeen > before)
     await this.app?.settled()
     await setup.waitForVisualIdle()
   }
@@ -225,27 +259,29 @@ export class ScreenTestDriver {
         .captureSpans()
         .lines.filter((line) => line.spans.some((span) => read(span) === wanted))
         .map((line) => line.spans.map((span) => span.text).join("").trimEnd())
-    const attempt = async (left: number): Promise<ReadonlyArray<string>> => {
-      await setup.waitForVisualIdle()
-      this.guard()
-      const found = rows()
-      if (found.length > 0 || left === 0) return found
-      await new Promise((resolve) => setTimeout(resolve, PAINT_WAIT_MS))
-      return attempt(left - 1)
-    }
-    return attempt(PAINT_ATTEMPTS)
+    await this.settleHighlighting()
+    await this.pump(() => rows().length > 0)
+    this.guard()
+    return rows()
   }
 
   private async settleHighlighting(): Promise<void> {
     const setup = this.active()
-    const attempt = async (left: number): Promise<void> => {
-      await setup.waitForVisualIdle()
+    const code = (): CodeRenderable | undefined => {
       const found = setup.renderer.root.findDescendantById("diff-code")
-      if (left === 0 || !(found instanceof CodeRenderable) || !found.isHighlighting) return
-      await found.highlightingDone
-      return attempt(left - 1)
+      return found instanceof CodeRenderable ? found : undefined
     }
-    await attempt(PAINT_ATTEMPTS)
+    const painted = (found: CodeRenderable): boolean =>
+      Array.from({ length: HIGHLIGHT_LINES }, (_, line) => found.getLineHighlights(line)).some(
+        (highlights) => highlights.length > 0,
+      )
+    const landed = (): boolean => {
+      const found = code()
+      return found === undefined || (!found.isHighlighting && painted(found))
+    }
+    await this.pump(landed)
+    await code()?.highlightingDone
+    await setup.waitForVisualIdle()
   }
 
   async listForegroundsOn(text: string): Promise<ReadonlyArray<string>> {
@@ -288,13 +324,9 @@ export class ScreenTestDriver {
   }
 
   async waitForFrame(wanted: string): Promise<string> {
-    const attempt = async (left: number): Promise<string> => {
-      const frame = await this.getFrame()
-      if (frame.includes(wanted) || left === 0) return frame
-      await new Promise((resolve) => setTimeout(resolve, PAINT_WAIT_MS))
-      return attempt(left - 1)
-    }
-    return attempt(PAINT_ATTEMPTS)
+    const setup = this.active()
+    await this.pump(() => setup.captureCharFrame().includes(wanted))
+    return this.getFrame()
   }
 
   async getFrame(): Promise<string> {
@@ -306,6 +338,7 @@ export class ScreenTestDriver {
 
   async close(): Promise<void> {
     this.stopWatching()
+    this.stopCounting()
     this.setup?.renderer.destroy()
     this.setup = undefined
     this.app = undefined

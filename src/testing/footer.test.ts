@@ -56,7 +56,7 @@ describe("reading the keys off the bottom of the screen", () => {
     expect(footerOf(await driver.screen.getFrame())).toContain("marked")
 
     // ACT
-    await driver.screen.waitForNoticeToClear()
+    await driver.screen.waitForNoticeToClear("marked")
 
     // ASSERT
     expect(footerOf(await driver.screen.getFrame())).not.toContain("marked")
