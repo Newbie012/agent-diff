@@ -20,6 +20,9 @@ const parse = (raw: string): Option.Option<Session> => {
   })
 }
 
+const saved = (path: string, session: Session): Promise<void> =>
+  writeFile(path, JSON.stringify(session), "utf8").catch(() => undefined)
+
 const held = (path: string): Promise<Option.Option<string>> =>
   readFile(path, "utf8")
     .then((raw) => Option.some(raw))
@@ -41,7 +44,5 @@ export const writeSession = Effect.fn("Tui.writeSession")(function* (
   path: string,
   session: Session,
 ) {
-  yield* Effect.promise(() =>
-    writeFile(path, JSON.stringify(session), "utf8").catch(() => undefined),
-  )
+  yield* Effect.promise(() => saved(path, session))
 })

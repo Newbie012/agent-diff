@@ -1,6 +1,6 @@
 import { mkdirSync, watch, type FSWatcher } from "node:fs"
 import { join } from "node:path"
-import { Cause, Data, Effect, Queue, Stream } from "effect"
+import { Data, Effect, Queue, Stream, type Cause } from "effect"
 
 const OUTBOX = "outbox.jsonl"
 const SETTLE_MS = 120
@@ -12,7 +12,7 @@ export class WatchUnavailable extends Data.TaggedError("WatchUnavailable")<{
 
 const answered = (name: string | null): boolean => name !== null && name.endsWith(OUTBOX)
 
-const opened = (branches: string, queue: Queue.Queue<void, Cause.Done<void>>): FSWatcher => {
+const opened = (branches: string, queue: Queue.Queue<void, Cause.Done>): FSWatcher => {
   mkdirSync(branches, { recursive: true })
   const watcher = watch(branches, { recursive: true }, (_event, name) => {
     if (answered(name)) Queue.offerUnsafe(queue, undefined)
@@ -21,7 +21,7 @@ const opened = (branches: string, queue: Queue.Queue<void, Cause.Done<void>>): F
   return watcher
 }
 
-const holding = (branches: string, queue: Queue.Queue<void, Cause.Done<void>>) =>
+const holding = (branches: string, queue: Queue.Queue<void, Cause.Done>) =>
   Effect.acquireRelease(
     Effect.try({
       try: () => opened(branches, queue),
