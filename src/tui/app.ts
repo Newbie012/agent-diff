@@ -19,9 +19,11 @@ import {
   submitReview,
   submitComment,
   toggleVouch,
+  settleThread,
 } from "../cli/index.ts"
 import type { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
+import { watchAnswers, type Watching } from "./watch.ts"
 import { Forge } from "../service/forge/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { gapAtRow, GAP_CHUNK } from "./gaps.ts"
@@ -34,6 +36,8 @@ import {
   selectedBranch,
   selectedPatch,
   selectionRange,
+  spokenSince,
+  threadAtRow,
   WHOLE_FILE,
   type TuiState,
 } from "./model.ts"
@@ -51,6 +55,7 @@ import {
   typed,
   withNotice,
   withNoticeHere,
+  withWaiting,
   withContext,
   withBranches,
   withPulls,
@@ -79,6 +84,7 @@ export type AppOptions = {
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
   readonly wrap?: boolean | undefined
+  readonly storeRoot?: string | undefined
 }
 
 const PRINTABLE = /^[\S ]$/
@@ -116,6 +122,7 @@ export class App {
   private fading: ReturnType<typeof setTimeout> | undefined
   private wheel = 0
   private sideways = 0
+  private watching: Watching | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -135,12 +142,37 @@ export class App {
       onChip: (key) => this.dispatchTask(() => this.onKey(asKey(key))),
     })
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
+    renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
     renderer.on("frame", () => this.syncGeometry())
     renderer.setFrameCallback(async () => this.applyWheel())
     const resume = options.resume
+    this.startWatching(options.storeRoot)
     this.dispatchTask(() => this.loadPulls())
     if (resume !== undefined) this.dispatchTask(() => this.resume(resume))
+  }
+
+  private startWatching(root: string | undefined): void {
+    if (root === undefined) return
+    this.watching = watchAnswers(root, () => this.dispatchTask(() => this.noticeAnswers()))
+  }
+
+  private stopWatching(): void {
+    this.watching?.stop()
+    this.watching = undefined
+  }
+
+  private async noticeAnswers(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    if (branch === undefined) return this.noticeOnList()
+    const sent = await this.loadSent(branch.branch)
+    const said = spokenSince(this.state.sent, sent)
+    if (said === 0) return
+    this.commit(withWaiting(this.state, `${said} answered · press r`))
+  }
+
+  private async noticeOnList(): Promise<void> {
+    this.commit(withWaiting(this.state, "the agent answered · press r"))
   }
 
   private dispatchTask(task: () => Promise<void>): void {
@@ -260,6 +292,7 @@ export class App {
       "rail.toggle": () => this.commitSynced("rail.toggle"),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
+      "thread.settle": () => this.settleHere(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
       "pending.open": () => this.openPending(),
@@ -334,13 +367,25 @@ export class App {
     await this.loadSource()
   }
 
+  private async settleHere(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    const thread = threadAtRow(this.state, this.state.cursor)
+    const id = thread?.id
+    if (branch === undefined || id === undefined) {
+      return this.commit(withNotice(this.state, "no thread here"))
+    }
+    await this.run(settleThread(this.repo, branch.branch, id, new Date().toISOString()))
+    const sent = await this.loadSent(branch.branch)
+    this.commit(withNotice(withSent(this.state, sent), "settled"))
+  }
+
   private async reloadList(): Promise<void> {
     const here = selectedBranch(this.state)?.branch
     const branches = await this.run(listBranches(this.repo))
     const read = withBranches(this.state, branches)
     const at = branches.findIndex((candidate) => candidate.branch === here)
     const kept = at === -1 ? read : { ...read, branchIndex: at }
-    this.commit(withNoticeHere(kept, "read the list again"))
+    this.commit(withWaiting(withNoticeHere(kept, "read the list again"), ""))
     this.dispatchTask(() => this.loadPulls())
   }
 
@@ -350,7 +395,7 @@ export class App {
     const path = selectedPatch(this.state)?.path
     const line = sourceLineAt(this.state, this.state.cursor)
     const read = await this.readBranch(branch.branch)
-    this.commit(withNotice(restoredTo(read, path, line), "read the branch again"))
+    this.commit(withWaiting(withNotice(restoredTo(read, path, line), "read the branch again"), ""))
     await this.loadSource()
   }
 
@@ -584,6 +629,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
     sessionPath,
     resume,
     wrap: settings.wrap === true,
+    storeRoot: store.root,
   })
 })
 

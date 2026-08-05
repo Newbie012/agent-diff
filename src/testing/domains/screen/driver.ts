@@ -287,6 +287,16 @@ export class ScreenTestDriver {
     return this.app?.lastFailure() ?? ""
   }
 
+  async waitForFrame(wanted: string): Promise<string> {
+    const attempt = async (left: number): Promise<string> => {
+      const frame = await this.getFrame()
+      if (frame.includes(wanted) || left === 0) return frame
+      await new Promise((resolve) => setTimeout(resolve, PAINT_WAIT_MS))
+      return attempt(left - 1)
+    }
+    return attempt(PAINT_ATTEMPTS)
+  }
+
   async getFrame(): Promise<string> {
     const setup = this.active()
     await setup.waitForVisualIdle()

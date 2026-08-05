@@ -15,6 +15,7 @@ import {
   layerHolding,
   type TuiState,
   commentRowsIn,
+  openCommentRows,
   filesWithComments,
   rowAtSourceLine,
 } from "./model.ts"
@@ -76,8 +77,13 @@ const atComment = (state: TuiState, file: number, delta: number): TuiState => {
   return landing === undefined ? moved : atRow(moved, landing)
 }
 
+const nothingOpen = (state: TuiState): TuiState => {
+  const any = commentRowsIn(state, state.patchIndex).length > 0
+  return withNotice(state, any ? "no open comment" : "no comments yet")
+}
+
 const layerComment = (state: TuiState, delta: number): TuiState => {
-  const here = commentRowsIn(state, state.patchIndex)
+  const here = openCommentRows(state)
   const target =
     delta > 0
       ? here.find((row) => row > state.cursor)
@@ -85,7 +91,7 @@ const layerComment = (state: TuiState, delta: number): TuiState => {
   if (target !== undefined) return atRow(state, target)
   const file = nextFileWithComments(state, delta)
   if (file !== undefined) return atComment(state, file, delta)
-  return here.length > 0 ? state : withNotice(state, "no comments yet")
+  return here.length > 0 ? state : nothingOpen(state)
 }
 
 const PAN_STEP = 8
@@ -247,6 +253,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pan.right": (state) => panned(state, PAN_STEP),
   "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,
+  "thread.settle": (state) => state,
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,
@@ -397,6 +404,11 @@ export const paletteClosed = (state: TuiState): TuiState => ({
   ...state,
   screen: state.returnTo,
   query: "",
+})
+
+export const withWaiting = (state: TuiState, waiting: string): TuiState => ({
+  ...state,
+  waiting,
 })
 
 export const withNoticeHere = (state: TuiState, notice: string): TuiState => ({

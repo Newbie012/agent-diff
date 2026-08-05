@@ -28,6 +28,22 @@ describe("the footer on a narrow terminal", () => {
     expect(footerOf(await driver.screen.getFrame())).toContain("esc back")
   })
 
+  it("drops a whole chip rather than half of one", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(oneFile)
+
+    // ACT
+    await driver.screen.open({ width: 88 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    const footer = footerOf(await driver.screen.getFrame()).trim()
+    const labels = ["reload", "settle", "layers", "reviewed", "select", "comment", "back", "line"]
+    const first = footer.split(/\s{2,}/)[0] ?? ""
+    expect(labels).not.toContain(first)
+  })
+
   it("fits inside the terminal", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

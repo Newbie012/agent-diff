@@ -27,6 +27,7 @@ export type Action =
   | "pan.left"
   | "rail.toggle"
   | "review.reload"
+  | "thread.settle"
   | "tree.collapse"
   | "tree.expand"
   | "file.vouch"
@@ -254,6 +255,14 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["r"],
     screens: ["branches", "review"],
     hint: "reload",
+  }),
+  command({
+    action: "thread.settle",
+    title: "Settle the thread here",
+    category: "Review",
+    keys: ["d"],
+    screens: ["review"],
+    hint: "settle",
   }),
   command({
     action: "rail.toggle",

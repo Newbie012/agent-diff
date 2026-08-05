@@ -84,6 +84,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **Only the reviewer settles a thread.** An agent can answer, and can say its answer asks
   something, but a point is closed by the person who raised it. An agent that could close its own
   thread could end a conversation the reviewer never read.
+- **A thread is settled from the terminal, on the line it belongs to.** A thread appears under the
+  line it was written against, so the reviewer settles the one the cursor is on. Settling elsewhere
+  needs a thread named by id, which is what the command line is for.
+- **Walking comments stops on the open ones.** A reviewer moving through a review wants what still
+  needs them, so a settled thread is stepped over. It stays on the screen, since hiding it would
+  leave them wondering where their comment went.
 - **A thread is stale when its comment was written against an older HEAD**, the same rule
   [layers](006-narrative-review.md) use. The code under discussion has moved; the answer may no
   longer describe it.
@@ -94,6 +100,16 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **Nothing that has been sent can be reworded or withdrawn.** A submission is append-only and the
   agent may already have acted on it. Rewording a point that has gone is a new comment, or an
   answer.
+- **An answer that lands while the reviewer reads is announced, not applied.** The terminal watches
+  the outbox, which only an agent writes, and says how many answers arrived and which key pulls
+  them. The screen does not change until the reviewer asks: no rows appear under the cursor, no
+  scroll moves, nothing they are typing is disturbed. A reviewer mid-comment is mid-thought, and a
+  screen that rewrites itself costs more than the wait.
+- **The announcement stays until it is acted on.** It is not a notice that fades, because its
+  purpose is to be there when the reviewer next looks up.
+- **Pulling holds the reader's place.** Reading again keeps the file and line they were on rather
+  than jumping to what arrived, for the same reason: they chose when to look, and they did not ask
+  to be moved.
 - **Waiting is polling with a deadline.** A wait that expires returns an empty list, not an error.
 - **Missing files read as empty.** A worktree that has never been reviewed has an empty inbox and
   default state, not a failure.
@@ -103,7 +119,6 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 | Decision | Trigger |
 | --- | --- |
 | Watching the inbox rather than polling it | Poll latency being noticed in a real review loop |
-| Notifying the reviewer that an answer landed while they were reading | A reviewer missing answers because they did not re-read |
 | Threading a reply to an answer, rather than one exchange per comment | A comment needing more than one round to settle |
 | Pruning old inboxes | A store large enough to notice |
 

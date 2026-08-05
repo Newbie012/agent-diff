@@ -86,6 +86,10 @@ Three screens, and the keys each answers to:
   mirrors. The header counts the columns the reader has moved, so a line that stops short reads as
   panned rather than as ended. Wrapping and panning answer the same question, so panning while
   wrapped says so and does nothing.
+- **What is not code holds its columns while the code pans.** A comment, an answer, a layer's prose
+  and a row counting hidden lines are all written for the reader rather than read from the file, so
+  they stay where they are. Panning to read the end of a line does not cost the reader the comment
+  they were reading, nor the row telling them how to open a gap.
 - **The footer is generated from the bindings**, never written by hand. A key that exists is
   listed; a key that is listed exists.
 - **The cursor is always on a row**, and the view follows it. Scroll position is derived from the
