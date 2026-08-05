@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { createCliRenderer, type CliRenderer, type KeyEvent } from "@opentui/core"
-import { Effect, Option } from "effect"
+import { Effect, Fiber, Option, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
@@ -74,7 +74,7 @@ import {
   withLayers,
   withVouched,
 } from "./reduce.ts"
-import { Screen } from "./render.ts"
+import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
 
 type Needs = Git | Store | Forge
@@ -85,7 +85,9 @@ export type AppOptions = {
   readonly renderer: CliRenderer
   readonly repo: string
   readonly run: <A>(effect: Effect.Effect<A, unknown, Needs>) => Promise<A>
-  readonly branches: TuiState["branches"]
+  readonly display: DisplayShape
+  readonly state: SubscriptionRef.SubscriptionRef<TuiState>
+  readonly painting: Fiber.Fiber<void>
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
@@ -112,8 +114,9 @@ const keyName = (key: KeyEvent): string => {
 }
 
 export class App {
-  private state: TuiState
-  private readonly screen: Screen
+  private readonly held: SubscriptionRef.SubscriptionRef<TuiState>
+  private readonly display: DisplayShape
+  private readonly painting: Fiber.Fiber<void>
   private pending: Promise<void> = Promise.resolve()
   private failure = ""
 
@@ -137,19 +140,22 @@ export class App {
     this.noticeMs = options.noticeMs ?? NOTICE_MS
     this.sessionPath = options.sessionPath
     this.wrapKept = options.wrap === true
-    const { branches, renderer } = options
-    this.state = { ...initialState(branches), wrap: options.wrap === true }
-    this.screen = new Screen(renderer, options.repo)
-    this.screen.update(this.state)
-    this.screen.listen({
-      onScroll: (delta) => this.onWheel(delta),
-      onPan: (delta) => this.onPanWheel(delta),
-      onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
-      onChip: (key) => this.dispatchTask(() => this.onKey(asKey(key))),
-    })
+    this.held = options.state
+    this.display = options.display
+    this.painting = options.painting
+    const { renderer } = options
+    Effect.runSync(
+      this.display.listen({
+        onScroll: (delta) => this.onWheel(delta),
+        onPan: (delta) => this.onPanWheel(delta),
+        onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
+        onChip: (key) => this.dispatchTask(() => this.onKey(asKey(key))),
+      }),
+    )
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
+    renderer.on("destroy", () => this.stopPainting())
     renderer.on("frame", () => this.syncGeometry())
     renderer.setFrameCallback(async () => this.applyWheel())
     const resume = options.resume
@@ -188,7 +194,7 @@ export class App {
   private async resume(session: Session): Promise<void> {
     const branches = this.state.branches
     if (session.branchIndex >= branches.length) return
-    this.state = { ...this.state, branchIndex: session.branchIndex }
+    this.write({ ...this.state, branchIndex: session.branchIndex })
     await this.openBranch()
     const patchIndex = Math.min(session.patchIndex, Math.max(0, this.state.patches.length - 1))
     this.commit({ ...this.state, patchIndex, cursor: session.cursor, top: session.top })
@@ -249,22 +255,33 @@ export class App {
   }
 
   private syncGeometry(): void {
-    const rows = this.screen.viewportRows()
+    const rows = Effect.runSync(this.display.rows)
     if (rows === this.state.viewport) return
     this.commit({ ...this.state, viewport: rows })
   }
 
   private measured(): TuiState {
-    return { ...this.state, viewport: this.screen.viewportRows() }
+    return { ...this.state, viewport: Effect.runSync(this.display.rows) }
+  }
+
+  private get state(): TuiState {
+    return SubscriptionRef.getUnsafe(this.held)
+  }
+
+  private write(next: TuiState): void {
+    Effect.runSync(SubscriptionRef.set(this.held, next))
   }
 
   private commit(next: TuiState): void {
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
-    this.state = next
     this.rememberPlace(next)
     this.rememberWrap(next)
-    this.screen.update(next)
+    this.write(next)
     if (appeared) this.fade()
+  }
+
+  private stopPainting(): void {
+    Effect.runFork(Fiber.interrupt(this.painting))
   }
 
   private stopFading(): void {
@@ -354,7 +371,7 @@ export class App {
     const chosen = paletteChoice(this.state)
     const closed = paletteClosed(this.state)
     if (chosen === undefined) return this.commit(closed)
-    this.state = closed
+    this.write(closed)
     await this.onKey({ name: "", ctrl: false, sequence: "" } as KeyEvent, chosen)
   }
 
@@ -673,15 +690,23 @@ export const launch = Effect.fn("Tui.launch")(function* (
     sessionPath === undefined ? undefined : yield* Effect.promise(() => readSession(sessionPath))
   const store = yield* Store
   const settings = yield* store.settings
+  const wrap = settings.wrap === true
+  const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
+  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap })
+  const painting = yield* Effect.forkDetach(
+    Stream.runForEach(SubscriptionRef.changes(state), display.paint),
+  )
   return new App({
     renderer,
     repo,
     run: Effect.runPromiseWith(context),
-    branches,
+    display,
+    state,
+    painting,
     noticeMs,
     sessionPath,
     resume,
-    wrap: settings.wrap === true,
+    wrap,
     storeRoot: store.root,
   })
 })
