@@ -38,6 +38,7 @@ import {
   selectionRange,
   spokenSince,
   threadAtRow,
+  threadAtStop,
   WHOLE_FILE,
   type TuiState,
 } from "./model.ts"
@@ -369,14 +370,15 @@ export class App {
 
   private async settleHere(): Promise<void> {
     const branch = selectedBranch(this.state)
-    const thread = threadAtRow(this.state, this.state.cursor)
+    const thread = threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
     const id = thread?.id
     if (branch === undefined || id === undefined) {
       return this.commit(withNotice(this.state, "no thread here"))
     }
     await this.run(settleThread(this.repo, branch.branch, id, new Date().toISOString()))
     const sent = await this.loadSent(branch.branch)
-    this.commit(withNotice(withSent(this.state, sent), "settled"))
+    const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
+    this.commit(withNotice(held, "settled"))
   }
 
   private async reloadList(): Promise<void> {

@@ -34,6 +34,8 @@ export type TuiState = {
   readonly patches: ReadonlyArray<Patch>
   readonly patchIndex: number
   readonly cursor: number
+  readonly stop: number
+  readonly opened: ReadonlyArray<string>
   readonly anchorRow: number
   readonly selecting: boolean
   readonly draft: string
@@ -74,6 +76,8 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   patches: [],
   patchIndex: 0,
   cursor: 0,
+  stop: 0,
+  opened: [],
   anchorRow: 0,
   selecting: false,
   draft: "",
@@ -400,6 +404,24 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
   )
   return rows.map((row) => row.index).toSorted((left, right) => left - right)
 }
+
+export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<StagedComment> => {
+  const patch = selectedPatch(state)
+  const here = patch?.rows[row]
+  if (patch === undefined || here === undefined) return []
+  return state.sent.filter(
+    (entry) =>
+      entry.file === patch.path &&
+      entry.id !== undefined &&
+      lineOnSide(here, entry.side) === entry.end,
+  )
+}
+
+export const stopsAtRow = (state: TuiState, row: number): number =>
+  1 + threadsAtRow(state, row).length
+
+export const threadAtStop = (state: TuiState): StagedComment | undefined =>
+  state.stop === 0 ? undefined : threadsAtRow(state, state.cursor)[state.stop - 1]
 
 export const threadAtRow = (state: TuiState, row: number): StagedComment | undefined => {
   const patch = selectedPatch(state)

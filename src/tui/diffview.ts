@@ -22,6 +22,8 @@ export type Prose = {
 }
 
 export type Note = {
+  readonly id: string
+  readonly folded: boolean
   readonly side: "old" | "new"
   readonly line: number
   readonly body: string
@@ -35,6 +37,7 @@ export type Note = {
 type Display = {
   readonly text: string
   readonly row: number
+  readonly stop: number
   readonly comment: boolean
   readonly sent: boolean
   readonly label: boolean
@@ -317,6 +320,17 @@ export class DiffView {
     return this.display[at]?.row ?? 0
   }
 
+  stopAt(visual: number): number {
+    return this.display[this.lineAt(visual)]?.stop ?? 0
+  }
+
+  carries(visual: number): boolean {
+    const entry = this.display[this.lineAt(visual)]
+    if (entry === undefined) return false
+    if (entry.prose) return false
+    return true
+  }
+
   isComment(visual: number): boolean {
     const entry = this.display[this.lineAt(visual)]
     return entry?.comment === true || entry?.prose === true
@@ -376,7 +390,7 @@ const keyOf = (
 ): string =>
   [
     room,
-    ...notes.map((note) => `${note.side}${note.line}:${note.body}`),
+    ...notes.map((note) => `${note.side}${note.line}:${note.folded ? "-" : "+"}${note.body}`),
     ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
   ].join("\u0000")
 
@@ -445,16 +459,20 @@ const spokenLines = (body: string, room: number): ReadonlyArray<string> => {
 const answerLines = (note: Note, room: number): ReadonlyArray<string> =>
   note.answers.flatMap((body) => spokenLines(body, room))
 
-const noteLines = (note: Note, room: number): ReadonlyArray<string> => [
-  headOf(note),
-  ...note.body.split("\n").flatMap((line) => wrap(line, room)),
-  ...answerLines(note, room),
-]
+const noteLines = (note: Note, room: number): ReadonlyArray<string> =>
+  note.folded
+    ? [`${headOf(note)} · press l`]
+    : [
+        headOf(note),
+        ...note.body.split("\n").flatMap((line) => wrap(line, room)),
+        ...answerLines(note, room),
+      ]
 
-const noteRows = (note: Note, row: number, room: number): ReadonlyArray<Display> =>
+const noteRows = (note: Note, row: number, room: number, stop: number): ReadonlyArray<Display> =>
   noteLines(note, room).map((line, index) => ({
     text: `${marks().rule} ${line}`,
     row,
+    stop,
     comment: true,
     sent: note.sent,
     label: index === 0,
@@ -466,6 +484,7 @@ const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<Displ
   [...entry.markdown.split("\n").flatMap((line) => wrap(line, room - 2)), ""].map((line) => ({
     text: line.length === 0 ? "" : `  ${line}`,
     row,
+    stop: 0,
     comment: false,
     sent: false,
     label: false,
@@ -490,11 +509,12 @@ const proseAt = (plan: Plan, row: Row, after: boolean): ReadonlyArray<Prose> => 
 const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>
   plan.notes
     .filter((note) => sideLineOf(row, note.side) === note.line)
-    .flatMap((note) => noteRows(note, row.index, plan.room))
+    .flatMap((note, at) => noteRows(note, row.index, plan.room, at + 1))
 
 const codeRow = (plan: Plan, row: Row): Display => ({
   text: row.text,
   row: row.index,
+  stop: 0,
   comment: false,
   sent: false,
   label: false,

@@ -18,6 +18,8 @@ import {
   openCommentRows,
   filesWithComments,
   rowAtSourceLine,
+  stopsAtRow,
+  threadAtStop,
 } from "./model.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -37,8 +39,19 @@ const withCursorVisible = (state: TuiState): TuiState => {
 const moveCursor = (state: TuiState, delta: number): TuiState =>
   withCursorVisible({
     ...state,
+    stop: 0,
     cursor: clamp(state.cursor + delta, 0, lastRow(selectedPatch(state))),
   })
+
+const stepStop = (state: TuiState, delta: number): TuiState => {
+  const here = stopsAtRow(state, state.cursor) - 1
+  if (delta > 0 && state.stop < here) return { ...state, stop: state.stop + 1 }
+  if (delta < 0 && state.stop > 0) return { ...state, stop: state.stop - 1 }
+  const row = clamp(state.cursor + delta, 0, lastRow(selectedPatch(state)))
+  if (row === state.cursor) return state
+  const landing = delta < 0 ? stopsAtRow({ ...state, cursor: row }, row) - 1 : 0
+  return withCursorVisible({ ...state, cursor: row, stop: landing })
+}
 
 export const scrolled = (state: TuiState, delta: number): TuiState => {
   const highest = Math.max(0, rowsIn(state) - Math.max(1, state.viewport))
@@ -53,7 +66,7 @@ export const draggedTo = (state: TuiState, from: number, to: number): TuiState =
 })
 
 const atRow = (state: TuiState, row: number): TuiState =>
-  withCursorVisible({ ...state, cursor: clamp(row, 0, lastRow(selectedPatch(state))) })
+  withCursorVisible({ ...state, stop: 0, cursor: clamp(row, 0, lastRow(selectedPatch(state))) })
 
 const layerHunk = (state: TuiState, delta: number): TuiState => {
   const starts = hunkStarts(state)
@@ -117,7 +130,7 @@ const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
 const layerDown = (state: TuiState, delta: number): TuiState =>
-  state.focus === "tree" ? inRail(state, delta) : moveCursor(state, delta)
+  state.focus === "tree" ? inRail(state, delta) : stepStop(state, delta)
 
 const toggleRail = (state: TuiState): TuiState => {
   if (state.layers.length === 0) return withNotice(state, "no layers for this branch")
@@ -137,8 +150,18 @@ const foldLayer = (state: TuiState, shut: boolean): TuiState => {
   return { ...state, openLayers: shut ? open : [...open, state.layerIndex] }
 }
 
-const fold = (state: TuiState, shut: boolean): TuiState =>
-  onLayers(state) ? foldLayer(state, shut) : foldDirectory(state, shut)
+const foldThread = (state: TuiState, shut: boolean, id: string): TuiState => {
+  const rest = state.opened.filter((held) => held !== id)
+  return { ...state, opened: shut ? rest : [...rest, id] }
+}
+
+const fold = (state: TuiState, shut: boolean): TuiState => {
+  const thread = threadAtStop(state)
+  if (thread?.id !== undefined && thread.settled === true) {
+    return foldThread(state, shut, thread.id)
+  }
+  return onLayers(state) ? foldLayer(state, shut) : foldDirectory(state, shut)
+}
 
 const moveBranch = (state: TuiState, delta: number): TuiState => ({
   ...state,
