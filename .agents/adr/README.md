@@ -15,6 +15,8 @@ the way it is, why it is tested the way it is. ADRs explain choices that outlive
 | [ADR-002](ADR-002-effect-v4-and-module-boundaries.md) | Effect v4, and modules sealed behind `index.ts` |
 | [ADR-003](ADR-003-blackbox-testdriver.md) | Black-box tests through a TestDriver, and no unit tests |
 | [ADR-004](ADR-004-pnpm-native-releases.md) | pnpm's own release tooling instead of Changesets |
+| [ADR-005](ADR-005-a-mechanical-style-contract.md) | Style is a lint rule, not a document |
+| [ADR-006](ADR-006-the-terminal-runs-on-effect.md) | The terminal runs on Effect |
 
 ## Writing one
 
