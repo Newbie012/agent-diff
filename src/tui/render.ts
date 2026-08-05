@@ -515,7 +515,12 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
   state: "",
 })
 
-const headerParts = (state: TuiState, branch: string, path: string): ReadonlyArray<string> => [
+const headerParts = (
+  state: TuiState,
+  branch: string,
+  path: string,
+  pan: number,
+): ReadonlyArray<string> => [
   branch,
   path,
   `${state.patchIndex + 1}/${state.patches.length}`,
@@ -523,7 +528,7 @@ const headerParts = (state: TuiState, branch: string, path: string): ReadonlyArr
   state.staged === 0 ? "" : `${state.staged} staged`,
   contextLabel(state.context),
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} lines hidden`,
-  state.pan === 0 ? "" : `→ ${state.pan} columns`,
+  pan === 0 ? "" : `→ ${pan} columns`,
 ]
 
 const fallbackScope = (state: TuiState, top: number): ReadonlyArray<string> => {
@@ -768,7 +773,12 @@ export class Screen {
       return t`${fg(palette.faint)("")}`
     }
     const patch = selectedPatch(state)
-    const [name = "", ...rest] = headerParts(state, branch?.branch ?? "", patch?.path ?? "").filter(
+    const [name = "", ...rest] = headerParts(
+      state,
+      branch?.branch ?? "",
+      patch?.path ?? "",
+      Math.min(state.pan, this.view.panLimit()),
+    ).filter(
       (part) => part.length > 0,
     )
     return t`${fg(palette.ink)(name)}  ${fg(palette.muted)(rest.join("  "))}`

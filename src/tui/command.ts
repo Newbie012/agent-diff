@@ -336,7 +336,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Find a command",
     category: "General",
     keys: ["ctrl+p"],
-    screens: ["review"],
+    screens: ["review", "pending"],
     hint: "commands",
     listed: false,
   }),

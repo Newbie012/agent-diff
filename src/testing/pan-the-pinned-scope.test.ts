@@ -1,0 +1,98 @@
+import { describe, expect, it } from "@effect/vitest"
+import { TestDriver } from "./index.ts"
+
+const scope =
+  "export function issueInvitation(team: string, email: string, role: MemberRole, expiresAt: Date) {"
+
+const body = (mark: string): ReadonlyArray<string> => [
+  scope,
+  "  if (ready(team)) {",
+  ...Array.from({ length: 30 }, (_, index) => `    kept${index}()`),
+  `    step("${mark}")`,
+  ...Array.from({ length: 30 }, (_, index) => `    rest${index}()`),
+  "  }",
+  "}",
+]
+
+const narrow = {
+  files: [{ path: "src/invite.ts", before: body("before"), after: body("after") }],
+}
+
+const rowsOf = (frame: string): ReadonlyArray<string> => frame.split("\n")
+
+const pinnedRow = (frame: string): string =>
+  rowsOf(frame).find((row) => row.includes("issueInvitation")) ?? ""
+
+describe("reading a pinned scope wider than the pane", () => {
+  it("pans the pinned line even when the code below it is narrow", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(narrow)
+    await driver.screen.open({ width: 100 })
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["j", "j", "j"])
+    const before = await driver.screen.getFrame()
+    expect(pinnedRow(before)).toContain("issueInvitation")
+    expect(before).not.toContain("expiresAt")
+
+    // ACT
+    await driver.screen.pressKeys([">", ">", ">", ">", ">", ">"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("expiresAt")
+    expect(driver.screen.renderCrashes()).toEqual([])
+  })
+
+  it("stops counting columns once nothing is left to reveal", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(narrow)
+    await driver.screen.open({ width: 100 })
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["j", "j", "j"])
+
+    // ACT
+    await driver.screen.pressKeys(Array.from({ length: 30 }, () => ">"))
+
+    // ASSERT
+    const header = rowsOf(await driver.screen.getFrame()).find((row) => row.trim().length > 0) ?? ""
+    const reported = Number(/→ (\d+) columns/.exec(header)?.[1] ?? "0")
+    expect(reported).toBeGreaterThan(0)
+    expect(reported).toBeLessThan(scope.length)
+  })
+})
+
+describe("the pinned scope under the other modes", () => {
+  it("leaves the pinned line alone while wrapping is on", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(narrow)
+    await driver.screen.open({ width: 100 })
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["j", "j", "j", "w"])
+
+    // ACT
+    await driver.screen.pressKeys([">", ">", ">"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("wrapping is on")
+    expect(pinnedRow(frame)).toContain("issueInvitation")
+  })
+
+  it("reveals the pinned line at eighty columns", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(narrow)
+    await driver.screen.open({ width: 80 })
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["j", "j", "j"])
+
+    // ACT
+    await driver.screen.pressKeys(Array.from({ length: 10 }, () => ">"))
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("Date) {")
+    expect(driver.screen.renderCrashes()).toEqual([])
+  })
+})
