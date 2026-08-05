@@ -396,14 +396,20 @@ const waitingLabel = (branch: TuiState["branches"][number]): string => {
   return branch.unread > 0 ? `${branch.unread} unread` : ""
 }
 
+const inRange = (state: TuiState, row: number, from: number, to: number): boolean =>
+  state.selecting && row >= from && row <= to
+
 const notesOf = (
   comments: ReadonlyArray<StagedComment>,
   path: string,
   sent: boolean,
+  opened: ReadonlyArray<string> = [],
 ): ReadonlyArray<Note> =>
   comments
     .filter((entry) => entry.file === path)
     .map((entry) => ({
+      id: entry.id ?? "",
+      folded: entry.settled === true && !(entry.id !== undefined && opened.includes(entry.id)),
       side: entry.side,
       line: entry.end,
       body: entry.body,
@@ -415,7 +421,7 @@ const notesOf = (
     }))
 
 const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
-  ...notesOf(state.sent, path, true),
+  ...notesOf(state.sent, path, true, state.opened),
   ...notesOf(state.pending, path, false),
 ]
 
@@ -998,13 +1004,17 @@ export class Screen {
     const marked = markedRows(state)
     const drawn = this.view.drawn()
     const bare = (visual: number): boolean =>
-      visual >= drawn || this.view.isComment(visual) || this.view.isRunOn(visual)
-    const rows = Array.from({ length: height }, (_, index) => {
-      if (bare(top + index)) return `  `
-      const row = this.view.rowAt(top + index)
-      const here = row === state.cursor || (state.selecting && row >= from && row <= to)
-      return `${here ? marks().cursor : " "}${marked.has(row) ? marks().comment : " "}`
-    })
+      visual >= drawn || !this.view.carries(visual) || this.view.isRunOn(visual)
+    const held = (visual: number): string => {
+      const row = this.view.rowAt(visual)
+      const onCode = this.view.stopAt(visual) === 0
+      const standing = row === state.cursor && this.view.stopAt(visual) === state.stop
+      const within = onCode && inRange(state, row, from, to)
+      return `${standing || within ? marks().cursor : " "}${onCode && marked.has(row) ? marks().comment : " "}`
+    }
+    const rows = Array.from({ length: height }, (_, index) =>
+      bare(top + index) ? "  " : held(top + index),
+    )
     this.gutter.content = rows.join("\n")
   }
 

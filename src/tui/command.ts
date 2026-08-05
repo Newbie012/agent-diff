@@ -275,14 +275,14 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "tree.collapse",
-    title: "Close the folder, layer, or gap",
+    title: "Close the folder, layer, gap, or settled thread",
     category: "Files",
     keys: ["h"],
     screens: ["review"],
   }),
   command({
     action: "tree.expand",
-    title: "Open the folder, layer, or gap",
+    title: "Open the folder, layer, gap, or settled thread",
     category: "Files",
     keys: ["l"],
     screens: ["review"],
