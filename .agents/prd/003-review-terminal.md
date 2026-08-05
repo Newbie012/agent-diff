@@ -62,7 +62,8 @@ Three screens, and the keys each answers to:
 | Screen | Keys |
 | --- | --- |
 | Branches | `j`/`down`, `k`/`up` move · `g`/`G` first and last · `enter` opens · `q` quits |
-| Review | `j`/`down`, `k`/`up` move the cursor · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `w` wraps long lines · `esc` returns to branches · `q` quits |
+| Review | `j`/`down`, `k`/`up` move the cursor · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `y` copies it · `/` finds it elsewhere · `w` wraps long lines · `esc` returns to branches · `q` quits |
+| Found | `j`/`down`, `k`/`up` move between matches · `enter` opens the file · `esc` returns |
 | Compose | typing edits the draft · `backspace` deletes · `ctrl+s` sends · `esc` discards |
 | Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
 
@@ -92,6 +93,23 @@ Three screens, and the keys each answers to:
   and a row counting hidden lines are all written for the reader rather than read from the file, so
   they stay where they are. Panning to read the end of a line does not cost the reader the comment
   they were reading, nor the row telling them how to open a gap.
+- **`y` copies the selected lines.** What lands on the clipboard is the code as the file holds it:
+  no line numbers, no diff signs, no decoration. A reviewer pastes it into an editor, a terminal or
+  a message and it runs; anything added would have to be taken out again by hand, while a reviewer
+  who wants the file and line has both on the screen in front of them.
+- **`/` finds the selection elsewhere in the branch's worktree.** A reviewer selects the line that
+  declares something and asks who else uses it, so the answer covers the whole worktree rather than
+  only the files this branch changes: the caller worth reading is often code the branch never
+  touched. Matches in changed files come first and carry the comment mark, so what belongs to this
+  review reads apart from what surrounds it.
+- **A line is searched by the longest name on it.** Selection is line-based and a whole line matches
+  almost nothing, so the search takes the longest identifier the line holds, skipping language
+  keywords, and matches it on word boundaries. The panel titles itself with the term, so what was
+  searched is never a guess. A selection of several lines is searched by its first line.
+- **The match under the cursor shows the lines around it**, so a reference can be read without
+  leaving the list. `enter` opens the file when the branch changes it; when it does not, there is no
+  diff to open and the panel says so rather than moving the reader somewhere they cannot read.
+- **The line the reviewer is standing on is not a match.** They can see it already.
 - **The footer is generated from the bindings**, never written by hand. A key that exists is
   listed; a key that is listed exists.
 - **The cursor is always on a row**, and the view follows it. Scroll position is derived from the

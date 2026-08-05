@@ -9,6 +9,7 @@ import {
   fileSource,
   listPending,
   listSent,
+  searchBranch,
   listLayers,
   reviewProgress,
   saveReport,
@@ -35,6 +36,9 @@ import {
   layerContext,
   selectedBranch,
   selectedPatch,
+  selectedLines,
+  searchTerm,
+  matchHere,
   selectionRange,
   spokenSince,
   threadAtRow,
@@ -63,6 +67,7 @@ import {
   withFull,
   withPatches,
   restoredTo,
+  withMatches,
   withPending,
   withSent,
   withSource,
@@ -293,6 +298,9 @@ export class App {
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
       "thread.settle": () => this.settleHere(),
+      "selection.copy": () => this.copySelection(),
+      "search.open": () => this.findSelection(),
+      "search.jump": () => this.openMatch(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
       "pending.open": () => this.openPending(),
@@ -364,6 +372,47 @@ export class App {
     const branch = selectedBranch(this.state)
     if (branch === undefined) return
     this.commit(await this.readBranch(branch.branch))
+    await this.loadSource()
+  }
+
+  private copySelection(): void {
+    const lines = selectedLines(this.state)
+    if (lines.length === 0) return this.commit(withNoticeHere(this.state, "nothing selected"))
+    copyToClipboard(`${lines.join("\n")}\n`)
+    const many = lines.length === 1 ? "1 line copied" : `${lines.length} lines copied`
+    this.commit(withNotice(this.state, many))
+  }
+
+  private async findSelection(): Promise<void> {
+    const branch = selectedBranch(this.state)
+    const term = searchTerm(this.state)
+    if (branch === undefined || term.length === 0) {
+      return this.commit(withNoticeHere(this.state, "nothing selected"))
+    }
+    const found = await this.run(searchBranch(this.repo, branch.branch, term))
+    const elsewhere = found.filter((match) => !this.isHere(match))
+    if (elsewhere.length === 0) {
+      return this.commit(withNotice(this.state, `no other place uses ${term}`))
+    }
+    this.commit(withMatches(this.state, elsewhere, term))
+  }
+
+  private isHere(match: { path: string; line: number }): boolean {
+    const patch = selectedPatch(this.state)
+    if (patch === undefined || patch.path !== match.path) return false
+    return sourceLineAt(this.state, this.state.cursor) === match.line
+  }
+
+  private async openMatch(): Promise<void> {
+    const match = matchHere(this.state)
+    if (match === undefined) return
+    const at = this.state.patches.findIndex((patch) => patch.path === match.path)
+    const patch = this.state.patches[at]
+    if (patch === undefined) {
+      return this.commit(withNoticeHere(this.state, `${match.path} is not changed on this branch`))
+    }
+    const landed = atFile({ ...this.state, screen: "review", matches: [], term: "" }, at)
+    this.commit({ ...landed, cursor: rowAtSourceLine(patch, match.line) })
     await this.loadSource()
   }
 

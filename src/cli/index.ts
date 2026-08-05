@@ -16,6 +16,8 @@ export {
   takeComments,
   toggleVouch,
 } from "./commands.ts"
+export { searchBranch } from "./search.ts"
+export type { Match } from "./search.ts"
 export { listLayers, setLayers, showLayers } from "./layers.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
 export { answerComment, listThreads, settleThread } from "./threads.ts"

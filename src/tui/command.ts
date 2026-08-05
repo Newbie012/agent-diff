@@ -32,6 +32,11 @@ export type Action =
   | "tree.expand"
   | "file.vouch"
   | "file.vouch.next"
+  | "search.open"
+  | "search.jump"
+  | "match.next"
+  | "match.prev"
+  | "selection.copy"
   | "select.start"
   | "select.hunk"
   | "select.swap"
@@ -221,6 +226,43 @@ export const commands: ReadonlyArray<Command> = [
     title: "Select the change under the cursor",
     keys: ["V"],
     screens: ["review"],
+  }),
+  command({
+    action: "selection.copy",
+    title: "Copy the selection",
+    keys: ["y"],
+    screens: ["review"],
+    hint: "copy",
+  }),
+  command({
+    action: "search.open",
+    title: "Find the selection elsewhere",
+    keys: ["/"],
+    screens: ["review"],
+    hint: "find",
+  }),
+  command({
+    action: "match.next",
+    title: "Next match",
+    category: "Search",
+    keys: ["j", "down"],
+    screens: ["search"],
+    hint: "move",
+  }),
+  command({
+    action: "match.prev",
+    title: "Previous match",
+    category: "Search",
+    keys: ["k", "up"],
+    screens: ["search"],
+  }),
+  command({
+    action: "search.jump",
+    title: "Open the file the match sits in",
+    category: "Search",
+    keys: ["return"],
+    screens: ["search"],
+    hint: "open",
   }),
   command({
     action: "select.swap",
@@ -422,7 +464,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Go back",
     category: "General",
     keys: ["escape", "q"],
-    screens: ["review", "compose", "palette", "pending", "report"],
+    screens: ["review", "compose", "palette", "pending", "report", "search"],
     hint: "back",
     listed: false,
   }),

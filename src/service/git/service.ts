@@ -5,6 +5,8 @@ import { FileUnreadable } from "./error.ts"
 import type { DiffStat, Worktree } from "./model.ts"
 import { gitOrEmpty } from "./run.ts"
 
+const GREP_CONTEXT = 2
+
 const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "main"]
 
 const STAT = /(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/
@@ -17,6 +19,7 @@ type Shape = {
     worktree: Worktree,
     path: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
+  readonly grep: (worktree: Worktree, term: string) => Effect.Effect<string>
 }
 
 export class Git extends Context.Service<Git, Shape>()("adiff/Git") {}
@@ -123,11 +126,27 @@ const readSource = Effect.fn("Git.source")(function* (worktree: Worktree, path: 
   return Option.map(text, splitLines)
 })
 
+const readGrep = Effect.fn("Git.grep")(function* (worktree: Worktree, term: string) {
+  return yield* gitOrEmpty(worktree.path, [
+    "grep",
+    "--no-color",
+    "-n",
+    "-I",
+    "-F",
+    "-w",
+    "-C",
+    String(GREP_CONTEXT),
+    "-e",
+    term,
+  ])
+})
+
 const shape: Shape = {
   worktrees: listWorktrees,
   diff: readDiff,
   stat: readStat,
   source: readSource,
+  grep: readGrep,
 }
 
 export const GitLive = Layer.succeed(Git)(shape)
