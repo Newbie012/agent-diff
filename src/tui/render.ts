@@ -538,7 +538,7 @@ const headerParts = (
 ): ReadonlyArray<string> => [
   branch,
   path,
-  `${state.patchIndex + 1}/${state.patches.length}`,
+  state.patches.length === 0 ? "nothing to read" : `${state.patchIndex + 1}/${state.patches.length}`,
   state.vouched.length === 0 ? "" : reviewedCount(state),
   state.staged === 0 ? "" : `${state.staged} staged`,
   contextLabel(state.context),
