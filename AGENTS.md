@@ -33,7 +33,7 @@ pnpm install
 pnpm check          # typecheck, lint, style rules, build, tests
 pnpm build          # bundle the CLI into dist/main.js, which is what an install runs
 pnpm typecheck
-pnpm lint           # oxlint + scripts/check-style.ts
+pnpm lint           # oxlint, custom rules included, then proves each rule fires
 pnpm test
 pnpm review            # the terminal, on this repo
 pnpm simulate          # the terminal, on a synthetic repo (--probe for headless)
@@ -49,9 +49,12 @@ repo passes it.
 - **No import may reach past another module's `index.ts`.** This is what lets two agents work in
   two modules of one worktree without colliding.
 
-Both are enforced by `scripts/check-style.ts`, alongside a third rule `tsc` cannot see: Node runs
-TypeScript by stripping types, so syntax that needs emit — constructor parameter properties —
-never runs, even though `tsc` and vitest both accept it.
+Both are oxlint rules, in the plugin at `tools/oxlint-adiff.ts`, alongside a third rule `tsc`
+cannot see: Node runs TypeScript by stripping types, so syntax that needs emit, such as constructor
+parameter properties, never runs even though `tsc` and vitest both accept it.
+
+`.agents/EFFECT.md` is the whole contract, and `pnpm lint` proves every custom rule still fires
+before it checks the code.
 
 ## More Detail
 

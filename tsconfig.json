@@ -25,7 +25,21 @@
     "allowUnusedLabels": false,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true
+    "rewriteRelativeImportExtensions": true,
+    "plugins": [
+      {
+        "name": "@effect/tsgo",
+        "diagnostics": {
+          "floatingEffect": "error",
+          "missingEffectError": "error",
+          "missingEffectContext": "error",
+          "classSelfMismatch": "error",
+          "anyUnknownInErrorContext": "error",
+          "genericEffectServices": "error",
+          "effectFnImplicitAny": "error"
+        }
+      }
+    ]
   },
   "include": [
     "src/**/*.ts",

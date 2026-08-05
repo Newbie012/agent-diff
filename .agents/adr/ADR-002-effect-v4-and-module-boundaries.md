@@ -22,7 +22,8 @@ failure appears in the signature and is handled by tag rather than by catch-all.
 
 Modules are sealed: `src/domain/*`, `src/service/*`, `src/tui`, `src/cli`, each with an `index.ts`
 that is its entire public surface. **An import may not reach past another module's `index.ts`**,
-enforced by `scripts/check-style.ts`.
+enforced by the oxlint plugin at `tools/oxlint-adiff.ts`. ADR-005 records how the rest of the
+style became mechanical, and where this ADR had drifted.
 
 Domain modules are pure — no services, no IO. Services own the outside world. Exactly one place
 runs an Effect, at the process edge.
@@ -64,7 +65,7 @@ lets [PRD 008](../prd/008-tests-and-drivers.md) forbid unit tests without losing
 - A long-lived Effect must keep its layer scope open for its whole life. Capturing a context and
   letting the scope close produced exactly the silent failure this ADR exists to prevent.
 - Node type-stripping bans syntax that needs emit, so no parameter properties, no enums, no
-  decorators. `scripts/check-style.ts` rejects the first; the rest have not come up.
+  decorators. The `adiff/no-parameter-properties` rule rejects the first; the rest have not come up.
 
 ## Revisit When
 

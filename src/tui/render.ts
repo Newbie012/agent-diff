@@ -380,7 +380,6 @@ const makeCompose = (renderer: CliRenderer): BoxRenderable =>
     flexDirection: "column",
   })
 
-
 const clip = (label: string, room: number): string =>
   label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
@@ -1043,7 +1042,6 @@ export class Screen {
       })
     }
   }
-
 
   private paintCompose(state: TuiState): void {
     this.compose.visible = state.screen === "compose"

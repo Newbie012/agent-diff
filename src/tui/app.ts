@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
-import { buildReport } from "./report.ts"
 import { createCliRenderer, type CliRenderer, type KeyEvent } from "@opentui/core"
 import { Effect, Option } from "effect"
+import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
   listBranches,
@@ -254,7 +254,6 @@ export class App {
   }
 
   private commit(next: TuiState): void {
-
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     this.state = next
     this.rememberPlace(next)
@@ -491,7 +490,10 @@ export class App {
 
   private async loadPulls(): Promise<void> {
     const forge = await this.run(Effect.map(Forge, (service) => service))
-    const pulls = await this.run(forge.pulls(this.repo))
+    const asked = forge.pulls(this.repo)
+    const pulls = await this.run(
+      asked.pipe(Effect.catchTag("ForgeUnavailable", () => Effect.succeed([]))),
+    )
     if (pulls.length === 0) return
     const found = Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state]))
     this.commit(withPulls(this.state, found))
