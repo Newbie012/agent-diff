@@ -24,7 +24,7 @@ import {
 } from "../cli/index.ts"
 import type { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
-import { watchAnswers, type Watching } from "./watch.ts"
+import { answers } from "./watch.ts"
 import { Forge } from "../service/forge/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { gapAtRow, GAP_CHUNK } from "./gaps.ts"
@@ -94,7 +94,6 @@ export type AppOptions = {
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
   readonly wrap?: boolean | undefined
-  readonly storeRoot?: string | undefined
 }
 
 const PRINTABLE = /^[\S ]$/
@@ -134,7 +133,7 @@ export class App {
   private fading: Fiber.Fiber<void> | undefined
   private wheel = 0
   private sideways = 0
-  private watching: Watching | undefined
+  private listening: Fiber.Fiber<void> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -164,19 +163,22 @@ export class App {
     renderer.on("frame", () => this.syncGeometry())
     renderer.setFrameCallback(async () => this.applyWheel())
     const resume = options.resume
-    this.startWatching(options.storeRoot)
     this.dispatchTask(() => this.loadPulls())
     if (resume !== undefined) this.dispatchTask(() => this.resume(resume))
   }
 
-  private startWatching(root: string | undefined): void {
-    if (root === undefined) return
-    this.watching = watchAnswers(root, () => this.dispatchTask(() => this.noticeAnswers()))
+  listen(fiber: Fiber.Fiber<void>): void {
+    this.listening = fiber
+  }
+
+  answered(): void {
+    this.dispatchTask(() => this.noticeAnswers())
   }
 
   private stopWatching(): void {
-    this.watching?.stop()
-    this.watching = undefined
+    const fiber = this.listening
+    this.listening = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
   }
 
   private async noticeAnswers(): Promise<void> {
@@ -749,10 +751,14 @@ export const launch = Effect.fn("Tui.launch")(function* (
     sessionPath,
     resume: Option.getOrUndefined(resume),
     wrap,
-    storeRoot: store.root,
     intents,
   })
   app.watch(yield* Effect.forkDetach(app.consume()))
+  app.listen(
+    yield* Effect.forkDetach(
+      Stream.runForEach(answers(store.root), () => Effect.sync(() => app.answered())),
+    ),
+  )
   return app
 })
 
