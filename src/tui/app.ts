@@ -131,7 +131,7 @@ export class App {
   private remembered = ""
   private wrapKept = false
   private readonly keys: Array<string> = []
-  private fading: ReturnType<typeof setTimeout> | undefined
+  private fading: Fiber.Fiber<void> | undefined
   private wheel = 0
   private sideways = 0
   private watching: Watching | undefined
@@ -319,17 +319,22 @@ export class App {
   }
 
   private stopFading(): void {
-    if (this.fading === undefined) return
-    clearTimeout(this.fading)
+    const fiber = this.fading
     this.fading = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
+  }
+
+  private clearing(): Effect.Effect<void> {
+    return Effect.gen({ self: this }, function* () {
+      yield* Effect.sleep(this.noticeMs)
+      this.fading = undefined
+      if (this.state.notice.length > 0) this.commit({ ...this.state, notice: "" })
+    })
   }
 
   private fade(): void {
     this.stopFading()
-    this.fading = setTimeout(() => {
-      this.fading = undefined
-      if (this.state.notice.length > 0) this.commit({ ...this.state, notice: "" })
-    }, this.noticeMs)
+    this.fading = Effect.runFork(this.clearing())
   }
 
   private effects(): Readonly<Partial<Record<Action, () => Promise<void> | void>>> {
