@@ -65,6 +65,10 @@
   dir: ""
   intents:
     - brave-hairs-sleep
+"@eliya-oss/agent-diff@0.1.0-alpha.18":
+  dir: ""
+  intents:
+    - wide-tigers-occur
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
