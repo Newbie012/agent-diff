@@ -10,18 +10,24 @@
 
 An agent finishes work in a git worktree. Reviewing it means `cd`-ing in, running `git diff`,
 reading unhighlighted output, and then describing the problem back in prose: "in incidents.ts
-around the fetch, you're not handling 404". Both sides reconstruct the line reference by hand. That
-round-trip is the bottleneck, not the fixing.
+around the fetch, you're not handling 404". Both sides reconstruct the line reference by hand.
+
+The reply is the harder half. A remark delivered as prose has no identity, so the agent cannot say
+which point it addressed and the reviewer cannot tell whether it was read. A review of any size
+becomes a list the reviewer holds in their head.
 
 With several worktrees in flight the cost multiplies, and there is no way to see which branch is
 waiting on the reviewer.
 
 ## Solution
 
-adiff is a terminal where the reviewer reads a branch's diff with syntax highlighting, selects
-lines, and writes a comment. The comment is filed against that worktree with its own anchor. The
-agent in that worktree collects it and acts on it. No pull request, no browser, no line numbers
-retyped into chat.
+adiff is a review the agent can answer. The reviewer reads a branch's diff in a terminal, selects
+lines, and writes a comment; the comment is filed against that worktree with its own anchor and its
+own id. The agent collects it, does the work, and answers that id. The reviewer reads the answer
+under their own words and settles the point when satisfied.
+
+An agent can also publish the reading order for its own diff as layers, and adiff checks that the
+layers cover every hunk, so the reading cannot leave code out.
 
 Everything the terminal does is also a command, so no behavior is reachable only through the UI.
 
@@ -34,6 +40,7 @@ reached the agent that wrote the code.
 | --- | --- |
 | A comment carries its own anchor | The agent never needs a prose location description |
 | The agent receives it with full context | The snippet travels with the comment; no second lookup |
+| A point can be answered and settled | The reviewer sees which comments were addressed without rereading the diff |
 | Review progress is durable | Closing the terminal loses nothing |
 | A stale anchor is never silently wrong | Code moving under a comment is visible before it misleads |
 
@@ -111,7 +118,6 @@ reached the agent that wrote the code.
 | Decision | Trigger |
 | --- | --- |
 | Whether layers earn their keep at all | [PRD 006](006-layers-review.md) shipping and being used on a real 90-file review |
-| Streaming the agent's replies back beside the comment | A review where the reviewer wants a conversation rather than a hand-over |
 | Multi-repo branch discovery | A second repo in regular use |
 
 ## Testing Decisions

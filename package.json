@@ -43,7 +43,7 @@
   },
   "packageManager": "pnpm@12.0.0-beta.3",
   "version": "0.1.0-alpha.29",
-  "description": "Review agent work across git worktrees like a PR, and hand the comments back to the agent.",
+  "description": "A code review your agent can answer: comments carry ids, the agent replies under them, and it publishes the reading order for its own diff.",
   "license": "MIT",
   "repository": {
     "type": "git",
