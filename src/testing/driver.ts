@@ -5,6 +5,7 @@ import { ScreenTestDriver } from "./domains/screen/index.ts"
 import { createDriverState, type DriverOptions, type DriverState } from "./state.ts"
 
 export class TestDriver implements AsyncDisposable {
+  readonly repoPath: string
   readonly branch: BranchTestDriver
   readonly app: AppTestDriver
   readonly agent: AgentTestDriver
@@ -14,6 +15,7 @@ export class TestDriver implements AsyncDisposable {
 
   private constructor(state: DriverState) {
     this.state = state
+    this.repoPath = state.repo
     this.branch = new BranchTestDriver(state)
     this.app = new AppTestDriver(state)
     this.agent = new AgentTestDriver(state)

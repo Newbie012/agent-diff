@@ -46,3 +46,8 @@ export class MalformedLayers extends Data.TaggedError("MalformedLayers")<{
 export class NoLayers extends Data.TaggedError("NoLayers")<{
   readonly worktree: string
 }> {}
+
+export class InitUnwritable extends Data.TaggedError("InitUnwritable")<{
+  readonly path: string
+  readonly reason: string
+}> {}
