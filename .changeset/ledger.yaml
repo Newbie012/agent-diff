@@ -146,6 +146,10 @@
   dir: ""
   intents:
     - olive-eggs-flow
+"@eliya-oss/agent-diff@0.1.0-alpha.35":
+  dir: ""
+  intents:
+    - fresh-hairs-draw
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
