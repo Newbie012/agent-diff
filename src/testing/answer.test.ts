@@ -13,7 +13,7 @@ const handedOf = (envelope: unknown): ReadonlyArray<Handed> =>
   (envelope as { comments: ReadonlyArray<Handed> }).comments
 
 const threadsOf = (envelope: unknown): ReadonlyArray<Thread> =>
-  (envelope as { threads: ReadonlyArray<Thread> }).threads
+  (envelope as { comments: ReadonlyArray<Thread> }).comments
 
 const comment = {
   file: "src/api.ts",
@@ -129,7 +129,7 @@ describe("settling a thread", () => {
     const [thread] = threadsOf((await driver.app.runThreads(branch.name)).envelope)
 
     // ASSERT
-    expect(thread?.state).toBe("submitted")
+    expect(thread?.state).toBe("sent")
   })
 })
 

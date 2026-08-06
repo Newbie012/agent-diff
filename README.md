@@ -26,7 +26,7 @@ check so nothing is quietly left out of the story.
 You comment on a line:
 
 ```bash
-adiff comment add --repo . --branch add-teammate-invitations \
+adiff comment send --repo . --branch add-teammate-invitations \
   --file src/api/invitations.ts --start 12 --end 13 \
   --body "Three status checks in a row. One error shape would do."
 ```
@@ -53,14 +53,17 @@ You see that answer under your own words the next time you read the branch, and 
 there until you settle it with `d`:
 
 ```bash
-adiff comment threads --repo . --branch add-teammate-invitations
-{"ok":true,"threads":[{"id":"1c43cb55-6a09-406d-95ad-f048c43e05f5","state":"answered",
+adiff comment list --repo . --branch add-teammate-invitations
+{"ok":true,"comments":[{"id":"1c43cb55-6a09-406d-95ad-f048c43e05f5","state":"answered",
  "stale":false,"answers":[{"body":"Folded them into one InviteRejected carrying the reason.",
  "asks":false}]}]}
 ```
 
-`--asks` on an answer marks the thread as waiting on you, for a decision the agent needs before it
-can carry on. Settling is yours alone: the agent that raised the answer cannot close the point.
+`--question` on an answer marks the thread as waiting on you, for a decision the agent needs before
+it can carry on. Settling is yours alone: the agent that raised the answer cannot close the point.
+
+Every command that acts on a review takes either `--worktree <path>` or `--repo <path>` with
+`--branch <name>`, so the same command works from your checkout and from the agent's worktree.
 
 A comment is handed over exactly once, so a second `take` returns only what was written since. Add
 `--wait 300` and it blocks until something arrives, which costs nothing while it waits.
@@ -161,7 +164,7 @@ you quit. `pnpm simulate --probe` runs the whole round trip headless and prints 
 
 ```
 branches    {"ok":true,"branches":[{"branch":"add-teammate-invitations","files":3,"added":27,"removed":2,"layers":2,...
-vouch       {"ok":true,"vouched":["src/api/invitations.ts"],"total":3}
+reviewed    {"ok":true,"reviewed":["src/api/invitations.ts"],"total":3}
 agent takes {"ok":true,"comments":[{"id":"a83fc98c-8397-44f5-9c37-731a1cf3cb4c","file":"src/api/invitations.ts",
              "side":"new","start":12,"end":13,"snippet":"  if (res.status === 409) throw new AlreadyInvited(email)...",
              "body":"Three status checks in a row. One error shape would do."}]}

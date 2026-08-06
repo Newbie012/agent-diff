@@ -90,11 +90,11 @@ const probe = async (space: Workspace): Promise<void> => {
   const file = "src/api/invitations.ts"
   await adiff(
     space,
-    ["comment", "add", "--repo", ".", "--branch", branch.name, "--file", file,
+    ["comment", "send", "--repo", ".", "--branch", branch.name, "--file", file,
      "--start", "12", "--end", "13", "--body", "Three status checks in a row. One error shape would do."],
     space.repo,
   )
-  console.log("vouch      ", JSON.stringify(await adiff(space, ["file", "vouch", "--repo", ".", "--branch", branch.name, "--file", file], space.repo)))
+  console.log("reviewed   ", JSON.stringify(await adiff(space, ["file", "review", "--repo", ".", "--branch", branch.name, "--file", file], space.repo)))
   console.log("progress   ", JSON.stringify(await adiff(space, ["review", "progress", "--repo", ".", "--branch", branch.name], space.repo)))
   console.log("agent takes", JSON.stringify(await adiff(space, ["comment", "take", "--worktree", "."], branch.worktree)))
   console.log(`\n${listed?.branches?.length ?? 0} branches, whole round trip green`)

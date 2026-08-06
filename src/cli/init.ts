@@ -35,7 +35,7 @@ const INSTRUCTIONS = [
   "When you hand work over, say it is ready and name the command that opens the review:",
   "`adiff review open --repo <repo>`, or `adiff review pane --repo <repo>` to open it alongside.",
   "Publish a reading order with `adiff layers set` only when you are asked for one.",
-  "`adiff describe` lists the rest.",
+  "`adiff --help` lists the rest, and `adiff describe` answers the same as JSON.",
   END,
 ].join("\n")
 

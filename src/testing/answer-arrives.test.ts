@@ -25,10 +25,10 @@ const openOnComment = async (
   })
   await driver.app.runSubmit(branch.name)
   const threads = await driver.app.runThreads(branch.name)
-  const listed = threads.envelope as { readonly threads: ReadonlyArray<{ readonly id: string }> }
+  const listed = threads.envelope as { readonly comments: ReadonlyArray<{ readonly id: string }> }
   await driver.screen.open()
   await driver.screen.pressKeys(["RETURN"])
-  return { id: listed.threads[0]?.id ?? "", worktree: branch.worktree }
+  return { id: listed.comments[0]?.id ?? "", worktree: branch.worktree }
 }
 
 describe("an answer arriving while the reviewer reads", () => {

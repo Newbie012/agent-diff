@@ -1,12 +1,23 @@
 import manifest from "../../package.json" with { type: "json" }
-import { catalog, findCommand, type CommandSpec } from "./catalog.ts"
+import {
+  addressing,
+  catalog,
+  findCommand,
+  groups,
+  verbsUnder,
+  type CommandSpec,
+  type OptionSpec,
+} from "./catalog.ts"
 
 const NAME_ROOM = 18
+const OPTION_ROOM = 24
 
 export const version = (): string => manifest.version
 
+const opening = (about: string): string => about.split(". ")[0] ?? about
+
 const line = (command: CommandSpec): string =>
-  `  ${command.name.padEnd(NAME_ROOM)}${command.about}`
+  `  ${command.name.padEnd(NAME_ROOM)}${opening(command.about)}`
 
 export const banner = (): string =>
   [
@@ -30,15 +41,98 @@ export const banner = (): string =>
     "and describe --command 'comment take' answers for one.",
   ].join("\n")
 
-export const help = (): string =>
-  ["adiff, for reviewing an agent's work in a worktree", "", "Commands:", ...catalog.map(line), "", "Run `adiff help <command>` for its options."].join("\n")
+const under = (group: string): ReadonlyArray<string> => [
+  group,
+  ...catalog.filter((command) => command.group === group).map(line),
+  "",
+]
 
-const option = (spec: CommandSpec["options"][number]): string =>
-  `  --${spec.name.padEnd(NAME_ROOM - 2)}${spec.about}${spec.required ? " (required)" : ""}`
+export const help = (): string =>
+  [
+    `adiff ${version()}, for reviewing an agent's work in a worktree`,
+    "",
+    "Usage",
+    "  adiff <command> [options]",
+    "",
+    ...groups.flatMap(under),
+    "Run `adiff <command> --help` for what it needs, or `adiff describe` for the same as JSON.",
+  ].join("\n")
+
+const placeholder = (spec: OptionSpec): string =>
+  spec.value === "flag" ? `--${spec.name}` : `--${spec.name} <${spec.value}>`
+
+const wanted = (spec: OptionSpec): string =>
+  spec.required ? placeholder(spec) : `[${placeholder(spec)}]`
+
+const REVIEW = "(--worktree <path> | --repo <path> --branch <name>)"
+
+const addressed = (name: string): boolean =>
+  addressing.some((spec) => spec.name === name)
+
+export const usageOf = (command: CommandSpec): string => {
+  const own = command.options.filter((spec) => !addressed(spec.name)).map(wanted)
+  const parts = command.addresses === "review" ? [REVIEW, ...own] : own
+  return [`adiff ${command.name}`, ...parts].join(" ")
+}
+
+const FIELDS: OptionSpec = {
+  name: "fields",
+  required: false,
+  value: "a,b",
+  about: "Narrow the answer to these fields, at every level",
+}
+
+const option = (spec: OptionSpec): string =>
+  `  ${placeholder(spec).padEnd(OPTION_ROOM)}${spec.about}${spec.required ? " (required)" : ""}`
+
+const answers = (command: CommandSpec): ReadonlyArray<string> =>
+  command.dataKey === ""
+    ? ["Answers by handing the terminal to the reviewer, not in JSON."]
+    : [`Answers {"ok":true,"${command.dataKey}":…}`]
 
 export const helpFor = (name: string): string | undefined => {
   const command = findCommand(name)
   if (command === undefined) return undefined
-  const options = command.options.length === 0 ? [] : ["", "Options:", ...command.options.map(option)]
-  return [`adiff ${command.name}`, "", command.about, ...options].join("\n")
+  const shown = command.dataKey === "" ? command.options : [...command.options, FIELDS]
+  return [
+    `adiff ${command.name}`,
+    "",
+    command.about,
+    "",
+    "Usage",
+    `  ${usageOf(command)}`,
+    ...(command.addresses === "review"
+      ? ["", "Naming the review is required: give --worktree, or --repo with --branch."]
+      : []),
+    "",
+    "Options",
+    ...shown.map(option),
+    "",
+    "Example",
+    `  ${command.example}`,
+    "",
+    ...answers(command),
+  ].join("\n")
+}
+
+const verb = (name: string): string => {
+  const command = findCommand(name)
+  const short = name.split(" ").slice(1).join(" ")
+  return `  ${short.padEnd(NAME_ROOM)}${opening(command?.about ?? "")}`
+}
+
+export const helpUnder = (noun: string): string | undefined => {
+  const verbs = verbsUnder(noun)
+  if (verbs.length === 0) return undefined
+  return [
+    `adiff ${noun}`,
+    "",
+    "Usage",
+    `  adiff ${noun} <verb> [options]`,
+    "",
+    "Verbs",
+    ...verbs.map(verb),
+    "",
+    `Run \`adiff ${noun} <verb> --help\` for what it needs.`,
+  ].join("\n")
 }

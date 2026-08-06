@@ -28,6 +28,7 @@ import {
 
 type Shape = {
   readonly root: string
+  readonly branchAt: (worktreePath: string) => Effect.Effect<string>
   readonly submit: (worktreePath: string, batch: Batch) => Effect.Effect<void, StoreUnwritable>
   readonly inbox: (worktreePath: string) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable>
   readonly state: (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
@@ -364,6 +365,7 @@ const makeStore = (root: string): Shape => {
   const cursors = cursorOps(state, saveState, inbox)
   return {
     root,
+    branchAt: (worktreePath: string) => Effect.promise(() => headOf(worktreePath)),
     submit,
     inbox,
     state,

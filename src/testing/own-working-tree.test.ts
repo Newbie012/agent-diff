@@ -60,7 +60,7 @@ describe("reviewing the repository's own working tree", () => {
 
     // ACT
     await driver.app.run([
-      "comment", "add", "--repo", own, "--branch", "master",
+      "comment", "send", "--repo", own, "--branch", "master",
       "--file", "src/api.ts", "--start", "2", "--end", "2", "--body", "why edited",
     ])
 

@@ -72,6 +72,6 @@ describe("marking a file reviewed from the terminal", () => {
     const report = await driver.app.runProgress(branch.name)
 
     // ASSERT
-    expect(report.envelope).toMatchObject({ ok: true, vouched: ["src/api.ts"], total: 2 })
+    expect(report.envelope).toMatchObject({ ok: true, reviewed: ["src/api.ts"], total: 2 })
   })
 })

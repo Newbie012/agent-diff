@@ -71,7 +71,7 @@ describe("handing review comments to the agent", () => {
     expect(result.envelope).toMatchObject({ ok: true, comments: [{ body: "second" }] })
   })
 
-  it("still remembers which files were vouched after the agent takes comments", async () => {
+  it("still remembers which files were marked reviewed after the agent takes comments", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -89,6 +89,6 @@ describe("handing review comments to the agent", () => {
     const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ vouched: ["src/api.ts"], total: 1 })
+    expect(result.envelope).toMatchObject({ reviewed: ["src/api.ts"], total: 1 })
   })
 })
