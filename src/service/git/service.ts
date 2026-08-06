@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises"
-import { join } from "node:path"
+import { readFile, realpath } from "node:fs/promises"
+import { join, resolve } from "node:path"
 import { Context, Effect, Layer, Option } from "effect"
 import { FileUnreadable } from "./error.ts"
 import type { DiffStat, Worktree } from "./model.ts"
@@ -103,12 +103,19 @@ const readText = Effect.fn("Git.readText")(function* (absolute: string, path: st
   }).pipe(Effect.map(Option.some), Effect.catchTag("FileUnreadable", () => absent))
 })
 
+const settled = (path: string): Effect.Effect<string> =>
+  Effect.promise(() => realpath(path).catch(() => resolve(path)))
+
 const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
   const porcelain = yield* gitOrEmpty(repo, ["worktree", "list", "--porcelain"])
   const base = yield* defaultBranch(repo)
   const entries = readEntries(porcelain)
+  const opened = yield* settled(repo)
   const found: Array<Worktree> = []
-  for (const [index, entry] of entries.entries()) found.push(yield* toWorktree(entry, base, index === 0))
+  for (const entry of entries) {
+    const path = yield* settled(entry.path)
+    found.push(yield* toWorktree(entry, base, path === opened))
+  }
   return found
 })
 
