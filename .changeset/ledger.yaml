@@ -116,6 +116,10 @@
   dir: ""
   intents:
     - thick-tips-rush
+"@eliya-oss/agent-diff@0.1.0-alpha.29":
+  dir: ""
+  intents:
+    - clean-rocks-sit
 "@eliya-oss/agent-diff@0.1.0-alpha.3":
   dir: ""
   intents:
