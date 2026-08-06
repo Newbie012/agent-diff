@@ -28,6 +28,7 @@ export type Action =
   | "rail.toggle"
   | "review.reload"
   | "thread.settle"
+  | "thread.remove"
   | "tree.collapse"
   | "tree.expand"
   | "file.vouch"
@@ -307,6 +308,14 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["d"],
     screens: ["review"],
     hint: "settle",
+  }),
+  command({
+    action: "thread.remove",
+    title: "Remove the comment here",
+    category: "Review",
+    keys: ["X"],
+    screens: ["review"],
+    hint: "remove",
   }),
   command({
     action: "rail.toggle",

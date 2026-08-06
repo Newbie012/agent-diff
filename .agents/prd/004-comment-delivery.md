@@ -109,6 +109,20 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **Nothing that has been sent can be reworded or withdrawn.** A submission is append-only and the
   agent may already have acted on it. Rewording a point that has gone is a new comment, or an
   answer.
+- **A sent comment can be removed from the review, which is not the same as unsending it.** A point
+  made by mistake, or overtaken by the code moving on, sits in the diff with no way to be rid of
+  it. Removing takes it out of the reviewer's view and leaves the delivery record whole: the batch
+  still carries it, a take that handed it over still happened, and any answer to it still stands.
+  Removing is what a reviewer does to a point they should not have made; settling is what they do
+  to a point the agent addressed.
+- **A removed comment is still reported to the agent, marked removed.** An agent that has answered
+  deserves to learn its answer is no longer wanted, and one that has not read it yet learns not to
+  start. Hiding the comment from both sides would make the reviewer's screen and the record
+  disagree, and the record is what the agent works from.
+- **Removing is undone by restoring.** Nothing is deleted, so a comment removed by mistake comes
+  back with its answers and its settled state intact. The terminal names the command that undoes it
+  as it removes, because a reviewer who has just made something vanish is the one who needs to know
+  it is recoverable.
 - **An answer that lands while the reviewer reads is announced, not applied.** The terminal watches
   the outbox, which only an agent writes, and says how many answers arrived and which key pulls
   them. The screen does not change until the reviewer asks: no rows appear under the cursor, no
@@ -144,6 +158,8 @@ Behaviors that must be covered:
 - A comment written after the agent caught up is handed over on the next take.
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
+- A removed comment leaves the reviewer's view, still reads as removed to the agent, leaves the
+  delivery record untouched, and comes back on restore.
 - A vouch recorded before a take survives it. This is the regression guard for the merge rule
   above, and it is the one that would have gone unnoticed.
 

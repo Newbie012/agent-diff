@@ -20,6 +20,7 @@ import {
   submitReview,
   submitComment,
   toggleVouch,
+  removeComment,
   settleThread,
 } from "../cli/index.ts"
 import { Store } from "../service/store/index.ts"
@@ -362,6 +363,7 @@ export class App {
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
       "thread.settle": () => this.settleHere(),
+      "thread.remove": () => this.removeHere(),
       "selection.copy": () => Effect.sync(() => this.copySelection()),
       "search.open": () => this.findSelection(),
       "search.jump": () => this.openMatch(),
@@ -536,6 +538,22 @@ export class App {
       const sent = yield* this.loadSent(branch.branch)
       const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
       this.commit(withNotice(held, "settled"))
+    })
+  }
+
+  private removeHere(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      const thread = threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      const id = thread?.id
+      if (branch === undefined || id === undefined) {
+        this.commit(withNotice(this.state, "no thread here"))
+        return
+      }
+      yield* (removeComment(this.repo, branch.branch, id, new Date().toISOString()))
+      const sent = yield* this.loadSent(branch.branch)
+      const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
+      this.commit(withNotice(held, "removed, restore it with comment restore"))
     })
   }
 

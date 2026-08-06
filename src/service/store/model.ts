@@ -37,6 +37,7 @@ export type BranchState = {
   readonly consumed: number
   readonly pending: ReadonlyArray<StoredComment>
   readonly settled: Readonly<Record<string, string>>
+  readonly removed: Readonly<Record<string, string>>
 }
 
 export const emptyBranchState: BranchState = {
@@ -44,6 +45,7 @@ export const emptyBranchState: BranchState = {
   consumed: 0,
   pending: [],
   settled: {},
+  removed: {},
 }
 
 export type Settings = {
