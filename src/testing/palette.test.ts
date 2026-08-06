@@ -66,3 +66,24 @@ describe("finding a command without knowing its key", () => {
     expect(frame).toContain("1/2")
   })
 })
+
+describe("a command whose name is long", () => {
+  it("keeps a gap between the name and its category", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(twoFiles)
+    await driver.screen.open()
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ACT
+    await driver.screen.pressCtrl("p")
+    await driver.screen.typeText("close")
+
+    // ASSERT
+    const row = (await driver.screen.getFrame())
+      .split("\n")
+      .find((line) => line.includes("Close the folder")) ?? ""
+    expect(row).toContain("Files")
+    expect(row).not.toMatch(/\S(Files|Review|General|Branches)/)
+  })
+})
