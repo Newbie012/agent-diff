@@ -158,6 +158,10 @@
   dir: ""
   intents:
     - soft-mails-play
+"@eliya-oss/agent-diff@0.1.0-alpha.38":
+  dir: ""
+  intents:
+    - olive-moons-report
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
