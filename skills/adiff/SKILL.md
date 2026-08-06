@@ -133,23 +133,27 @@ Rules that make a layers worth reading:
 - **A title is a claim, not a file name.** "Add the invitation API", never "changes to
   src/api/invites.ts".
 - **Line numbers are the new side of the diff**, the same numbers `adiff comment take` reports.
-- **Cover everything.** adiff computes coverage itself and answers with the hunks no layer claims;
-  those show up for the reviewer under "not in any layer" whatever you do. A layers that quietly
-  skips a third of the diff is worse than no layers, so put the leftovers in a final layer and say
-  they are mechanical.
+- **Cover everything.** adiff computes coverage itself and answers with the changed lines no layer
+  claims; those show up for the reviewer under "not in any layer" whatever you do. A layer set that
+  quietly skips a third of the diff is worse than none, so put the leftovers in a final layer and
+  say they are mechanical. Claim the lines you actually read: a span reaching past them counts only
+  the changed lines inside it, so padding the range buys nothing.
 
 The answer to `layers set` is the honest report — check it before you claim to be done:
 
 ```json
-{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"]}]}}
+{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"partial":1,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"]}]}}
 ```
 
-`covered`/`total` count hunks. `uncovered` names the ones no layer claims — claim them and set the
-layers again. `vanished` names paths a layer points at that this branch does not change, which
-usually means a typo in a path. Read it back at any time with:
+`total` counts hunks. `covered` counts the ones where every changed line sits inside a layer, and
+`partial` the ones a layer explains only some of. `uncovered` names the runs of changed lines no
+layer claims, so it reads as line numbers a reviewer would otherwise have to find alone: claim them
+and set the layers again. Done means `uncovered` is empty. `vanished` names paths a layer points at
+that this branch does not change, which usually means a typo in a path. Read it back at any time
+with:
 
 ```bash
-adiff layers show --worktree . --fields covered,total,uncovered
+adiff layers show --worktree . --fields covered,partial,total,uncovered
 ```
 
 Setting a layers again supersedes the previous one and bumps `version`; the layers records the commit
