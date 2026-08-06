@@ -34,3 +34,59 @@ jobs:
       - run: pnpm test
         env:
           NODE_OPTIONS: --experimental-ffi
+
+  binaries:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            target: bun-darwin-arm64
+            asset: adiff-darwin-arm64
+          - runner: macos-15-intel
+            target: bun-darwin-x64
+            asset: adiff-darwin-x64
+          - runner: ubuntu-latest
+            target: bun-linux-x64
+            asset: adiff-linux-x64
+          - runner: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            asset: adiff-linux-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - run: npm install -g --allow-scripts=pnpm pnpm@12.0.0-beta.3
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: compile for ${{ matrix.target }}
+        env:
+          TARGET: ${{ matrix.target }}
+          ASSET: ${{ matrix.asset }}
+        run: bun build --compile --target="$TARGET" src/main.ts --outfile "$ASSET"
+
+      - name: check it answers
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          REPORTED=$(env -i "PATH=/usr/bin:/bin" "./$ASSET" --version)
+          if [ "$REPORTED" != "$VERSION" ]; then
+            echo "::error::The $ASSET binary reports $REPORTED where this branch is $VERSION."
+            exit 1
+          fi
+          env -i "PATH=/usr/bin:/bin" "./$ASSET" describe | node -e '
+            const answer = JSON.parse(require("fs").readFileSync(0, "utf8"))
+            if (answer.ok !== true) { throw new Error("describe did not answer ok") }
+          '
+          echo "::notice::$ASSET reports $VERSION and answers describe with no runtime on PATH."
