@@ -199,6 +199,10 @@
   dir: ""
   intents:
     - find-the-pull-request
+"@eliya-oss/agent-diff@0.1.0-alpha.47":
+  dir: ""
+  intents:
+    - upgrade-upgrades
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
