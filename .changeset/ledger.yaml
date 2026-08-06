@@ -154,6 +154,10 @@
   dir: ""
   intents:
     - quiet-eggs-punch
+"@eliya-oss/agent-diff@0.1.0-alpha.37":
+  dir: ""
+  intents:
+    - soft-mails-play
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
