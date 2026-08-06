@@ -127,7 +127,8 @@ const parseState = Effect.fn("Store.parseState")(function* (path: string, raw: s
 
 const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw: string) {
   const value = yield* jsonOf(path, raw)
-  return yield* asLayers(path, value)
+  const held = yield* asLayers(path, value)
+  return { ...held, parent: held.parent } satisfies StoredLayers
 })
 
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
@@ -250,7 +251,7 @@ const layersOps = (root: string) => {
   return { layers, saveLayers }
 }
 
-const makeStore = (root: string): Shape => {
+const inboxOps = (root: string) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
     const path = inboxPath(root, worktreePath)
     yield* ensureDir(branchDir(root, worktreePath))
@@ -269,6 +270,10 @@ const makeStore = (root: string): Shape => {
     })
   })
 
+  return { submit, inbox }
+}
+
+const stateOps = (root: string) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
     const path = statePath(root, worktreePath)
     const raw = yield* readOptional(path)
@@ -290,6 +295,12 @@ const makeStore = (root: string): Shape => {
     })
   })
 
+  return { state, saveState }
+}
+
+const makeStore = (root: string): Shape => {
+  const { submit, inbox } = inboxOps(root)
+  const { state, saveState } = stateOps(root)
   const cursors = cursorOps(state, saveState, inbox)
   return {
     root,

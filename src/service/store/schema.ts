@@ -64,7 +64,7 @@ export const StoredLayers = Schema.Struct({
   version: Schema.Int,
   head: Schema.String,
   base: Schema.String,
-  parent: Schema.UndefinedOr(Schema.Int),
+  parent: Schema.optionalKey(Schema.UndefinedOr(Schema.Int)),
   written: Schema.String,
   summary: Schema.String,
   layers: Schema.Array(StoredLayer),
