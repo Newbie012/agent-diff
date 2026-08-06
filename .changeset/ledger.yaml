@@ -162,6 +162,10 @@
   dir: ""
   intents:
     - olive-moons-report
+"@eliya-oss/agent-diff@0.1.0-alpha.39":
+  dir: ""
+  intents:
+    - upgrade-in-place
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
