@@ -190,7 +190,8 @@ export const catalog: ReadonlyArray<CommandSpec> = [
         name: "json",
         required: true,
         value: "file|-",
-        about: "The layers document, as a file path or - to read stdin",
+        about:
+          "The document, as a file path or - to read stdin: {\"summary\":\"…\",\"layers\":[{\"title\":\"…\",\"note\":\"…\",\"spans\":[{\"path\":\"…\",\"start\":1,\"end\":9}]}]}. A layer may carry blocks instead of spans, interleaving {\"kind\":\"prose\",\"markdown\":\"…\"} with {\"kind\":\"code\",\"path\":\"…\",\"start\":1,\"end\":9}",
       },
     ],
     dataKey: "layers",

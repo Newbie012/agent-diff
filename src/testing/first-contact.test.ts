@@ -97,3 +97,22 @@ describe("pointing a command at something that is not a worktree", () => {
     expect(suggestion).not.toContain("layers set")
   })
 })
+
+describe("publishing a reading order without being told its shape", () => {
+  it("carries the document's shape in the command's own description", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    const result = await driver.app.runDescribe("layers set")
+
+    // ASSERT
+    const spec = (result.envelope as {
+      commands: ReadonlyArray<{ options: ReadonlyArray<{ name: string; about: string }> }>
+    }).commands[0]
+    const json = spec?.options.find((option) => option.name === "json")?.about ?? ""
+    expect(json).toContain("summary")
+    expect(json).toContain("layers")
+    expect(json).toContain("spans")
+  })
+})
