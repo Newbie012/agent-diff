@@ -17,6 +17,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      pending: ${{ steps.plan.outputs.pending }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -165,8 +168,113 @@ jobs:
           fi
           echo "::notice::latest now points at $VERSION."
 
+  announce:
+    needs: release
+    if: needs.release.outputs.pending == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - name: open the release for its binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "::notice::The release for v$VERSION is already open."
+            exit 0
+          fi
+          gh release create "v$VERSION" \
+            --verify-tag \
+            --prerelease \
+            --title "v$VERSION" \
+            --notes "Install with \`brew install Newbie012/tap/adiff\`, or \`npm i -g @eliya-oss/agent-diff@alpha\` if you would rather run it on Node. The binaries below need no runtime at all."
+
+  binaries:
+    needs: [release, announce]
+    if: needs.release.outputs.pending == 'true'
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            target: bun-darwin-arm64
+            asset: adiff-darwin-arm64
+          - runner: macos-15-intel
+            target: bun-darwin-x64
+            asset: adiff-darwin-x64
+          - runner: ubuntu-latest
+            target: bun-linux-x64
+            asset: adiff-linux-x64
+          - runner: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            asset: adiff-linux-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - run: npm install -g --allow-scripts=pnpm pnpm@12.0.0-beta.3
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: compile for ${{ matrix.target }}
+        env:
+          TARGET: ${{ matrix.target }}
+          ASSET: ${{ matrix.asset }}
+        run: bun build --compile --target="$TARGET" src/main.ts --outfile "$ASSET"
+
+      - name: check it answers
+        env:
+          ASSET: ${{ matrix.asset }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          REPORTED=$(env -i "PATH=/usr/bin:/bin" "./$ASSET" --version)
+          if [ "$REPORTED" != "$VERSION" ]; then
+            echo "::error::The $ASSET binary reports $REPORTED where the release is $VERSION."
+            exit 1
+          fi
+          env -i "PATH=/usr/bin:/bin" "./$ASSET" describe | node -e '
+            const answer = JSON.parse(require("fs").readFileSync(0, "utf8"))
+            if (answer.ok !== true) { throw new Error("describe did not answer ok") }
+          '
+          echo "::notice::$ASSET reports $VERSION and answers describe with no runtime on PATH."
+
+      - name: attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.release.outputs.version }}
+          ASSET: ${{ matrix.asset }}
+        run: gh release upload "v$VERSION" "$ASSET" --clobber
+
+  formula:
+    needs: [release, binaries]
+    if: ${{ !cancelled() && needs.release.outputs.pending == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
       - name: check for the tap token
-        if: steps.plan.outputs.pending == 'true'
         id: tap
         env:
           TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
@@ -178,24 +286,32 @@ jobs:
             echo "::notice::Add a TAP_TOKEN secret to have this workflow update the Homebrew formula on every release."
           fi
 
-      - name: update the homebrew formula
-        if: steps.plan.outputs.pending == 'true' && steps.tap.outputs.configured == 'true'
+      - name: point the formula at the binaries
+        if: steps.tap.outputs.configured == 'true'
         env:
           TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-          URL: ${{ steps.tarball.outputs.url }}
+          VERSION: ${{ needs.release.outputs.version }}
         run: |
-          curl -fsSL "$URL" -o "$RUNNER_TEMP/package.tgz"
-          SHA=$(sha256sum "$RUNNER_TEMP/package.tgz" | cut -d ' ' -f 1)
+          BASE="https://github.com/${{ github.repository }}/releases/download/v$VERSION"
+          fetch() {
+            if ! curl -fsSL "$1" -o "$2"; then
+              echo "::error::$1 is not on the release, so the formula is left pointing at the version it already builds. Rerun the binary job for v$VERSION, then rerun this one."
+              exit 1
+            fi
+          }
+
+          fetch "$BASE/adiff-darwin-arm64" "$RUNNER_TEMP/arm"
+          fetch "$BASE/adiff-darwin-x64" "$RUNNER_TEMP/intel"
 
           TAP="$RUNNER_TEMP/tap"
           git clone --depth 1 "https://x-access-token:$TAP_TOKEN@github.com/Newbie012/homebrew-tap.git" "$TAP"
 
-          FORMULA="$TAP/Formula/adiff.rb"
-          sed -i -E "s#^  url \".*\"#  url \"$URL\"#" "$FORMULA"
-          sed -i -E "s#^  sha256 \".*\"#  sha256 \"$SHA\"#" "$FORMULA"
-          grep -qF "$URL" "$FORMULA"
-          grep -qF "$SHA" "$FORMULA"
+          VERSION="$VERSION" \
+          ARM_URL="$BASE/adiff-darwin-arm64" \
+          ARM_SHA="$(sha256sum "$RUNNER_TEMP/arm" | cut -d ' ' -f 1)" \
+          INTEL_URL="$BASE/adiff-darwin-x64" \
+          INTEL_SHA="$(sha256sum "$RUNNER_TEMP/intel" | cut -d ' ' -f 1)" \
+          node scripts/formula.ts "$TAP/Formula/adiff.rb"
 
           git -C "$TAP" config user.name "github-actions[bot]"
           git -C "$TAP" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -205,4 +321,4 @@ jobs:
           fi
           git -C "$TAP" commit -am "adiff $VERSION"
           git -C "$TAP" push
-          echo "::notice::The Homebrew formula now builds $VERSION."
+          echo "::notice::The Homebrew formula now installs the $VERSION binaries."
