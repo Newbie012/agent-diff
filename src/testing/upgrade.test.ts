@@ -1,6 +1,6 @@
 import { createServer, type Server } from "node:http"
 import { describe, expect, it } from "@effect/vitest"
-import { routeOf, sayUpgrade } from "../cli/index.ts"
+import { routeOf } from "../cli/index.ts"
 import { TestDriver } from "./index.ts"
 
 type Registry = { readonly url: string; readonly stop: () => Promise<void> }
@@ -52,15 +52,16 @@ describe("knowing how adiff was installed", () => {
   })
 })
 
-describe("what adiff upgrade tells the person who ran it", () => {
-  it("says it is up to date, in a sentence, and prints no JSON", async () => {
+describe("what adiff upgrade does for the person who ran it", () => {
+  it("says it is up to date, in one line, and runs nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
     const registry = await served({ alpha: manifest.default.version })
+    const install = await driver.app.installedBy("npm")
 
     // ACT
-    const result = await driver.app.run(["upgrade"], { ADIFF_REGISTRY: registry.url })
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
     await registry.stop()
 
     // ASSERT
@@ -69,7 +70,57 @@ describe("what adiff upgrade tells the person who ran it", () => {
     expect(result.envelope).toBeUndefined()
   })
 
-  it("names the newer build and the command that fetches it", async () => {
+  it("upgrades, shows the installer working, and ends on the version now installed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("npm")
+
+    // ACT
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
+    await registry.stop()
+
+    // ASSERT
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain("npm i -g @eliya-oss/agent-diff@alpha")
+    expect(result.stdout).toContain("npm ran with i -g @eliya-oss/agent-diff@alpha")
+    expect(result.stdout.trim().split("\n").at(-1)).toBe("adiff 9.9.9 is installed now.")
+  })
+
+  it("says the upgrade did not work, instead of claiming it did, and exits 1", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("npm", { fails: true })
+
+    // ACT
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
+    await registry.stop()
+
+    // ASSERT
+    expect(result.code).toBe(1)
+    expect(result.stdout).toContain("did not work")
+    expect(result.stdout).not.toContain("is installed now")
+  })
+
+  it("explains a binary it cannot rewrite while it runs, and upgrades nothing", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("binary")
+
+    // ACT
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
+    await registry.stop()
+
+    // ASSERT
+    expect(result.code).toBe(1)
+    expect(result.stdout).toContain("cannot rewrite itself")
+    expect(result.stdout).toContain("curl")
+    expect(result.stdout).not.toContain("ran with")
+  })
+
+  it("will not pull a checkout for you, and says what to run instead", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await served({ alpha: "9.9.9" })
@@ -79,90 +130,118 @@ describe("what adiff upgrade tells the person who ran it", () => {
     await registry.stop()
 
     // ASSERT
-    expect(result.stdout).toContain("9.9.9 is out")
+    expect(result.code).toBe(1)
+    expect(result.stdout).toContain("checkout")
     expect(result.stdout).toContain("git")
-    expect(result.envelope).toBeUndefined()
   })
 
-  it("says the registry never answered rather than guessing", async () => {
+  it("upgrades even when the registry never answered, since that is what was asked for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
+    const install = await driver.app.installedBy("bun")
 
     // ACT
-    const result = await driver.app.run(["upgrade"], { ADIFF_REGISTRY: NOWHERE })
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: NOWHERE })
 
     // ASSERT
     expect(result.code).toBe(0)
     expect(result.stdout).toContain("The registry did not answer")
-    expect(result.stdout).not.toContain("9.9.9")
+    expect(result.stdout).toContain("bun ran with add -g")
+    expect(result.stdout).toContain("adiff --version")
   })
 
-  it("tells you it will not upgrade a checkout for you, and what to run", async () => {
+  it("still takes --run, which asked for what now happens anyway", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("brew")
 
     // ACT
-    const result = await driver.app.run(["upgrade", "--run"], { ADIFF_REGISTRY: registry.url })
+    const result = await driver.app.run(["upgrade", "--run"], {
+      ...install,
+      ADIFF_REGISTRY: registry.url,
+    })
     await registry.stop()
 
     // ASSERT
     expect(result.code).toBe(0)
-    expect(result.stdout).toContain("will not run this one for you")
-    expect(result.stdout).toContain("git")
+    expect(result.stdout).toContain("brew ran with upgrade Newbie012/tap/adiff")
+    expect(result.stdout).toContain("adiff 9.9.9 is installed now.")
   })
+})
 
-  it("says what it ran and what the next adiff will be", () => {
+describe("adiff upgrade --check", () => {
+  it("names the newer build and the command, and runs nothing", async () => {
     // ARRANGE
-    const done = {
-      route: "npm",
-      version: "1.0.0",
-      checked: true,
-      latest: "1.1.0",
-      current: false,
-      command: "npm i -g pkg@alpha",
-      ran: true,
-      note: "",
-    } as const
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("npm")
 
     // ACT
-    const said = sayUpgrade(done, true)
+    const result = await driver.app.run(["upgrade", "--check"], {
+      ...install,
+      ADIFF_REGISTRY: registry.url,
+    })
+    await registry.stop()
 
     // ASSERT
-    expect(said).toContain("Ran `npm i -g pkg@alpha`")
-    expect(said).toContain("the next adiff you run will be 1.1.0")
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain("9.9.9 is out")
+    expect(result.stdout).toContain("npm i -g @eliya-oss/agent-diff@alpha")
+    expect(result.stdout).toContain("Run `adiff upgrade`")
+    expect(result.stdout).not.toContain("ran with")
   })
 
-  it("says the upgrade it ran did not work, instead of claiming it did", () => {
+  it("exits 0 on a route adiff cannot upgrade, because the report is the answer", async () => {
     // ARRANGE
-    const failed = {
-      route: "npm",
-      version: "1.0.0",
-      checked: true,
-      latest: "1.1.0",
-      current: false,
-      command: "npm i -g pkg@alpha",
-      ran: false,
-      note: "",
-    } as const
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("binary")
 
     // ACT
-    const said = sayUpgrade(failed, true)
+    const result = await driver.app.run(["upgrade", "--check"], {
+      ...install,
+      ADIFF_REGISTRY: registry.url,
+    })
+    await registry.stop()
 
     // ASSERT
-    expect(said).toContain("did not work")
-    expect(said).toContain("npm i -g pkg@alpha")
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain("cannot rewrite itself")
   })
 })
 
 describe("adiff upgrade --json", () => {
+  it("upgrades and keeps the installer's output off stdout", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("npm")
+
+    // ACT
+    const result = await driver.app.run(["upgrade", "--json"], {
+      ...install,
+      ADIFF_REGISTRY: registry.url,
+    })
+    await registry.stop()
+
+    // ASSERT
+    expect(result.code).toBe(0)
+    expect(result.stdout).not.toContain("ran with")
+    const { upgrade } = result.envelope as { upgrade: Record<string, unknown> }
+    expect(upgrade).toMatchObject({ route: "npm", latest: "9.9.9", current: false, ran: true })
+    expect(String(upgrade["note"])).toContain("adiff 9.9.9 is installed now.")
+  })
+
   it("names the route it found and the one command that updates it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await served({ alpha: "9.9.9" })
 
     // ACT
-    const result = await driver.app.run(["upgrade", "--json"], { ADIFF_REGISTRY: registry.url })
+    const result = await driver.app.run(["upgrade", "--json", "--check"], {
+      ADIFF_REGISTRY: registry.url,
+    })
     await registry.stop()
 
     // ASSERT
@@ -222,7 +301,7 @@ describe("adiff upgrade --json", () => {
     await using driver = await TestDriver.create()
 
     // ACT
-    const result = await driver.app.run(["upgrade", "--json", "--fields", "route"], {
+    const result = await driver.app.run(["upgrade", "--json", "--check", "--fields", "route"], {
       ADIFF_REGISTRY: NOWHERE,
     })
 
@@ -230,32 +309,19 @@ describe("adiff upgrade --json", () => {
     expect(result.envelope).toEqual({ ok: true, upgrade: { route: "source" } })
   })
 
-  it("leaves the upgrade to the person by default, naming the command it did not run", async () => {
+  it("keeps the envelope contract when nothing was upgraded, and still exits 0", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
 
     // ACT
-    const result = await driver.app.run(["upgrade", "--json"], { ADIFF_REGISTRY: NOWHERE })
-
-    // ASSERT
-    const { upgrade } = result.envelope as { upgrade: { ran: boolean; command: string } }
-    expect(upgrade.ran).toBe(false)
-    expect(upgrade.command).toContain("git")
-  })
-
-  it("refuses to run a checkout's upgrade for you, and says so instead of pretending", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-
-    // ACT
-    const result = await driver.app.run(["upgrade", "--json", "--run"], {
-      ADIFF_REGISTRY: NOWHERE,
-    })
+    const result = await driver.app.run(["upgrade", "--json"], { ADIFF_REGISTRY: registry.url })
+    await registry.stop()
 
     // ASSERT
     expect(result.code).toBe(0)
     const { upgrade } = result.envelope as { upgrade: { ran: boolean; note: string } }
     expect(upgrade.ran).toBe(false)
-    expect(upgrade.note).toContain("will not run this one for you")
+    expect(upgrade.note).toContain("checkout")
   })
 })

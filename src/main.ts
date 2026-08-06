@@ -11,6 +11,7 @@ import {
   failure,
   fieldsOf,
   findCommand,
+  findUpgrade,
   initRepository,
   openPane,
   listBranches,
@@ -27,7 +28,9 @@ import {
   removeComment,
   repoOf,
   restoreComment,
-  sayUpgrade,
+  runUpgrade,
+  sayDone,
+  sayFound,
   settleThread,
   setLayers,
   showLayers,
@@ -39,7 +42,8 @@ import {
   toggleVouch,
   worktreeOf,
   UnknownCommand,
-  upgradeAdiff,
+  upgradeReport,
+  willUpgrade,
   type Options,
 } from "./cli/index.ts"
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
@@ -228,11 +232,22 @@ const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
   yield* answer(options, { opened: report.opened, pane: report.pane, command: report.command })
 })
 
+const say = (line: string): Effect.Effect<void> =>
+  Effect.sync(() => process.stdout.write(line))
+
 const upgrade = Effect.fn("Main.upgrade")(function* (options: Options) {
-  const run = options["run"] !== undefined
-  const report = yield* upgradeAdiff(run)
-  if (options["json"] !== undefined) return yield* answer(options, { upgrade: report })
-  return yield* Effect.sync(() => process.stdout.write(`${sayUpgrade(report, run)}\n`))
+  const check = options["check"] !== undefined
+  const quiet = options["json"] !== undefined
+  const found = yield* findUpgrade
+  const upgrading = willUpgrade(found, check)
+  if (!quiet) yield* say(`${sayFound(found, check)}\n${upgrading ? "\n" : ""}`)
+  const ran = upgrading ? yield* runUpgrade(found, quiet) : false
+  if (quiet) return yield* answer(options, { upgrade: upgradeReport(found, ran, check) })
+  if (upgrading) yield* say(`\n${sayDone(found, ran)}\n`)
+  const settled = check || found.current === true || ran
+  return yield* Effect.sync(() => {
+    if (!settled) process.exitCode = 1
+  })
 })
 
 const describe = Effect.fn("Main.describe")(function* (options: Options) {
