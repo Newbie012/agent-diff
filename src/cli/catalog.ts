@@ -215,6 +215,15 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: "adiff review open --repo .",
   },
   {
+    name: "review pane",
+    about:
+      "Open the review beside the conversation, in whichever multiplexer is running. Answers with the command when none is",
+    safety: "read",
+    options: [repo],
+    dataKey: "pane",
+    example: "adiff review pane --repo .",
+  },
+  {
     name: "init",
     about:
       "Write the review loop into this repository's agent instructions, so an agent finds it unprompted",

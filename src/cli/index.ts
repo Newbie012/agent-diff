@@ -17,6 +17,7 @@ export {
   toggleVouch,
 } from "./commands.ts"
 export { initRepository } from "./init.ts"
+export { openPane } from "./pane.ts"
 export type { Change, InitReport } from "./init.ts"
 export { searchBranch } from "./search.ts"
 export type { Match } from "./search.ts"

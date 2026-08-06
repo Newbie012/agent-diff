@@ -61,8 +61,11 @@ export class AppTestDriver {
     this.state = state
   }
 
-  async run(args: ReadonlyArray<string>): Promise<CliResult> {
-    const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot }
+  async run(
+    args: ReadonlyArray<string>,
+    extra: Readonly<Record<string, string>> = {},
+  ): Promise<CliResult> {
+    const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot, ...extra }
     try {
       const { stdout, stderr } = await exec(process.execPath, [...NODE_FLAGS, ENTRY, ...args], { env, encoding: "utf8" })
       return { code: 0, stdout, stderr, envelope: parse(stdout) }
@@ -185,6 +188,10 @@ export class AppTestDriver {
 
   runSubmit(branch: string): Promise<CliResult> {
     return this.run(["review", "submit", "--repo", this.state.repo, "--branch", branch])
+  }
+
+  runPane(options: { readonly env?: Readonly<Record<string, string>> } = {}): Promise<CliResult> {
+    return this.run(["review", "pane", "--repo", this.state.repo], options.env ?? {})
   }
 
   runInit(options: { readonly write?: boolean; readonly skill?: boolean } = {}): Promise<CliResult> {
