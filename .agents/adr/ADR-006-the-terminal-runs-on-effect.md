@@ -3,7 +3,8 @@
 - **Status:** `done`
 - **Date:** 2026-08-05
 - **ADRs:** completes [ADR-002](ADR-002-effect-v4-and-module-boundaries.md), follows
-  [ADR-005](ADR-005-a-mechanical-style-contract.md)
+  [ADR-005](ADR-005-a-mechanical-style-contract.md), extended by
+  [ADR-007](ADR-007-model-with-effect-not-only-run-on-it.md)
 - **PRDs:** [PRD 003](../prd/003-review-terminal.md)
 
 ## Context
