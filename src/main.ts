@@ -5,6 +5,7 @@ import { Cause, Effect, Layer } from "effect"
 import {
   answerComment,
   awaitComments,
+  branchAt,
   catalog,
   commandNames,
   failure,
@@ -15,10 +16,13 @@ import {
   listBranches,
   listThreads,
   MalformedLayers,
+  MissingOption,
   narrow,
+  nearestCommand,
   numeric,
   optionsFrom,
   required,
+  verbsUnder,
   reviewProgress,
   removeComment,
   restoreComment,
@@ -37,7 +41,7 @@ import {
   upgradeAdiff,
   type Options,
 } from "./cli/index.ts"
-import { banner, help, helpFor, version } from "./cli/help.ts"
+import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
 import { storeAt, defaultRoot } from "./service/store/index.ts"
@@ -84,7 +88,7 @@ const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
       ? yield* awaitComments(worktree, Date.now() + wait * WAIT_UNIT)
       : yield* takeComments(worktree)
   const hint = comments.length === 0 ? { hint: NOTHING_WAITING } : {}
-  yield* answer(options, { comments, ...hint })
+  yield* answer(options, { comments, branch: yield* branchAt(worktree), ...hint })
 })
 
 const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Options) {
@@ -271,7 +275,16 @@ const routes = {
   describe,
 } as const
 
-const run = Effect.fn("Main.run")(function* (name: string, options: Options) {
+const unknown = (name: string): UnknownCommand => {
+  const verbs = verbsUnder(name)
+  if (verbs.length > 0) return new UnknownCommand({ name, known: commandNames, verbs })
+  const didYouMean = nearestCommand(name)
+  return didYouMean === undefined
+    ? new UnknownCommand({ name, known: commandNames })
+    : new UnknownCommand({ name, known: commandNames, didYouMean })
+}
+
+const dispatch = Effect.fn("Main.dispatch")(function* (name: string, options: Options) {
   const route = Object.hasOwn(routes, name) ? routes[name as keyof typeof routes] : undefined
   if (route !== undefined) return yield* route(options)
   if (name === "file vouch") return yield* fileVouch(options)
@@ -279,13 +292,31 @@ const run = Effect.fn("Main.run")(function* (name: string, options: Options) {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
     return yield* runTui(yield* required(options, "repo"), process.env["ADIFF_SESSION"])
   }
-  return yield* new UnknownCommand({ name, known: commandNames })
+  return yield* unknown(name)
 })
 
+const wanting = (name: string) => (error: MissingOption) => {
+  const command = findCommand(name)
+  return command === undefined
+    ? Effect.fail(error)
+    : Effect.fail(
+        new MissingOption({ option: error.option, command: command.name, usage: usageOf(command) }),
+      )
+}
+
+const run = (name: string, options: Options) =>
+  dispatch(name, options).pipe(Effect.catchTag("MissingOption", wanting(name)))
+
+const leading = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const stop = argv.findIndex((token) => token.startsWith("-"))
+  return stop === -1 ? argv : argv.slice(0, stop)
+}
+
 const nameOf = (argv: ReadonlyArray<string>): string => {
-  const words = argv.filter((token) => !token.startsWith("--"))
+  const words = leading(argv)
   const pair = words.slice(0, 2).join(" ")
-  return findCommand(pair) === undefined ? (words[0] ?? "") : pair
+  if (findCommand(pair) !== undefined) return pair
+  return words.length > 1 ? pair : (words[0] ?? "")
 }
 
 const argv = process.argv.slice(2)
@@ -297,13 +328,20 @@ const ASKS: Readonly<Record<string, () => string>> = {
   "-h": help,
 }
 
-const spoken = (words: ReadonlyArray<string>): string | undefined => {
+const about = (words: ReadonlyArray<string>): string => {
+  const noun = words[0] ?? ""
+  return helpFor(words.slice(0, 2).join(" ")) ?? helpUnder(noun) ?? help()
+}
+
+const spoken = (given: ReadonlyArray<string>): string | undefined => {
+  const words = leading(given)
+  if (words.length === 0) {
+    const asked = ASKS[given[0] ?? ""]
+    return asked === undefined ? banner() : asked()
+  }
   const [first, ...rest] = words
-  if (first === undefined) return banner()
-  const asked = ASKS[first]
-  if (asked !== undefined) return asked()
-  if (first !== "help") return undefined
-  return rest.length === 0 ? help() : (helpFor(rest.join(" ")) ?? help())
+  if (first === "help") return rest.length === 0 ? help() : about(rest)
+  return given.some((token) => token === "--help" || token === "-h") ? about(words) : undefined
 }
 
 const said = spoken(argv)

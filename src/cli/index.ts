@@ -1,5 +1,6 @@
 export {
   awaitComments,
+  branchAt,
   fileSource,
   listBranches,
   listPatches,
@@ -28,7 +29,7 @@ export type { LayersReport, ReportedLayer } from "./layers.ts"
 export { answerComment, listThreads, removeComment, restoreComment, settleThread } from "./threads.ts"
 export type { Thread, ThreadAnswer } from "./threads.ts"
 export { numeric, optionsFrom, required } from "./parse.ts"
-export { catalog, commandNames, findCommand } from "./catalog.ts"
+export { catalog, commandNames, findCommand, nearestCommand, verbsUnder } from "./catalog.ts"
 export { failure, fieldsOf, narrow } from "./report.ts"
 export type { CommandSpec, OptionSpec } from "./catalog.ts"
 export { EmptyReview, InitUnwritable, MalformedLayers, MissingOption, NoLayers, UnknownBranch, UnknownComment, UnknownCommand, UnknownFile, UnknownWorktree, UnselectableRange } from "./error.ts"

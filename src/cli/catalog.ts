@@ -8,6 +8,7 @@ export type OptionSpec = {
 export type CommandSpec = {
   readonly name: string
   readonly about: string
+  readonly group: string
   readonly safety: "read" | "write"
   readonly options: ReadonlyArray<OptionSpec>
   readonly dataKey: string
@@ -38,6 +39,7 @@ const file: OptionSpec = {
 export const catalog: ReadonlyArray<CommandSpec> = [
   {
     name: "branch list",
+    group: "Read a branch",
     about: "Branches with changes against their merge base, and how large each is",
     safety: "read",
     options: [repo],
@@ -46,6 +48,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment add",
+    group: "Write comments",
     about: "File a comment against a line range, for the agent in that worktree",
     safety: "write",
     options: [
@@ -67,6 +70,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment stage",
+    group: "Write comments",
     about: "Add a comment to the review without sending it yet",
     safety: "write",
     options: [
@@ -88,6 +92,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment edit",
+    group: "Write comments",
     about: "Reword a staged comment. It keeps its id and the lines it was written against",
     safety: "write",
     options: [
@@ -101,6 +106,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment drop",
+    group: "Write comments",
     about: "Take a staged comment out of the review before it is sent",
     safety: "write",
     options: [
@@ -113,6 +119,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment take",
+    group: "Answer comments, in the worktree",
     about: "Collect the comments this worktree has not been handed yet. Exactly-once",
     safety: "write",
     options: [
@@ -129,6 +136,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment answer",
+    group: "Answer comments, in the worktree",
     about: "Say what was done about a comment, or ask the reviewer something back",
     safety: "write",
     options: [
@@ -142,6 +150,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment threads",
+    group: "Follow up",
     about: "Every comment on a branch with its answers and whether it is settled",
     safety: "read",
     options: [repo, branch],
@@ -150,6 +159,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment resolve",
+    group: "Follow up",
     about: "Mark a comment settled. Only the reviewer who raised it can",
     safety: "write",
     options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to settle" }],
@@ -158,6 +168,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment remove",
+    group: "Follow up",
     about: "Take a comment out of the review. It stays in the record as removed",
     safety: "write",
     options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to remove" }],
@@ -166,6 +177,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment restore",
+    group: "Follow up",
     about: "Put a removed comment back into the review",
     safety: "write",
     options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to restore" }],
@@ -174,6 +186,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "file vouch",
+    group: "Read a branch",
     about: "Toggle a file as reviewed. Lapses on its own when the file changes",
     safety: "write",
     options: [repo, branch, file],
@@ -182,6 +195,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "review submit",
+    group: "Write comments",
     about: "Send every staged comment as one review, so the agent wakes once",
     safety: "write",
     options: [repo, branch],
@@ -190,6 +204,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "review progress",
+    group: "Read a branch",
     about: "Which files of a branch are still vouched, and how many there are",
     safety: "read",
     options: [repo, branch],
@@ -198,6 +213,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "layers set",
+    group: "Answer comments, in the worktree",
     about: "Write the reading order for this worktree's diff: ordered layers over spans of files",
     safety: "write",
     options: [
@@ -215,6 +231,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "layers show",
+    group: "Answer comments, in the worktree",
     about: "The layers of a worktree, with the hunks no layer claims",
     safety: "read",
     options: [
@@ -225,6 +242,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "review open",
+    group: "Read a branch",
     about: "Open the review terminal. The only command that does not answer in JSON",
     safety: "read",
     options: [repo],
@@ -233,6 +251,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "review pane",
+    group: "Read a branch",
     about:
       "Open the review beside the conversation, in whichever multiplexer is running. Answers with the command when none is",
     safety: "read",
@@ -242,6 +261,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "init",
+    group: "Set up",
     about:
       "Write the review loop into this repository's agent instructions, so an agent finds it unprompted",
     safety: "write",
@@ -265,6 +285,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "upgrade",
+    group: "Set up",
     about:
       "Say whether a newer adiff is out and name the one command that installs it. Answers a person in plain text, and a caller in JSON with --json",
     safety: "read",
@@ -288,6 +309,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "describe",
+    group: "Set up",
     about: "This catalog, as JSON",
     safety: "read",
     options: [
@@ -302,3 +324,36 @@ export const commandNames: ReadonlyArray<string> = catalog.map((command) => comm
 
 export const findCommand = (name: string): CommandSpec | undefined =>
   catalog.find((command) => command.name === name)
+
+export const nouns: ReadonlyArray<string> = [
+  ...new Set(catalog.flatMap((command) => command.name.split(" ").slice(0, -1))),
+]
+
+export const verbsUnder = (noun: string): ReadonlyArray<string> =>
+  commandNames.filter((name) => name.startsWith(`${noun} `))
+
+export const groups: ReadonlyArray<string> = [...new Set(catalog.map((command) => command.group))]
+
+const NEAR = 3
+
+const distance = (left: string, right: string): number => {
+  const previous = Array.from({ length: right.length + 1 }, (_, at) => at)
+  for (let row = 1; row <= left.length; row += 1) {
+    let corner = previous[0] ?? 0
+    previous[0] = row
+    for (let column = 1; column <= right.length; column += 1) {
+      const kept = previous[column] ?? 0
+      const cost = left[row - 1] === right[column - 1] ? 0 : 1
+      previous[column] = Math.min(kept + 1, (previous[column - 1] ?? 0) + 1, corner + cost)
+      corner = kept
+    }
+  }
+  return previous[right.length] ?? 0
+}
+
+export const nearestCommand = (name: string): string | undefined => {
+  const scored = commandNames
+    .map((known) => ({ known, gap: distance(name, known) }))
+    .toSorted((left, right) => left.gap - right.gap)[0]
+  return scored !== undefined && scored.gap <= NEAR ? scored.known : undefined
+}

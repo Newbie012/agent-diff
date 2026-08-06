@@ -9,12 +9,12 @@ type Advice = { readonly exit: number; readonly suggestion: string; readonly ret
 const ADVICE: Readonly<Record<string, Advice>> = {
   UnknownCommand: {
     exit: USAGE,
-    suggestion: "Run `adiff describe` for the commands this build exposes.",
+    suggestion: "Run `adiff --help` for the commands this build exposes, or `adiff describe` for the same as JSON.",
     retriable: false,
   },
   MissingOption: {
     exit: USAGE,
-    suggestion: "Run `adiff describe --command <name>` for the options it requires.",
+    suggestion: "Run `adiff <command> --help` for the options it requires.",
     retriable: false,
   },
   UnknownBranch: {
@@ -94,6 +94,26 @@ export const fieldsOf = (options: Options): ReadonlyArray<string> => {
 export const narrow = (value: unknown, fields: ReadonlyArray<string>): unknown =>
   fields.length === 0 ? value : project(value, fields)
 
+const sharpen = (
+  tag: string,
+  detail: Readonly<Record<string, unknown>>,
+  fallback: string,
+): string => {
+  const meant = detail["didYouMean"]
+  const named = detail["name"]
+  const command = detail["command"]
+  if (tag === "UnknownCommand" && typeof meant === "string") {
+    return `Run \`adiff ${meant} --help\` for what it needs, or \`adiff --help\` for every command.`
+  }
+  if (tag === "UnknownCommand" && Array.isArray(detail["verbs"]) && typeof named === "string") {
+    return `\`${named}\` needs a verb after it. Run \`adiff ${named} --help\` for the ones it has.`
+  }
+  if (tag === "MissingOption" && typeof command === "string") {
+    return `Run \`adiff ${command} --help\` for what it needs.`
+  }
+  return fallback
+}
+
 export const failure = (cause: unknown): { readonly line: string; readonly exit: number } => {
   const tag = tagOf(cause)
   const advice = ADVICE[tag] ?? FALLBACK
@@ -102,7 +122,12 @@ export const failure = (cause: unknown): { readonly line: string; readonly exit:
   return {
     line: JSON.stringify({
       ok: false,
-      error: { ...detail, type: tag, retriable: advice.retriable, suggestion: advice.suggestion },
+      error: {
+        ...detail,
+        type: tag,
+        retriable: advice.retriable,
+        suggestion: sharpen(tag, detail, advice.suggestion),
+      },
     }),
     exit: advice.exit,
   }

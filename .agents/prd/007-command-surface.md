@@ -134,11 +134,40 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
   `layers set`, `layers show`, `comment answer` and `comment resolve`, so it explains what a
   worktree path has to be rather than naming a verb the caller did not use.
 
+- **Prose is printed when, and only when, help was asked for.** `adiff` with no arguments,
+  `--help`, `-h`, `help <command>`, and `--help` anywhere after a command name print prose on
+  stdout and exit `0`. Every other invocation answers in the envelope, whoever is watching. The
+  surface never inspects whether a terminal is attached, because output that changes shape under a
+  pipe cannot be tested and breaks a caller that redirects.
+- **`--help` works at every level.** `adiff <command> --help` prints that command's own page: what
+  it does, a usage line with every option and which are required, the shared `--fields`, its
+  example, and the key its answer sits under. `adiff <noun> --help` lists that noun's verbs. The
+  flag is accepted in any position, so it works on a command line the caller was already typing.
+- **The top-level list is grouped by the part of the loop each command belongs to**, not
+  alphabetically and not by noun. A person reading it is looking for the next thing to do, and a
+  flat list of twenty-one verbs does not answer that.
+- **Every command carries a `group` in the catalog.** An agent handed a flat list has to infer a
+  sequence from it, which a list cannot carry. The group names the phase, so `describe` conveys the
+  same shape the human help does at a cost of one short string per command.
+- **An unknown command names the nearest thing it knows.** The envelope keeps `known` for callers
+  that enumerate, and adds `didYouMean` when the name given is one small edit from a real one. When
+  the name is a noun that exists, the envelope carries that noun's `verbs` instead. In both cases
+  the suggestion names the `--help` that would have answered, rather than pointing at `describe`.
+- **A missing option names the command that wanted it.** `MissingOption` carries `command` and its
+  `usage` line, and suggests `adiff <command> --help`. The tag alone said which option was missing
+  but not what the caller should have typed.
+- **`comment take` reports the branch it collected for.** An agent that has just taken comments
+  wants `comment threads` next, which is addressed by `--repo` and `--branch` while `comment take`
+  is addressed by `--worktree`. Reporting the branch lets the next command be built from the
+  previous answer instead of from `git rev-parse`.
+
 ### Deferred decisions
 
 | Decision | Trigger |
 | --- | --- |
 | A `--json`/`--human` split on the rest of the surface | Someone reading raw envelopes for a command an agent also calls. It landed on `upgrade` alone, where the reader is always a person |
+| `--worktree` accepted wherever `--repo --branch` is | Reporting the branch on `comment take` proving not to be enough |
+| Renaming `comment threads` to `comment list` | A rename worth breaking a published catalog for |
 | Submitting several comments in one command | A reviewer batching a review offline |
 | `--format ndjson` for streaming large answers | A branch whose answer is too large to buffer |
 | `--cursor`/`--limit` pagination | The same |

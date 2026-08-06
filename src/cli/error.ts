@@ -24,10 +24,14 @@ export class UnselectableRange extends Data.TaggedError("UnselectableRange")<{
 export class UnknownCommand extends Data.TaggedError("UnknownCommand")<{
   readonly name: string
   readonly known: ReadonlyArray<string>
+  readonly didYouMean?: string
+  readonly verbs?: ReadonlyArray<string>
 }> {}
 
 export class MissingOption extends Data.TaggedError("MissingOption")<{
   readonly option: string
+  readonly command?: string
+  readonly usage?: string
 }> {}
 
 export class EmptyReview extends Data.TaggedError("EmptyReview")<{

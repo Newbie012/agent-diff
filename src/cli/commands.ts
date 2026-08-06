@@ -373,6 +373,12 @@ export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: s
   return flatten(yield* store.take(resolved))
 })
 
+export const branchAt = Effect.fn("Cli.branchAt")(function* (worktree: string) {
+  const store = yield* Store
+  const resolved = yield* Effect.promise(() => realpath(worktree))
+  return yield* store.branchAt(resolved)
+})
+
 export const awaitComments = (
   worktree: string,
   deadline: number,
