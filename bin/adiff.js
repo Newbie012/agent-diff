@@ -33,8 +33,9 @@ const drawsTerminal = (argv) => {
 }
 
 const rendersHere = () =>
-  typeof process.getBuiltinModule === "function" &&
-  process.getBuiltinModule("node:ffi") !== undefined
+  process.versions.bun !== undefined ||
+  (typeof process.getBuiltinModule === "function" &&
+    process.getBuiltinModule("node:ffi") !== undefined)
 
 const NODE_DIRECTORY = /^(?:v?\d|node)/
 
