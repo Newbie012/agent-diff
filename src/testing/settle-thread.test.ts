@@ -42,8 +42,10 @@ describe("settling a thread from the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)
+    expect(await driver.screen.getFrame()).not.toContain("d settle")
 
     // ACT
+    await driver.screen.pressKeys(["j"])
     await driver.screen.pressKeys(["j"])
 
     // ASSERT
