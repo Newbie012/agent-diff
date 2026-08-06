@@ -38,12 +38,13 @@ describe("settling a thread from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("settled")
   })
 
-  it("offers the key in the footer", async () => {
+  it("offers the key once the cursor reaches the thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
+    await openOnThread(driver)
 
     // ACT
-    await openOnThread(driver)
+    await driver.screen.pressKeys(["j"])
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("d settle")
