@@ -315,7 +315,6 @@ export const commands: ReadonlyArray<Command> = [
     category: "Review",
     keys: ["X"],
     screens: ["review"],
-    hint: "remove",
   }),
   command({
     action: "rail.toggle",

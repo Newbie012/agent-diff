@@ -22,6 +22,8 @@ describe("using adiff without reading its documentation", () => {
       "comment answer",
       "comment threads",
       "comment resolve",
+      "comment remove",
+      "comment restore",
       "file vouch",
       "review submit",
       "review progress",
