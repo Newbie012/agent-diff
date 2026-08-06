@@ -191,6 +191,10 @@
   dir: ""
   intents:
     - deep-paths-stay-readable
+"@eliya-oss/agent-diff@0.1.0-alpha.45":
+  dir: ""
+  intents:
+    - tall-panels-read-wide
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
