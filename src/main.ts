@@ -36,7 +36,6 @@ import {
 import { banner, help, helpFor, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
-import { runTui } from "./tui/index.ts"
 import { storeAt, defaultRoot } from "./service/store/index.ts"
 
 const WAIT_UNIT = 1000
@@ -244,6 +243,7 @@ const run = Effect.fn("Main.run")(function* (name: string, options: Options) {
   if (route !== undefined) return yield* route(options)
   if (name === "file vouch") return yield* fileVouch(options)
   if (name === "review open") {
+    const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
     return yield* runTui(yield* required(options, "repo"), process.env["ADIFF_SESSION"])
   }
   return yield* new UnknownCommand({ name, known: commandNames })
