@@ -16,6 +16,16 @@ const oneFile = {
 const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
   frame.split("\n").filter((line) => line.includes(text))
 
+const answer =
+  "Held the send behind the same token check, so a resend cannot outlive the invitation it belongs to."
+
+const spoken = (frame: string): string =>
+  frame
+    .split("\n")
+    .map((row) => row.replace(/^[^│]*│/, "").replace(/[│┃]/g, " "))
+    .join(" ")
+    .replace(/\s+/g, " ")
+
 describe("an answered thread in a narrow terminal", () => {
   it("wraps the answer inside the pane", async () => {
     // ARRANGE
@@ -35,7 +45,7 @@ describe("an answered thread in a narrow terminal", () => {
     await driver.app.runAnswer({
       worktree: branch.worktree,
       id: handed?.id ?? "",
-      body: "Held the send behind the same token check, so a resend cannot outlive the invitation it belongs to.",
+      body: answer,
     })
     await driver.screen.open({ width: 80, height: 30 })
     await driver.screen.pressKeys(["RETURN"])
@@ -44,7 +54,7 @@ describe("an answered thread in a narrow terminal", () => {
     const frame = await driver.screen.getFrame()
     const width = frame.split("\n")[0]?.length ?? 0
     expect(rowsWith(frame, "Held the send")).toHaveLength(1)
-    expect(frame).toContain("outlive the invitation")
+    expect(spoken(frame)).toContain(answer)
     for (const row of frame.split("\n")) expect(row.length).toBeLessThanOrEqual(width)
   })
 })

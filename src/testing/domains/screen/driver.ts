@@ -22,6 +22,7 @@ const PUMP_MS = 4
 const PUMP_ATTEMPTS = 250
 const REST_PASSES = 4
 const HIGHLIGHT_LINES = 40
+const LAYOUT_ATTEMPTS = 30
 
 type Span = { readonly fg: Channels; readonly bg: Channels }
 
@@ -33,6 +34,7 @@ const HEIGHT = 32
 export type OpenOptions = {
   readonly width?: number
   readonly height?: number
+  readonly repo?: string
 }
 
 export class ScreenTestDriver {
@@ -63,7 +65,7 @@ export class ScreenTestDriver {
     this.scope = scope
     const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
     this.app = await Effect.runPromise(
-      launch(this.state.repo, setup.renderer, NOTICE_MS, this.state.sessionPath).pipe(
+      launch(options.repo ?? this.state.repo, setup.renderer, NOTICE_MS, this.state.sessionPath).pipe(
         Effect.provideContext(context),
       ),
     )
@@ -265,6 +267,19 @@ export class ScreenTestDriver {
     return rows()
   }
 
+  private async settleLayout(): Promise<void> {
+    const setup = this.active()
+    const laid = (): boolean => {
+      const pane = setup.renderer.root.findDescendantById("diff-pane")
+      if (pane !== undefined && !pane.visible) return true
+      const found = setup.renderer.root.findDescendantById("diff-code")
+      return !(found instanceof CodeRenderable) || found.width > 0
+    }
+    await this.pump(laid, LAYOUT_ATTEMPTS)
+    await setup.flush()
+    await setup.flush()
+  }
+
   private async settleHighlighting(): Promise<void> {
     const setup = this.active()
     const code = (): CodeRenderable | undefined => {
@@ -331,6 +346,7 @@ export class ScreenTestDriver {
 
   async getFrame(): Promise<string> {
     const setup = this.active()
+    await this.settleLayout()
     await setup.waitForVisualIdle()
     this.guard()
     return setup.captureCharFrame()
