@@ -138,6 +138,10 @@
   dir: ""
   intents:
     - mean-dodos-begin
+"@eliya-oss/agent-diff@0.1.0-alpha.33":
+  dir: ""
+  intents:
+    - good-sheep-invent
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
