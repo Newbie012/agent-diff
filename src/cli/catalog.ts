@@ -264,6 +264,23 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: "adiff init --repo . --write",
   },
   {
+    name: "upgrade",
+    about:
+      "Work out how adiff was installed and name the one command that updates it. Prints, does not run",
+    safety: "read",
+    options: [
+      {
+        name: "run",
+        required: false,
+        value: "flag",
+        about:
+          "Run the command instead of printing it. Ignored for a downloaded binary or a checkout, which adiff will not rewrite under itself",
+      },
+    ],
+    dataKey: "upgrade",
+    example: "adiff upgrade --fields route,command",
+  },
+  {
     name: "describe",
     about: "This catalog, as JSON",
     safety: "read",

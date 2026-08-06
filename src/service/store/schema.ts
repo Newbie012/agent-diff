@@ -44,6 +44,13 @@ export const Settings = Schema.Struct({
   wrap: Schema.optionalKey(Schema.Boolean),
 })
 
+export const UpgradeCheck = Schema.Struct({
+  note: Schema.optionalKey(Schema.String),
+  checkedAt: Schema.optionalKey(Schema.String),
+  latest: Schema.optionalKey(Schema.String),
+  told: Schema.optionalKey(Schema.String),
+})
+
 const Prose = Schema.Struct({
   kind: Schema.Literal("prose"),
   markdown: Schema.String,

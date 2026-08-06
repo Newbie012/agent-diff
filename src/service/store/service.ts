@@ -10,6 +10,7 @@ import {
   type StoredComment,
   type Settings,
   type StoredLayers,
+  type UpgradeCheck,
 } from "./model.ts"
 import * as Wire from "./schema.ts"
 import {
@@ -22,6 +23,7 @@ import {
   settingsPath,
   statePath,
   layersPath,
+  upgradePath,
 } from "./paths.ts"
 
 type Shape = {
@@ -48,6 +50,8 @@ type Shape = {
   readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
   readonly settings: Effect.Effect<Settings, StoreUnreadable>
   readonly saveSettings: (next: Settings) => Effect.Effect<void, StoreUnwritable>
+  readonly upgradeCheck: Effect.Effect<UpgradeCheck, StoreUnreadable>
+  readonly saveUpgradeCheck: (next: UpgradeCheck) => Effect.Effect<void, StoreUnwritable>
   readonly layers: (
     worktreePath: string,
   ) => Effect.Effect<Option.Option<StoredLayers>, StoreUnreadable>
@@ -98,6 +102,7 @@ const decoded = <A, I>(schema: Schema.Codec<A, I>) => {
 }
 
 const asSettings = decoded(Wire.Settings)
+const asUpgradeCheck = decoded(Wire.UpgradeCheck)
 const asBatch = decoded(Wire.Batch)
 const asAnswer = decoded(Wire.StoredAnswer)
 const asState = decoded(Wire.BranchState)
@@ -118,6 +123,11 @@ const readLines = <A>(
 const parseSettings = Effect.fn("Store.parseSettings")(function* (path: string, raw: string) {
   const value = yield* jsonOf(path, raw)
   return yield* asSettings(path, value)
+})
+
+const parseUpgradeCheck = Effect.fn("Store.parseUpgradeCheck")(function* (path: string, raw: string) {
+  const value = yield* jsonOf(path, raw)
+  return yield* asUpgradeCheck(path, value)
 })
 
 const parseState = Effect.fn("Store.parseState")(function* (path: string, raw: string) {
@@ -194,6 +204,28 @@ const settingsOps = (root: string) => {
   })
 
   return { settings, saveSettings }
+}
+
+const upgradeOps = (root: string) => {
+  const upgradeCheck = Effect.gen(function* () {
+    const path = upgradePath(root)
+    const raw = yield* readOptional(path)
+    return yield* Option.match(raw, {
+      onNone: (): Effect.Effect<UpgradeCheck, StoreUnreadable> => Effect.succeed({}),
+      onSome: (text) => parseUpgradeCheck(path, text),
+    })
+  }).pipe(Effect.withSpan("Store.upgradeCheck"))
+
+  const saveUpgradeCheck = Effect.fn("Store.saveUpgradeCheck")(function* (next: UpgradeCheck) {
+    const path = upgradePath(root)
+    yield* ensureDir(root)
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+  })
+
+  return { upgradeCheck, saveUpgradeCheck }
 }
 
 const reportOps = (root: string) =>
@@ -338,6 +370,7 @@ const makeStore = (root: string): Shape => {
     saveState,
     saveReport: reportOps(root),
     ...settingsOps(root),
+    ...upgradeOps(root),
     ...answerOps(root),
     ...layersOps(root),
     ...cursors,
