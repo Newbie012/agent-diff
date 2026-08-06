@@ -33,6 +33,10 @@ export class BranchTestDriver {
     return found.trim()
   }
 
+  async switchTo(branch: CreatedBranch, name: string): Promise<void> {
+    await this.state.git(branch.worktree, ["checkout", "-q", "-b", name])
+  }
+
   async commitAll(branch: CreatedBranch, message: string): Promise<void> {
     await this.state.git(branch.worktree, ["add", "-A"])
     await this.state.git(branch.worktree, ["commit", "-q", "-m", message])

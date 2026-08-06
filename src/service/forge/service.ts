@@ -11,6 +11,7 @@ export type Pull = {
 
 export type Shape = {
   readonly pulls: (repo: string) => Effect.Effect<ReadonlyArray<Pull>, ForgeUnavailable>
+  readonly openPull: (repo: string, branch: string) => Effect.Effect<void, ForgeUnavailable>
 }
 
 export class Forge extends Context.Service<Forge, Shape>()("adiff/Forge") {}
@@ -47,6 +48,19 @@ const ask = (repo: string): Effect.Effect<string, ForgeUnavailable> =>
     )
   })
 
+const show = (repo: string, branch: string): Effect.Effect<void, ForgeUnavailable> =>
+  Effect.callback<void, ForgeUnavailable>((resume) => {
+    execFile(
+      "gh",
+      ["pr", "view", branch, "--web"],
+      { cwd: repo, timeout: TIMEOUT_MS, encoding: "utf8" },
+      (error) => {
+        if (error === null) return resume(Effect.void)
+        resume(Effect.fail(new ForgeUnavailable({ repo, reason: error.message })))
+      },
+    )
+  })
+
 const read = Effect.fn("Forge.read")(function* (repo: string, raw: string) {
   const parsed = yield* Effect.try({
     try: () => JSON.parse(raw) as unknown,
@@ -64,4 +78,8 @@ const pulls = Effect.fn("Forge.pulls")(function* (repo: string) {
   return yield* read(repo, raw)
 })
 
-export const ForgeLive: Layer.Layer<Forge> = Layer.succeed(Forge)({ pulls })
+const openPull = Effect.fn("Forge.openPull")(function* (repo: string, branch: string) {
+  yield* show(repo, branch)
+})
+
+export const ForgeLive: Layer.Layer<Forge> = Layer.succeed(Forge)({ pulls, openPull })

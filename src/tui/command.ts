@@ -6,6 +6,7 @@ export type Action =
   | "branch.next"
   | "branch.prev"
   | "branch.open"
+  | "branch.pull"
   | "cursor.next"
   | "cursor.top"
   | "cursor.bottom"
@@ -69,6 +70,7 @@ export type Command = {
   readonly whenStaged: boolean
   readonly counted: boolean
   readonly whenLayers: boolean
+  readonly whenThread: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -78,6 +80,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenStaged: false,
   counted: false,
   whenLayers: false,
+  whenThread: false,
   ...input,
 })
 
@@ -104,6 +107,14 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["return"],
     screens: ["branches"],
     hint: "review",
+  }),
+  command({
+    action: "branch.pull",
+    title: "Open the pull request in a browser",
+    category: "Branches",
+    keys: ["p"],
+    screens: ["branches"],
+    hint: "pull request",
   }),
   command({
     action: "cursor.next",
@@ -308,6 +319,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["d"],
     screens: ["review"],
     hint: "settle",
+    whenThread: true,
   }),
   command({
     action: "thread.remove",
@@ -530,11 +542,13 @@ export const hintsFor = (
   screen: Screen,
   staged: number,
   layers = 0,
+  onThread = false,
 ): ReadonlyArray<{ key: string; hint: string; press: string }> =>
   commandsFor(screen)
     .filter((entry) => entry.hint.length > 0)
     .filter((entry) => !entry.whenStaged || staged > 0)
     .filter((entry) => !entry.whenLayers || layers > 0)
+    .filter((entry) => !entry.whenThread || onThread)
     .map((entry) => ({
       key: displayKey(entry.keys[0] ?? ""),
       hint: entry.counted ? `${entry.hint} ${staged}` : entry.hint,

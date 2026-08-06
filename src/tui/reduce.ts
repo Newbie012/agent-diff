@@ -253,6 +253,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "branch.next": (state) => moveBranch(state, 1),
   "branch.prev": (state) => moveBranch(state, -1),
   "branch.open": (state) => state,
+  "branch.pull": (state) => state,
   "cursor.next": (state) => layerDown(state, 1),
   "cursor.top": (state) => atRow(state, 0),
   "cursor.bottom": (state) => atRow(state, lastRow(selectedPatch(state))),

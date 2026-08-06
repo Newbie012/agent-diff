@@ -1,4 +1,5 @@
 import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises"
+import { join } from "node:path"
 import { Context, Effect, Layer, Option, Schema } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
 import {
@@ -206,10 +207,30 @@ const reportOps = (root: string) =>
     return path
   })
 
+const HEAD_REF = /^ref:\s*refs\/heads\/(.+)$/
+
+const headOf = (worktreePath: string): Promise<string> =>
+  readFile(join(worktreePath, ".git"), "utf8")
+    .then((raw) => {
+      const linked = raw.match(/^gitdir:\s*(.+)$/m)
+      return linked?.[1] === undefined ? join(worktreePath, ".git") : linked[1].trim()
+    })
+    .catch(() => join(worktreePath, ".git"))
+    .then((dir) => readFile(join(dir, "HEAD"), "utf8"))
+    .then((raw) => {
+      const named = raw.trim().match(HEAD_REF)
+      return named?.[1] === undefined ? raw.trim() : named[1]
+    })
+    .catch(() => "")
+
+const keyOf = (worktreePath: string): Effect.Effect<string> =>
+  Effect.promise(() => headOf(worktreePath).then((head) => `${worktreePath}#${head}`))
+
 const answerOps = (root: string) => {
   const answer = Effect.fn("Store.answer")(function* (worktreePath: string, entry: StoredAnswer) {
-    const path = outboxPath(root, worktreePath)
-    yield* ensureDir(branchDir(root, worktreePath))
+    const key = yield* keyOf(worktreePath)
+    const path = outboxPath(root, key)
+    yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
       try: () => appendFile(path, `${JSON.stringify(entry)}\n`, "utf8"),
       catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
@@ -217,7 +238,8 @@ const answerOps = (root: string) => {
   })
 
   const answers = Effect.fn("Store.answers")(function* (worktreePath: string) {
-    const path = outboxPath(root, worktreePath)
+    const key = yield* keyOf(worktreePath)
+    const path = outboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
       onNone: (): Effect.Effect<ReadonlyArray<StoredAnswer>, StoreUnreadable> => Effect.succeed([]),
@@ -230,7 +252,8 @@ const answerOps = (root: string) => {
 
 const layersOps = (root: string) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
-    const path = layersPath(root, worktreePath)
+    const key = yield* keyOf(worktreePath)
+    const path = layersPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return Option.none<StoredLayers>()
     return Option.some(yield* parseLayers(path, raw.value))
@@ -240,8 +263,9 @@ const layersOps = (root: string) => {
     worktreePath: string,
     next: StoredLayers,
   ) {
-    const path = layersPath(root, worktreePath)
-    yield* ensureDir(branchDir(root, worktreePath))
+    const key = yield* keyOf(worktreePath)
+    const path = layersPath(root, key)
+    yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
       try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
       catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
@@ -253,8 +277,9 @@ const layersOps = (root: string) => {
 
 const inboxOps = (root: string) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
-    const path = inboxPath(root, worktreePath)
-    yield* ensureDir(branchDir(root, worktreePath))
+    const key = yield* keyOf(worktreePath)
+    const path = inboxPath(root, key)
+    yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
       try: () => appendFile(path, `${JSON.stringify(batch)}\n`, "utf8"),
       catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
@@ -262,7 +287,8 @@ const inboxOps = (root: string) => {
   })
 
   const inbox = Effect.fn("Store.inbox")(function* (worktreePath: string) {
-    const path = inboxPath(root, worktreePath)
+    const key = yield* keyOf(worktreePath)
+    const path = inboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
       onNone: (): Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable> => Effect.succeed([]),
@@ -275,7 +301,8 @@ const inboxOps = (root: string) => {
 
 const stateOps = (root: string) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
-    const path = statePath(root, worktreePath)
+    const key = yield* keyOf(worktreePath)
+    const path = statePath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
       onNone: (): Effect.Effect<BranchState, StoreUnreadable> => Effect.succeed(emptyBranchState),
@@ -287,8 +314,9 @@ const stateOps = (root: string) => {
     worktreePath: string,
     next: BranchState,
   ) {
-    const path = statePath(root, worktreePath)
-    yield* ensureDir(branchDir(root, worktreePath))
+    const key = yield* keyOf(worktreePath)
+    const path = statePath(root, key)
+    yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
       try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
       catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
