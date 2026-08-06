@@ -87,6 +87,24 @@ describe("the worktree list on a wide terminal", () => {
     expect(await driver.screen.getFrame()).toContain(LONG_NAME)
   })
 
+  it("keeps both ends of a name it has to cut, so two worktrees stay two rows", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ ...oneFile, name: "rework-the-invitation-scheduler-rewrite" })
+    await driver.branch.create({ ...oneFile, name: "rework-the-invitation-scheduler-tests" })
+
+    // ACT
+    await driver.screen.open({ width: 80, height: 24 })
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    const rows = frame.split("\n").filter((line) => line.includes("rework-the-"))
+    expect(rows).toHaveLength(2)
+    expect(rows[0]?.trim()).not.toEqual(rows[1]?.trim())
+    expect(frame).toContain("rewrite")
+    expect(frame).toContain("tests")
+  })
+
   it("keeps the row inside an eighty column terminal", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

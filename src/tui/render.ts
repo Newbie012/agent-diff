@@ -584,7 +584,7 @@ const stateCell = (state: TuiState, branch: TuiState["branches"][number]): strin
 
 const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
   lead: `${here ? marks().cursor : " "} `,
-  name: clip(branch.branch, room).padEnd(room),
+  name: clipMiddle(branch.branch, room).padEnd(room),
   files: `${branch.files}`.padStart(5),
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),

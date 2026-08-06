@@ -161,7 +161,9 @@ Three screens, and the keys each answers to:
   it has now, because the room being spent there is already the room that exists.
 - **The worktree list widens with the terminal too.** The name of a branch is what a reader picks a
   worktree by, so a wide screen spends its extra columns on the name rather than on margin, and a
-  name only loses its front where the screen genuinely cannot hold it.
+  name is cut only where the screen genuinely cannot hold it. Where it is cut it keeps both ends,
+  for the reason a file name does: branches are named in families, and two worktrees whose names
+  begin with the same words read as one row when only the beginning survives.
 - **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
   than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
   a reviewer can always read back what they have typed.
@@ -241,6 +243,8 @@ Behaviors that must be covered:
 - A long command title is read whole on a wide terminal, the sheet of keys lists more of them on a
   tall one, and a long worktree name is read whole on a wide one, while an eighty column terminal
   still draws each of them inside its width.
+- Two worktrees whose names begin with the same words are two different rows on a terminal too
+  narrow to hold either name whole.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
