@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
-import type { DriverState } from "../../state.ts"
+import { series, type DriverState } from "../../state.ts"
 
 const exec = promisify(execFile)
 
@@ -120,6 +120,23 @@ export class AppTestDriver {
     const path = join(bin, "gh")
     await writeFile(path, `${script}\n`, { mode: 0o755 })
     process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+  }
+
+  async installedBy(
+    route: string,
+    options: { readonly fails?: boolean } = {},
+  ): Promise<Record<string, string>> {
+    const bin = join(this.state.workspace, "installers")
+    await mkdir(bin, { recursive: true })
+    const script = [
+      "#!/bin/sh",
+      'echo "$(basename "$0") ran with $*"',
+      options.fails === true ? "exit 1" : "exit 0",
+    ].join("\n")
+    await series(["brew", "npm", "bun"], (tool) =>
+      writeFile(join(bin, tool), `${script}\n`, { mode: 0o755 }),
+    )
+    return { ADIFF_UPGRADE_ROUTE: route, PATH: `${bin}:${process.env["PATH"] ?? ""}` }
   }
 
   async setForgeSilent(): Promise<void> {

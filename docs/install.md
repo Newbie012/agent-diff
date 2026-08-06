@@ -47,16 +47,23 @@ worked on, which is the quickest way to see it without a review of your own.
 adiff upgrade
 ```
 
-It works out how this copy was installed by looking at where the running executable and its own
-module sit — a Homebrew Cellar, a global npm or bun prefix, a compiled binary somewhere else, or a
-checkout — and prints the one command that updates that install. It asks the registry for the
-newest version with a two and a half second timeout, and answers `checked: false` rather than
-failing when it cannot reach it.
+That upgrades. It works out how this copy was installed by looking at where the running executable
+and its own module sit, a Homebrew Cellar, a global npm or bun prefix, a compiled binary somewhere
+else, or a checkout, and it runs the command that replaces that install. It says which command it is
+running before it runs it, leaves the package manager's own output on screen, and ends by naming the
+version you now have. It asks the registry for the newest version with a two and a half second
+timeout, and says it could not tell rather than failing when it cannot reach it.
 
-It prints rather than runs, because a tool that rewrites itself mid-run is a worse default than a
-line you can read first. `adiff upgrade --run` runs it for the Homebrew, npm and bun routes. It
-will not run the binary or checkout routes at all: a running executable cannot replace itself in
-place, and adiff has no business pulling your checkout.
+Two routes it cannot do for you. A downloaded binary cannot rewrite itself while it is running, and
+a checkout is not adiff's to pull. Both print why and the command that does it, and exit `1`, since
+you asked to be upgraded and you were not.
+
+```bash
+adiff upgrade --check
+```
+
+reports the same finding and runs nothing. `--run` is still accepted and does nothing, because it
+named what now happens by default.
 
 ### The hint
 
@@ -74,4 +81,5 @@ export ADIFF_NO_UPGRADE_CHECK=1
 ```
 
 turns off both the check and the hint. `ADIFF_REGISTRY` points the check at a different dist-tags
-endpoint.
+endpoint, and `ADIFF_UPGRADE_ROUTE` names the install adiff should believe it has, one of `brew`,
+`npm`, `bun`, `binary` or `source`, for when detection guesses wrong.

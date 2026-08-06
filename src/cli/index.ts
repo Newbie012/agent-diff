@@ -21,8 +21,18 @@ export {
 } from "./commands.ts"
 export { initRepository } from "./init.ts"
 export { openPane } from "./pane.ts"
-export { askLatest, newer, routeOf, sayUpgrade, upgradeAdiff } from "./upgrade.ts"
-export type { Route, UpgradeReport } from "./upgrade.ts"
+export {
+  askLatest,
+  findUpgrade,
+  newer,
+  routeOf,
+  runUpgrade,
+  sayDone,
+  sayFound,
+  upgradeReport,
+  willUpgrade,
+} from "./upgrade.ts"
+export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
 export type { Change, InitReport } from "./init.ts"
 export { searchBranch } from "./search.ts"
 export type { Match } from "./search.ts"

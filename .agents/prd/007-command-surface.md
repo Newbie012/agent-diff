@@ -69,7 +69,7 @@ takes either.
 | `review open` | `--repo` | opens the terminal |
 | `review pane` | `--repo` | `{ok, opened, pane, command}` |
 | `init` | `--repo [--write] [--skill]` | `{ok, wrote, changes}` |
-| `upgrade` | `[--run] [--json]` | plain text, or `{ok, upgrade}` |
+| `upgrade` | `[--check] [--json]` | plain text, or `{ok, upgrade}` |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 
 - **Success is `{"ok":true, …}` on stdout, exit 0.** One line, no indentation. The caller pays for
@@ -131,19 +131,47 @@ takes either.
   confused caller lands, so that answer names the two things it does not yet know: `--wait` blocks
   until a comment arrives, and `comment answer` sends a reply back. The field appears only when the
   array is empty, so a caller with comments pays nothing for it.
+- **`upgrade` upgrades.** It is an imperative, and a person who types it has already decided. So it
+  works out how this copy was installed and runs the command that replaces it, for the routes it
+  can run: Homebrew, npm and bun. Handing back the command they meant to run, and mentioning that a
+  second flag would have run it, is a worse answer than doing the thing.
+- **`--check` asks instead of telling.** It reports the same finding, names the command, and runs
+  nothing. `upgrade` reads as an instruction and `upgrade --check` reads as a question, which is the
+  distinction the two behaviors actually have.
+- **`--run` is still accepted, and does nothing.** It named the behavior that is now the default, so
+  a script or a skill that still passes it keeps working. It is not in the catalog, because
+  `describe` must not offer a flag for what already happens.
 - **`upgrade` answers a person, because a person is who runs it.** Every other verb exists to be
   called; `upgrade` exists to be typed, and its answer is about the installation rather than about
-  the repository. So it prints prose on stdout and exits 0, and `--json` gives the envelope for a
-  caller that wants `route`, `current` or `latest` as data. The flag name collides with `layers set
+  the repository. So it prints prose on stdout, and `--json` gives the envelope for a caller that
+  wants `route`, `current`, `latest` or `ran` as data. The flag name collides with `layers set
   --json <file>`, which names a document rather than a format; the collision is worth the
   conventional name, since a caller reads the options out of `describe` rather than guessing them.
-- **Whatever it prints, the first line says what happened.** Already the newest build; a newer
-  build is out and this is its version; the command was run and this is what the next adiff will
-  be; the command was run and failed; the registry never answered. Advice about how upgrading works
-  comes after that, never instead of it. The same sentence is the `note` field in the envelope.
-- **A refused or failed `--run` is not a failure of the command.** It answers `ran: false` with the
-  command in the same reply, the way `review pane` answers `opened: false`, so a caller needs no
-  second code path and a person has the command to paste.
+  `--json` changes the shape of the answer and nothing else: `upgrade --json` upgrades, and a caller
+  that only wants to know pairs it with `--check`.
+- **Whatever it prints, the first line says what happened.** Already the newest build; a newer build
+  is out and this is its version; the registry never answered. Advice about how upgrading works
+  comes after that, never instead of it. The same sentence opens the `note` field in the envelope.
+- **The already-current answer is one line, and runs nothing.** There is nothing to do, so there is
+  nothing to say beyond which build is installed.
+- **It says what it is about to run before it runs it, and shows the package manager working.** The
+  command is on its own line, and the installer's own output is left alone rather than swallowed, so
+  a person watching a slow install can see it is alive. `--json` runs it silently, because a caller
+  parses stdout.
+- **The last line is what happened, not what to do next.** After a successful upgrade it names the
+  version now installed, which is what a person who just upgraded wants to know. When the registry
+  never answered, adiff does not know that version and says so instead of guessing.
+- **A route adiff cannot perform explains rather than pretends.** A downloaded binary cannot rewrite
+  itself while it is running, and a checkout is not adiff's to pull. Both print why, and the command
+  that does it. Doing nothing is the right outcome; sounding like it upgraded is not.
+- **An upgrade that was asked for and did not happen exits `1`.** A refusal, a failure, and a
+  registry that never answered on a route adiff cannot run all leave the person on the version they
+  started on, and `adiff upgrade && …` should see that. Already current exits `0`, because nothing
+  needed doing, and `--check` always exits `0`, because a report that was produced is a success.
+- **The envelope keeps the surface contract, whatever the exit code says.** `--json` answers
+  `{"ok":true, …}` and exits `0` even when nothing was upgraded, carrying `ran: false` the way
+  `review pane` carries `opened: false`. The exit code is for the shell a person typed into; a
+  caller branches on the field it already parses.
 - **A suggestion names the command the caller ran.** An error raised by several commands cannot
   name one of them, so its suggestion describes the correction instead. `UnknownWorktree` reaches
   `layers set`, `layers show`, `comment answer` and `comment resolve`, so it explains what a
@@ -222,11 +250,17 @@ Behaviors that must be covered:
 - A failure leaves stdout empty.
 - `--fields` returns the named fields and nothing else.
 - `describe` lists every command with its options and required flags.
+- `upgrade` on a runnable route runs the install command and ends by naming the version installed.
+- `upgrade` on a route adiff cannot run explains why, runs nothing, and exits `1`.
+- `upgrade --check` on the same install prints the command and runs nothing.
+- `upgrade` on a current install prints one line and runs nothing.
+- `upgrade --run` behaves exactly as `upgrade` does.
 
 ## Out of Scope
 
 - Shell completion.
-- Configuration files. Options are explicit; the store root is the one environment variable.
+- Configuration files. Options are explicit, and the environment only says where the store and the
+  registry are.
 - Any output format other than the JSON envelope.
 
 ## Further Notes
