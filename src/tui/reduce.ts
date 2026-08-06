@@ -402,7 +402,9 @@ export const withLayers = (
 export const withPulls = (
   state: TuiState,
   pulls: Readonly<Record<string, string>>,
-): TuiState => ({ ...state, pulls })
+): TuiState => ({ ...state, pulls, forge: "answered" })
+
+export const withSilentForge = (state: TuiState): TuiState => ({ ...state, forge: "silent" })
 
 export const withBranches = (
   state: TuiState,

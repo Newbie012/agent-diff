@@ -122,6 +122,14 @@ export class AppTestDriver {
     process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
   }
 
+  async setForgeSilent(): Promise<void> {
+    const bin = join(this.state.workspace, "bin")
+    await mkdir(bin, { recursive: true })
+    const path = join(bin, "gh")
+    await writeFile(path, "#!/bin/sh\nexit 1\n", { mode: 0o755 })
+    process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+  }
+
   async listForgeRequests(): Promise<ReadonlyArray<string>> {
     const path = join(this.state.workspace, "bin", "asked.txt")
     const raw = await readFile(path, "utf8").catch(() => "")

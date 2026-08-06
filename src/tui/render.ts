@@ -29,6 +29,7 @@ import {
   selectedLineCount,
   snippetOf,
   reviewedCount,
+  pullHere,
   selectedBranch,
   selectedPatch,
   selectionRange,
@@ -543,6 +544,11 @@ const nameRoom = (pane: number): number =>
 const columns = (cells: Cells, room: number): string =>
   `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.layers.padStart(8)}   ${cells.state}`
 
+const FORGE_SILENT = "  could not find out which of these have a pull request"
+
+const unaskedForge = (state: TuiState): ReadonlyArray<TextChunk> =>
+  state.forge === "silent" ? [fg(palette.faint)(`\n${FORGE_SILENT}`)] : []
+
 const branchHeading = (room: number): string =>
   `  ${columns(
     { name: "WORKTREE", files: "FILES", added: "+", gone: "-", layers: "LAYERS", state: "STATE" },
@@ -582,6 +588,7 @@ const headerParts = (
   branch,
   path,
   state.patches.length === 0 ? "nothing to read" : `${state.patchIndex + 1}/${state.patches.length}`,
+  pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
   state.vouched.length === 0 ? "" : reviewedCount(state),
   state.staged === 0 ? "" : `${state.staged} staged`,
   contextLabel(state.context),
@@ -820,7 +827,12 @@ export class Screen {
 
   update(state: TuiState): void {
     this.shown = state
-    this.chips = hintsFor(state.screen, state.staged, state.layers.length, state.stop > 0)
+    this.chips = hintsFor(state.screen, {
+      staged: state.staged,
+      layers: state.layers.length,
+      onThread: state.stop > 0,
+      pull: pullHere(state).length > 0,
+    })
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
@@ -1050,7 +1062,7 @@ export class Screen {
         fg(palette.attention)(`   ${stateCell(state, branch)}\n`),
       ]
     })
-    return new StyledText([...heading, ...rows])
+    return new StyledText([...heading, ...rows, ...unaskedForge(state)])
   }
 
   private hover(x: number): void {

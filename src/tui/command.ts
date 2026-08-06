@@ -74,7 +74,15 @@ export type Command = {
   readonly counted: boolean
   readonly whenLayers: boolean
   readonly whenThread: boolean
+  readonly whenPull: boolean
   readonly rank: number
+}
+
+export type Offered = {
+  readonly staged: number
+  readonly layers: number
+  readonly onThread: boolean
+  readonly pull: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -85,6 +93,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   counted: false,
   whenLayers: false,
   whenThread: false,
+  whenPull: false,
   rank: 0,
   ...input,
 })
@@ -122,6 +131,18 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["p"],
     screens: ["branches"],
     hint: "pull request",
+    whenPull: true,
+    rank: 4,
+  }),
+  command({
+    action: "branch.pull",
+    title: "Open the pull request in a browser",
+    category: "Review",
+    keys: ["p"],
+    screens: ["review"],
+    hint: "pull request",
+    whenPull: true,
+    rank: 5,
   }),
   command({
     action: "cursor.next",
@@ -591,18 +612,17 @@ export const displayKey = (key: string): string => {
 
 export const hintsFor = (
   screen: Screen,
-  staged: number,
-  layers = 0,
-  onThread = false,
+  offered: Offered,
 ): ReadonlyArray<{ key: string; hint: string; press: string }> =>
   commandsFor(screen)
     .filter((entry) => entry.hint.length > 0)
-    .filter((entry) => !entry.whenStaged || staged > 0)
-    .filter((entry) => !entry.whenLayers || layers > 0)
-    .filter((entry) => !entry.whenThread || onThread)
+    .filter((entry) => !entry.whenStaged || offered.staged > 0)
+    .filter((entry) => !entry.whenLayers || offered.layers > 0)
+    .filter((entry) => !entry.whenThread || offered.onThread)
+    .filter((entry) => !entry.whenPull || offered.pull)
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
       key: displayKey(entry.keys[0] ?? ""),
-      hint: entry.counted ? `${entry.hint} ${staged}` : entry.hint,
+      hint: entry.counted ? `${entry.hint} ${offered.staged}` : entry.hint,
       press: entry.keys[0] ?? "",
     }))

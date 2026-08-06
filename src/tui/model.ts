@@ -35,6 +35,8 @@ export type Screen =
   | "search"
   | "keys"
 
+export type ForgeAnswer = "asking" | "answered" | "silent"
+
 export type TuiState = {
   readonly screen: Screen
   readonly branches: ReadonlyArray<BranchSummary>
@@ -72,6 +74,7 @@ export type TuiState = {
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
   readonly pulls: Readonly<Record<string, string>>
+  readonly forge: ForgeAnswer
   readonly layerIndex: number
   readonly openLayers: ReadonlyArray<number>
   readonly rail: "tree" | "layers"
@@ -117,6 +120,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   layers: [],
   layersStale: false,
   pulls: {},
+  forge: "asking",
   layerIndex: 0,
   openLayers: [],
   term: "",
@@ -280,6 +284,12 @@ export const selectedBranch = (state: TuiState): BranchSummary | undefined =>
   state.branches[state.branchIndex]
 
 export const selectedPatch = (state: TuiState): Patch | undefined => shownOf(state)?.patch
+
+export const pullHere = (state: TuiState): string =>
+  state.pulls[selectedBranch(state)?.branch ?? ""] ?? ""
+
+export const knownToHaveNoPull = (state: TuiState): boolean =>
+  state.forge === "answered" && pullHere(state).length === 0
 
 export const treeOf = (state: TuiState): Tree =>
   buildTree(state.patches.map((patch) => patch.path))

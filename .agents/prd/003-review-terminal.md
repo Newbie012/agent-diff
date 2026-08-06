@@ -236,13 +236,21 @@ test that fails when an unrelated pane grows, which is a false report, not a cau
 
 The worktree list reads whether a branch has a pull request and shows its state beside what is
 waiting: open, draft, merged or closed. A merged pull request means the review happened elsewhere,
-a draft means the work is not ready for a reviewer.
+a draft means the work is not ready for a reviewer. The review screen says the same word in its
+header, so a reviewer inside a diff knows the branch has one without going back to the list.
 
 - **The list draws before the answer arrives.** The state is fetched once for the whole list, after
   the screen is on, and fills in when it lands. Nothing waits on the network.
-- **Silence when nothing can answer.** No `gh`, not signed in, offline, or a remote that is not
-  GitHub leaves the column empty. adiff never reports the failure, because a reviewer did not ask
-  for it.
+- **`p` opens the pull request from both screens the reviewer reads on**, the worktree list and the
+  review, in a browser. It is one of the keys the footer names on each, because a key that has to
+  be searched for in the palette before it is known is a key a reviewer does not have.
+- **The footer names the key where there is a pull request to open.** A branch the forge answered
+  for with nothing, and a forge that answered nothing at all, both leave the row without `p`, so it
+  never advertises a keystroke that can only refuse. The key stays bound and stays in the sheet
+  under `?`, so a reviewer who knows it can still press it and be told what happened.
+- **What adiff cannot tell, it says.** No `gh`, not signed in, offline, or a remote that is not
+  GitHub is a different fact from a branch that has no pull request, and an empty column reads as
+  the second one. The worktree list says once, under the table, that it could not find out.
 
 ## Out of Scope
 
