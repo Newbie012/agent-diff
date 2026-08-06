@@ -12,21 +12,24 @@ describe("asking a command what it does", () => {
     // ASSERT
     expect(result.code).toBe(0)
     expect(result.stdout.startsWith("{")).toBe(false)
-    expect(result.stdout).toContain("adiff comment take --worktree <path>")
+    expect(result.stdout).toContain("adiff comment take (--worktree <path> | --repo <path> --branch <name>)")
     expect(result.stdout).toContain("--wait <seconds>")
-    expect(result.stdout).toContain("required")
+    expect(result.stdout).toContain("Naming the review is required")
   })
 
-  it("shows the example and the fields flag a caller shares with every command", async () => {
+  it("shows the example, the fields flag, and which of its own options are required", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
     // ACT
-    const result = await driver.app.run(["comment", "take", "--help"])
+    const take = await driver.app.run(["comment", "take", "--help"])
+    const reply = await driver.app.run(["comment", "answer", "--help"])
 
     // ASSERT
-    expect(result.stdout).toContain("adiff comment take --worktree . --wait 300")
-    expect(result.stdout).toContain("--fields")
+    expect(take.stdout).toContain("adiff comment take --worktree . --wait 300")
+    expect(take.stdout).toContain("--fields")
+    expect(reply.stdout).toContain("--id <id>")
+    expect(reply.stdout).toContain("(required)")
   })
 
   it("answers wherever the flag lands on a line already being typed", async () => {
@@ -47,8 +50,8 @@ describe("asking a command what it does", () => {
     await using driver = await TestDriver.create()
 
     // ACT
-    const long = await driver.app.run(["file", "vouch", "--help"])
-    const short = await driver.app.run(["file", "vouch", "-h"])
+    const long = await driver.app.run(["file", "review", "--help"])
+    const short = await driver.app.run(["file", "review", "-h"])
 
     // ASSERT
     expect(short.stdout).toBe(long.stdout)
@@ -106,16 +109,16 @@ describe("getting the name slightly wrong", () => {
     await using driver = await TestDriver.create()
 
     // ACT
-    const result = await driver.app.run(["coment", "add"])
+    const result = await driver.app.run(["coment", "send"])
 
     // ASSERT
     expect(result.code).toBe(2)
     expect(result.envelope).toMatchObject({
       ok: false,
-      error: { type: "UnknownCommand", name: "coment add", didYouMean: "comment add" },
+      error: { type: "UnknownCommand", name: "coment send", didYouMean: "comment send" },
     })
     const suggestion = (result.envelope as { error: { suggestion: string } }).error.suggestion
-    expect(suggestion).toContain("adiff comment add --help")
+    expect(suggestion).toContain("adiff comment send --help")
   })
 
   it("names a noun's verbs when the noun exists but the verb is missing", async () => {

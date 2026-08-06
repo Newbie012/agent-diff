@@ -14,23 +14,22 @@ describe("using adiff without reading its documentation", () => {
     const commands = (result.envelope as { commands: ReadonlyArray<{ name: string }> }).commands
     expect(commands.map((command) => command.name)).toEqual([
       "branch list",
-      "comment add",
+      "review open",
+      "review pane",
+      "file review",
+      "review progress",
       "comment stage",
       "comment edit",
-      "comment drop",
+      "review send",
+      "comment send",
       "comment take",
       "comment answer",
-      "comment threads",
+      "layers set",
+      "layers show",
+      "comment list",
       "comment resolve",
       "comment remove",
       "comment restore",
-      "file vouch",
-      "review submit",
-      "review progress",
-      "layers set",
-      "layers show",
-      "review open",
-      "review pane",
       "init",
       "upgrade",
       "describe",
@@ -51,13 +50,14 @@ describe("using adiff without reading its documentation", () => {
         safety: "write",
         dataKey: "comments",
         options: expect.arrayContaining([
-          expect.objectContaining({ name: "worktree", required: true }),
+          expect.objectContaining({ name: "worktree", required: false }),
+          expect.objectContaining({ name: "branch", required: false }),
         ]),
       }),
     )
   })
 
-  it("names the commands it knows when asked to describe one that does not exist", async () => {
+  it("names the nearest command when asked to describe one that does not exist", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -68,7 +68,7 @@ describe("using adiff without reading its documentation", () => {
     expect(result.code).toBe(2)
     expect(result.envelope).toMatchObject({
       ok: false,
-      error: { type: "UnknownCommand", known: expect.arrayContaining(["comment add"]) },
+      error: { type: "UnknownCommand", didYouMean: "comment edit" },
     })
   })
 

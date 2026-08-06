@@ -45,16 +45,31 @@ The behavior behind each subcommand (PRDs 001–006); the runtime flags needed t
 
 Commands are noun-verb, so the nouns group and a new verb does not need a new top-level word:
 
+A review is addressed by `<review>`, which is either `--worktree <path>` or the pair
+`--repo <path> --branch <name>`. Both name the same thing, so every command that acts on a review
+takes either.
+
 | Command | Options | Answers |
 | --- | --- | --- |
 | `branch list` | `--repo` | `{ok, branches: [...]}` |
-| `comment add` | `--repo --branch --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
-| `comment take` | `--worktree [--wait <seconds>]` | `{ok, comments: [...]}` |
-| `file vouch` | `--repo --branch --file` | `{ok, vouched, total}` |
-| `review progress` | `--repo --branch` | `{ok, vouched, total}` |
-| `layers set` | `--worktree --json <file\|->` | `{ok, layers}` |
-| `layers show` | `--worktree` | `{ok, layers}` |
+| `comment send` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
+| `comment stage` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, pending}` |
+| `comment edit` | `<review> --id --body` | `{ok, pending}` |
+| `comment take` | `<review> [--wait <seconds>]` | `{ok, comments: [...], branch}` |
+| `comment answer` | `<review> --id --body [--question]` | `{ok, answered}` |
+| `comment list` | `<review>` | `{ok, comments: [...]}` |
+| `comment resolve` | `<review> --id` | `{ok, settled}` |
+| `comment remove` | `<review> --id` | `{ok, removed}` |
+| `comment restore` | `<review> --id` | `{ok, restored}` |
+| `file review` | `<review> --file` | `{ok, reviewed, total}` |
+| `review send` | `<review>` | `{ok, sent}` |
+| `review progress` | `<review>` | `{ok, reviewed, total, pending}` |
+| `layers set` | `<review> --json <file\|->` | `{ok, layers}` |
+| `layers show` | `<review>` | `{ok, layers}` |
 | `review open` | `--repo` | opens the terminal |
+| `review pane` | `--repo` | `{ok, opened, pane, command}` |
+| `init` | `--repo [--write] [--skill]` | `{ok, wrote, changes}` |
+| `upgrade` | `[--run] [--json]` | plain text, or `{ok, upgrade}` |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 
 - **Success is `{"ok":true, …}` on stdout, exit 0.** One line, no indentation. The caller pays for
@@ -84,7 +99,7 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
 | `UnknownBranch` | The branch asked for, and the branches that exist |
 | `UnknownFile` | The file asked for, and the files in the diff |
 | `UnselectableRange` | The file and the range the diff does not show |
-| `UnknownCommand` | The name that was given, and the commands that exist |
+| `UnknownCommand` | The name that was given, and the nearest name or noun's verbs |
 | `MissingOption` | The option that was required |
 
 - **`--side` defaults to `new`.** Anything other than `old` reads as `new`.
@@ -156,18 +171,38 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
 - **A missing option names the command that wanted it.** `MissingOption` carries `command` and its
   `usage` line, and suggests `adiff <command> --help`. The tag alone said which option was missing
   but not what the caller should have typed.
-- **`comment take` reports the branch it collected for.** An agent that has just taken comments
-  wants `comment threads` next, which is addressed by `--repo` and `--branch` while `comment take`
-  is addressed by `--worktree`. Reporting the branch lets the next command be built from the
-  previous answer instead of from `git rev-parse`.
+- **`comment take` reports the branch it collected for**, so an agent that has just taken comments
+  can name the review it is working on without shelling out to git.
+- **One review, two spellings.** A review is a worktree, which is checked out on a branch. A
+  reviewer at the main checkout knows the branch and not the worktree path; an agent knows the
+  worktree it is standing in and not the repository root. Both were true before, and the surface
+  answered it by splitting into two vocabularies that never met: eleven commands took
+  `--repo --branch`, four took `--worktree`, and an agent that took comments could not then list
+  them. Every command that acts on a review now accepts either form and resolves the other itself.
+  Neither is the primary; they are two ways to write the same identity.
+- **Verbs mean the same thing wherever they appear.** `comment send` sends one comment now,
+  `review send` sends the staged review as one batch. The action is the same, so the verb is the
+  same and the noun carries the difference. `comment stage` is what puts a comment in the review
+  that `review send` sends.
+- **Taking a comment out is one verb.** `comment remove` withdraws a comment whether it was staged
+  or already delivered. The two cases differ in the record kept, which is adiff's problem and not
+  the caller's, so they do not need two verbs.
+- **`comment list` reports comments, and an answer is a field on one.** A comment carries its
+  answers, whether it is settled, and whether it has gone stale. There is no separate thread noun
+  in the surface, because a thread is what a comment looks like once someone has replied.
+- **`file review` is the CLI spelling of what the terminal calls marking a file reviewed.** The
+  terminal says "Mark reviewed" and counts "3/7 reviewed", so the command says `review` and answers
+  with `reviewed`.
+- **An unknown command does not print the catalog.** The refusal carries `didYouMean` when the name
+  is a near miss, or the noun's `verbs` when the noun exists, and otherwise nothing but the
+  suggestion. Listing every command in every refusal buries the useful part, and `describe` already
+  exists for a caller that wants the whole surface.
 
 ### Deferred decisions
 
 | Decision | Trigger |
 | --- | --- |
 | A `--json`/`--human` split on the rest of the surface | Someone reading raw envelopes for a command an agent also calls. It landed on `upgrade` alone, where the reader is always a person |
-| `--worktree` accepted wherever `--repo --branch` is | Reporting the branch on `comment take` proving not to be enough |
-| Renaming `comment threads` to `comment list` | A rename worth breaking a published catalog for |
 | Submitting several comments in one command | A reviewer batching a review offline |
 | `--format ndjson` for streaming large answers | A branch whose answer is too large to buffer |
 | `--cursor`/`--limit` pagination | The same |

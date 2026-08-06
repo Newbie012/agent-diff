@@ -1,5 +1,13 @@
 import manifest from "../../package.json" with { type: "json" }
-import { catalog, findCommand, groups, verbsUnder, type CommandSpec, type OptionSpec } from "./catalog.ts"
+import {
+  addressing,
+  catalog,
+  findCommand,
+  groups,
+  verbsUnder,
+  type CommandSpec,
+  type OptionSpec,
+} from "./catalog.ts"
 
 const NAME_ROOM = 18
 const OPTION_ROOM = 24
@@ -56,8 +64,16 @@ const placeholder = (spec: OptionSpec): string =>
 const wanted = (spec: OptionSpec): string =>
   spec.required ? placeholder(spec) : `[${placeholder(spec)}]`
 
-export const usageOf = (command: CommandSpec): string =>
-  [`adiff ${command.name}`, ...command.options.map(wanted)].join(" ")
+const REVIEW = "(--worktree <path> | --repo <path> --branch <name>)"
+
+const addressed = (name: string): boolean =>
+  addressing.some((spec) => spec.name === name)
+
+export const usageOf = (command: CommandSpec): string => {
+  const own = command.options.filter((spec) => !addressed(spec.name)).map(wanted)
+  const parts = command.addresses === "review" ? [REVIEW, ...own] : own
+  return [`adiff ${command.name}`, ...parts].join(" ")
+}
 
 const FIELDS: OptionSpec = {
   name: "fields",
@@ -85,6 +101,9 @@ export const helpFor = (name: string): string | undefined => {
     "",
     "Usage",
     `  ${usageOf(command)}`,
+    ...(command.addresses === "review"
+      ? ["", "Naming the review is required: give --worktree, or --repo with --branch."]
+      : []),
     "",
     "Options",
     ...shown.map(option),

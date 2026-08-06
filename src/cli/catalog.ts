@@ -5,28 +5,47 @@ export type OptionSpec = {
   readonly about: string
 }
 
+export type Addresses = "review" | "repo" | "none"
+
 export type CommandSpec = {
   readonly name: string
   readonly about: string
   readonly group: string
+  readonly addresses: Addresses
   readonly safety: "read" | "write"
   readonly options: ReadonlyArray<OptionSpec>
   readonly dataKey: string
   readonly example: string
 }
 
+const worktreeOf: OptionSpec = {
+  name: "worktree",
+  required: false,
+  value: "path",
+  about: "The worktree under review. Give this, or --repo with --branch",
+}
+
+const repoOf: OptionSpec = {
+  name: "repo",
+  required: false,
+  value: "path",
+  about: "Repository the worktree belongs to. Give this with --branch, or give --worktree",
+}
+
+const branchOf: OptionSpec = {
+  name: "branch",
+  required: false,
+  value: "name",
+  about: "Branch to act on, as `branch list` reports it. Give this with --repo, or give --worktree",
+}
+
+export const addressing: ReadonlyArray<OptionSpec> = [worktreeOf, repoOf, branchOf]
+
 const repo: OptionSpec = {
   name: "repo",
   required: true,
   value: "path",
   about: "Repository whose worktrees are reviewed",
-}
-
-const branch: OptionSpec = {
-  name: "branch",
-  required: true,
-  value: "name",
-  about: "Branch to act on, as reported by `branch list`",
 }
 
 const file: OptionSpec = {
@@ -36,94 +55,136 @@ const file: OptionSpec = {
   about: "File path as it appears in the diff",
 }
 
+const range: ReadonlyArray<OptionSpec> = [
+  file,
+  { name: "start", required: true, value: "line", about: "First line of the range" },
+  { name: "end", required: true, value: "line", about: "Last line of the range" },
+  { name: "body", required: true, value: "text", about: "What to tell the agent" },
+  {
+    name: "side",
+    required: false,
+    value: "new|old",
+    about: "Which version the lines are on. Defaults to new",
+  },
+]
+
+const READ_A_BRANCH = "Read a branch"
+const WRITE_COMMENTS = "Write comments"
+const ANSWER_COMMENTS = "Answer comments, in the worktree"
+const FOLLOW_UP = "Follow up"
+const SET_UP = "Set up"
+
 export const catalog: ReadonlyArray<CommandSpec> = [
   {
     name: "branch list",
-    group: "Read a branch",
     about: "Branches with changes against their merge base, and how large each is",
+    group: READ_A_BRANCH,
+    addresses: "repo",
     safety: "read",
     options: [repo],
     dataKey: "branches",
     example: "adiff branch list --repo . --fields branch,files",
   },
   {
-    name: "comment add",
-    group: "Write comments",
-    about: "File a comment against a line range, for the agent in that worktree",
+    name: "review open",
+    about: "Open the review terminal. The only command that does not answer in JSON",
+    group: READ_A_BRANCH,
+    addresses: "repo",
+    safety: "read",
+    options: [repo],
+    dataKey: "",
+    example: "adiff review open --repo .",
+  },
+  {
+    name: "review pane",
+    about:
+      "Open the review beside the conversation, in whichever multiplexer is running. Answers with the command when none is",
+    group: READ_A_BRANCH,
+    addresses: "repo",
+    safety: "read",
+    options: [repo],
+    dataKey: "pane",
+    example: "adiff review pane --repo .",
+  },
+  {
+    name: "file review",
+    about: "Toggle a file as reviewed. Lapses on its own when the file changes",
+    group: READ_A_BRANCH,
+    addresses: "review",
     safety: "write",
-    options: [
-      repo,
-      branch,
-      file,
-      { name: "start", required: true, value: "line", about: "First line of the range" },
-      { name: "end", required: true, value: "line", about: "Last line of the range" },
-      { name: "body", required: true, value: "text", about: "What to tell the agent" },
-      {
-        name: "side",
-        required: false,
-        value: "new|old",
-        about: "Which version the lines are on. Defaults to new",
-      },
-    ],
-    dataKey: "batch",
-    example: 'adiff comment add --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"',
+    options: [...addressing, file],
+    dataKey: "reviewed",
+    example: "adiff file review --worktree . --file src/api.ts",
+  },
+  {
+    name: "review progress",
+    about: "Which files of a review are marked reviewed, and how many there are",
+    group: READ_A_BRANCH,
+    addresses: "review",
+    safety: "read",
+    options: [...addressing],
+    dataKey: "reviewed",
+    example: "adiff review progress --repo . --branch cdr-1",
   },
   {
     name: "comment stage",
-    group: "Write comments",
-    about: "Add a comment to the review without sending it yet",
+    about: "Put a comment in the review, to go out when `review send` sends it",
+    group: WRITE_COMMENTS,
+    addresses: "review",
     safety: "write",
-    options: [
-      repo,
-      branch,
-      file,
-      { name: "start", required: true, value: "line", about: "First line of the range" },
-      { name: "end", required: true, value: "line", about: "Last line of the range" },
-      { name: "body", required: true, value: "text", about: "What to tell the agent" },
-      {
-        name: "side",
-        required: false,
-        value: "new|old",
-        about: "Which version the lines are on. Defaults to new",
-      },
-    ],
+    options: [...addressing, ...range],
     dataKey: "pending",
-    example: 'adiff comment stage --repo . --branch cdr-1 --file src/api.ts --start 4 --end 4 --body "why"',
+    example:
+      'adiff comment stage --repo . --branch cdr-1 --file src/api.ts --start 4 --end 4 --body "why"',
   },
   {
     name: "comment edit",
-    group: "Write comments",
     about: "Reword a staged comment. It keeps its id and the lines it was written against",
+    group: WRITE_COMMENTS,
+    addresses: "review",
     safety: "write",
     options: [
-      repo,
-      branch,
-      { name: "id", required: true, value: "id", about: "The staged comment, as `review progress` reported it" },
+      ...addressing,
+      {
+        name: "id",
+        required: true,
+        value: "id",
+        about: "The staged comment, as `review progress` reported it",
+      },
       { name: "body", required: true, value: "text", about: "What it should say instead" },
     ],
     dataKey: "pending",
-    example: 'adiff comment edit --repo . --branch add-teammate-invitations --id c1 --body "why is this unused"',
+    example: 'adiff comment edit --repo . --branch cdr-1 --id c1 --body "why is this unused"',
   },
   {
-    name: "comment drop",
-    group: "Write comments",
-    about: "Take a staged comment out of the review before it is sent",
+    name: "review send",
+    about: "Send the staged comments as one review, so the agent wakes once",
+    group: WRITE_COMMENTS,
+    addresses: "review",
     safety: "write",
-    options: [
-      repo,
-      branch,
-      { name: "id", required: true, value: "id", about: "The staged comment to withdraw" },
-    ],
-    dataKey: "pending",
-    example: "adiff comment drop --repo . --branch add-teammate-invitations --id c1",
+    options: [...addressing],
+    dataKey: "sent",
+    example: "adiff review send --repo . --branch cdr-1",
+  },
+  {
+    name: "comment send",
+    about: "Send one comment against a line range now, without staging it first",
+    group: WRITE_COMMENTS,
+    addresses: "review",
+    safety: "write",
+    options: [...addressing, ...range],
+    dataKey: "batch",
+    example:
+      'adiff comment send --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"',
   },
   {
     name: "comment take",
-    group: "Answer comments, in the worktree",
-    about: "Collect the comments this worktree has not been handed yet. Exactly-once",
+    about: "Collect the comments this review has not handed over yet. Exactly-once",
+    group: ANSWER_COMMENTS,
+    addresses: "review",
     safety: "write",
     options: [
-      { name: "worktree", required: true, value: "path", about: "The worktree to collect for" },
+      ...addressing,
       {
         name: "wait",
         required: false,
@@ -136,88 +197,37 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment answer",
-    group: "Answer comments, in the worktree",
     about: "Say what was done about a comment, or ask the reviewer something back",
+    group: ANSWER_COMMENTS,
+    addresses: "review",
     safety: "write",
     options: [
-      { name: "worktree", required: true, value: "path", about: "The worktree the comment was written against" },
-      { name: "id", required: true, value: "id", about: "The comment being answered, as `comment take` reported it" },
+      ...addressing,
+      {
+        name: "id",
+        required: true,
+        value: "id",
+        about: "The comment being answered, as `comment take` reported it",
+      },
       { name: "body", required: true, value: "text", about: "What was done, or what is being asked" },
-      { name: "asks", required: false, value: "flag", about: "The answer needs a reply before the work continues" },
+      {
+        name: "question",
+        required: false,
+        value: "flag",
+        about: "The answer is a question, and the work waits for a reply",
+      },
     ],
     dataKey: "answered",
     example: 'adiff comment answer --worktree . --id c1 --body "dropped it, and the import with it"',
   },
   {
-    name: "comment threads",
-    group: "Follow up",
-    about: "Every comment on a branch with its answers and whether it is settled",
-    safety: "read",
-    options: [repo, branch],
-    dataKey: "threads",
-    example: "adiff comment threads --repo . --branch add-teammate-invitations",
-  },
-  {
-    name: "comment resolve",
-    group: "Follow up",
-    about: "Mark a comment settled. Only the reviewer who raised it can",
-    safety: "write",
-    options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to settle" }],
-    dataKey: "settled",
-    example: "adiff comment resolve --repo . --branch add-teammate-invitations --id c1",
-  },
-  {
-    name: "comment remove",
-    group: "Follow up",
-    about: "Take a comment out of the review. It stays in the record as removed",
-    safety: "write",
-    options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to remove" }],
-    dataKey: "removed",
-    example: "adiff comment remove --repo . --branch add-teammate-invitations --id c1",
-  },
-  {
-    name: "comment restore",
-    group: "Follow up",
-    about: "Put a removed comment back into the review",
-    safety: "write",
-    options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to restore" }],
-    dataKey: "restored",
-    example: "adiff comment restore --repo . --branch add-teammate-invitations --id c1",
-  },
-  {
-    name: "file vouch",
-    group: "Read a branch",
-    about: "Toggle a file as reviewed. Lapses on its own when the file changes",
-    safety: "write",
-    options: [repo, branch, file],
-    dataKey: "vouched",
-    example: "adiff file vouch --repo . --branch cdr-1 --file src/api.ts",
-  },
-  {
-    name: "review submit",
-    group: "Write comments",
-    about: "Send every staged comment as one review, so the agent wakes once",
-    safety: "write",
-    options: [repo, branch],
-    dataKey: "submitted",
-    example: "adiff review submit --repo . --branch cdr-1",
-  },
-  {
-    name: "review progress",
-    group: "Read a branch",
-    about: "Which files of a branch are still vouched, and how many there are",
-    safety: "read",
-    options: [repo, branch],
-    dataKey: "vouched",
-    example: "adiff review progress --repo . --branch cdr-1",
-  },
-  {
     name: "layers set",
-    group: "Answer comments, in the worktree",
-    about: "Write the reading order for this worktree's diff: ordered layers over spans of files",
+    about: "Write the reading order for this review's diff: ordered layers over spans of files",
+    group: ANSWER_COMMENTS,
+    addresses: "review",
     safety: "write",
     options: [
-      { name: "worktree", required: true, value: "path", about: "The worktree the layers is about" },
+      ...addressing,
       {
         name: "json",
         required: true,
@@ -231,39 +241,69 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "layers show",
-    group: "Answer comments, in the worktree",
-    about: "The layers of a worktree, with the hunks no layer claims",
+    about: "The layers of a review, with the hunks no layer claims",
+    group: ANSWER_COMMENTS,
+    addresses: "review",
     safety: "read",
-    options: [
-      { name: "worktree", required: true, value: "path", about: "The worktree to read" },
-    ],
+    options: [...addressing],
     dataKey: "layers",
     example: "adiff layers show --worktree . --fields layers,uncovered",
   },
   {
-    name: "review open",
-    group: "Read a branch",
-    about: "Open the review terminal. The only command that does not answer in JSON",
+    name: "comment list",
+    about: "Every comment on a review, with its answers and whether it is settled",
+    group: FOLLOW_UP,
+    addresses: "review",
     safety: "read",
-    options: [repo],
-    dataKey: "",
-    example: "adiff review open --repo .",
+    options: [...addressing],
+    dataKey: "comments",
+    example: "adiff comment list --worktree . --fields id,body,settled",
   },
   {
-    name: "review pane",
-    group: "Read a branch",
-    about:
-      "Open the review beside the conversation, in whichever multiplexer is running. Answers with the command when none is",
-    safety: "read",
-    options: [repo],
-    dataKey: "pane",
-    example: "adiff review pane --repo .",
+    name: "comment resolve",
+    about: "Mark a comment settled. Only the reviewer who raised it can",
+    group: FOLLOW_UP,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      { name: "id", required: true, value: "id", about: "The comment to settle" },
+    ],
+    dataKey: "settled",
+    example: "adiff comment resolve --repo . --branch cdr-1 --id c1",
+  },
+  {
+    name: "comment remove",
+    about: "Take a comment out of the review, whether it was staged or already sent",
+    group: FOLLOW_UP,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      { name: "id", required: true, value: "id", about: "The comment to withdraw" },
+    ],
+    dataKey: "removed",
+    example: "adiff comment remove --repo . --branch cdr-1 --id c1",
+  },
+  {
+    name: "comment restore",
+    about: "Put a removed comment back into the review",
+    group: FOLLOW_UP,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      { name: "id", required: true, value: "id", about: "The comment to restore" },
+    ],
+    dataKey: "restored",
+    example: "adiff comment restore --repo . --branch cdr-1 --id c1",
   },
   {
     name: "init",
-    group: "Set up",
     about:
       "Write the review loop into this repository's agent instructions, so an agent finds it unprompted",
+    group: SET_UP,
+    addresses: "repo",
     safety: "write",
     options: [
       { name: "repo", required: true, value: "path", about: "Repository to write the loop into" },
@@ -285,9 +325,10 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "upgrade",
-    group: "Set up",
     about:
       "Say whether a newer adiff is out and name the one command that installs it. Answers a person in plain text, and a caller in JSON with --json",
+    group: SET_UP,
+    addresses: "none",
     safety: "read",
     options: [
       {
@@ -301,7 +342,8 @@ export const catalog: ReadonlyArray<CommandSpec> = [
         name: "json",
         required: false,
         value: "flag",
-        about: "Answer with the usual envelope instead of plain text. This is the only command that needs it",
+        about:
+          "Answer with the usual envelope instead of plain text. This is the only command that needs it",
       },
     ],
     dataKey: "upgrade",
@@ -309,14 +351,15 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "describe",
-    group: "Set up",
     about: "This catalog, as JSON",
+    group: SET_UP,
+    addresses: "none",
     safety: "read",
     options: [
       { name: "command", required: false, value: "name", about: "Describe one command only" },
     ],
     dataKey: "commands",
-    example: "adiff describe --command 'comment add'",
+    example: "adiff describe --command 'comment send'",
   },
 ]
 
@@ -324,10 +367,6 @@ export const commandNames: ReadonlyArray<string> = catalog.map((command) => comm
 
 export const findCommand = (name: string): CommandSpec | undefined =>
   catalog.find((command) => command.name === name)
-
-export const nouns: ReadonlyArray<string> = [
-  ...new Set(catalog.flatMap((command) => command.name.split(" ").slice(0, -1))),
-]
 
 export const verbsUnder = (noun: string): ReadonlyArray<string> =>
   commandNames.filter((name) => name.startsWith(`${noun} `))
@@ -351,9 +390,15 @@ const distance = (left: string, right: string): number => {
   return previous[right.length] ?? 0
 }
 
+const NEAR_ENOUGH = 3
+
 export const nearestCommand = (name: string): string | undefined => {
-  const scored = commandNames
+  const noun = name.split(" ")[0] ?? ""
+  const under = verbsUnder(noun)
+  const candidates = under.length === 0 ? commandNames : under
+  const room = Math.max(NEAR, Math.floor(name.length / NEAR_ENOUGH))
+  const scored = candidates
     .map((known) => ({ known, gap: distance(name, known) }))
     .toSorted((left, right) => left.gap - right.gap)[0]
-  return scored !== undefined && scored.gap <= NEAR ? scored.known : undefined
+  return scored !== undefined && scored.gap <= room ? scored.known : undefined
 }

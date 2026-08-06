@@ -172,12 +172,12 @@ export class AppTestDriver {
       options.id,
       "--body",
       options.body,
-      ...(options.asks === true ? ["--asks"] : []),
+      ...(options.asks === true ? ["--question"] : []),
     ])
   }
 
   runThreads(branch: string, fields?: ReadonlyArray<string>): Promise<CliResult> {
-    return this.run(["comment", "threads", "--repo", this.state.repo, "--branch", branch, ...(fields ?? [])])
+    return this.run(["comment", "list", "--repo", this.state.repo, "--branch", branch, ...(fields ?? [])])
   }
 
   runResolve(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
@@ -220,7 +220,7 @@ export class AppTestDriver {
   }
 
   runSubmit(branch: string): Promise<CliResult> {
-    return this.run(["review", "submit", "--repo", this.state.repo, "--branch", branch])
+    return this.run(["review", "send", "--repo", this.state.repo, "--branch", branch])
   }
 
   runPane(options: { readonly env?: Readonly<Record<string, string>> } = {}): Promise<CliResult> {
@@ -243,6 +243,10 @@ export class AppTestDriver {
     await writeFile(path, contents, "utf8")
   }
 
+  repoPath(): string {
+    return this.state.repo
+  }
+
   elsewhere(): string {
     return this.state.workspace
   }
@@ -263,7 +267,7 @@ export class AppTestDriver {
   runVouch(options: { readonly branch: string; readonly file: string }): Promise<CliResult> {
     return this.run([
       "file",
-      "vouch",
+      "review",
       "--repo",
       this.state.repo,
       "--branch",
@@ -280,7 +284,7 @@ export class AppTestDriver {
   runComment(options: CommentOptions): Promise<CliResult> {
     return this.run([
       "comment",
-      "add",
+      "send",
       "--repo",
       this.state.repo,
       "--branch",

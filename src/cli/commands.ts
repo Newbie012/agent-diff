@@ -373,6 +373,16 @@ export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: s
   return flatten(yield* store.take(resolved))
 })
 
+export const repoOf = Effect.fn("Cli.repoOf")(function* (worktree: string) {
+  const git = yield* Git
+  return yield* git.repoOf(worktree)
+})
+
+export const worktreeOf = Effect.fn("Cli.worktreeOf")(function* (repo: string, branch: string) {
+  const found = yield* findBranch(repo, branch)
+  return found.path
+})
+
 export const branchAt = Effect.fn("Cli.branchAt")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* Effect.promise(() => realpath(worktree))

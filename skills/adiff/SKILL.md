@@ -58,10 +58,10 @@ Answer when the change alone does not carry the reasoning: what you did instead 
 what you found while doing it, or why the comment does not apply. A comment that asked a question
 deserves an answer even when nothing changed.
 
-Add `--asks` when you need the reviewer to decide before you continue:
+Add `--question` when you need the reviewer to decide before you continue:
 
 ```bash
-adiff comment answer --worktree . --id <id> --asks --body "Drop it, or keep it and map the error?"
+adiff comment answer --worktree . --id <id> --question --body "Drop it, or keep it and map the error?"
 ```
 
 That marks the thread as waiting on them rather than on you. Do not use it to check in; use it when
@@ -88,6 +88,9 @@ Failures go to **stderr**, never stdout, so stdout is always safe to parse. The 
 `{"ok":false,"error":{"type":"...","retriable":false,"suggestion":"..."}}`, and the exit code says
 what kind of problem it is: `2` the request was malformed, `3` the branch or file does not exist,
 `1` something unexpected.
+
+Every command that acts on a review takes either `--worktree <path>` or `--repo <path>` with
+`--branch <name>`. Standing in the worktree, `--worktree .` is always enough.
 
 Read `suggestion` before doing anything else — it names the command that resolves the failure.
 Retry only when `retriable` is true. `UnknownBranch` means this worktree is not one adiff knows
@@ -215,8 +218,9 @@ inside a layer.
 adiff describe
 ```
 
-Returns every command with its options, which are required, and where its payload sits. Use it
-instead of guessing, and use `--fields` to keep answers small:
+Returns every command with its options, which are required, which part of the loop it belongs to,
+and where its payload sits. `adiff <command> --help` says the same for one command in plain text.
+Use either instead of guessing, and use `--fields` to keep answers small:
 
 ```bash
 adiff branch list --repo . --fields branch,files

@@ -60,6 +60,6 @@ describe("writing a comment where there is no line", () => {
 
     // ASSERT
     const threads = await driver.app.runThreads(created.name)
-    expect(threads.stdout).toContain('"threads":[]')
+    expect(threads.stdout).toContain('"comments":[]')
   })
 })

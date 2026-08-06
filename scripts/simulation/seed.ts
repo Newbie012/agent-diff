@@ -173,7 +173,7 @@ const speak = async (
       id,
       "--body",
       entry.body,
-      ...(entry.asks ? ["--asks"] : []),
+      ...(entry.asks ? ["--question"] : []),
     ]),
     { env, encoding: "utf8" },
   ).catch(() => undefined)

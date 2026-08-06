@@ -31,7 +31,7 @@ const onTheThread = async (driver: TestDriver, body: string): Promise<void> => {
 }
 
 const threadsOf = (envelope: unknown): ReadonlyArray<Thread> =>
-  (envelope as { readonly threads?: ReadonlyArray<Thread> }).threads ?? []
+  (envelope as { readonly comments?: ReadonlyArray<Thread> }).comments ?? []
 
 describe("removing a comment from the diff", () => {
   it("takes the thread out of the diff", async () => {

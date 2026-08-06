@@ -4,10 +4,10 @@ import { text as readStream } from "node:stream/consumers"
 import { Cause, Effect, Layer } from "effect"
 import {
   answerComment,
+  addressing,
   awaitComments,
   branchAt,
   catalog,
-  commandNames,
   failure,
   fieldsOf,
   findCommand,
@@ -25,6 +25,7 @@ import {
   verbsUnder,
   reviewProgress,
   removeComment,
+  repoOf,
   restoreComment,
   sayUpgrade,
   settleThread,
@@ -32,11 +33,11 @@ import {
   showLayers,
   stageComment,
   editStaged,
-  dropStaged,
   submitComment,
   submitReview,
   takeComments,
   toggleVouch,
+  worktreeOf,
   UnknownCommand,
   upgradeAdiff,
   type Options,
@@ -62,7 +63,7 @@ const branchList = Effect.fn("Main.branchList")(function* (options: Options) {
   yield* answer(options, { branches })
 })
 
-const commentAdd = Effect.fn("Main.commentAdd")(function* (options: Options) {
+const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
   const batch = yield* submitComment({
     repo: yield* required(options, "repo"),
     branch: yield* required(options, "branch"),
@@ -96,18 +97,18 @@ const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Option
     worktree: yield* required(options, "worktree"),
     id: yield* required(options, "id"),
     body: yield* required(options, "body"),
-    asks: options["asks"] !== undefined,
+    asks: options["question"] !== undefined,
     at: options["at"] ?? new Date().toISOString(),
   })
   yield* answer(options, { answered: report.answered })
 })
 
-const commentThreads = Effect.fn("Main.commentThreads")(function* (options: Options) {
-  const threads = yield* listThreads(
+const commentList = Effect.fn("Main.commentList")(function* (options: Options) {
+  const comments = yield* listThreads(
     yield* required(options, "repo"),
     yield* required(options, "branch"),
   )
-  yield* answer(options, { threads })
+  yield* answer(options, { comments })
 })
 
 const commentResolve = Effect.fn("Main.commentResolve")(function* (options: Options) {
@@ -127,7 +128,7 @@ const commentRemove = Effect.fn("Main.commentRemove")(function* (options: Option
     yield* required(options, "id"),
     options["at"] ?? new Date().toISOString(),
   )
-  yield* answer(options, { removed: report.removed })
+  yield* answer(options, { removed: report.removed, staged: report.staged })
 })
 
 const commentRestore = Effect.fn("Main.commentRestore")(function* (options: Options) {
@@ -164,32 +165,23 @@ const commentEdit = Effect.fn("Main.commentEdit")(function* (options: Options) {
   yield* answer(options, { pending: report.pending })
 })
 
-const commentDrop = Effect.fn("Main.commentDrop")(function* (options: Options) {
-  const report = yield* dropStaged(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    yield* required(options, "id"),
-  )
-  yield* answer(options, { pending: report.pending })
-})
-
-const reviewSubmit = Effect.fn("Main.reviewSubmit")(function* (options: Options) {
+const reviewSend = Effect.fn("Main.reviewSend")(function* (options: Options) {
   const report = yield* submitReview(
     yield* required(options, "repo"),
     yield* required(options, "branch"),
     options["id"] ?? randomUUID(),
     options["at"] ?? new Date().toISOString(),
   )
-  yield* answer(options, { submitted: report.submitted })
+  yield* answer(options, { sent: report.submitted })
 })
 
-const fileVouch = Effect.fn("Main.fileVouch")(function* (options: Options) {
+const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
   const report = yield* toggleVouch({
     repo: yield* required(options, "repo"),
     branch: yield* required(options, "branch"),
     file: yield* required(options, "file"),
   })
-  yield* answer(options, { vouched: report.vouched, total: report.total })
+  yield* answer(options, { reviewed: report.vouched, total: report.total })
 })
 
 const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options) {
@@ -197,7 +189,7 @@ const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options)
     yield* required(options, "repo"),
     yield* required(options, "branch"),
   )
-  yield* answer(options, { vouched: report.vouched, total: report.total, pending: report.pending })
+  yield* answer(options, { reviewed: report.vouched, total: report.total, pending: report.pending })
 })
 
 const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
@@ -248,24 +240,23 @@ const describe = Effect.fn("Main.describe")(function* (options: Options) {
   const asked = wanted === undefined || wanted === "true" ? undefined : wanted
   const found = asked === undefined ? undefined : findCommand(asked)
   if (asked !== undefined && found === undefined) {
-    return yield* new UnknownCommand({ name: asked, known: commandNames })
+    return yield* unknown(asked)
   }
   return yield* answer(options, { commands: found === undefined ? catalog : [found] })
 })
 
 const routes = {
   "branch list": branchList,
-  "comment add": commentAdd,
+  "comment send": commentSend,
   "comment stage": commentStage,
   "comment edit": commentEdit,
-  "comment drop": commentDrop,
   "comment take": commentTake,
   "comment answer": commentAnswer,
-  "comment threads": commentThreads,
+  "comment list": commentList,
   "comment resolve": commentResolve,
   "comment remove": commentRemove,
   "comment restore": commentRestore,
-  "review submit": reviewSubmit,
+  "review send": reviewSend,
   "review pane": reviewPane,
   "review progress": reviewStatus,
   "layers set": layersSet,
@@ -277,17 +268,38 @@ const routes = {
 
 const unknown = (name: string): UnknownCommand => {
   const verbs = verbsUnder(name)
-  if (verbs.length > 0) return new UnknownCommand({ name, known: commandNames, verbs })
+  if (verbs.length > 0) return new UnknownCommand({ name, verbs })
   const didYouMean = nearestCommand(name)
   return didYouMean === undefined
-    ? new UnknownCommand({ name, known: commandNames })
-    : new UnknownCommand({ name, known: commandNames, didYouMean })
+    ? new UnknownCommand({ name })
+    : new UnknownCommand({ name, didYouMean })
 }
 
-const dispatch = Effect.fn("Main.dispatch")(function* (name: string, options: Options) {
+const byBranch = Effect.fn("Main.byBranch")(function* (options: Options, repo: string, branch: string) {
+  return options["worktree"] !== undefined
+    ? options
+    : { ...options, worktree: yield* worktreeOf(repo, branch) }
+})
+
+const byWorktree = Effect.fn("Main.byWorktree")(function* (options: Options, worktree: string) {
+  return { ...options, repo: yield* repoOf(worktree), branch: yield* branchAt(worktree) }
+})
+
+const addressOf = Effect.fn("Main.addressOf")(function* (name: string, options: Options) {
+  if (findCommand(name)?.addresses !== "review") return options
+  const repo = options["repo"]
+  const branch = options["branch"]
+  if (repo !== undefined && branch !== undefined) return yield* byBranch(options, repo, branch)
+  const worktree = options["worktree"]
+  if (worktree !== undefined) return yield* byWorktree(options, worktree)
+  return yield* new MissingOption({ option: addressing[0]?.name ?? "worktree" })
+})
+
+const dispatch = Effect.fn("Main.dispatch")(function* (name: string, given: Options) {
+  const options = yield* addressOf(name, given)
   const route = Object.hasOwn(routes, name) ? routes[name as keyof typeof routes] : undefined
   if (route !== undefined) return yield* route(options)
-  if (name === "file vouch") return yield* fileVouch(options)
+  if (name === "file review") return yield* fileReview(options)
   if (name === "review open") {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
     return yield* runTui(yield* required(options, "repo"), process.env["ADIFF_SESSION"])

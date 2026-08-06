@@ -1,15 +1,14 @@
 # Reading the command surface back
 
 Twenty-one verbs grew a week at a time and nobody had looked at them together. This is that look:
-what holds up, what does not, what is worth changing, and what is only worth renaming if you enjoy
-renaming things.
+what holds up, what does not, and what changed.
 
-The conclusion up front: **the nouns are mostly fine, the audiences are not separated, and the help
-was broken.** The gap that costs users the most is not taxonomy, it is that a person who types a
-command name and `--help` gets a JSON error. Most of the work here is that. The taxonomy notes are
-recorded so the next person does not have to re-derive them.
+The conclusion up front: **the help was broken, the addressing model was split in half, and four of
+the names were wrong.** All of it is fixed. adiff is alpha, published under an alpha tag, with one
+user. There is no catalog in the wild to keep working and no migration to write, so the only cost
+of a rename is the rename, and a name that is wrong stays wrong for as long as you let it.
 
-## What was actually broken
+## What was broken about help
 
 Help only existed at the top. Every level below it fell through to the agent-facing path:
 
@@ -26,6 +25,10 @@ wrong. The information existed the whole time: `adiff help comment take` printed
 `describe --command 'comment take'` returned the same as JSON. Both require knowing a spelling
 nobody guesses. `--help` is the spelling everybody guesses.
 
+`--help` and `-h` are now read in any position, on a command, on a noun, and at the top. A command
+prints its own usage, its options with the required ones marked, the shared `--fields`, its
+example, and the key its answer sits under.
+
 ## The audience question
 
 This surface has two callers and they want opposite things.
@@ -38,103 +41,112 @@ A person wants prose, grouping, examples, and a `--help` that works everywhere.
 The existing answer was to serve the agent and let the person cope. The tempting fix is to sniff
 for a tty and print prose when attached to one. **That is rejected.** Output that changes shape
 depending on whether a pipe is attached is the classic way to make a CLI untestable and to break a
-caller that redirects. PRD-007 already deferred a `--json`/`--human` split for the same reason.
+caller that redirects.
 
 The rule adopted instead is narrower and mechanical:
 
 > **Prose is printed when, and only when, help was asked for.** Everything else answers in the
 > envelope, whoever is watching.
 
-So `--help`, `-h`, `help <command>`, and bare `adiff` print prose on stdout and exit 0. Every other
-path keeps the JSON contract exactly as it was. There is no ambiguity about which you will get, and
-no test has to pretend to be a terminal.
-
 `upgrade` is the one command outside this rule, and it earns the exemption honestly: every other
 verb exists to be called, `upgrade` exists to be typed, and its answer is about the installation
 rather than about the repository. It prints prose and takes `--json` for the envelope. That is one
 named exception, decided per command, not a shape that changes under a pipe.
 
-This leaves one uncomfortable case, and it is deliberate. `adiff comment` with no verb still answers
-in JSON on stderr with exit 2, because it is a malformed invocation and an agent parses it. It is
-now a useful failure: it carries the group's verbs and the suggestion points at `adiff comment
---help` rather than at `describe`. A person who wanted to browse gets a JSON line with the right
-next command in it, which is worse than prose and better than a wall of twenty-one names.
+This leaves one uncomfortable case, and it is deliberate. `adiff comment` with no verb still
+answers in JSON on stderr with exit 2, because it is a malformed invocation and an agent parses it.
+It is now a useful failure rather than a wall: it carries the noun's verbs, the suggestion points at
+`adiff comment --help`, and the twenty-one-name catalog dump is gone.
 
-## Do the nouns hold up
+## The seam that was real
 
-Mostly, and the exceptions are cheaper to live with than to rename. A published surface that the
-skill and `adiff init` both teach does not get renamed to satisfy a taxonomy.
+Reviewer-side commands addressed a review by `--repo` and `--branch`. Agent-side commands addressed
+the same review by `--worktree`. The two vocabularies never met.
 
-**`comment threads` returns threads, not comments.** True, and it is the one name that reads as a
-noun where every sibling reads as a verb. `comment list` would be the right name, sitting beside
-`branch list`. The rename is cheap in code and not cheap in the world: it is in the skill, in
-AGENTS.md files already written into other people's repositories, and in the published catalog.
-**Left alone**, recorded here so the next reader knows it was seen rather than missed. If it is ever
-renamed, `comment threads` stays as an alias forever and the `threads` data key does not move.
+The concrete cost: an agent ran `comment take --worktree .`, got comments, and wanted `comment
+threads` next to see whether any were already settled. That command wanted `--repo` and `--branch`,
+and nothing in the answer it had just received carried either. It had to shell out to git to work
+out where it was standing.
 
-**`add` versus `stage`.** These differ in a way the names do not carry: `add` files a comment and
-delivers it immediately, `stage` puts it in a review that `review submit` sends as one batch. A
-caller who guesses gets the wrong behaviour silently. `send` and `stage` would be the honest pair.
-**Left alone** for the same reason as above, but the fix that matters is done: both now have real
-help pages, and the difference is the first line of each.
+This was a hole in the model, not a missing flag. A review **is** a worktree, which is checked out
+on a branch; the store has always keyed by both. A reviewer at the main checkout knows the branch
+and not the worktree path, and an agent knows the worktree and not the repository root. Both are
+legitimate ways to name one thing, so both are now accepted everywhere:
 
-**`drop` versus `remove`.** Also close, also genuinely different: `drop` withdraws something not yet
-sent, `remove` withdraws something already delivered and keeps it in the record. Two words for two
-lifecycle stages is correct. `restore` pairs only with `remove`, which is fine. **Left alone.**
+```
+adiff comment list --worktree .
+adiff comment list --repo . --branch add-teammate-invitations
+adiff comment take --repo . --branch add-teammate-invitations
+adiff layers show --repo . --branch add-teammate-invitations
+```
 
-**`file vouch` is one verb under a lonely noun.** `vouch` is unusual English, but it is the word the
-terminal uses on screen and in the footer, so the CLI matching the UI is worth more than the CLI
-matching a dictionary. A noun with one verb is not a problem; it is room. **Left alone.**
+Neither spelling is primary. A command declares that it addresses a review, and the surface fills
+in whichever half the caller did not give. `comment take` also reports the branch it collected for,
+so the next command can be built from the previous answer.
 
-**`review` carries three unrelated things.** `review submit` sends comments, `review progress`
-reports counts, `review open` and `review pane` start a terminal. The obvious consolidation is
-`review open --pane`, retiring `review pane`. **Rejected**, and this is the one I feel strongest
-about: `review open` hands the terminal to the reviewer and prints no JSON at all, while `review
-pane` answers with an envelope carrying `opened`, `pane` and `command`. Merging them produces a
-single command whose output convention depends on a flag, which is exactly the shapeshifting the
-tty rule above exists to prevent. Two commands, two conventions, one of each. Correct as it stands.
+## The names
 
-## The seam that is real
+**`comment threads` → `comment list`.** It was the one name that read as a noun where every sibling
+read as a verb, and it now sits beside `branch list`. Its payload moved from `threads` to
+`comments`, because a caller who asked to list comments should get comments; the answers hanging off
+one are a field on it, not a different noun. There is no thread in the surface any more, which is
+one fewer word to learn. It also now includes staged comments, marked `state: "staged"` — a command
+called "every comment on a review" that silently omitted the ones you had just written was a lie,
+and the rename is what made that obvious.
 
-Reviewer-side commands address a review by `--repo` and `--branch`. Agent-side commands address the
-same review by `--worktree`. A caller has to know which, and the two vocabularies never meet.
+**`comment add` → `comment send`, and `review submit` → `review send`.** `add` and `stage` both
+sounded like putting a comment somewhere; the difference was that one delivered immediately and the
+other waited for a batch, and nothing in the names carried that. Now the verb is the same wherever
+the action is the same, and the noun carries the difference: `comment send` sends one comment,
+`review send` sends the staged review as one batch, and `comment stage` is what fills it.
 
-The concrete cost: an agent runs `comment take --worktree .`, gets comments, and wants
-`comment threads` next to see whether any are already settled. `comment threads` wants `--repo` and
-`--branch`, and nothing in the answer it just received tells it either. It has to shell out to git
-to work out where it is.
+Removing `comment send` entirely was considered, since `comment stage` plus `review send` does the
+same in two commands. **Rejected**: filing a single comment is the most common scripted action, and
+making the common case cost two commands to save one verb is a bad trade.
 
-This is a seam in the model, not a missing flag, and the smallest honest repair is to make the
-answer say where it came from. `comment take` now reports the `branch` it collected for alongside
-the comments, so the next command in the sequence can be constructed from the previous answer
-instead of from `git rev-parse`.
+**`file vouch` → `file review`.** I had previously argued for keeping `vouch` because the CLI should
+match what the terminal says. Then I read what the terminal says: "Mark reviewed", and "3/7
+reviewed". Nothing on screen has ever said vouch. The argument was right and the fact was wrong, so
+the command and its payload now say `reviewed`.
 
-The larger repair, accepting `--worktree` anywhere `--repo --branch` is accepted, is **deferred**.
-It is additive and safe, but it doubles the addressing vocabulary on eleven commands, and the value
-of doing it should be judged after seeing whether reporting the branch was enough.
+The domain keeps `vouch` internally, and that is deliberate rather than laziness. A vouch is not
+"reviewed", it is a mark that lapses on its own when the file changes underneath it. That is a more
+specific idea than the surface needs to expose, and it deserves its own word where the expiry logic
+lives.
 
-## What an agent was missing
+**`--asks` → `--question`.** A flag named for a verb fragment, on an answer that is a question.
 
-The catalog is machine readable and lists twenty-one verbs in an order that means nothing. An agent
-handed that list has to infer a sequence from it, which is the one thing a flat list cannot carry.
-Bare `adiff` teaches the sequence in prose, but an agent reading `describe` never sees it.
+## What was removed
 
-So every command now carries a `group` in the catalog, naming the part of the loop it belongs to:
-discovery, writing comments, answering them from the worktree, following up, and setup. It is one
-short string per command, it costs an agent almost nothing, and it turns the catalog from a list
-into something with a shape. The same groups order the human help, so the two views agree.
+**`comment drop`.** It withdrew a staged comment; `comment remove` withdrew a delivered one. Two
+verbs for one intent, split by a distinction the caller does not care about: whether adiff keeps a
+record. `comment remove` now handles both and reports which case it was in `staged`.
 
-## What should be removed
+Nothing else. Every other verb has a caller, and the pairs that look redundant are not.
 
-Nothing. Every verb has a caller, and the two that look redundant in pairs are not. A surface this
-young with this few users is not where dead weight accumulates; it is where it looks like dead
-weight because nobody has used it yet.
+## What was kept, and why
 
-## What would break
+**`review open` and `review pane` stay separate.** The obvious consolidation is `review open
+--pane`. Rejected, and this is the one I feel strongest about: `review open` hands the terminal to
+the reviewer and prints no JSON at all, while `review pane` answers with an envelope carrying
+`opened`, `pane` and `command`. Merging them produces a single command whose output convention
+depends on a flag, which is exactly the shapeshifting the prose rule above exists to prevent. Two
+commands, two conventions, one of each.
 
-Nothing. Every existing invocation still works and answers what it answered. The changes are:
-prose on paths that previously errored, extra fields inside existing error envelopes, one extra
-field on the `comment take` answer, one extra field per catalog entry, and a bare `adiff --fields`
-now printing the banner instead of reporting an unknown command named the empty string.
+**`--start` and `--end` stay two options.** `--lines 4-9` is one option for one concept and reads
+better, but it needs parsing and a new error for a malformed range, and both callers generate these
+numbers mechanically rather than typing them. Two unambiguous integers beat one string that can be
+wrong.
 
-There is no migration, because nothing moved.
+**`comment edit` stays staged-only.** Rewording a comment the agent has already read would rewrite
+history the other side has acted on.
+
+**`file review` stays a toggle** rather than becoming idempotent with an `--off` flag. The terminal
+toggles it on one key, the answer reports the resulting state, and a caller is therefore never in
+doubt about where it ended up.
+
+## What breaks
+
+Everything named above, for anyone who had learned the old names. That is the point, and at this
+size it costs one person one read of `adiff --help`. The envelope, the stdout and stderr split, the
+exit codes, `--fields` and `describe` are all untouched.

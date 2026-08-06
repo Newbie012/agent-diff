@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 describe("tracking review progress", () => {
-  it("starts with nothing vouched for", async () => {
+  it("starts with nothing marked reviewed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -11,10 +11,10 @@ describe("tracking review progress", () => {
     const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ ok: true, vouched: [], total: 1 })
+    expect(result.envelope).toMatchObject({ ok: true, reviewed: [], total: 1 })
   })
 
-  it("records a file the reviewer vouched for", async () => {
+  it("records a file the reviewer marked reviewed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -23,7 +23,7 @@ describe("tracking review progress", () => {
     const result = await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ ok: true, vouched: ["src/api.ts"], total: 1 })
+    expect(result.envelope).toMatchObject({ ok: true, reviewed: ["src/api.ts"], total: 1 })
   })
 
   it("survives the tool restarting, because progress is worth nothing if it does not", async () => {
@@ -36,7 +36,7 @@ describe("tracking review progress", () => {
     const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ vouched: ["src/api.ts"] })
+    expect(result.envelope).toMatchObject({ reviewed: ["src/api.ts"] })
   })
 
   it("takes the vouch back when the reviewer changes their mind", async () => {
@@ -49,10 +49,10 @@ describe("tracking review progress", () => {
     const result = await driver.app.runVouch({ branch: branch.name, file: "src/api.ts" })
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ vouched: [] })
+    expect(result.envelope).toMatchObject({ reviewed: [] })
   })
 
-  it("stops counting a file the agent rewrote after it was vouched for", async () => {
+  it("stops counting a file the agent rewrote after it was marked reviewed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -67,7 +67,7 @@ describe("tracking review progress", () => {
     const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ vouched: [] })
+    expect(result.envelope).toMatchObject({ reviewed: [] })
   })
 
   it("refuses to vouch for a file that is not in the diff", async () => {

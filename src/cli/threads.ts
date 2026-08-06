@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
 import { findBranch } from "./commands.ts"
 import { worktreeAt } from "./layers.ts"
@@ -30,7 +30,7 @@ const stateOf = (
   if (isRemoved) return "removed"
   if (isSettled) return "done"
   const last = answers.at(-1)
-  if (last === undefined) return "submitted"
+  if (last === undefined) return "sent"
   return last.asks ? "question" : "answered"
 }
 
@@ -81,16 +81,33 @@ const isKnown = Effect.fn("Cli.isKnown")(function* (worktreePath: string, id: st
   return idsIn(yield* store.inbox(worktreePath)).includes(id)
 })
 
+const stagedOf = (entry: {
+  readonly id: string
+  readonly body: string
+  readonly anchor: { readonly path: string; readonly side: string; readonly start: number; readonly end: number }
+}): Thread => ({
+  id: entry.id,
+  file: entry.anchor.path,
+  side: entry.anchor.side,
+  start: entry.anchor.start,
+  end: entry.anchor.end,
+  body: entry.body,
+  state: "staged",
+  stale: false,
+  answers: [],
+})
+
 export const listThreads = Effect.fn("Cli.listThreads")(function* (repo: string, branch: string) {
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
   const current = yield* store.state(worktree.path)
-  return threadsIn(yield* store.inbox(worktree.path), {
+  const sent = threadsIn(yield* store.inbox(worktree.path), {
     answers: yield* store.answers(worktree.path),
     settled: current.settled,
     removed: current.removed,
     head: worktree.head,
   })
+  return [...sent, ...current.pending.map(stagedOf)]
 })
 
 export const answerComment = Effect.fn("Cli.answerComment")(function* (request: {
@@ -141,13 +158,18 @@ export const removeComment = Effect.fn("Cli.removeComment")(function* (
 ) {
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
-  if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   const current = yield* store.state(worktree.path)
+  if (current.pending.some((entry) => entry.id === id)) {
+    const pending = yield* store.unstage(worktree.path, id)
+    if (Option.isNone(pending)) return yield* new UnknownComment({ id })
+    return { removed: id, staged: true }
+  }
+  if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   yield* store.saveState(worktree.path, {
     ...current,
     removed: { ...current.removed, [id]: at },
   })
-  return { removed: id }
+  return { removed: id, staged: false }
 })
 
 const without = (

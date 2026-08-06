@@ -23,7 +23,6 @@ export class UnselectableRange extends Data.TaggedError("UnselectableRange")<{
 
 export class UnknownCommand extends Data.TaggedError("UnknownCommand")<{
   readonly name: string
-  readonly known: ReadonlyArray<string>
   readonly didYouMean?: string
   readonly verbs?: ReadonlyArray<string>
 }> {}
