@@ -17,6 +17,7 @@ the way it is, why it is tested the way it is. ADRs explain choices that outlive
 | [ADR-004](ADR-004-pnpm-native-releases.md) | pnpm's own release tooling instead of Changesets |
 | [ADR-005](ADR-005-a-mechanical-style-contract.md) | Style is a lint rule, not a document |
 | [ADR-006](ADR-006-the-terminal-runs-on-effect.md) | The terminal runs on Effect |
+| [ADR-007](ADR-007-model-with-effect-not-only-run-on-it.md) | Model with Effect, not only run on it |
 
 ## Writing one
 

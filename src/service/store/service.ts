@@ -1,5 +1,5 @@
 import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises"
-import { Context, Effect, Layer, Option } from "effect"
+import { Context, Effect, Layer, Option, Schema } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
 import {
   emptyBranchState,
@@ -10,6 +10,7 @@ import {
   type Settings,
   type StoredLayers,
 } from "./model.ts"
+import * as Wire from "./schema.ts"
 import {
   branchDir,
   defaultRoot,
@@ -83,26 +84,51 @@ const readOptional = Effect.fn("Store.readOptional")(function* (path: string) {
 
 const missing = Effect.succeed(Option.none<string>())
 
-const parseSettings = (raw: string): Settings => {
-  const parsed = JSON.parse(raw) as Partial<Settings>
-  return typeof parsed.wrap === "boolean" ? { wrap: parsed.wrap } : {}
+const damaged = (path: string) => (reason: unknown) =>
+  new StoreUnreadable({ path, reason: String(reason) })
+
+const jsonOf = (path: string, raw: string): Effect.Effect<unknown, StoreUnreadable> =>
+  Effect.try({ try: (): unknown => JSON.parse(raw), catch: damaged(path) })
+
+const decoded = <A, I>(schema: Schema.Codec<A, I>) => {
+  const decode = Schema.decodeUnknownEffect(schema)
+  return (path: string, value: unknown): Effect.Effect<A, StoreUnreadable> =>
+    Effect.mapError(decode(value), damaged(path))
 }
 
-const parseBatches = (raw: string): ReadonlyArray<Batch> =>
-  raw
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line) as Batch)
+const asSettings = decoded(Wire.Settings)
+const asBatch = decoded(Wire.Batch)
+const asAnswer = decoded(Wire.StoredAnswer)
+const asState = decoded(Wire.BranchState)
+const asLayers = decoded(Wire.StoredLayers)
 
-const parseAnswers = (raw: string): ReadonlyArray<StoredAnswer> =>
-  raw
-    .split("\n")
-    .filter((line) => line.trim().length > 0)
-    .map((line) => JSON.parse(line) as StoredAnswer)
+const linesOf = (raw: string): ReadonlyArray<string> =>
+  raw.split("\n").filter((line) => line.trim().length > 0)
 
-const parseState = (raw: string): BranchState => ({
-  ...emptyBranchState,
-  ...(JSON.parse(raw) as Partial<BranchState>),
+const readLines = <A>(
+  path: string,
+  raw: string,
+  as: (path: string, value: unknown) => Effect.Effect<A, StoreUnreadable>,
+): Effect.Effect<ReadonlyArray<A>, StoreUnreadable> =>
+  Effect.forEach(linesOf(raw), (line) =>
+    jsonOf(path, line).pipe(Effect.flatMap((value) => as(path, value))),
+  )
+
+const parseSettings = Effect.fn("Store.parseSettings")(function* (path: string, raw: string) {
+  const value = yield* jsonOf(path, raw)
+  return yield* asSettings(path, value)
+})
+
+const parseState = Effect.fn("Store.parseState")(function* (path: string, raw: string) {
+  const value = yield* jsonOf(path, raw)
+  const held = yield* asState(path, value)
+  return { ...emptyBranchState, ...held } satisfies BranchState
+})
+
+const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw: string) {
+  const value = yield* jsonOf(path, raw)
+  const held = yield* asLayers(path, value)
+  return { ...held, parent: held.parent } satisfies StoredLayers
 })
 
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
@@ -149,8 +175,12 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
 
 const settingsOps = (root: string) => {
   const settings = Effect.gen(function* () {
-    const raw = yield* readOptional(settingsPath(root))
-    return Option.match(raw, { onNone: (): Settings => ({}), onSome: parseSettings })
+    const path = settingsPath(root)
+    const raw = yield* readOptional(path)
+    return yield* Option.match(raw, {
+      onNone: (): Effect.Effect<Settings, StoreUnreadable> => Effect.succeed({}),
+      onSome: (text) => parseSettings(path, text),
+    })
   }).pipe(Effect.withSpan("Store.settings"))
 
   const saveSettings = Effect.fn("Store.saveSettings")(function* (next: Settings) {
@@ -187,10 +217,11 @@ const answerOps = (root: string) => {
   })
 
   const answers = Effect.fn("Store.answers")(function* (worktreePath: string) {
-    const raw = yield* readOptional(outboxPath(root, worktreePath))
-    return Option.match(raw, {
-      onNone: (): ReadonlyArray<StoredAnswer> => [],
-      onSome: parseAnswers,
+    const path = outboxPath(root, worktreePath)
+    const raw = yield* readOptional(path)
+    return yield* Option.match(raw, {
+      onNone: (): Effect.Effect<ReadonlyArray<StoredAnswer>, StoreUnreadable> => Effect.succeed([]),
+      onSome: (text) => readLines(path, text, asAnswer),
     })
   })
 
@@ -199,8 +230,10 @@ const answerOps = (root: string) => {
 
 const layersOps = (root: string) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
-    const raw = yield* readOptional(layersPath(root, worktreePath))
-    return Option.map(raw, (text) => JSON.parse(text) as StoredLayers)
+    const path = layersPath(root, worktreePath)
+    const raw = yield* readOptional(path)
+    if (Option.isNone(raw)) return Option.none<StoredLayers>()
+    return Option.some(yield* parseLayers(path, raw.value))
   })
 
   const saveLayers = Effect.fn("Store.saveLayers")(function* (
@@ -218,7 +251,7 @@ const layersOps = (root: string) => {
   return { layers, saveLayers }
 }
 
-const makeStore = (root: string): Shape => {
+const inboxOps = (root: string) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
     const path = inboxPath(root, worktreePath)
     yield* ensureDir(branchDir(root, worktreePath))
@@ -229,13 +262,25 @@ const makeStore = (root: string): Shape => {
   })
 
   const inbox = Effect.fn("Store.inbox")(function* (worktreePath: string) {
-    const raw = yield* readOptional(inboxPath(root, worktreePath))
-    return Option.match(raw, { onNone: (): ReadonlyArray<Batch> => [], onSome: parseBatches })
+    const path = inboxPath(root, worktreePath)
+    const raw = yield* readOptional(path)
+    return yield* Option.match(raw, {
+      onNone: (): Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable> => Effect.succeed([]),
+      onSome: (text) => readLines(path, text, asBatch),
+    })
   })
 
+  return { submit, inbox }
+}
+
+const stateOps = (root: string) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
-    const raw = yield* readOptional(statePath(root, worktreePath))
-    return Option.match(raw, { onNone: () => emptyBranchState, onSome: parseState })
+    const path = statePath(root, worktreePath)
+    const raw = yield* readOptional(path)
+    return yield* Option.match(raw, {
+      onNone: (): Effect.Effect<BranchState, StoreUnreadable> => Effect.succeed(emptyBranchState),
+      onSome: (text) => parseState(path, text),
+    })
   })
 
   const saveState = Effect.fn("Store.saveState")(function* (
@@ -250,6 +295,12 @@ const makeStore = (root: string): Shape => {
     })
   })
 
+  return { state, saveState }
+}
+
+const makeStore = (root: string): Shape => {
+  const { submit, inbox } = inboxOps(root)
+  const { state, saveState } = stateOps(root)
   const cursors = cursorOps(state, saveState, inbox)
   return {
     root,
