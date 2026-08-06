@@ -170,6 +170,10 @@
   dir: ""
   intents:
     - sour-eagles-cheer
+"@eliya-oss/agent-diff@0.1.0-alpha.40":
+  dir: ""
+  intents:
+    - olive-pugs-shave
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
