@@ -39,6 +39,7 @@ export type LayersReport = {
   readonly written: string
   readonly summary: string
   readonly covered: number
+  readonly partial: number
   readonly total: number
   readonly uncovered: ReadonlyArray<Span>
   readonly vanished: ReadonlyArray<string>
@@ -160,6 +161,7 @@ const reportOf = (
     written: layers.written,
     summary: layers.summary,
     covered: status.covered,
+    partial: status.partial,
     total: status.total,
     uncovered: status.uncovered,
     vanished: status.vanished,

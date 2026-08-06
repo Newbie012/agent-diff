@@ -64,10 +64,15 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
 - **An agent writes a layers for its own worktree.** `adiff layers set --worktree . --json <file|->`
   takes a summary and ordered layers, each a title with prose and spans of files. adiff assigns the
   version, the parent, and the commit; the agent supplies only the argument.
-- **The answer to writing a layers is its coverage.** `layers set` and `layers show` both answer with
-  `covered`/`total` hunks, the `uncovered` spans no layer claims, and the `vanished` paths a layer
-  points at that the branch does not change. A layers cannot be written without being told what it
-  skipped.
+- **The answer to writing a layers is its coverage.** `layers set` and `layers show` both answer
+  with `total` hunks, `covered` for those whose every changed line sits inside a layer, `partial`
+  for those a layer explains only some of, the `uncovered` runs of changed lines no layer claims,
+  and the `vanished` paths a layer points at that the branch does not change. A layers cannot be
+  written without being told what it skipped.
+- **Coverage counts changed lines, not overlap.** A span earns a hunk only by holding every line
+  that changed in it; unchanged context inside a span counts for nothing, and a span reaching past
+  the diff adds nothing. `uncovered` names contiguous runs of changed lines, so it reads as the
+  line numbers a reviewer would otherwise have to find alone.
 - **A branch with a layers reads by layer.** The review terminal replaces the file tree with the
   layers's numbered layers and their file counts; moving to a layer scopes the diff to that layer's
   files, and one key switches back to the file tree. The hunks no layer claims appear as a final
@@ -128,6 +133,9 @@ surface in `src/testing/layers.test.ts`, the terminal in `src/testing/layers-rai
 - An agent writes a layers and a reviewer reads back the same layers in the same order.
 - A layers that claims one of two changed files reports the other as uncovered, on writing and on
   reading.
+- A layer claiming one line of a four-line change reports the rest as uncovered and the hunk as
+  partial, rather than counting the hunk covered.
+- A layer claiming only unchanged context covers nothing.
 - Writing a layers again supersedes the previous version and records its parent.
 - A layers is reported stale once the branch moves past the commit it describes.
 - A layer pointing at a path the branch does not change is reported as vanished.

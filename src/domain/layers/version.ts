@@ -20,6 +20,7 @@ export const statusOf = (
     uncovered: gap.missing,
     vanished: [...mentioned].filter((path) => !present.has(path)),
     covered: gap.covered,
+    partial: gap.partial,
     total: gap.total,
   }
 }

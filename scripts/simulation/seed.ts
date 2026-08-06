@@ -107,7 +107,7 @@ const settingsLayers = {
     {
       title: "List invitations with their state",
       note: "Each row carries the invitation's status, so a pending invite reads differently from one a teammate has already accepted.",
-      spans: [{ path: "src/ui/InviteList.tsx", start: 1, end: 24 }],
+      spans: [{ path: "src/ui/InviteList.tsx", start: 1, end: 18 }],
     },
     {
       title: "Drop the client nothing calls any more",
