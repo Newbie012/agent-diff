@@ -134,6 +134,10 @@
   dir: ""
   intents:
     - chilly-horses-taste
+"@eliya-oss/agent-diff@0.1.0-alpha.32":
+  dir: ""
+  intents:
+    - mean-dodos-begin
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
