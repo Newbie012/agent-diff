@@ -10,7 +10,8 @@ import { GitLive } from "../src/service/git/index.ts"
 import { ForgeLive } from "../src/service/forge/index.ts"
 import { storeAt } from "../src/service/store/index.ts"
 import { launch, type App } from "../src/tui/index.ts"
-import { seedRemarks, seedLayers, seedAnswers } from "./simulation/seed.ts"
+import { answerLive } from "./simulation/seed.ts"
+import { seedDemo } from "./simulation/seed.ts"
 import { createWorkspace } from "./simulation/workspace.ts"
 
 const number = (name: string, fallback: number): number => {
@@ -22,9 +23,7 @@ const width = number("width", 110)
 const height = number("height", 26)
 
 const space = await createWorkspace({ branches: number("branches", 7) })
-await seedRemarks(space)
-await seedLayers(space)
-await seedAnswers(space)
+await seedDemo(space)
 const setup = await createTestRenderer({ width, height })
 const scope = Scope.makeUnsafe()
 const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot))
@@ -79,6 +78,13 @@ await show("branches")
 await press(["RETURN"])
 await show("review")
 
+await answerLive(space, "add-teammate-invitations")
+await new Promise((resolve) => setTimeout(resolve, 400))
+await settle()
+await show("an answer arriving while you read")
+await press(["r"])
+await show("the answer pulled in")
+
 await press(["l"])
 await show("layer opened")
 await press(["TAB", "j"])
@@ -106,6 +112,7 @@ await escape()
 await show("branches with work waiting")
 
 await press(["j", "j", "j", "RETURN"])
+await show("a thread the agent asked back on")
 await press(["]"])
 await show("a thread the agent answered")
 await escape()

@@ -8,7 +8,7 @@
 import { execFile, spawn } from "node:child_process"
 import { promisify } from "node:util"
 import { NODE, runArgs } from "./lib/entry.ts"
-import { seedAnswers, seedLayers, seedRemarks } from "./simulation/seed.ts"
+import { seedDemo } from "./simulation/seed.ts"
 import { createWorkspace, series, type Branch, type Workspace } from "./simulation/workspace.ts"
 
 const exec = promisify(execFile)
@@ -112,9 +112,7 @@ const openTerminal = (space: Workspace): Promise<number> =>
 
 const args = parseArgs(process.argv.slice(2))
 const space = await createWorkspace({ branches: args.branches })
-await seedRemarks(space)
-await seedLayers(space)
-await seedAnswers(space)
+await seedDemo(space)
 let running = true
 
 const cleanup = async (): Promise<void> => {
