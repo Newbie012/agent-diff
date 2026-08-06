@@ -126,12 +126,20 @@ Three screens, and the keys each answers to:
   leaving the list. `enter` opens the file when the branch changes it; when it does not, there is no
   diff to open and the panel says so rather than moving the reader somewhere they cannot read.
 - **The line the reviewer is standing on is not a match.** They can see it already.
-- **A name too long for the tree keeps its end.** What tells two files apart sits at the end of
-  their names: an extension separates a component from its test, and a suffix separates
-  `invitations.mutations.ts` from `invitation-defaults.utils.ts`, while the beginnings are the same
-  word. So a name that does not fit loses its front and shows `…tations.mutations.ts`, which a
-  reader can still place. A folded directory drops whole segments rather than characters, so
-  `apps/console/src/pages` reads as `…/src/pages` and stays a path.
+- **A name too long for the tree keeps both ends.** Either end can be the part that tells two
+  files apart. An extension and a suffix separate `invitations.mutations.ts` from
+  `invitation-defaults.utils.ts`, whose beginnings are the same word; a prefix separates
+  `reduce-window-batches.ts` from `summarise-window-batches.ts`, whose ends are the same words. A
+  name that keeps only one end reads as a different, shorter name, and two files deep in a tree can
+  end up drawn identically. So a name that does not fit drops its middle and shows `reduce-…tches.ts`,
+  with the `…` saying that something was dropped. A folded directory drops whole segments rather
+  than characters, so `apps/console/src/pages` reads as `…/src/pages` and stays a path.
+- **The header names the file the cursor is on, in full where it can.** The tree gives a name a
+  handful of columns once indentation has taken its share, so the header is where the reader learns
+  which file they are reading. It carries the path, and when the path is wider than the row it
+  drops the middle segments and keeps the first one and the file's own name, marked with `…`. The
+  row never runs past the edge of the terminal, because a path cut by the edge carries no mark and
+  reads as a path that ended there.
 - **A level of nesting costs one column.** A repository laid out five directories deep spends a
   third of a narrow pane on indentation alone, and the fold marker and icon already show where a row
   sits. The reader gets those columns instead.
@@ -218,6 +226,8 @@ Behaviors that must be covered:
 - A gap opened often enough runs out and its row goes.
 - A comment written on a line that only exists because a gap was opened reaches the agent against
   the right file and the right line numbers.
+- Two files deep in a nested tree, whose names share their ends, are drawn as two different rows,
+  and the header names the file the cursor is on without running past the edge.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
