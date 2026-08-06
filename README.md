@@ -64,7 +64,8 @@ A comment is handed over exactly once, so a second `take` returns only what was 
 ## The reading order
 
 An agent knows the order it built a change in. Rebuilding that order by reading forty files is the
-expensive way to learn something it already has, so it can publish the reading itself:
+expensive way to learn something it already has, so it can publish the reading itself when you ask
+for one:
 
 ```bash
 adiff layers set --worktree . --json -

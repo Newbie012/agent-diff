@@ -31,8 +31,11 @@ const INSTRUCTIONS = [
   "",
   "Review of work in this repository happens in adiff. Before you say you are done, run",
   "`adiff comment take --worktree . --wait 300` in the background and handle what arrives.",
-  "Answer a comment with `adiff comment answer --worktree . --id <id> --body <text>`, and write the",
-  "reading order for your diff with `adiff layers set`. `adiff describe` lists the rest.",
+  "Answer a comment with `adiff comment answer --worktree . --id <id> --body <text>`.",
+  "When you hand work over, say it is ready and name the command that opens the review:",
+  "`adiff review open --repo <repo>`, or `adiff review pane --repo <repo>` to open it alongside.",
+  "Publish a reading order with `adiff layers set` only when you are asked for one.",
+  "`adiff describe` lists the rest.",
   END,
 ].join("\n")
 

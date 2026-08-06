@@ -1,6 +1,6 @@
 ---
 name: adiff
-description: Pick up review comments left on this worktree's diff in the adiff terminal, act on them, and write the layers that explains the diff. Use when the user says they left comments, asks you to check adiff, asks you to watch for review feedback, or asks you to hand work over for review.
+description: Pick up review comments left on this worktree's diff in the adiff terminal, act on them, and answer them by id. Use when the user says they left comments, asks you to check adiff, asks you to watch for review feedback, or asks you to hand work over for review.
 ---
 
 # adiff
@@ -93,11 +93,56 @@ Read `suggestion` before doing anything else — it names the command that resol
 Retry only when `retriable` is true. `UnknownBranch` means this worktree is not one adiff knows
 about, because the reviewer has not opened it; report that rather than looping.
 
-## Handing work over: write the layers
+## Handing work over
 
-You know the order the change was built in. The reviewer does not, and rebuilding it by reading
-every file is the most expensive way to learn something you already have. When you finish a piece
-of work, write a **layers**: an ordered set of layers over the diff, each one a claim about a span of
+Finishing is not a reason to publish anything. Say the work is ready, put the review in front of
+them if they asked for one, and say how to read it. That is the whole handover. A reading order is
+extra work you do on request, and it has its own section further down.
+
+## Put the review in front of them
+
+When someone asks you for a review, open it rather than describing how:
+
+```bash
+adiff review pane --repo <repo>
+```
+
+It splits the pane they are already looking at, so their next move is to look right rather than to
+type. The answer says what happened:
+
+```json
+{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api"}
+```
+
+`opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,
+WezTerm or kitty has nowhere to put a pane. The answer carries `command` either way, so quote that
+line and let them run it.
+
+Open a pane when a review was asked for. Finishing work is not a reason on its own, and taking over
+someone's screen uninvited is worse than a line they have to copy.
+
+## Tell the reviewer how to read it
+
+Whether or not a pane opened, say what to do with it. Name the repository they should point at,
+which is the repository the worktree belongs to:
+
+> Open it with `adiff review open --repo <repo>`, then press `enter` on this branch. The sidebar
+> lists the files; `j` and `k` move down the diff, `]` and `[` walk between files. Select lines with
+> `v`, write a comment with `c`, stage it with `ctrl+a`, and send the whole review with `S`. Press
+> `?` for the rest.
+
+Fill the repository path in yourself so nobody has to compose the command.
+
+Say what you want looked at hardest, and where you are unsure. A reviewer who knows which part you
+doubt spends their attention there. Offer a reading order rather than writing one: if the change is
+long enough that the order matters, say you can publish one and let them decide.
+
+## Publishing a reading order, when you are asked for one
+
+Only when the reviewer asks. A reading order is a real piece of work, it can be wrong, and one
+nobody wanted spends their attention on your summary rather than on the code.
+
+When they do ask, write **layers**: an ordered set over the diff, each one a claim about a span of
 code. The reviewer then walks the argument instead of the filesystem.
 
 ```bash
@@ -156,44 +201,13 @@ with:
 adiff layers show --worktree . --fields covered,partial,total,uncovered
 ```
 
-Setting a layers again supersedes the previous one and bumps `version`; the layers records the commit
-it was written for, and adiff reports it as `stale` once the branch moves past that commit. After
-you address a review, write the layers again.
+Setting layers again supersedes the previous set and bumps `version`; the set records the commit it
+was written for, and adiff reports it as `stale` once the branch moves past that commit. Once a
+reviewer has a reading order, keep it true: write it again after you address their comments.
 
-## Put the review in front of them
-
-When someone asks you for a review, open it rather than describing how:
-
-```bash
-adiff review pane --repo <repo>
-```
-
-It splits the pane they are already looking at, so their next move is to look right rather than to
-type. The answer says what happened:
-
-```json
-{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api"}
-```
-
-`opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,
-WezTerm or kitty has nowhere to put a pane. The answer carries `command` either way, so quote that
-line and let them run it.
-
-Open a pane when a review was asked for. Finishing work is not a reason on its own, and taking over
-someone's screen uninvited is worse than a line they have to copy.
-
-## Tell the reviewer how to read it
-
-Whether or not a pane opened, say what to do with it. Name the repository they should point at,
-which is the repository the worktree belongs to:
-
-> Open it with `adiff review open --repo <repo>`, then press `enter` on this branch. The sidebar
-> lists the layers in reading order; `j` and `k` move between them and the diff follows. Inside a
-> layer, `]` and `[` walk its files. Select lines with `v`, write a comment with `c`, stage it with
-> `ctrl+a`, and send the whole review with `S`. Press `?` for the rest.
-
-Say what you want looked at hardest, and where you are unsure. A reviewer who knows which layer you
-doubt spends their attention there.
+When you have published one, tell them the sidebar now holds it: `s` swaps between the layers and
+the files, `j` and `k` move between layers with the diff following, and `]` and `[` walk the files
+inside a layer.
 
 ## Discovering the rest
 

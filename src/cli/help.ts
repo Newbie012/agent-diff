@@ -36,7 +36,7 @@ export const banner = (): string =>
     "",
     "  adiff comment take --worktree . --wait 300    block until a comment arrives",
     "  adiff comment answer --worktree . --id <id> --body '…'",
-    "  adiff layers set --worktree . --json -        publish the reading order",
+    "  adiff layers set --worktree . --json -        publish a reading order, when asked",
     "",
     "Every comment carries an id, and an answer goes back to the reviewer under it.",
     "",
