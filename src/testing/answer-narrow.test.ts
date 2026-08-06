@@ -1,8 +1,6 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-type Handed = { readonly id: string }
-
 const oneFile = {
   files: [
     {
@@ -31,22 +29,16 @@ describe("an answered thread in a narrow terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.app.runComment({
-      branch: branch.name,
+    await driver.agent.seedAnswered({
+      worktree: branch.worktree,
+      head: await driver.branch.getHead(branch),
       file: "src/api.ts",
-      start: 2,
-      end: 2,
-      body: "does this hold",
+      line: 2,
+      comment: "does this hold",
+      answer,
     })
-    const taken = await driver.app.runTake(branch.worktree)
-    const handed = (taken.envelope as { comments: ReadonlyArray<Handed> }).comments[0]
 
     // ACT
-    await driver.app.runAnswer({
-      worktree: branch.worktree,
-      id: handed?.id ?? "",
-      body: answer,
-    })
     await driver.screen.open({ width: 80, height: 30 })
     await driver.screen.pressKeys(["RETURN"])
 

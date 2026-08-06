@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { Effect } from "effect"
 import { reportsDir, Store, storeAt, type Batch } from "../../../service/store/index.ts"
+import type { Side } from "../../../domain/patch/index.ts"
 import type { DriverState } from "../../state.ts"
 
 export type DeliveredComment = {
@@ -11,6 +12,20 @@ export type DeliveredComment = {
   readonly start: number
   readonly end: number
   readonly snippet: string
+}
+
+const SEEDED_AT = "2026-01-01T00:00:00.000Z"
+
+export type Seeded = {
+  readonly worktree: string
+  readonly head: string
+  readonly file: string
+  readonly line: number
+  readonly comment: string
+  readonly answer: string
+  readonly id?: string
+  readonly snippet?: string
+  readonly asks?: boolean
 }
 
 export class AgentTestDriver {
@@ -24,6 +39,38 @@ export class AgentTestDriver {
     const directory = reportsDir(this.state.storeRoot)
     const names = await readdir(directory).catch(() => [])
     return Promise.all(names.map((name) => readFile(join(directory, name), "utf8")))
+  }
+
+  async seedAnswered(seed: Seeded): Promise<void> {
+    const comment = {
+      id: seed.id ?? "seeded",
+      anchor: {
+        path: seed.file,
+        side: "new" as Side,
+        start: seed.line,
+        end: seed.line,
+        blob: "",
+        snippet: seed.snippet ?? "",
+      },
+      body: seed.comment,
+    }
+    const write = Effect.gen(function* () {
+      const store = yield* Store
+      yield* store.submit(seed.worktree, {
+        id: "seeded-batch",
+        at: SEEDED_AT,
+        head: seed.head,
+        comments: [comment],
+      })
+      yield* store.answer(seed.worktree, {
+        comment: comment.id,
+        body: seed.answer,
+        head: seed.head,
+        asks: seed.asks ?? false,
+        at: SEEDED_AT,
+      })
+    })
+    await Effect.runPromise(write.pipe(Effect.provide(storeAt(this.state.storeRoot))))
   }
 
   async listBatches(worktree: string): Promise<ReadonlyArray<Batch>> {
