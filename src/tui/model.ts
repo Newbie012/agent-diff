@@ -156,6 +156,18 @@ const packed = (lines: ReadonlyArray<string>, word: string, room: number): Reado
   return [...lines.slice(0, -1), `${last} ${word}`]
 }
 
+const shortened = (word: string, room: number): string =>
+  word.length <= room ? word : `${word.slice(0, Math.max(1, room - 1))}\u2026`
+
+export const wordWrapped = (text: string, room: number): ReadonlyArray<string> => {
+  const width = Math.max(1, room)
+  return text
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => shortened(word, width))
+    .reduce<ReadonlyArray<string>>((lines, word) => packed(lines, word, width), [])
+}
+
 export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
   const width = Math.max(1, room)
   return text
@@ -197,7 +209,7 @@ const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
 }
 
 const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
-  wrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
+  wordWrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
     index: layerIndex,
     kind: "title" as const,
     text,

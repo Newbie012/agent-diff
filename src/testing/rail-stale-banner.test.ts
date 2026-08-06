@@ -18,7 +18,7 @@ const layers = {
   summary: "Say why an invitation was refused",
   layers: [
     {
-      title: "Name the team and the address in the failure",
+      title: "Name the invitations that a refusal mentions",
       blocks: [{ kind: "code" as const, path: "src/invitations.ts", start: 25, end: 26 }],
     },
   ],
@@ -53,7 +53,7 @@ describe("the rail on a stale layer set", () => {
     expect(railText(frame)).toContain("stale, the branch moved on")
   })
 
-  it("says the whole sentence at eighty columns", async () => {
+  it("keeps a title's words whole at eighty columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -61,6 +61,21 @@ describe("the rail on a stale layer set", () => {
     const frame = await staleRail(driver, 80)
 
     // ASSERT
-    expect(railText(frame)).toContain("stale, the branch moved on")
+    const rail = railText(frame)
+    expect(rail).toMatch(/invitati\u2026/)
+    expect(rail).not.toMatch(/invitatio ns/)
+  })
+
+  it("says only that it is stale where the rail is narrow", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    const frame = await staleRail(driver, 80)
+
+    // ASSERT
+    const rail = railText(frame)
+    expect(rail).toContain("stale")
+    expect(rail).not.toContain("moved on")
   })
 })
