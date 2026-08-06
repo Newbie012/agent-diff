@@ -25,11 +25,12 @@ describe("reading the keys off the bottom of the screen", () => {
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["v", "c"])
 
     // ASSERT
     const footer = footerOf(await driver.screen.getFrame())
-    expect(footer).toContain("^p")
-    expect(footer).not.toContain("ctrl+p")
+    expect(footer).toContain("^s")
+    expect(footer).not.toContain("ctrl+s")
   })
 
   it("says what is selected while a selection is being made", async () => {

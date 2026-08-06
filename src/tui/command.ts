@@ -344,6 +344,8 @@ export const commands: ReadonlyArray<Command> = [
     category: "Files",
     keys: ["s"],
     screens: ["review"],
+    hint: "layers",
+    rank: 2,
     whenLayers: true,
   }),
   command({
