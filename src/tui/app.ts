@@ -36,6 +36,8 @@ import {
   rowAtSourceLine,
   sourceLineAt,
   layerContext,
+  knownToHaveNoPull,
+  pullHere,
   selectedBranch,
   selectedPatch,
   selectedLines,
@@ -66,6 +68,7 @@ import {
   withContext,
   withBranches,
   withPulls,
+  withSilentForge,
   withFull,
   withPatches,
   restoredTo,
@@ -109,6 +112,11 @@ const asKey = (name: string): KeyEvent =>
   (name.startsWith("ctrl+")
     ? { name: name.slice(5), sequence: name.slice(5), ctrl: true, shift: false }
     : { name, sequence: name, ctrl: false, shift: false }) as KeyEvent
+
+const openedPull = (state: string, opened: boolean): string => {
+  if (!opened) return "could not reach the pull request"
+  return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
+}
 
 const keyName = (key: KeyEvent): string => {
   const base = key.shift && key.name.length === 1 ? key.name.toUpperCase() : key.name
@@ -706,8 +714,7 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
-      const state = this.state.pulls[branch.branch]
-      if (state === undefined) {
+      if (knownToHaveNoPull(this.state)) {
         this.commit(withNoticeHere(this.state, "no pull request for this branch"))
         return
       }
@@ -719,21 +726,26 @@ export class App {
           Effect.catchTag("ForgeUnavailable", () => Effect.succeed(false)),
         )
       )
-      const said = opened ? `opened the ${state} pull request` : "could not reach the pull request"
-      this.commit(withNoticeHere(this.state, said))
+      this.commit(withNoticeHere(this.state, openedPull(pullHere(this.state), opened)))
     })
   }
 
   private loadPulls(): Work {
     return Effect.gen({ self: this }, function* () {
       const forge = yield* (Effect.map(Forge, (service) => service))
-      const asked = forge.pulls(this.repo)
-      const pulls = yield* (
-        asked.pipe(Effect.catchTag("ForgeUnavailable", () => Effect.succeed([])))
+      const answered = yield* (
+        forge.pulls(this.repo).pipe(
+          Effect.map(Option.some),
+          Effect.catchTag("ForgeUnavailable", () => Effect.succeed(Option.none())),
+        )
       )
-      if (pulls.length === 0) return
-      const found = Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state]))
-      this.commit(withPulls(this.state, found))
+      this.commit(
+        Option.match(answered, {
+          onNone: () => withSilentForge(this.state),
+          onSome: (pulls) =>
+            withPulls(this.state, Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state]))),
+        }),
+      )
     })
   }
 

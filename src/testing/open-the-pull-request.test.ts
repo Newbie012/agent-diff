@@ -21,10 +21,11 @@ describe("reaching the pull request from the worktree list", () => {
     expect(asked.some((line) => line.includes(`pr view ${branch.name} --web`))).toBe(true)
   })
 
-  it("says so on a branch that has no pull request", async () => {
+  it("says so on a branch the forge has no pull request for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
+    await driver.app.setPullRequests([])
     await driver.screen.open()
 
     // ACT
@@ -34,15 +35,16 @@ describe("reaching the pull request from the worktree list", () => {
     expect(await driver.screen.getFrame()).toContain("no pull request")
   })
 
-  it("offers the key on the worktree list", async () => {
+  it("offers the key on the worktree list where there is one to open", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create(oneFile)
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.setPullRequests([{ branch: branch.name, state: "open", draft: false }])
 
     // ACT
     await driver.screen.open()
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("pull request")
+    expect(await driver.screen.getFrame()).toContain("p pull request")
   })
 })

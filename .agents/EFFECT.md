@@ -51,8 +51,9 @@ export class ForgeUnavailable extends Data.TaggedError("ForgeUnavailable")<{
 
 Every failure a service can produce appears in its signature. A service never swallows a failure to
 keep its signature clean. **The place that has a truthful answer handles it, and that is usually not
-the service.** Forge fails when `gh` is missing; the terminal catches that failure and shows an
-empty column, because an empty column is the truthful answer there:
+the service.** Forge fails when `gh` is missing; the terminal catches that failure and says it
+could not find out, because "we cannot tell" is the truthful answer there and an empty column
+would read as "there is none":
 
 ```ts
 asked.pipe(Effect.catchTag("ForgeUnavailable", () => Effect.succeed([])))
