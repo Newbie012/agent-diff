@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { describe, expect, it } from "@effect/vitest"
-import { TestDriver } from "./index.ts"
+import { TestDriver, type CreatedBranch } from "./index.ts"
 
 const oneFile = {
   files: [
@@ -16,12 +16,13 @@ const oneFile = {
 const NON_SLUG = /[^a-zA-Z0-9]+/g
 
 const damage = async (
-  root: string,
-  worktree: string,
+  driver: TestDriver,
+  created: CreatedBranch,
   file: string,
   text: string,
 ): Promise<void> => {
-  const branch = join(root, "branches", worktree.replace(NON_SLUG, "-"))
+  const key = `${created.worktree}#${created.name}`.replace(NON_SLUG, "-")
+  const branch = join(driver.storeRoot, "branches", key)
   await mkdir(branch, { recursive: true })
   await writeFile(join(branch, file), text, "utf8")
 }
@@ -31,7 +32,7 @@ describe("a store file that cannot be trusted", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await damage(driver.storeRoot, branch.worktree, "state.json", '{"pending":[{"id":"a",')
+    await damage(driver, branch, "state.json", '{"pending":[{"id":"a",')
 
     // ACT
     const result = await driver.app.runProgress(branch.name)
@@ -48,7 +49,7 @@ describe("a store file that cannot be trusted", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await damage(driver.storeRoot, branch.worktree, "state.json", '{"pending":"not a list"}')
+    await damage(driver, branch, "state.json", '{"pending":"not a list"}')
 
     // ACT
     const result = await driver.app.runProgress(branch.name)
@@ -64,7 +65,7 @@ describe("a store file that cannot be trusted", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await damage(driver.storeRoot, branch.worktree, "inbox.jsonl", '{"id":"b","comments":[{}]}\n')
+    await damage(driver, branch, "inbox.jsonl", '{"id":"b","comments":[{}]}\n')
 
     // ACT
     const result = await driver.app.runTake(branch.worktree)
