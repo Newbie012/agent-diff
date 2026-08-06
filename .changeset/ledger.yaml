@@ -195,6 +195,10 @@
   dir: ""
   intents:
     - tall-panels-read-wide
+"@eliya-oss/agent-diff@0.1.0-alpha.46":
+  dir: ""
+  intents:
+    - find-the-pull-request
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
