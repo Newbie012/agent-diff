@@ -178,6 +178,11 @@
   dir: ""
   intents:
     - bun-version-that-exists
+"@eliya-oss/agent-diff@0.1.0-alpha.42":
+  dir: ""
+  intents:
+    - help-at-every-level
+    - one-review-two-spellings
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
