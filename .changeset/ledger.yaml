@@ -130,6 +130,10 @@
   dir: ""
   intents:
     - bright-jars-sneeze
+"@eliya-oss/agent-diff@0.1.0-alpha.31":
+  dir: ""
+  intents:
+    - chilly-horses-taste
 "@eliya-oss/agent-diff@0.1.0-alpha.4":
   dir: ""
   intents:
