@@ -24,6 +24,8 @@ export const layersPath = (root: string, worktreePath: string): string =>
 
 export const settingsPath = (root: string): string => join(root, "settings.json")
 
+export const upgradePath = (root: string): string => join(root, "upgrade.json")
+
 export const reportsDir = (root: string): string => join(root, "reports")
 
 export const reportPath = (root: string, stamp: string): string =>

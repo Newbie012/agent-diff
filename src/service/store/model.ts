@@ -51,3 +51,10 @@ export const emptyBranchState: BranchState = {
 export type Settings = {
   readonly wrap?: boolean
 }
+
+export type UpgradeCheck = {
+  readonly note?: string
+  readonly checkedAt?: string
+  readonly latest?: string
+  readonly told?: string
+}

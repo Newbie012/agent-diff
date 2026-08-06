@@ -32,6 +32,7 @@ describe("using adiff without reading its documentation", () => {
       "review open",
       "review pane",
       "init",
+      "upgrade",
       "describe",
     ])
     expect(commands).toContainEqual(

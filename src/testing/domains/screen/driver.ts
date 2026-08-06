@@ -35,6 +35,7 @@ export type OpenOptions = {
   readonly width?: number
   readonly height?: number
   readonly repo?: string
+  readonly upgrades?: boolean
 }
 
 export class ScreenTestDriver {
@@ -53,6 +54,8 @@ export class ScreenTestDriver {
   }
 
   async open(options: OpenOptions = {}): Promise<void> {
+    if (options.upgrades === true) delete process.env["ADIFF_NO_UPGRADE_CHECK"]
+    else process.env["ADIFF_NO_UPGRADE_CHECK"] = "1"
     const setup = await createTestRenderer({
       width: options.width ?? WIDTH,
       height: options.height ?? HEIGHT,

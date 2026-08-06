@@ -33,6 +33,7 @@ import {
   takeComments,
   toggleVouch,
   UnknownCommand,
+  upgradeAdiff,
   type Options,
 } from "./cli/index.ts"
 import { banner, help, helpFor, version } from "./cli/help.ts"
@@ -230,6 +231,11 @@ const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
   yield* answer(options, { opened: report.opened, pane: report.pane, command: report.command })
 })
 
+const upgrade = Effect.fn("Main.upgrade")(function* (options: Options) {
+  const report = yield* upgradeAdiff(options["run"] !== undefined)
+  yield* answer(options, { upgrade: report })
+})
+
 const describe = Effect.fn("Main.describe")(function* (options: Options) {
   const wanted = options["command"]
   const asked = wanted === undefined || wanted === "true" ? undefined : wanted
@@ -258,6 +264,7 @@ const routes = {
   "layers set": layersSet,
   "layers show": layersShow,
   init,
+  upgrade,
   describe,
 } as const
 

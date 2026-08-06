@@ -80,6 +80,7 @@ import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import type { Needs, Work } from "./needs.ts"
 import { Intent } from "./intent.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
+import { upgradeHint } from "./upgrade.ts"
 
 export const NOTICE_MS = 2200
 
@@ -889,7 +890,8 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const settings = yield* store.settings
   const wrap = settings.wrap === true
   const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
-  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap })
+  const waiting = yield* upgradeHint
+  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap, waiting })
   const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )

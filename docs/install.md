@@ -26,7 +26,7 @@ bun installs the package; adiff itself runs on Node.
 brew install Newbie012/tap/adiff
 ```
 
-The formula brings its own Node 26, so the terminal works without one on your PATH.
+The formula installs a compiled binary, so nothing else needs to be on your PATH.
 
 ## From source
 
@@ -40,3 +40,38 @@ pnpm review
 
 `pnpm simulate` opens the terminal on a throwaway repository of worktrees an agent has already
 worked on, which is the quickest way to see it without a review of your own.
+
+## Upgrading
+
+```bash
+adiff upgrade
+```
+
+It works out how this copy was installed by looking at where the running executable and its own
+module sit — a Homebrew Cellar, a global npm or bun prefix, a compiled binary somewhere else, or a
+checkout — and prints the one command that updates that install. It asks the registry for the
+newest version with a two and a half second timeout, and answers `checked: false` rather than
+failing when it cannot reach it.
+
+It prints rather than runs, because a tool that rewrites itself mid-run is a worse default than a
+line you can read first. `adiff upgrade --run` runs it for the Homebrew, npm and bun routes. It
+will not run the binary or checkout routes at all: a running executable cannot replace itself in
+place, and adiff has no business pulling your checkout.
+
+### The hint
+
+When the terminal opens, adiff mentions a newer version once in the footer and never again for
+that version. It never checks while you are waiting on anything: it reads a cached answer, and
+refreshes that cache in the background at most once a day, so the network is never on a command's
+path. The cache is `~/.adiff/upgrade.json`, and it says in the file what it is for.
+
+The hint is only ever shown to a person, in the terminal. It is not added to any JSON envelope and
+never written to stderr, because an agent parsing adiff's output should not find a new key or a
+line that reads like an instruction.
+
+```bash
+export ADIFF_NO_UPGRADE_CHECK=1
+```
+
+turns off both the check and the hint. `ADIFF_REGISTRY` points the check at a different dist-tags
+endpoint.
