@@ -60,12 +60,17 @@ const actionsText = (): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^a")} ${fg(palette.muted)("add to review")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("comment now")}`
 const SNIPPET_LINES = 4
 const PALETTE_KEY = 7
-const PALETTE_TITLE = 34
+const PALETTE_TITLE = 60
 const PALETTE_GAP = 2
-const PALETTE_MAX = 18
 const PALETTE_CHROME = 4
 const PENDING_CHROME = 3
 const PALETTE_WIDTH = 76
+const PANEL_SHARE = 0.62
+const PANEL_MAX = 120
+const PANEL_FLOOR = 6
+const PANEL_FOOT = 2
+const PANEL_QUARTER = 4
+const PANEL_FIFTH = 5
 const TREE_MAX = 34
 const TREE_MIN = 18
 const TREE_SHARE = 0.3
@@ -73,7 +78,6 @@ const DIFF_MIN = 24
 const BODY_BORDER = 2
 const PANE_CHROME = 3
 const BRANCH_WIDTH = 82
-const BRANCH_NAME = 44
 const BRANCH_NAME_MIN = 12
 const BRANCH_TAIL = 45
 const EMPTY_LIST = "  nothing to review. No worktree differs from the branch it started from."
@@ -87,8 +91,17 @@ const treeWidth = (width: number): number => {
   return Math.max(0, Math.min(wanted, room - DIFF_MIN))
 }
 
-const homeWidth = (width: number): number =>
-  Math.max(0, Math.min(BRANCH_WIDTH, width - FRAME_PAD * 2))
+const shareOf = (width: number, least: number): number =>
+  Math.max(least, Math.min(PANEL_MAX, Math.floor(width * PANEL_SHARE)))
+
+const homeWidth = (width: number, longest: number): number =>
+  Math.max(
+    0,
+    Math.min(width - FRAME_PAD * 2, Math.min(PANEL_MAX, Math.max(BRANCH_WIDTH, longest + BRANCH_TAIL))),
+  )
+
+const longestName = (state: TuiState): number =>
+  Math.max(0, ...state.branches.map((branch) => branch.branch.length))
 
 const commandRow = (entry: Command, room: number): string => {
   const key = clip(displayKey(entry.keys[0] ?? ""), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
@@ -98,6 +111,13 @@ const commandRow = (entry: Command, room: number): string => {
 
 const modalWidth = (width: number, wanted: number): number =>
   Math.max(0, Math.min(wanted, width - MODAL_MARGIN))
+
+const panelWidth = (width: number): number => modalWidth(width, shareOf(width, PALETTE_WIDTH))
+
+const panelTop = (height: number, part: number): number => Math.max(2, Math.floor(height / part))
+
+const panelRows = (height: number, part: number): number =>
+  Math.max(PANEL_FLOOR, height - panelTop(height, part) - PANEL_FOOT)
 
 type ComposeRoom = { readonly box: number; readonly text: number }
 
@@ -239,7 +259,7 @@ const makeScroll = (renderer: CliRenderer): BoxRenderable =>
 const makePalette = (renderer: CliRenderer): BoxRenderable => {
   const box = makeCompose(renderer)
   box.id = "palette"
-  box.height = PALETTE_MAX
+  box.height = PANEL_FLOOR
   box.width = PALETTE_WIDTH
   return box
 }
@@ -537,8 +557,7 @@ type Cells = {
   readonly state: string
 }
 
-const nameRoom = (pane: number): number =>
-  Math.max(BRANCH_NAME_MIN, Math.min(BRANCH_NAME, pane - BRANCH_TAIL))
+const nameRoom = (pane: number): number => Math.max(BRANCH_NAME_MIN, pane - BRANCH_TAIL)
 
 const columns = (cells: Cells, room: number): string =>
   `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.layers.padStart(8)}   ${cells.state}`
@@ -565,7 +584,7 @@ const stateCell = (state: TuiState, branch: TuiState["branches"][number]): strin
 
 const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
   lead: `${here ? marks().cursor : " "} `,
-  name: clip(branch.branch, room).padEnd(room),
+  name: clipMiddle(branch.branch, room).padEnd(room),
   files: `${branch.files}`.padStart(5),
   added: `+${branch.added}`.padStart(8),
   gone: `-${branch.removed}`.padStart(8),
@@ -825,7 +844,7 @@ export class Screen {
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
     const many = state.branches.length === 1 ? "1 worktree" : `${state.branches.length} worktrees`
-    const pane = homeWidth(this.renderer.width)
+    const pane = this.homeRoom(state)
     const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
     this.landingKeys.content = this.homeKeys(state)
@@ -853,17 +872,20 @@ export class Screen {
     this.paletteTitle.content = matches.length === 0 ? "No command matches" : "Commands"
     this.paletteQuery.content =
       state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
-    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
+    const room = panelWidth(this.renderer.width)
     this.paletteChoices.options = matches.map((entry) => ({
       name: commandRow(entry, room - MODAL_ROOM),
       description: "",
       value: entry.action,
     }))
     this.paletteChoices.selectedIndex = Math.min(state.paletteIndex, Math.max(0, matches.length - 1))
-    this.palette.height = Math.min(PALETTE_MAX, matches.length + PALETTE_CHROME)
+    this.palette.height = Math.min(
+      panelRows(this.renderer.height, PANEL_QUARTER),
+      matches.length + PALETTE_CHROME,
+    )
     this.palette.width = room
     this.palette.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.palette.top = Math.max(2, Math.floor(this.renderer.height / 4))
+    this.palette.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private paintKeys(state: TuiState): void {
@@ -874,7 +896,7 @@ export class Screen {
       return
     }
     const rows = glossaryFor(state.returnTo)
-    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
+    const room = panelWidth(this.renderer.width)
     this.keysTitle.content = `Every key here, ${rows.length} of them`
     this.keysChoices.options = rows.map((entry) => ({
       name: commandRow(entry, room - MODAL_ROOM),
@@ -882,10 +904,13 @@ export class Screen {
       value: entry.action,
     }))
     this.keysChoices.selectedIndex = Math.min(state.paletteIndex, Math.max(0, rows.length - 1))
-    this.keys.height = Math.min(PALETTE_MAX, rows.length + PENDING_CHROME)
+    this.keys.height = Math.min(
+      panelRows(this.renderer.height, PANEL_QUARTER),
+      rows.length + PENDING_CHROME,
+    )
     this.keys.width = room
     this.keys.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.keys.top = Math.max(2, Math.floor(this.renderer.height / 4))
+    this.keys.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private headerText(state: TuiState): StyledText {
@@ -973,7 +998,7 @@ export class Screen {
       return
     }
     const count = state.pending.length
-    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
+    const room = panelWidth(this.renderer.width)
     this.pendingTitle.content = `Send ${count} comment${count === 1 ? "" : "s"} as one review, waking the agent once`
     this.pendingChoices.options = state.pending.map((entry) => ({
       name: clip(
@@ -984,10 +1009,13 @@ export class Screen {
       value: entry.file,
     }))
     this.pendingChoices.selectedIndex = state.pendingIndex
-    this.pending.height = Math.min(PALETTE_MAX, state.pending.length + PENDING_CHROME)
+    this.pending.height = Math.min(
+      panelRows(this.renderer.height, PANEL_QUARTER),
+      state.pending.length + PENDING_CHROME,
+    )
     this.pending.width = room
     this.pending.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.pending.top = Math.max(2, Math.floor(this.renderer.height / 4))
+    this.pending.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private assemble(renderer: CliRenderer): void {
@@ -1034,7 +1062,7 @@ export class Screen {
   }
 
   private branchTable(state: TuiState): StyledText {
-    const room = nameRoom(homeWidth(this.renderer.width))
+    const room = nameRoom(this.homeRoom(state))
     if (state.branches.length === 0) return new StyledText([fg(palette.muted)(EMPTY_LIST)])
     const heading = [fg(palette.faint)(`${branchHeading(room)}\n\n`)]
     const rows = state.branches.flatMap((branch, index) => {
@@ -1067,10 +1095,14 @@ export class Screen {
     if (this.shown !== undefined) this.footer.content = this.footerText(this.shown)
   }
 
+  private homeRoom(state: TuiState): number {
+    return homeWidth(this.renderer.width, longestName(state))
+  }
+
   private homeKeys(state: TuiState): StyledText {
     const said = state.notice.length === 0 ? state.waiting : state.notice
     const tail = said.length === 0 ? "" : `  ${said}`
-    const room = Math.max(0, homeWidth(this.renderer.width) - tail.length)
+    const room = Math.max(0, this.homeRoom(state) - tail.length)
     const chips = keptWithin(this.chipRow().chunks, room)
     if (tail.length === 0) return new StyledText([...chips])
     const colour = state.notice.length === 0 ? palette.accent : palette.attention
@@ -1095,7 +1127,7 @@ export class Screen {
   private paintPane(state: TuiState): void {
     const onBranches = atHome(state)
     const inset = onBranches ? 0 : 1
-    this.listPane.width = onBranches ? homeWidth(this.renderer.width) : this.paneRoom()
+    this.listPane.width = onBranches ? this.homeRoom(state) : this.paneRoom()
     this.listPane.visible = onBranches || state.navOpen
     this.listPane.border = onBranches ? [] : ["right"]
     this.listPane.paddingLeft = inset
@@ -1130,7 +1162,7 @@ export class Screen {
       this.foundChoices.options = []
       return
     }
-    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
+    const room = panelWidth(this.renderer.width)
     const here = matchHere(state)
     this.foundTitle.content = `${state.term}  ·  ${state.matches.length} elsewhere`
     this.foundChoices.options = state.matches.map((match) => ({
@@ -1147,10 +1179,13 @@ export class Screen {
       .join("\n")
     const peekRows = here?.around.length ?? 0
     this.foundPeek.height = peekRows
-    this.found.height = Math.min(PALETTE_MAX, state.matches.length + peekRows + PALETTE_CHROME)
+    this.found.height = Math.min(
+      panelRows(this.renderer.height, PANEL_FIFTH),
+      state.matches.length + peekRows + PALETTE_CHROME,
+    )
     this.found.width = room
     this.found.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.found.top = Math.max(2, Math.floor(this.renderer.height / 5))
+    this.found.top = panelTop(this.renderer.height, PANEL_FIFTH)
   }
 
   private paintReport(state: TuiState): void {
