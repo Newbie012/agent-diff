@@ -1044,11 +1044,13 @@ export class Screen {
   }
 
   private homeKeys(state: TuiState): StyledText {
-    const chips = this.chipRow().chunks
     const said = state.notice.length === 0 ? state.waiting : state.notice
-    if (said.length === 0) return new StyledText(chips)
+    const tail = said.length === 0 ? "" : `  ${said}`
+    const room = Math.max(0, homeWidth(this.renderer.width) - tail.length)
+    const chips = keptWithin(this.chipRow().chunks, room)
+    if (tail.length === 0) return new StyledText([...chips])
     const colour = state.notice.length === 0 ? palette.accent : palette.attention
-    return new StyledText([...chips, fg(colour)(`  ${said}`)])
+    return new StyledText([...chips, fg(colour)(tail)])
   }
 
   private chipRow(): StyledText {
