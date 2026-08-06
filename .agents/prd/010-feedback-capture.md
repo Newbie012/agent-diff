@@ -27,7 +27,7 @@ can be pasted into a message or an issue without hunting for it.
 Nothing is sent anywhere. The report is a local file and a clipboard entry; where it goes next is
 the reviewer's decision.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want to describe a bug in my own words while looking at it, so that the
    report happens at the moment I have the context rather than an hour later.

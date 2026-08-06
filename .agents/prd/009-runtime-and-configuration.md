@@ -20,7 +20,7 @@ the operator never has to know that a native renderer is involved. State lives i
 directory, overridable with one environment variable. The agent side is a skill in this repo,
 installed with one symlink.
 
-## User Layers
+## User Stories
 
 1. As an `operator`, I want adiff to run without me discovering a flag, so that installation is
    `npm install` and a command.

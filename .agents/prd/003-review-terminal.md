@@ -23,7 +23,7 @@ the change. Selecting a range and pressing a key opens a compose box; sending it
 The screen shows what is needed to act and nothing else. Every key available in the current context
 is listed in the footer, so nothing has to be memorised or discovered.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want the diff highlighted, so that I can read it like code rather than like
    output.

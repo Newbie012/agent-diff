@@ -24,7 +24,7 @@ The agent [takes](CONTEXT.md#take) what it has not seen. Delivery is exactly-onc
 over is never handed over again, so an agent can poll without re-reading its whole history and
 without a comment going missing between two takes.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want to write comments while the agent is busy, so that reviewing is not
    gated on the agent's attention.

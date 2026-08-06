@@ -44,7 +44,7 @@ reached the agent that wrote the code.
 | Review progress is durable | Closing the terminal loses nothing |
 | A stale anchor is never silently wrong | Code moving under a comment is visible before it misleads |
 
-## User Layers
+## User Stories
 
 1. As a `PRD author`, I want one page that says which PRD owns a behavior, so that I don't
    redefine it in mine.

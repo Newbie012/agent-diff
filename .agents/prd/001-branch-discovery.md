@@ -25,7 +25,7 @@ The repository's own working tree is one of those branches. It earns its row by 
 reviewer can look over work in the checkout they are standing in, and it is marked `here` so it
 reads as the checkout it is rather than as a worktree someone prepared.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want the branches with changes and their sizes, so that I can pick what to
    review without visiting five directories.
