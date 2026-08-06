@@ -9,7 +9,7 @@ import { ForgeLive } from "../src/service/forge/index.ts"
 import { storeAt } from "../src/service/store/index.ts"
 import { launch } from "../src/tui/index.ts"
 import { playerPage, toPlain, type Line, type Shot } from "./lib/paint.ts"
-import { seedRemarks } from "./simulation/seed.ts"
+import { seedAnswers, seedLayers, seedRemarks } from "./simulation/seed.ts"
 import { createWorkspace } from "./simulation/workspace.ts"
 
 const PORT = Number(process.env["PORT"] ?? 4320)
@@ -29,6 +29,8 @@ if (!(await exists(repo))) {
   process.stdout.write("building the workspace once…\n")
   const built = await createWorkspace({ branches: 7, at: HOME })
   await seedRemarks(built)
+  await seedLayers(built)
+  await seedAnswers(built)
 }
 
 const setup = await createTestRenderer({ width: WIDTH, height: HEIGHT })

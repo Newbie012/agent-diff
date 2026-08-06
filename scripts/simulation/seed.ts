@@ -39,6 +39,14 @@ export const remarks: ReadonlyArray<Remark> = [
     body: "The upgrade prompt renders before the retry lands. Does it flash on a slow network?",
     send: true,
   },
+  {
+    branch: "resend-expired-invites",
+    file: "src/jobs/resend-invite.ts",
+    start: 11,
+    end: 13,
+    body: "A resend on an expired token still reaches the mailer. Should the check come first?",
+    send: true,
+  },
 ]
 
 const layers = {
@@ -99,11 +107,19 @@ const answered: ReadonlyArray<{
   readonly branch: string
   readonly body: string
   readonly asks: boolean
+  readonly settle: boolean
 }> = [
   {
     branch: "show-invites-in-settings",
     body: "Split it into a pending list and an accepted list, and gave each its own empty state.",
     asks: false,
+    settle: true,
+  },
+  {
+    branch: "resend-expired-invites",
+    body: "Held the send behind the same token check, so a resend cannot outlive the invitation it belongs to.",
+    asks: false,
+    settle: false,
   },
 ]
 
@@ -132,6 +148,21 @@ export const seedAnswers = async (space: Workspace): Promise<void> => {
         "--body",
         entry.body,
         ...(entry.asks ? ["--asks"] : []),
+      ]),
+      { env, encoding: "utf8" },
+    ).catch(() => undefined)
+    if (!entry.settle) return
+    await exec(
+      NODE,
+      runArgs([
+        "comment",
+        "resolve",
+        "--repo",
+        space.repo,
+        "--branch",
+        entry.branch,
+        "--id",
+        first.id,
       ]),
       { env, encoding: "utf8" },
     ).catch(() => undefined)
