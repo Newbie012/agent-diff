@@ -273,9 +273,9 @@ export const listSent = Effect.fn("Cli.listSent")(function* (repo: string, branc
   const worktree = yield* findBranch(repo, branch)
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
-  return flatten(yield* store.inbox(worktree.path)).map((comment) =>
-    sentOf(comment, spoken, current.settled, worktree.head),
-  )
+  return flatten(yield* store.inbox(worktree.path))
+    .filter((comment) => !Object.hasOwn(current.removed, comment.id))
+    .map((comment) => sentOf(comment, spoken, current.settled, worktree.head))
 })
 
 export const submitReview = Effect.fn("Cli.submitReview")(function* (

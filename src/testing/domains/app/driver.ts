@@ -186,6 +186,32 @@ export class AppTestDriver {
     ])
   }
 
+  runRemove(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    return this.run([
+      "comment",
+      "remove",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
+  }
+
+  runRestore(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    return this.run([
+      "comment",
+      "restore",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
+  }
+
   runSubmit(branch: string): Promise<CliResult> {
     return this.run(["review", "submit", "--repo", this.state.repo, "--branch", branch])
   }

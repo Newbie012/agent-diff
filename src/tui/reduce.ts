@@ -291,6 +291,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,
   "thread.settle": (state) => state,
+  "thread.remove": (state) => state,
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,

@@ -157,6 +157,22 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: "adiff comment resolve --repo . --branch add-teammate-invitations --id c1",
   },
   {
+    name: "comment remove",
+    about: "Take a comment out of the review. It stays in the record as removed",
+    safety: "write",
+    options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to remove" }],
+    dataKey: "removed",
+    example: "adiff comment remove --repo . --branch add-teammate-invitations --id c1",
+  },
+  {
+    name: "comment restore",
+    about: "Put a removed comment back into the review",
+    safety: "write",
+    options: [repo, branch, { name: "id", required: true, value: "id", about: "The comment to restore" }],
+    dataKey: "restored",
+    example: "adiff comment restore --repo . --branch add-teammate-invitations --id c1",
+  },
+  {
     name: "file vouch",
     about: "Toggle a file as reviewed. Lapses on its own when the file changes",
     safety: "write",

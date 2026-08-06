@@ -25,7 +25,9 @@ export type Thread = {
 const stateOf = (
   answers: ReadonlyArray<StoredAnswer>,
   isSettled: boolean,
+  isRemoved: boolean,
 ): Thread["state"] => {
+  if (isRemoved) return "removed"
   if (isSettled) return "done"
   const last = answers.at(-1)
   if (last === undefined) return "submitted"
@@ -35,6 +37,7 @@ const stateOf = (
 type Reading = {
   readonly answers: ReadonlyArray<StoredAnswer>
   readonly settled: Readonly<Record<string, string>>
+  readonly removed: Readonly<Record<string, string>>
   readonly head: string
 }
 
@@ -57,7 +60,11 @@ const threadOf = (
     start: comment.anchor.start,
     end: comment.anchor.end,
     body: comment.body,
-    state: stateOf(mine, Object.hasOwn(reading.settled, comment.id)),
+    state: stateOf(
+      mine,
+      Object.hasOwn(reading.settled, comment.id),
+      Object.hasOwn(reading.removed, comment.id),
+    ),
     stale: batch.head !== reading.head,
     answers: mine.map(spoken),
   }
@@ -81,6 +88,7 @@ export const listThreads = Effect.fn("Cli.listThreads")(function* (repo: string,
   return threadsIn(yield* store.inbox(worktree.path), {
     answers: yield* store.answers(worktree.path),
     settled: current.settled,
+    removed: current.removed,
     head: worktree.head,
   })
 })
@@ -123,4 +131,40 @@ export const settleThread = Effect.fn("Cli.settleThread")(function* (
     settled: { ...current.settled, [id]: at },
   })
   return { settled: id }
+})
+
+export const removeComment = Effect.fn("Cli.removeComment")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+  at: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
+  const current = yield* store.state(worktree.path)
+  yield* store.saveState(worktree.path, {
+    ...current,
+    removed: { ...current.removed, [id]: at },
+  })
+  return { removed: id }
+})
+
+const without = (
+  entries: Readonly<Record<string, string>>,
+  id: string,
+): Readonly<Record<string, string>> =>
+  Object.fromEntries(Object.entries(entries).filter(([key]) => key !== id))
+
+export const restoreComment = Effect.fn("Cli.restoreComment")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
+  const current = yield* store.state(worktree.path)
+  yield* store.saveState(worktree.path, { ...current, removed: without(current.removed, id) })
+  return { restored: id }
 })

@@ -20,6 +20,8 @@ import {
   optionsFrom,
   required,
   reviewProgress,
+  removeComment,
+  restoreComment,
   settleThread,
   setLayers,
   showLayers,
@@ -110,6 +112,25 @@ const commentResolve = Effect.fn("Main.commentResolve")(function* (options: Opti
     options["at"] ?? new Date().toISOString(),
   )
   yield* answer(options, { settled: report.settled })
+})
+
+const commentRemove = Effect.fn("Main.commentRemove")(function* (options: Options) {
+  const report = yield* removeComment(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+    options["at"] ?? new Date().toISOString(),
+  )
+  yield* answer(options, { removed: report.removed })
+})
+
+const commentRestore = Effect.fn("Main.commentRestore")(function* (options: Options) {
+  const report = yield* restoreComment(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+  )
+  yield* answer(options, { restored: report.restored })
 })
 
 const commentStage = Effect.fn("Main.commentStage")(function* (options: Options) {
@@ -229,6 +250,8 @@ const routes = {
   "comment answer": commentAnswer,
   "comment threads": commentThreads,
   "comment resolve": commentResolve,
+  "comment remove": commentRemove,
+  "comment restore": commentRestore,
   "review submit": reviewSubmit,
   "review pane": reviewPane,
   "review progress": reviewStatus,
