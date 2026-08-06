@@ -110,6 +110,15 @@ Three screens, and the keys each answers to:
   leaving the list. `enter` opens the file when the branch changes it; when it does not, there is no
   diff to open and the panel says so rather than moving the reader somewhere they cannot read.
 - **The line the reviewer is standing on is not a match.** They can see it already.
+- **A name too long for the tree keeps its end.** What tells two files apart sits at the end of
+  their names: an extension separates a component from its test, and a suffix separates
+  `invitations.mutations.ts` from `invitation-defaults.utils.ts`, while the beginnings are the same
+  word. So a name that does not fit loses its front and shows `…tations.mutations.ts`, which a
+  reader can still place. A folded directory drops whole segments rather than characters, so
+  `apps/console/src/pages` reads as `…/src/pages` and stays a path.
+- **A level of nesting costs one column.** A repository laid out five directories deep spends a
+  third of a narrow pane on indentation alone, and the fold marker and icon already show where a row
+  sits. The reader gets those columns instead.
 - **The footer is generated from the bindings**, never written by hand. A key that exists is
   listed; a key that is listed exists.
 - **The cursor is always on a row**, and the view follows it. Scroll position is derived from the
