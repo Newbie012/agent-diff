@@ -22,7 +22,7 @@ counting — nothing has to notice, invalidate, or clean up.
 
 Vouching is a toggle, because the reviewer changes their mind.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want to mark a file reviewed, so that coming back tomorrow I know where I
    stopped.

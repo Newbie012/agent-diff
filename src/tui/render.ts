@@ -59,6 +59,8 @@ const reportActions = (): StyledText =>
 const actionsText = (): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^a")} ${fg(palette.muted)("add to review")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("comment now")}`
 const SNIPPET_LINES = 4
+const PALETTE_TITLE = 34
+const PALETTE_GAP = 2
 const PALETTE_MAX = 18
 const PALETTE_CHROME = 4
 const PENDING_CHROME = 3
@@ -779,7 +781,7 @@ export class Screen {
     this.paletteQuery.content =
       state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
     this.paletteChoices.options = matches.map((entry) => ({
-      name: `${entry.title.padEnd(34)}${entry.category}`,
+      name: `${clip(entry.title, PALETTE_TITLE - PALETTE_GAP).padEnd(PALETTE_TITLE)}${entry.category}`,
       description: "",
       value: entry.action,
     }))

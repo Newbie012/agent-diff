@@ -26,7 +26,7 @@ A selection becomes an [anchor](CONTEXT.md#anchor): the file, the side, the line
 the anchor survive; if the code has moved by the time the agent reads it, the agent still knows
 what was meant.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want a comment on new-side lines to quote the code I selected, so that the
    agent reads what I read.

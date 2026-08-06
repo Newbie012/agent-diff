@@ -104,6 +104,15 @@ await show("pending review")
 await escape()
 await escape()
 await show("branches with work waiting")
+
+await press(["j", "j", "j", "RETURN"])
+await press(["]"])
+await show("a thread the agent answered")
+await escape()
+await press(["j", "j", "RETURN"])
+await show("a thread already settled")
+await escape()
+
 await press(["RETURN"])
 
 await press(["]", "]"])

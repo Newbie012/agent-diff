@@ -24,7 +24,7 @@ A layers is pinned to the commit it describes and carries a version. When the co
 layers is reported as stale rather than quietly presented as current — a confident narration of code
 that no longer exists is worse than no narration.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want to read a large diff in the order it was built, so that I understand
    the change instead of reconstructing it.

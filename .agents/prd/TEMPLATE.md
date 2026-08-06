@@ -20,7 +20,7 @@ The behavior adiff provides. What the reviewer sees, what the agent receives, wh
 Two or three short paragraphs. Contracts go in **Implementation Decisions**; layers go in
 GitHub issues.
 
-## User Layers
+## User Stories
 
 > As a `<actor>`, I want `<capability>`, so that `<benefit>`.
 

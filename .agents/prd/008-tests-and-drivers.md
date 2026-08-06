@@ -23,7 +23,7 @@ everything else is.
 Tests speak to the product through a TestDriver — a domain API in adiff's own vocabulary. The test
 says what happened, the driver knows how.
 
-## User Layers
+## User Stories
 
 1. As an `engineer`, I want a failing test to mean the product is broken, so that a red suite is
    worth stopping for.

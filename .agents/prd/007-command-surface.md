@@ -21,7 +21,7 @@ test, and an agent all consume adiff the same way.
 Failures answer in the same shape as successes, with a tag naming what went wrong and the context
 needed to fix it.
 
-## User Layers
+## User Stories
 
 1. As a `reviewer`, I want to comment from a script, so that a repetitive review is automatable.
 2. As an `agent`, I want machine-readable answers, so that I can consume adiff without parsing
