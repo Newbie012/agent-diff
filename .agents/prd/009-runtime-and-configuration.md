@@ -53,8 +53,14 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   command line, and the test driver when it spawns the binary. An operator who runs `adiff` never
   types it, and an operator who runs `node src/main.ts` without it gets a clear failure from Node
   rather than a confusing one from the renderer.
-- **State lives at `~/.adiff`**, overridden by `ADIFF_ROOT`. That is the only environment variable
-  adiff reads.
+- **State lives at `~/.adiff`**, overridden by `ADIFF_ROOT`. Nothing adiff does is configured by a
+  file; the few other variables it reads exist to point it somewhere else for a test or to turn one
+  behavior off: `ADIFF_REGISTRY`, `ADIFF_NO_UPGRADE_CHECK` and `ADIFF_UPGRADE_ROUTE` for the upgrade
+  check, and `ADIFF_SESSION`, `ADIFF_FONT` and `ADIFF_MARKS` for the terminal.
+- **`ADIFF_UPGRADE_ROUTE` names the install adiff should believe it has.** Detection reads the paths
+  of the running executable and adiff's own module, which is right in every install anyone has hit
+  and unprovable in a test that upgrades nothing for real. Naming the route makes each one
+  observable, and gives an operator whose install detection guesses wrong a way to say so.
 - **The agent skill ships in the repo** at `skills/adiff/SKILL.md` and is installed by symlinking
   the directory into the agent's skills path. adiff never installs it automatically; touching an
   agent's configuration is the operator's decision.
