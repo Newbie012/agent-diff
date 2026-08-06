@@ -210,6 +210,10 @@ export class AppTestDriver {
     await writeFile(path, contents, "utf8")
   }
 
+  elsewhere(): string {
+    return this.state.workspace
+  }
+
   runDescribe(command?: string): Promise<CliResult> {
     return this.run(command === undefined ? ["describe"] : ["describe", "--command", command])
   }

@@ -34,7 +34,8 @@ const ADVICE: Readonly<Record<string, Advice>> = {
   },
   UnknownWorktree: {
     exit: NOT_FOUND,
-    suggestion: "Run `adiff layers set` from inside a worktree of the repository under review.",
+    suggestion:
+      "--worktree takes the path of a worktree of the repository under review. The error lists the ones that exist; pass one of those, or run the command from inside it with `--worktree .`.",
     retriable: false,
   },
   MalformedLayers: {

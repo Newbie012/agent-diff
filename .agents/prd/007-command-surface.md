@@ -107,6 +107,20 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
   tell whether the reviewer wanted a pane, so the skill carries the rule: open one when a review was
   asked for, never because work finished.
 
+- **First contact teaches the loop, not the catalog.** A caller that has read nothing runs `adiff`
+  and needs to know what it is supposed to do here, which is a sequence rather than a list: collect
+  the comments, act on them, answer them, publish the reading order. The catalog answers a different
+  question, so bare `adiff` carries the sequence and points at `describe --command <name>` for one
+  command's options, which costs a caller a tenth of the whole catalog.
+- **An empty answer carries a hint.** `comment take` on a worktree with nothing waiting is where a
+  confused caller lands, so that answer names the two things it does not yet know: `--wait` blocks
+  until a comment arrives, and `comment answer` sends a reply back. The field appears only when the
+  array is empty, so a caller with comments pays nothing for it.
+- **A suggestion names the command the caller ran.** An error raised by several commands cannot
+  name one of them, so its suggestion describes the correction instead. `UnknownWorktree` reaches
+  `layers set`, `layers show`, `comment answer` and `comment resolve`, so it explains what a
+  worktree path has to be rather than naming a verb the caller did not use.
+
 ### Deferred decisions
 
 | Decision | Trigger |
