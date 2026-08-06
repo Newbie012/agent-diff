@@ -2,9 +2,13 @@
 
 # adiff
 
-A code review your agent can answer. You select lines in the terminal and comment; the agent picks
-each comment up by its id, does the work, and answers under your own words. A point stays open until
-you settle it.
+An agent finishes a piece of work and leaves you a diff. You read it without knowing why any of it
+was written that way, and asking means describing a line back in prose and reading the reply
+somewhere far from the code it concerns. On a large change you carry the whole review in your head,
+and it ends when your patience does.
+
+adiff puts the conversation on the code. You comment on the lines in a terminal, the agent that
+wrote them answers under your words, and a point stays open until you settle it.
 
 The agent can also hand you a reading order: its own diff in layers, a note on each, and a coverage
 check so nothing is quietly left out of the story.
