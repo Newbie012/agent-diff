@@ -22,6 +22,7 @@ import {
   reviewProgress,
   removeComment,
   restoreComment,
+  sayUpgrade,
   settleThread,
   setLayers,
   showLayers,
@@ -232,8 +233,10 @@ const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
 })
 
 const upgrade = Effect.fn("Main.upgrade")(function* (options: Options) {
-  const report = yield* upgradeAdiff(options["run"] !== undefined)
-  yield* answer(options, { upgrade: report })
+  const run = options["run"] !== undefined
+  const report = yield* upgradeAdiff(run)
+  if (options["json"] !== undefined) return yield* answer(options, { upgrade: report })
+  return yield* Effect.sync(() => process.stdout.write(`${sayUpgrade(report, run)}\n`))
 })
 
 const describe = Effect.fn("Main.describe")(function* (options: Options) {

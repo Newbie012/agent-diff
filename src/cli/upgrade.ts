@@ -50,10 +50,10 @@ const commandFor = (route: Route, executable: string, module: string): string =>
 
 const NOTES: Readonly<Record<Route, string>> = {
   brew: "Homebrew installed this build, so Homebrew replaces it.",
-  npm: `npm installed this build. Name the ${TAG} tag: the latest tag on the registry is an old build.`,
-  bun: `bun installed this build. Name the ${TAG} tag: the latest tag on the registry is an old build.`,
+  npm: `npm installed this build, so npm replaces it. The ${TAG} tag matters: the latest tag on the registry still points at an old build.`,
+  bun: `bun installed this build, so bun replaces it. The ${TAG} tag matters: the latest tag on the registry still points at an old build.`,
   binary:
-    `This is a downloaded binary, so nothing upgrades it on its own. The command replaces it in place; a running executable cannot rewrite itself, so run it yourself. Every build is on ${RELEASES}.`,
+    "This is a downloaded binary, so nothing upgrades it on its own, and a running executable cannot rewrite itself.",
   source: "This is running from a checkout, so git is what updates it.",
 }
 
@@ -119,14 +119,45 @@ export const here = (): { executable: string; module: string } => ({
   module: fileURLToPath(new URL(".", import.meta.url)),
 })
 
-const noteFor = (route: Route, run: boolean, version: string, checked: boolean): string => {
-  const refused =
-    run && !RUNNABLE.has(route) ? " adiff will not run this one for you; run it yourself." : ""
-  const blind = checked
-    ? ""
-    : ` adiff could not reach the registry, so it cannot say whether ${version} is current. Every build is listed on ${RELEASES}.`
-  return `${NOTES[route]}${refused}${blind}`
+type Told = Omit<UpgradeReport, "note">
+
+const statusOf = (told: Told): string => {
+  if (!told.checked)
+    return `adiff ${told.version} is installed. The registry did not answer, so adiff cannot tell whether a newer build is out.`
+  if (told.current === true) return `adiff ${told.version} is the newest build.`
+  return `adiff ${told.version} is installed, and ${told.latest} is out.`
 }
+
+const ranLine = (told: Told): string =>
+  told.latest === undefined
+    ? `Ran \`${told.command}\`. Run \`adiff --version\` to see what you have now.`
+    : `Ran \`${told.command}\`, so the next adiff you run will be ${told.latest}.`
+
+const failedLine = (told: Told): string =>
+  `Ran \`${told.command}\` and it did not work. Run it yourself to see what it said.`
+
+const noteFor = (told: Told, run: boolean): string => {
+  if (told.current === true) return statusOf(told)
+  if (told.ran) return `${statusOf(told)} ${ranLine(told)}`
+  if (run && RUNNABLE.has(told.route)) return `${statusOf(told)} ${failedLine(told)}`
+  const refused = run ? " adiff will not run this one for you; run it yourself." : ""
+  return `${statusOf(told)} ${NOTES[told.route]}${refused} Run \`${told.command}\` to upgrade.`
+}
+
+const offerFor = (told: Told): string =>
+  RUNNABLE.has(told.route)
+    ? "Or run `adiff upgrade --run` and adiff runs that for you."
+    : `Every build is listed on ${RELEASES}.`
+
+const restOf = (told: Told, run: boolean): ReadonlyArray<string> => {
+  if (told.ran) return [ranLine(told)]
+  if (run && RUNNABLE.has(told.route)) return [failedLine(told)]
+  const refused = run ? " adiff will not run this one for you; run it yourself." : ""
+  return [`${NOTES[told.route]}${refused}`, `  ${told.command}`, offerFor(told)]
+}
+
+export const sayUpgrade = (told: Told, run: boolean): string =>
+  told.current === true ? statusOf(told) : [statusOf(told), ...restOf(told, run)].join("\n\n")
 
 export const upgradeAdiff = Effect.fn("Cli.upgradeAdiff")(function* (run: boolean) {
   const { executable, module } = here()
@@ -137,13 +168,13 @@ export const upgradeAdiff = Effect.fn("Cli.upgradeAdiff")(function* (run: boolea
   const current = latest === undefined ? undefined : !newer(latest, version)
   const known = latest === undefined ? {} : { latest, current: current === true }
   const performed = run && RUNNABLE.has(route) && current !== true ? yield* ran(command) : false
-  return {
+  const told = {
     route,
     version,
     checked: latest !== undefined,
     ...known,
     command,
     ran: performed,
-    note: noteFor(route, run, version, latest !== undefined),
-  } satisfies UpgradeReport
+  } satisfies Told
+  return { ...told, note: noteFor(told, run) } satisfies UpgradeReport
 })
