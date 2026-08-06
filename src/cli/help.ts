@@ -1,23 +1,9 @@
-import { existsSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
+import manifest from "../../package.json" with { type: "json" }
 import { catalog, findCommand, type CommandSpec } from "./catalog.ts"
 
 const NAME_ROOM = 18
-const REACH = 5
 
-const manifest = (): string | undefined => {
-  const here = dirname(fileURLToPath(import.meta.url))
-  const climb = Array.from({ length: REACH }, (_, layer) => join(here, ...Array(layer).fill("..")))
-  return climb.map((at) => join(at, "package.json")).find((path) => existsSync(path))
-}
-
-export const version = (): string => {
-  const path = manifest()
-  if (path === undefined) return "unknown"
-  const raw = readFileSync(path, "utf8")
-  return (JSON.parse(raw) as { version?: string }).version ?? "unknown"
-}
+export const version = (): string => manifest.version
 
 const line = (command: CommandSpec): string =>
   `  ${command.name.padEnd(NAME_ROOM)}${command.about}`
