@@ -54,6 +54,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "No comment carries that id. `adiff comment take` reports the ids an agent can answer, and `adiff comment threads` reports every id on a branch.",
     retriable: false,
   },
+  InitUnwritable: {
+    exit: FAILED,
+    suggestion:
+      "adiff init writes AGENTS.md and CLAUDE.md in the repository you point --repo at. Check that path is a directory you can write to.",
+    retriable: false,
+  },
   UnselectableRange: {
     exit: USAGE,
     suggestion: "Those lines are not in the diff. Check --side: new is the working tree, old is the version being replaced.",

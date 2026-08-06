@@ -215,6 +215,29 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: "adiff review open --repo .",
   },
   {
+    name: "init",
+    about:
+      "Write the review loop into this repository's agent instructions, so an agent finds it unprompted",
+    safety: "write",
+    options: [
+      { name: "repo", required: true, value: "path", about: "Repository to write the loop into" },
+      {
+        name: "write",
+        required: false,
+        value: "flag",
+        about: "Make the changes. Without it, init reports what each file would become",
+      },
+      {
+        name: "skill",
+        required: false,
+        value: "flag",
+        about: "Also commit the adiff skill at .claude/skills/adiff/SKILL.md",
+      },
+    ],
+    dataKey: "changes",
+    example: "adiff init --repo . --write",
+  },
+  {
     name: "describe",
     about: "This catalog, as JSON",
     safety: "read",

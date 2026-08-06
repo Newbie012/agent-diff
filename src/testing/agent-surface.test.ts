@@ -28,6 +28,7 @@ describe("using adiff without reading its documentation", () => {
       "layers set",
       "layers show",
       "review open",
+      "init",
       "describe",
     ])
     expect(commands).toContainEqual(

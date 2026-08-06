@@ -10,6 +10,7 @@ import {
   failure,
   fieldsOf,
   findCommand,
+  initRepository,
   listBranches,
   listThreads,
   MalformedLayers,
@@ -190,6 +191,15 @@ const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
   yield* answer(options, { layers })
 })
 
+const init = Effect.fn("Main.init")(function* (options: Options) {
+  const report = yield* initRepository({
+    repo: yield* required(options, "repo"),
+    write: options["write"] !== undefined,
+    skill: options["skill"] !== undefined,
+  })
+  yield* answer(options, { wrote: report.wrote, changes: report.changes })
+})
+
 const describe = Effect.fn("Main.describe")(function* (options: Options) {
   const wanted = options["command"]
   const asked = wanted === undefined || wanted === "true" ? undefined : wanted
@@ -214,6 +224,7 @@ const routes = {
   "review progress": reviewStatus,
   "layers set": layersSet,
   "layers show": layersShow,
+  init,
   describe,
 } as const
 

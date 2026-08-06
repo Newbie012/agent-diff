@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process"
 import { mkdir, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import type { DriverState } from "../../state.ts"
@@ -185,6 +185,22 @@ export class AppTestDriver {
 
   runSubmit(branch: string): Promise<CliResult> {
     return this.run(["review", "submit", "--repo", this.state.repo, "--branch", branch])
+  }
+
+  runInit(options: { readonly write?: boolean; readonly skill?: boolean } = {}): Promise<CliResult> {
+    return this.run([
+      "init",
+      "--repo",
+      this.state.repo,
+      ...(options.write === true ? ["--write"] : []),
+      ...(options.skill === true ? ["--skill"] : []),
+    ])
+  }
+
+  async writeFileAt(name: string, contents: string): Promise<void> {
+    const path = join(this.state.repo, name)
+    await mkdir(dirname(path), { recursive: true })
+    await writeFile(path, contents, "utf8")
   }
 
   runDescribe(command?: string): Promise<CliResult> {
