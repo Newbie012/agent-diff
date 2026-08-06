@@ -116,6 +116,19 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
   confused caller lands, so that answer names the two things it does not yet know: `--wait` blocks
   until a comment arrives, and `comment answer` sends a reply back. The field appears only when the
   array is empty, so a caller with comments pays nothing for it.
+- **`upgrade` answers a person, because a person is who runs it.** Every other verb exists to be
+  called; `upgrade` exists to be typed, and its answer is about the installation rather than about
+  the repository. So it prints prose on stdout and exits 0, and `--json` gives the envelope for a
+  caller that wants `route`, `current` or `latest` as data. The flag name collides with `layers set
+  --json <file>`, which names a document rather than a format; the collision is worth the
+  conventional name, since a caller reads the options out of `describe` rather than guessing them.
+- **Whatever it prints, the first line says what happened.** Already the newest build; a newer
+  build is out and this is its version; the command was run and this is what the next adiff will
+  be; the command was run and failed; the registry never answered. Advice about how upgrading works
+  comes after that, never instead of it. The same sentence is the `note` field in the envelope.
+- **A refused or failed `--run` is not a failure of the command.** It answers `ran: false` with the
+  command in the same reply, the way `review pane` answers `opened: false`, so a caller needs no
+  second code path and a person has the command to paste.
 - **A suggestion names the command the caller ran.** An error raised by several commands cannot
   name one of them, so its suggestion describes the correction instead. `UnknownWorktree` reaches
   `layers set`, `layers show`, `comment answer` and `comment resolve`, so it explains what a
@@ -125,7 +138,7 @@ Commands are noun-verb, so the nouns group and a new verb does not need a new to
 
 | Decision | Trigger |
 | --- | --- |
-| A `--json`/`--human` split | Someone reading raw envelopes often enough to complain |
+| A `--json`/`--human` split on the rest of the surface | Someone reading raw envelopes for a command an agent also calls. It landed on `upgrade` alone, where the reader is always a person |
 | Submitting several comments in one command | A reviewer batching a review offline |
 | `--format ndjson` for streaming large answers | A branch whose answer is too large to buffer |
 | `--cursor`/`--limit` pagination | The same |

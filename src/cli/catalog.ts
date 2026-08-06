@@ -266,7 +266,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   {
     name: "upgrade",
     about:
-      "Work out how adiff was installed and name the one command that updates it. Prints, does not run",
+      "Say whether a newer adiff is out and name the one command that installs it. Answers a person in plain text, and a caller in JSON with --json",
     safety: "read",
     options: [
       {
@@ -276,9 +276,15 @@ export const catalog: ReadonlyArray<CommandSpec> = [
         about:
           "Run the command instead of printing it. Ignored for a downloaded binary or a checkout, which adiff will not rewrite under itself",
       },
+      {
+        name: "json",
+        required: false,
+        value: "flag",
+        about: "Answer with the usual envelope instead of plain text. This is the only command that needs it",
+      },
     ],
     dataKey: "upgrade",
-    example: "adiff upgrade --fields route,command",
+    example: "adiff upgrade --json --fields route,command",
   },
   {
     name: "describe",

@@ -18,7 +18,7 @@ export {
 } from "./commands.ts"
 export { initRepository } from "./init.ts"
 export { openPane } from "./pane.ts"
-export { askLatest, newer, routeOf, upgradeAdiff } from "./upgrade.ts"
+export { askLatest, newer, routeOf, sayUpgrade, upgradeAdiff } from "./upgrade.ts"
 export type { Route, UpgradeReport } from "./upgrade.ts"
 export type { Change, InitReport } from "./init.ts"
 export { searchBranch } from "./search.ts"
