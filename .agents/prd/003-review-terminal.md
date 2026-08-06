@@ -152,6 +152,16 @@ Three screens, and the keys each answers to:
 - **The command palette opens wherever a reader is moving around**, over the diff and over the
   review list. It stays shut where a reader is typing, since a draft is not a place to run a
   command from, and on the worktree list, whose three actions are already on screen.
+- **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key,
+  the staged review and the search results are measured against the width and the height of the
+  screen rather than against one fixed size. On a wide terminal a command keeps its whole title and
+  a match keeps its whole line, instead of being cut short beside empty columns; on a tall terminal
+  the list runs down to the room the screen has, instead of stopping at a count fixed for a short
+  one. A panel never grows past what one eye span can read, and a narrow terminal keeps the sizes
+  it has now, because the room being spent there is already the room that exists.
+- **The worktree list widens with the terminal too.** The name of a branch is what a reader picks a
+  worktree by, so a wide screen spends its extra columns on the name rather than on margin, and a
+  name only loses its front where the screen genuinely cannot hold it.
 - **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
   than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
   a reviewer can always read back what they have typed.
@@ -228,6 +238,9 @@ Behaviors that must be covered:
   the right file and the right line numbers.
 - Two files deep in a nested tree, whose names share their ends, are drawn as two different rows,
   and the header names the file the cursor is on without running past the edge.
+- A long command title is read whole on a wide terminal, the sheet of keys lists more of them on a
+  tall one, and a long worktree name is read whole on a wide one, while an eighty column terminal
+  still draws each of them inside its width.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
