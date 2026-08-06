@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto"
+import { realpath } from "node:fs/promises"
+import { resolve } from "node:path"
 import { createCliRenderer, type CliRenderer, type KeyEvent } from "@opentui/core"
 import { Cause, Deferred, Effect, Fiber, Option, Queue, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
@@ -122,6 +124,7 @@ export class App {
   private readonly renderer: CliRenderer
   private readonly repo: string
   private readonly noticeMs: number
+  private roomed = 0
   private readonly sessionPath: string | undefined
   private remembered = ""
   private wrapKept = false
@@ -288,8 +291,14 @@ export class App {
 
   private syncGeometry(): void {
     const rows = Effect.runSync(this.display.rows)
-    if (rows === this.state.viewport) return
-    this.commit({ ...this.state, viewport: rows })
+    if (rows !== this.state.viewport) {
+      this.commit({ ...this.state, viewport: rows })
+      return
+    }
+    const room = Effect.runSync(this.display.room)
+    if (room === this.roomed) return
+    this.roomed = room
+    Effect.runSync(this.display.paint(this.state))
   }
 
   private measured(): TuiState {
@@ -820,12 +829,16 @@ export class App {
   }
 }
 
+const settledPath = (path: string): Effect.Effect<string> =>
+  Effect.promise(() => realpath(path).catch(() => resolve(path)))
+
 export const launch = Effect.fn("Tui.launch")(function* (
-  repo: string,
+  asked: string,
   renderer: CliRenderer,
   noticeMs?: number,
   sessionPath?: string,
 ) {
+  const repo = yield* settledPath(asked)
   const branches = yield* listBranches(repo)
   const resume =
     sessionPath === undefined

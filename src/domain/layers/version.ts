@@ -25,20 +25,6 @@ export const statusOf = (
   }
 }
 
-export const describeStatus = (status: LayersStatus): { line: string; warn: boolean } => {
-  if (status.stale) {
-    return { line: `v${status.version} written for ${status.layersHead}, head is ${status.branchHead}`, warn: true }
-  }
-  if (status.uncovered.length > 0) {
-    return { line: `v${status.version} covers ${status.covered}/${status.total} hunks`, warn: true }
-  }
-  const lineage = Option.match(status.parent, {
-    onNone: () => `v${status.version}`,
-    onSome: (parent) => `v${status.version}, revised from v${parent}`,
-  })
-  return { line: `${lineage} covers the whole diff`, warn: false }
-}
-
 export const reviseFor = (
   previous: Layers,
   branchHead: string,

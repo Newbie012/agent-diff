@@ -23,6 +23,14 @@ const codeOf = (frame: string): string =>
     .map((parts) => (parts[parts.length - 2] ?? "").trimEnd())
     .join("")
 
+const spoken = (frame: string): string =>
+  rowsOf(frame)
+    .map((row) => row.split("│"))
+    .filter((parts) => parts.length > 2)
+    .map((parts) => (parts[parts.length - 2] ?? "").trim())
+    .join(" ")
+    .replace(/\s+/g, " ")
+
 const runOn = (frame: string): boolean =>
   rowsOf(frame).some((row) => row.includes("spent`") && !row.includes("const message"))
 
@@ -59,7 +67,7 @@ describe("wrapping while reading layers", () => {
     const frame = await driver.screen.getFrame()
     expect(runOn(frame)).toBe(true)
     expect(codeOf(frame)).toContain("for ${email} could not be sent")
-    expect(frame).toContain("without opening the logs")
+    expect(spoken(frame)).toContain("which invitation failed without opening the logs")
   })
 
   it("keeps the cursor on one line at a time", async () => {

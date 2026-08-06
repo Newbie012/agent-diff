@@ -594,11 +594,15 @@ const STEP_NUMBER = 3
 const STEP_LEAD = 8
 const NOTE_LEAD = 10
 const STEP_GAP = 1
+const STALE_ROOM = 13
 
 type LayerRoom = { readonly title: number; readonly note: number; readonly tally: number }
 
+const STALE_LONG = "stale, the branch moved on"
+const STALE_SHORT = "stale"
+
 const staleBanner = (room: number): string =>
-  wrapped("stale, the branch moved on", room)
+  wrapped(room >= STALE_ROOM ? STALE_LONG : STALE_SHORT, room)
     .map((line) => `  ${line}`)
     .join("\n")
 
@@ -757,6 +761,10 @@ export class Screen {
 
   viewportRows(): number {
     return this.diffRows()
+  }
+
+  noteRoom(): number {
+    return this.view.room()
   }
 
   private diffRows(): number {

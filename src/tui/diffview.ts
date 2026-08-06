@@ -162,6 +162,10 @@ export class DiffView {
     return Math.max(NOTE_MIN, this.code.width - this.gutterWidth() - 3)
   }
 
+  room(): number {
+    return this.noteRoom()
+  }
+
   gutterWidth(): number {
     return Math.max(0, this.code.x - this.numbers.x) + SIGN_WIDTH
   }

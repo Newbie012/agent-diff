@@ -28,6 +28,11 @@ export class BranchTestDriver {
     return { ...model, worktree: await realpath(worktree) }
   }
 
+  async getHead(branch: CreatedBranch): Promise<string> {
+    const found = await this.state.git(branch.worktree, ["rev-parse", "HEAD"])
+    return found.trim()
+  }
+
   async commitAll(branch: CreatedBranch, message: string): Promise<void> {
     await this.state.git(branch.worktree, ["add", "-A"])
     await this.state.git(branch.worktree, ["commit", "-q", "-m", message])
