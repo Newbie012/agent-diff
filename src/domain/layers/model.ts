@@ -35,6 +35,7 @@ export type ProseAnchor = {
 export type Coverage = {
   readonly total: number
   readonly covered: number
+  readonly partial: number
   readonly missing: ReadonlyArray<Span>
 }
 
@@ -47,6 +48,7 @@ export type LayersStatus = {
   readonly uncovered: ReadonlyArray<Span>
   readonly vanished: ReadonlyArray<string>
   readonly covered: number
+  readonly partial: number
   readonly total: number
 }
 

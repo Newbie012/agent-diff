@@ -34,24 +34,56 @@ export const noteOf = (layer: Layer): string =>
 export const spansOf = (layers: ReadonlyArray<Layer>): ReadonlyArray<Span> =>
   layers.flatMap((layer) => codeBlocks(layer).map(({ path, start, end }) => ({ path, start, end })))
 
-const spanOfHunk = (patch: Patch, hunk: Hunk): Option.Option<Span> => {
-  const lines = hunk.rows.flatMap((row) =>
-    Option.match(Option.orElse(row.newLine, () => row.oldLine), { onNone: () => [], onSome: (n) => [n] }),
-  )
-  return lines.length === 0
-    ? Option.none()
-    : Option.some({ path: patch.path, start: Math.min(...lines), end: Math.max(...lines) })
+const changedLines = (hunk: Hunk): ReadonlyArray<number> =>
+  hunk.rows
+    .filter((row) => row.kind !== "context")
+    .flatMap((row) =>
+      Option.match(Option.orElse(row.newLine, () => row.oldLine), {
+        onNone: () => [],
+        onSome: (line) => [line],
+      }),
+    )
+
+const holds = (span: Span, path: string, line: number): boolean =>
+  span.path === path && span.start <= line && span.end >= line
+
+const runsOf = (path: string, lines: ReadonlyArray<number>): ReadonlyArray<Span> => {
+  const runs: Array<{ path: string; start: number; end: number }> = []
+  for (const line of lines.toSorted((a, b) => a - b)) {
+    const open = runs.at(-1)
+    if (open !== undefined && line <= open.end + 1) open.end = Math.max(open.end, line)
+    else runs.push({ path, start: line, end: line })
+  }
+  return runs
 }
 
-const overlaps = (a: Span, b: Span): boolean => a.path === b.path && a.start <= b.end && a.end >= b.start
+type Tally = { readonly covered: number; readonly partial: number; readonly missing: ReadonlyArray<Span> }
+
+const tallyOf = (patch: Patch, hunk: Hunk, claimed: ReadonlyArray<Span>): Tally => {
+  const changed = changedLines(hunk)
+  const loose = changed.filter((line) => !claimed.some((span) => holds(span, patch.path, line)))
+  const whole = changed.length > 0 && loose.length === 0
+  const some = loose.length > 0 && loose.length < changed.length
+  return {
+    covered: whole ? 1 : 0,
+    partial: some ? 1 : 0,
+    missing: runsOf(patch.path, loose),
+  }
+}
 
 export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<Layer>): Coverage => {
   const claimed = spansOf(layers)
-  const hunks = patches.flatMap((patch) =>
-    patch.hunks.flatMap((hunk) => Option.match(spanOfHunk(patch, hunk), { onNone: () => [], onSome: (s) => [s] })),
+  const tallies = patches.flatMap((patch) =>
+    patch.hunks
+      .filter((hunk) => changedLines(hunk).length > 0)
+      .map((hunk) => tallyOf(patch, hunk, claimed)),
   )
-  const missing = hunks.filter((hunk) => !claimed.some((span) => overlaps(span, hunk)))
-  return { total: hunks.length, covered: hunks.length - missing.length, missing }
+  return {
+    total: tallies.length,
+    covered: tallies.reduce((sum, tally) => sum + tally.covered, 0),
+    partial: tallies.reduce((sum, tally) => sum + tally.partial, 0),
+    missing: tallies.flatMap((tally) => tally.missing),
+  }
 }
 
 export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers): Layers => {
@@ -62,7 +94,7 @@ export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers):
     blocks: [
       {
         kind: "prose",
-        markdown: `${gap.missing.length} hunks the agent did not account for.`,
+        markdown: `${gap.missing.length} runs of changed lines the agent did not account for.`,
       },
       ...gap.missing.map((span) => codeBlockOf(span)),
     ],
