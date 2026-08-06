@@ -28,10 +28,20 @@ export const banner = (): string =>
     "",
     "Review the work an agent did in a git worktree, and hand your comments back.",
     "",
-    "  adiff review open --repo .        open the terminal on this repository",
-    "  adiff comment take --worktree .   collect the comments left for you",
+    "A reviewer opens the terminal:",
     "",
-    "adiff --help lists every command. adiff describe answers the same as JSON.",
+    "  adiff review open --repo .        read the diff, select lines, write comments",
+    "",
+    "An agent working in that worktree answers them:",
+    "",
+    "  adiff comment take --worktree . --wait 300    block until a comment arrives",
+    "  adiff comment answer --worktree . --id <id> --body '…'",
+    "  adiff layers set --worktree . --json -        publish the reading order",
+    "",
+    "Every comment carries an id, and an answer goes back to the reviewer under it.",
+    "",
+    "adiff --help lists every command. adiff describe answers the same as JSON,",
+    "and describe --command 'comment take' answers for one.",
   ].join("\n")
 
 export const help = (): string =>

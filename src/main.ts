@@ -70,6 +70,9 @@ const commentAdd = Effect.fn("Main.commentAdd")(function* (options: Options) {
   yield* answer(options, { batch })
 })
 
+const NOTHING_WAITING =
+  "No comment is waiting. Pass --wait <seconds> to block until one arrives, and answer what you collect with `adiff comment answer --worktree . --id <id> --body '…'`."
+
 const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
   const worktree = yield* required(options, "worktree")
   const wait = Number(options["wait"] ?? 0)
@@ -77,7 +80,8 @@ const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
     wait > 0
       ? yield* awaitComments(worktree, Date.now() + wait * WAIT_UNIT)
       : yield* takeComments(worktree)
-  yield* answer(options, { comments })
+  const hint = comments.length === 0 ? { hint: NOTHING_WAITING } : {}
+  yield* answer(options, { comments, ...hint })
 })
 
 const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Options) {
