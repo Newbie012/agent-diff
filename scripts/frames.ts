@@ -158,6 +158,10 @@ await chord("p")
 await show("palette")
 await type("file")
 await show("palette filtered")
+await escape()
+
+await press(["?"])
+await show("every key here")
 
 setup.renderer.destroy()
 if (process.argv.includes("--html")) {

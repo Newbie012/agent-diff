@@ -25,7 +25,15 @@ export type LayerRow = {
   readonly lead: boolean
 }
 
-export type Screen = "branches" | "review" | "compose" | "palette" | "pending" | "report" | "search"
+export type Screen =
+  | "branches"
+  | "review"
+  | "compose"
+  | "palette"
+  | "pending"
+  | "report"
+  | "search"
+  | "keys"
 
 export type TuiState = {
   readonly screen: Screen

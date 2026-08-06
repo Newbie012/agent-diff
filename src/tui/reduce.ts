@@ -1,6 +1,6 @@
 import { Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
-import type { Action } from "./command.ts"
+import { glossaryFor, type Action } from "./command.ts"
 import { gapNumbered } from "./gaps.ts"
 import { searchCommands } from "./match.ts"
 import {
@@ -219,6 +219,7 @@ const goBack = (state: TuiState): TuiState => {
   if (state.screen === "pending") return { ...state, screen: "review" }
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
+  if (state.screen === "keys") return { ...state, screen: state.returnTo }
   if (state.screen === "compose") return { ...state, screen: "review", draft: "" }
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
@@ -237,15 +238,26 @@ const openPalette = (state: TuiState): TuiState => ({
   paletteIndex: 0,
 })
 
+const openKeys = (state: TuiState): TuiState => ({
+  ...state,
+  screen: "keys",
+  returnTo: state.screen,
+  query: "",
+  paletteIndex: 0,
+})
+
 const movePalette = (state: TuiState, delta: number): TuiState => ({
   ...state,
-  paletteIndex: clamp(state.paletteIndex + delta, 0, Math.max(0, paletteMatches(state).length - 1)),
+  paletteIndex: clamp(state.paletteIndex + delta, 0, Math.max(0, offered(state).length - 1)),
 })
 
 export const paletteMatches = (state: TuiState) => searchCommands(state.returnTo, state.query)
 
+export const offered = (state: TuiState) =>
+  state.screen === "keys" ? glossaryFor(state.returnTo) : paletteMatches(state)
+
 export const paletteChoice = (state: TuiState): Action | undefined =>
-  paletteMatches(state)[state.paletteIndex]?.action
+  offered(state)[state.paletteIndex]?.action
 
 const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "branch.first": (state) => atBranch(state, 0),
@@ -301,6 +313,9 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "report.open": (state) => ({ ...state, screen: "report", draft: "", returnTo: state.screen }),
   "report.send": (state) => state,
   "palette.open": openPalette,
+  "keys.open": openKeys,
+  "keys.next": (state) => movePalette(state, 1),
+  "keys.prev": (state) => movePalette(state, -1),
   "palette.run": (state) => state,
   "search.open": (state) => state,
   "search.jump": (state) => state,

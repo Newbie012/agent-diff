@@ -52,6 +52,21 @@ describe("settling a thread from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("d settle")
   })
 
+  it("names the key among the ones the screen answers to", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await openOnThread(driver)
+
+    // ACT
+    await driver.screen.pressCtrl("p")
+    await driver.screen.typeText("settle")
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    const row = frame.split("\n").find((line) => line.includes("Settle the thread here")) ?? ""
+    expect(row).toContain("d")
+  })
+
   it("says so when the cursor is on no thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
