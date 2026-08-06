@@ -401,11 +401,28 @@ const makeCompose = (renderer: CliRenderer): BoxRenderable =>
 const clip = (label: string, room: number): string =>
   label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
-const treeLabel = (state: TuiState, row: TreeRow): string => {
-  const indent = "  ".repeat(row.depth)
-  if (row.kind === "file") return `${indent}  ${marks().file} ${row.name}`
+const clipHead = (label: string, room: number): string =>
+  label.length > room ? `…${label.slice(label.length - Math.max(0, room - 1))}` : label
+
+const clipPath = (label: string, room: number): string => {
+  if (label.length <= room) return label
+  const segments = label.split("/")
+  const kept = segments.reduce<Array<string>>((tail, _, index) => {
+    const candidate = segments.slice(segments.length - index - 1)
+    return `…/${candidate.join("/")}`.length <= room ? candidate : tail
+  }, [])
+  return kept.length === 0 ? clipHead(label, room) : `…/${kept.join("/")}`
+}
+
+const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
+  const indent = " ".repeat(row.depth)
+  if (row.kind === "file") {
+    const lead = `${indent}  ${marks().file} `
+    return `${lead}${clipHead(row.name, Math.max(4, room - lead.length))}`
+  }
   const shut = state.closed.includes(row.path)
-  return `${indent}${shut ? "▸" : "▾"} ${shut ? marks().folder : marks().folderOpen} ${row.name}`
+  const lead = `${indent}${shut ? "▸" : "▾"} ${shut ? marks().folder : marks().folderOpen} `
+  return `${lead}${clipPath(row.name, Math.max(4, room - lead.length))}`
 }
 
 const waitingLabel = (branch: TuiState["branches"][number]): string => {
@@ -570,7 +587,7 @@ const treeTail = (state: TuiState, row: TreeRow): string => {
 const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
   const tail = treeTail(state, row)
   const room = Math.max(4, pane - PANE_CHROME - 2 - tail.length)
-  return `${treeMarks(state, row)}${clip(treeLabel(state, row), room).padEnd(room)}${tail}`
+  return `${treeMarks(state, row)}${clip(treeLabel(state, row, room), room).padEnd(room)}${tail}`
 }
 
 const STEP_NUMBER = 3
