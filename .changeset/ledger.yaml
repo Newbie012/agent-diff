@@ -108,6 +108,10 @@
   dir: ""
   intents:
     - calm-taxis-fry
+"@eliya-oss/agent-diff@0.1.0-alpha.27":
+  dir: ""
+  intents:
+    - proud-bats-share
 "@eliya-oss/agent-diff@0.1.0-alpha.3":
   dir: ""
   intents:
