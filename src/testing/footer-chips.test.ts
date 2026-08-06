@@ -43,7 +43,7 @@ describe("what the footer is for", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("commands")
+    expect(footerOf(await driver.screen.getFrame())).toContain("? keys")
   })
 
   it("offers to send the review only once something is staged", async () => {

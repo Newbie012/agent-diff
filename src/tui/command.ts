@@ -53,6 +53,9 @@ export type Action =
   | "pending.prev"
   | "compose.newline"
   | "palette.open"
+  | "keys.open"
+  | "keys.next"
+  | "keys.prev"
   | "report.open"
   | "report.send"
   | "palette.run"
@@ -71,6 +74,7 @@ export type Command = {
   readonly counted: boolean
   readonly whenLayers: boolean
   readonly whenThread: boolean
+  readonly rank: number
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -81,6 +85,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   counted: false,
   whenLayers: false,
   whenThread: false,
+  rank: 0,
   ...input,
 })
 
@@ -92,6 +97,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["down", "j"],
     screens: ["branches"],
     hint: "move",
+    rank: 1,
   }),
   command({
     action: "branch.prev",
@@ -107,6 +113,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["return"],
     screens: ["branches"],
     hint: "review",
+    rank: 2,
   }),
   command({
     action: "branch.pull",
@@ -121,7 +128,6 @@ export const commands: ReadonlyArray<Command> = [
     title: "Next line",
     keys: ["down", "j"],
     screens: ["review"],
-    hint: "line",
   }),
   command({
     action: "cursor.prev",
@@ -170,7 +176,6 @@ export const commands: ReadonlyArray<Command> = [
     title: "Next comment",
     keys: ["n"],
     screens: ["review"],
-    hint: "next comment",
     whenStaged: true,
   }),
   command({
@@ -198,6 +203,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["]"],
     screens: ["review"],
     hint: "file",
+    rank: 1,
   }),
   command({
     action: "file.prev",
@@ -219,7 +225,6 @@ export const commands: ReadonlyArray<Command> = [
     category: "General",
     keys: ["z", "\\"],
     screens: ["review"],
-    hint: "zoom",
   }),
   command({
     action: "branch.first",
@@ -246,14 +251,12 @@ export const commands: ReadonlyArray<Command> = [
     title: "Copy the selection",
     keys: ["y"],
     screens: ["review"],
-    hint: "copy",
   }),
   command({
     action: "search.open",
     title: "Find the selection elsewhere",
     keys: ["/"],
     screens: ["review"],
-    hint: "find",
   }),
   command({
     action: "match.next",
@@ -261,7 +264,6 @@ export const commands: ReadonlyArray<Command> = [
     category: "Search",
     keys: ["j", "down"],
     screens: ["search"],
-    hint: "move",
   }),
   command({
     action: "match.prev",
@@ -277,6 +279,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["return"],
     screens: ["search"],
     hint: "open",
+    rank: 2,
   }),
   command({
     action: "select.swap",
@@ -290,7 +293,6 @@ export const commands: ReadonlyArray<Command> = [
     category: "General",
     keys: ["w"],
     screens: ["review"],
-    hint: "wrap",
   }),
   command({
     action: "pan.right",
@@ -306,11 +308,19 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "review.reload",
+    title: "Read the worktrees again",
+    category: "Branches",
+    keys: ["r"],
+    screens: ["branches"],
+    hint: "reload",
+    rank: 3,
+  }),
+  command({
+    action: "review.reload",
     title: "Read the branch again",
     category: "Review",
     keys: ["r"],
-    screens: ["branches", "review"],
-    hint: "reload",
+    screens: ["review"],
   }),
   command({
     action: "thread.settle",
@@ -335,6 +345,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["s"],
     screens: ["review"],
     hint: "layers",
+    rank: 2,
     whenLayers: true,
   }),
   command({
@@ -358,6 +369,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["m"],
     screens: ["review"],
     hint: "reviewed",
+    rank: 2,
   }),
   command({
     action: "file.vouch.next",
@@ -372,6 +384,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["v"],
     screens: ["review"],
     hint: "select",
+    rank: 3,
   }),
   command({
     action: "compose.open",
@@ -379,6 +392,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["c", "return"],
     screens: ["review"],
     hint: "comment",
+    rank: 4,
   }),
   command({
     action: "report.open",
@@ -401,7 +415,6 @@ export const commands: ReadonlyArray<Command> = [
     category: "General",
     keys: ["ctrl+p"],
     screens: ["review", "pending"],
-    hint: "commands",
     listed: false,
   }),
   command({
@@ -420,6 +433,7 @@ export const commands: ReadonlyArray<Command> = [
     hint: "send",
     whenStaged: true,
     counted: true,
+    rank: 6,
   }),
   command({
     action: "pending.submit",
@@ -428,6 +442,7 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["pending"],
     hint: "send",
     listed: false,
+    rank: 2,
   }),
   command({
     action: "pending.edit",
@@ -436,6 +451,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["e"],
     screens: ["pending"],
     hint: "reword",
+    rank: 3,
   }),
   command({
     action: "pending.drop",
@@ -444,6 +460,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["X"],
     screens: ["pending"],
     hint: "withdraw",
+    rank: 4,
   }),
   command({
     action: "pending.next",
@@ -478,8 +495,34 @@ export const commands: ReadonlyArray<Command> = [
     action: "palette.run",
     title: "Run the highlighted command",
     keys: ["return"],
-    screens: ["palette"],
+    screens: ["palette", "keys"],
     hint: "run",
+    listed: false,
+  }),
+  command({
+    action: "keys.open",
+    title: "List every key",
+    category: "General",
+    keys: ["?"],
+    screens: ["branches", "review", "pending", "search"],
+    hint: "keys",
+    rank: 5,
+    listed: false,
+  }),
+  command({
+    action: "keys.next",
+    title: "Next key",
+    category: "General",
+    keys: ["down", "j"],
+    screens: ["keys"],
+    listed: false,
+  }),
+  command({
+    action: "keys.prev",
+    title: "Previous key",
+    category: "General",
+    keys: ["up", "k"],
+    screens: ["keys"],
     listed: false,
   }),
   command({
@@ -487,9 +530,10 @@ export const commands: ReadonlyArray<Command> = [
     title: "Go back",
     category: "General",
     keys: ["escape", "q"],
-    screens: ["review", "compose", "palette", "pending", "report", "search"],
+    screens: ["review", "compose", "palette", "pending", "report", "search", "keys"],
     hint: "back",
     listed: false,
+    rank: 9,
   }),
   command({
     action: "quit",
@@ -499,6 +543,7 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["branches"],
     hint: "quit",
     listed: false,
+    rank: 9,
   }),
 ]
 
@@ -513,6 +558,12 @@ export const commandsFor = (screen: Screen): ReadonlyArray<Command> =>
 
 export const listableFor = (screen: Screen): ReadonlyArray<Command> =>
   commandsFor(screen).filter((entry) => entry.listed)
+
+export const glossaryFor = (screen: Screen): ReadonlyArray<Command> =>
+  commandsFor(screen).toSorted(
+    (left, right) =>
+      left.category.localeCompare(right.category) || left.title.localeCompare(right.title),
+  )
 
 export const actionFor = (screen: Screen, key: string): Action | undefined => {
   if (takesText(screen) && PRINTABLE_KEY.test(key)) return undefined
@@ -549,6 +600,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenStaged || staged > 0)
     .filter((entry) => !entry.whenLayers || layers > 0)
     .filter((entry) => !entry.whenThread || onThread)
+    .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
       key: displayKey(entry.keys[0] ?? ""),
       hint: entry.counted ? `${entry.hint} ${staged}` : entry.hint,

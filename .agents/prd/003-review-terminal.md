@@ -41,6 +41,10 @@ is listed in the footer, so nothing has to be memorised or discovered.
    the diff I am reading is the code that exists.
 8. As a `reviewer`, I want to fix or withdraw a comment I have staged, so that reading back what I
    wrote is worth doing.
+9. As a `reviewer`, I want the footer to carry the few keys I reach for and one key that lists the
+   rest, so that the row I read constantly stays short enough to read.
+10. As a `reviewer`, I want every command I find to name the key that runs it, so that finding it
+    once teaches me how to run it next time.
 
 ## Implementation Decisions
 
@@ -66,6 +70,18 @@ Three screens, and the keys each answers to:
 | Found | `j`/`down`, `k`/`up` move between matches · `enter` opens the file · `esc` returns |
 | Compose | typing edits the draft · `backspace` deletes · `ctrl+s` sends · `esc` discards |
 | Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
+| Keys | `?` opens it · `j`/`down`, `k`/`up` move · `enter` runs the command · `esc` returns |
+
+- **The footer carries the keys a reviewer reaches for, and `?` carries the rest.** A screen answers
+  to more keys than fit on one row, so the footer names the few that a pass through a review is made
+  of and leaves the others to the sheet. Chips give way from the left when the row is crowded, so
+  they are ordered by how much a reader would miss them, with the rightmost surviving longest.
+- **`?` lists every key the current screen answers to**, including the ones the palette hides, since
+  a glossary that omits how to leave is not a glossary. Rows are ordered by category so the list can
+  be scanned, each names its key, and `enter` runs the highlighted one. `?` is unbound where typing
+  is what the screen is for, so a question mark in a comment stays a question mark.
+- **Every row that names a command names its key.** The palette and the sheet render the same row,
+  so a command found by typing and a command found by scanning teach the same thing.
 
 - **Rewording a staged comment reopens the compose panel on its text**, and staging again replaces
   that comment rather than adding one. The comment keeps its id and its

@@ -6,7 +6,7 @@ import {
   type CliRenderer,
 } from "@opentui/core"
 import { ASCIIFontRenderable, bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
-import { hintsFor } from "./command.ts"
+import { displayKey, glossaryFor, hintsFor, type Command } from "./command.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
@@ -59,6 +59,7 @@ const reportActions = (): StyledText =>
 const actionsText = (): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^a")} ${fg(palette.muted)("add to review")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("comment now")}`
 const SNIPPET_LINES = 4
+const PALETTE_KEY = 7
 const PALETTE_TITLE = 34
 const PALETTE_GAP = 2
 const PALETTE_MAX = 18
@@ -88,6 +89,12 @@ const treeWidth = (width: number): number => {
 
 const homeWidth = (width: number): number =>
   Math.max(0, Math.min(BRANCH_WIDTH, width - FRAME_PAD * 2))
+
+const commandRow = (entry: Command, room: number): string => {
+  const key = clip(displayKey(entry.keys[0] ?? ""), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
+  const left = Math.max(1, Math.min(PALETTE_TITLE, room - PALETTE_KEY - entry.category.length - PALETTE_GAP))
+  return `${key}${clip(entry.title, left - PALETTE_GAP).padEnd(left)}${entry.category}`
+}
 
 const modalWidth = (width: number, wanted: number): number =>
   Math.max(0, Math.min(wanted, width - MODAL_MARGIN))
@@ -303,7 +310,15 @@ const makeModals = (renderer: CliRenderer) => ({
   palette: makePaletteParts(renderer),
   staged: makePendingParts(renderer),
   found: makeFoundParts(renderer),
+  keys: makeKeysParts(renderer),
 })
+
+const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
+  const parts = makePaletteParts(renderer)
+  parts.box.id = "keys"
+  parts.query.height = 0
+  return parts
+}
 
 const makeFoundParts = (renderer: CliRenderer): PaletteParts => {
   const box = makePalette(renderer)
@@ -527,7 +542,8 @@ const branchHeading = (room: number): string =>
   )}`
 
 const atHome = (state: TuiState): boolean =>
-  state.screen === "branches" || (state.screen === "palette" && state.returnTo === "branches")
+  state.screen === "branches" ||
+  ((state.screen === "palette" || state.screen === "keys") && state.returnTo === "branches")
 
 const layersCell = (branch: TuiState["branches"][number]): string => {
   if (branch.layers === 0) return ""
@@ -676,6 +692,9 @@ export class Screen {
   private readonly paletteQuery: TextRenderable
   private readonly paletteChoices: SelectRenderable
   private readonly pending: BoxRenderable
+  private readonly keys: BoxRenderable
+  private readonly keysTitle: TextRenderable
+  private readonly keysChoices: SelectRenderable
   private readonly pendingTitle: TextRenderable
   private readonly pendingChoices: SelectRenderable
   private readonly found: BoxRenderable
@@ -723,6 +742,9 @@ export class Screen {
     this.paletteTitle = modals.palette.title
     this.paletteQuery = modals.palette.query
     this.paletteChoices = modals.palette.choices
+    this.keys = modals.keys.box
+    this.keysTitle = modals.keys.title
+    this.keysChoices = modals.keys.choices
     this.pending = modals.staged.box
     this.pendingTitle = modals.staged.title
     this.pendingChoices = modals.staged.choices
@@ -782,11 +804,12 @@ export class Screen {
     const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
     this.landingKeys.content = this.homeKeys(state)
-    this.diffPane.visible = state.screen !== "branches" && !(state.screen === "palette" && state.returnTo === "branches")
+    this.diffPane.visible = state.screen !== "branches" && !atHome(state)
     if (this.diffPane.visible) this.paintDiff(state)
     this.paintPane(state)
     this.paintCompose(state)
     this.paintPalette(state)
+    this.paintKeys(state)
     this.paintPending(state)
     this.paintFound(state)
     this.paintReport(state)
@@ -805,17 +828,39 @@ export class Screen {
     this.paletteTitle.content = matches.length === 0 ? "No command matches" : "Commands"
     this.paletteQuery.content =
       state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
+    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
     this.paletteChoices.options = matches.map((entry) => ({
-      name: `${clip(entry.title, PALETTE_TITLE - PALETTE_GAP).padEnd(PALETTE_TITLE)}${entry.category}`,
+      name: commandRow(entry, room - MODAL_ROOM),
       description: "",
       value: entry.action,
     }))
-    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
     this.paletteChoices.selectedIndex = Math.min(state.paletteIndex, Math.max(0, matches.length - 1))
     this.palette.height = Math.min(PALETTE_MAX, matches.length + PALETTE_CHROME)
     this.palette.width = room
     this.palette.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.palette.top = Math.max(2, Math.floor(this.renderer.height / 4))
+  }
+
+  private paintKeys(state: TuiState): void {
+    this.keys.visible = state.screen === "keys"
+    if (state.screen !== "keys") {
+      this.keysTitle.content = ""
+      this.keysChoices.options = []
+      return
+    }
+    const rows = glossaryFor(state.returnTo)
+    const room = modalWidth(this.renderer.width, PALETTE_WIDTH)
+    this.keysTitle.content = `Every key here, ${rows.length} of them`
+    this.keysChoices.options = rows.map((entry) => ({
+      name: commandRow(entry, room - MODAL_ROOM),
+      description: "",
+      value: entry.action,
+    }))
+    this.keysChoices.selectedIndex = Math.min(state.paletteIndex, Math.max(0, rows.length - 1))
+    this.keys.height = Math.min(PALETTE_MAX, rows.length + PENDING_CHROME)
+    this.keys.width = room
+    this.keys.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.keys.top = Math.max(2, Math.floor(this.renderer.height / 4))
   }
 
   private headerText(state: TuiState): StyledText {
@@ -941,6 +986,7 @@ export class Screen {
       this.palette,
       this.pending,
       this.found,
+      this.keys,
     ])
   }
 
@@ -998,11 +1044,13 @@ export class Screen {
   }
 
   private homeKeys(state: TuiState): StyledText {
-    const chips = this.chipRow().chunks
     const said = state.notice.length === 0 ? state.waiting : state.notice
-    if (said.length === 0) return new StyledText(chips)
+    const tail = said.length === 0 ? "" : `  ${said}`
+    const room = Math.max(0, homeWidth(this.renderer.width) - tail.length)
+    const chips = keptWithin(this.chipRow().chunks, room)
+    if (tail.length === 0) return new StyledText([...chips])
     const colour = state.notice.length === 0 ? palette.accent : palette.attention
-    return new StyledText([...chips, fg(colour)(`  ${said}`)])
+    return new StyledText([...chips, fg(colour)(tail)])
   }
 
   private chipRow(): StyledText {
