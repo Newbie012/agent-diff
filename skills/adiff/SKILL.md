@@ -156,11 +156,32 @@ Setting a layers again supersedes the previous one and bumps `version`; the laye
 it was written for, and adiff reports it as `stale` once the branch moves past that commit. After
 you address a review, write the layers again.
 
+## Put the review in front of them
+
+When someone asks you for a review, open it rather than describing how:
+
+```bash
+adiff review pane --repo <repo>
+```
+
+It splits the pane they are already looking at, so their next move is to look right rather than to
+type. The answer says what happened:
+
+```json
+{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api"}
+```
+
+`opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,
+WezTerm or kitty has nowhere to put a pane. The answer carries `command` either way, so quote that
+line and let them run it.
+
+Open a pane when a review was asked for. Finishing work is not a reason on its own, and taking over
+someone's screen uninvited is worse than a line they have to copy.
+
 ## Tell the reviewer how to read it
 
-The person you are handing work to has to open the review themselves, so end your reply with the
-command and the keys. Name the repository they should point at, which is the repository the
-worktree belongs to:
+Whether or not a pane opened, say what to do with it. Name the repository they should point at,
+which is the repository the worktree belongs to:
 
 > Open it with `adiff review open --repo <repo>`, then press `enter` on this branch. The sidebar
 > lists the layers in reading order; `j` and `k` move between them and the diff follows. Inside a

@@ -11,6 +11,7 @@ import {
   fieldsOf,
   findCommand,
   initRepository,
+  openPane,
   listBranches,
   listThreads,
   MalformedLayers,
@@ -200,6 +201,11 @@ const init = Effect.fn("Main.init")(function* (options: Options) {
   yield* answer(options, { wrote: report.wrote, changes: report.changes })
 })
 
+const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
+  const report = yield* openPane(yield* required(options, "repo"))
+  yield* answer(options, { opened: report.opened, pane: report.pane, command: report.command })
+})
+
 const describe = Effect.fn("Main.describe")(function* (options: Options) {
   const wanted = options["command"]
   const asked = wanted === undefined || wanted === "true" ? undefined : wanted
@@ -221,6 +227,7 @@ const routes = {
   "comment threads": commentThreads,
   "comment resolve": commentResolve,
   "review submit": reviewSubmit,
+  "review pane": reviewPane,
   "review progress": reviewStatus,
   "layers set": layersSet,
   "layers show": layersShow,
