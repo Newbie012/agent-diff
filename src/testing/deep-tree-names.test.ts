@@ -29,7 +29,7 @@ const paneRows = (frame: string): ReadonlyArray<string> =>
   frame
     .split("\n")
     .slice(3)
-    .map((line) => line.replace("│", " ").slice(0, PANE).trimEnd())
+    .map((line) => line.slice(0, PANE).replaceAll("│", " ").trimEnd())
     .filter((line) => line.trim().length > 0)
 
 const headerRow = (frame: string): string => frame.split("\n")[1] ?? ""
@@ -37,7 +37,7 @@ const headerRow = (frame: string): string => frame.split("\n")[1] ?? ""
 const nameRows = (frame: string): ReadonlyArray<string> =>
   paneRows(frame)
     .filter((line) => line.includes(".ts"))
-    .map((line) => line.trim())
+    .map((line) => line.trim().replace(/^[^\w]+/, ""))
 
 const openDeepBranch = async (driver: TestDriver): Promise<string> => {
   await driver.branch.create(deep)

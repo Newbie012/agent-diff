@@ -52,8 +52,11 @@ describe("telling the files apart", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(rowWith(frame, "mutations")).toContain(".mutations.ts")
-    expect(rowWith(frame, "utils")).toContain(".utils.ts")
+    const mutations = rowWith(frame, "tations.ts")
+    const utils = rowWith(frame, ".utils.ts")
+    expect(mutations).toContain("invitation")
+    expect(utils).toContain("invitation")
+    expect(mutations).not.toBe(utils)
   })
 
   it("keeps the last segments of a folded directory", async () => {

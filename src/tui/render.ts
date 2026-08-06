@@ -419,6 +419,13 @@ const clip = (label: string, room: number): string =>
 const clipHead = (label: string, room: number): string =>
   label.length > room ? `…${label.slice(label.length - Math.max(0, room - 1))}` : label
 
+const clipMiddle = (label: string, room: number): string => {
+  if (label.length <= room) return label
+  const kept = Math.max(0, room - 1)
+  const front = Math.floor(kept / 2)
+  return `${label.slice(0, front)}…${label.slice(label.length - (kept - front))}`
+}
+
 const clipPath = (label: string, room: number): string => {
   if (label.length <= room) return label
   const segments = label.split("/")
@@ -433,7 +440,7 @@ const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
   const indent = " ".repeat(row.depth)
   if (row.kind === "file") {
     const lead = `${indent}  ${marks().file} `
-    return `${lead}${clipHead(row.name, Math.max(4, room - lead.length))}`
+    return `${lead}${clipMiddle(row.name, Math.max(4, room - lead.length))}`
   }
   const shut = state.closed.includes(row.path)
   const lead = `${indent}${shut ? "▸" : "▾"} ${shut ? marks().folder : marks().folderOpen} `
@@ -508,11 +515,12 @@ const HOME_PATH_CHROME = 10
 const elide = (path: string, room: number): string => {
   if (path.length <= room) return path
   const parts = path.split("/").filter((part) => part.length > 0)
-  const lead = path.startsWith("~") ? "~" : ""
+  const first = parts[0] ?? ""
+  const name = parts.at(-1) ?? path
   const tail = parts.slice(-KEPT_TAIL).join("/")
-  const rooted = path.startsWith("/") ? `/${parts[0] ?? ""}` : lead
-  const middled = `${rooted}/…/${tail}`
-  return middled.length <= room ? middled : `…/${tail}`
+  const rooted = path.startsWith("/") ? `/${first}` : path.startsWith("~") ? "~" : first
+  const shorter = [`${rooted}/…/${tail}`, `…/${tail}`, `…/${name}`]
+  return shorter.find((option) => option.length <= room) ?? clipMiddle(name, room)
 }
 
 const contextLabel = (context: number): string => {
@@ -580,6 +588,23 @@ const headerParts = (
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} lines hidden`,
   pan === 0 ? "" : `→ ${pan} columns`,
 ]
+
+const HEADER_GAP = 2
+const HEADER_PATH_MIN = 20
+
+const headerRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - GUTTER_X * 2)
+
+const headerFitted = (
+  parts: ReadonlyArray<string>,
+  path: string,
+  room: number,
+): ReadonlyArray<string> => {
+  const gaps = HEADER_GAP * Math.max(0, parts.length - 1)
+  const spent = parts.reduce((total, part) => total + part.length, gaps)
+  if (path.length === 0 || spent <= room) return parts
+  const left = Math.max(HEADER_PATH_MIN, path.length - (spent - room))
+  return parts.map((part) => (part === path ? elide(path, left) : part))
+}
 
 const fallbackScope = (state: TuiState, top: number): ReadonlyArray<string> => {
   const found = selectedPatch(state)?.hunks.findLast((hunk) => hunk.startRow < top)
@@ -868,15 +893,14 @@ export class Screen {
     if (atHome(state)) {
       return t`${fg(palette.faint)("")}`
     }
-    const patch = selectedPatch(state)
-    const [name = "", ...rest] = headerParts(
+    const path = selectedPatch(state)?.path ?? ""
+    const parts = headerParts(
       state,
       branch?.branch ?? "",
-      patch?.path ?? "",
+      path,
       Math.min(state.pan, this.view.panLimit()),
-    ).filter(
-      (part) => part.length > 0,
-    )
+    ).filter((part) => part.length > 0)
+    const [name = "", ...rest] = headerFitted(parts, path, headerRoom(this.renderer.width))
     return t`${fg(palette.ink)(name)}  ${fg(palette.muted)(rest.join("  "))}`
   }
 
