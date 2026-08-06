@@ -42,7 +42,7 @@
     "adiff": "./bin/adiff.js"
   },
   "packageManager": "pnpm@12.0.0-beta.3",
-  "version": "0.1.0-alpha.42",
+  "version": "0.1.0-alpha.43",
   "description": "Review the work an agent left you without losing the thread: comments live on the lines, the agent answers them, and each point stays open until you settle it.",
   "license": "MIT",
   "repository": {

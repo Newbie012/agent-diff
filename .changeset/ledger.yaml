@@ -183,6 +183,10 @@
   intents:
     - help-at-every-level
     - one-review-two-spellings
+"@eliya-oss/agent-diff@0.1.0-alpha.43":
+  dir: ""
+  intents:
+    - linux-binaries-build-again
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
