@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process"
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
@@ -109,6 +109,7 @@ export class AppTestDriver {
     }))
     const script = [
       "#!/bin/sh",
+      `echo "$@" >> ${join(bin, "asked.txt")}`,
       delayMs > 0 ? `sleep ${(delayMs / 1000).toFixed(2)}` : "",
       `cat <<'JSON'`,
       JSON.stringify(rows),
@@ -119,6 +120,12 @@ export class AppTestDriver {
     const path = join(bin, "gh")
     await writeFile(path, `${script}\n`, { mode: 0o755 })
     process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+  }
+
+  async listForgeRequests(): Promise<ReadonlyArray<string>> {
+    const path = join(this.state.workspace, "bin", "asked.txt")
+    const raw = await readFile(path, "utf8").catch(() => "")
+    return raw.split("\n").filter((line) => line.trim().length > 0)
   }
 
   runLayersSet(worktree: string, layers: LayersInput | string): Promise<CliResult> {

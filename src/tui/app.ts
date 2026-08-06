@@ -359,6 +359,7 @@ export class App {
     return {
       quit: () => Effect.sync(() => this.renderer.destroy()),
       "branch.open": () => this.openBranch(),
+      "branch.pull": () => this.showPull(),
       "compose.submit": () => this.send(),
       "compose.stage": () => this.stage(),
       "palette.run": () => this.runChoice(),
@@ -698,6 +699,28 @@ export class App {
 
   private loadSent(branch: string): Work<TuiState["sent"]> {
     return listSent(this.repo, branch)
+  }
+
+  private showPull(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      const state = this.state.pulls[branch.branch]
+      if (state === undefined) {
+        this.commit(withNoticeHere(this.state, "no pull request for this branch"))
+        return
+      }
+      const forge = yield* (Effect.map(Forge, (service) => service))
+      const asked = forge.openPull(this.repo, branch.branch)
+      const opened = yield* (
+        asked.pipe(
+          Effect.as(true),
+          Effect.catchTag("ForgeUnavailable", () => Effect.succeed(false)),
+        )
+      )
+      const said = opened ? `opened the ${state} pull request` : "could not reach the pull request"
+      this.commit(withNoticeHere(this.state, said))
+    })
   }
 
   private loadPulls(): Work {

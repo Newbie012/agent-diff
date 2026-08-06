@@ -6,6 +6,7 @@ export type Action =
   | "branch.next"
   | "branch.prev"
   | "branch.open"
+  | "branch.pull"
   | "cursor.next"
   | "cursor.top"
   | "cursor.bottom"
@@ -106,6 +107,14 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["return"],
     screens: ["branches"],
     hint: "review",
+  }),
+  command({
+    action: "branch.pull",
+    title: "Open the pull request in a browser",
+    category: "Branches",
+    keys: ["p"],
+    screens: ["branches"],
+    hint: "pull request",
   }),
   command({
     action: "cursor.next",
