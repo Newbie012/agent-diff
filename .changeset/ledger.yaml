@@ -203,6 +203,13 @@
   dir: ""
   intents:
     - upgrade-upgrades
+"@eliya-oss/agent-diff@0.1.0-alpha.48":
+  dir: ""
+  intents:
+    - open-the-branch-you-meant
+    - see-the-whole-review
+    - the-sheet-of-keys-fits
+    - write-and-move-without-fighting-it
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
