@@ -210,6 +210,10 @@
     - see-the-whole-review
     - the-sheet-of-keys-fits
     - write-and-move-without-fighting-it
+"@eliya-oss/agent-diff@0.1.0-alpha.49":
+  dir: ""
+  intents:
+    - one-key-clears-the-rails
 "@eliya-oss/agent-diff@0.1.0-alpha.5":
   dir: ""
   intents:
