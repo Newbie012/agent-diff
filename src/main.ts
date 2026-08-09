@@ -228,7 +228,7 @@ const init = Effect.fn("Main.init")(function* (options: Options) {
 })
 
 const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
-  const report = yield* openPane(yield* required(options, "repo"))
+  const report = yield* openPane(yield* required(options, "repo"), options["branch"])
   yield* answer(options, { opened: report.opened, pane: report.pane, command: report.command })
 })
 
@@ -317,7 +317,11 @@ const dispatch = Effect.fn("Main.dispatch")(function* (name: string, given: Opti
   if (name === "file review") return yield* fileReview(options)
   if (name === "review open") {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
-    return yield* runTui(yield* required(options, "repo"), process.env["ADIFF_SESSION"])
+    return yield* runTui(
+      yield* required(options, "repo"),
+      process.env["ADIFF_SESSION"],
+      options["branch"],
+    )
   }
   return yield* unknown(name)
 })

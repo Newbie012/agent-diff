@@ -14,6 +14,7 @@ export type Action =
   | "cursor.pageUp"
   | "context.more"
   | "context.less"
+  | "context.whole"
   | "comment.next"
   | "comment.prev"
   | "hunk.next"
@@ -22,6 +23,7 @@ export type Action =
   | "file.next"
   | "file.prev"
   | "focus.toggle"
+  | "panel.toggle"
   | "nav.zoom"
   | "wrap.toggle"
   | "pan.right"
@@ -193,6 +195,12 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["review"],
   }),
   command({
+    action: "context.whole",
+    title: "Show the whole file, or go back to the diff",
+    keys: ["F"],
+    screens: ["review"],
+  }),
+  command({
     action: "comment.next",
     title: "Next comment",
     keys: ["n"],
@@ -238,6 +246,13 @@ export const commands: ReadonlyArray<Command> = [
     title: "Switch pane",
     category: "General",
     keys: ["tab"],
+    screens: ["review"],
+  }),
+  command({
+    action: "panel.toggle",
+    title: "Show or hide the review panel",
+    category: "Review",
+    keys: ["a"],
     screens: ["review"],
   }),
   command({

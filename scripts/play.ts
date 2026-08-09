@@ -37,7 +37,7 @@ const context = await Effect.runPromise(
   Layer.buildWithScope(Layer.mergeAll(GitLive, ForgeLive, storeAt(join(HOME, "store"))), scope),
 )
 const app = await Effect.runPromise(
-  launch(repo, setup.renderer, undefined, join(HOME, "session.json")).pipe(
+  launch(repo, setup.renderer, { sessionPath: join(HOME, "session.json") }).pipe(
     Effect.provideContext(context),
   ),
 )

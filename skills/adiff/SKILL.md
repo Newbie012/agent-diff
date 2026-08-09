@@ -107,14 +107,14 @@ extra work you do on request, and it has its own section further down.
 When someone asks you for a review, open it rather than describing how:
 
 ```bash
-adiff review pane --repo <repo>
+adiff review pane --repo <repo> --branch <branch>
 ```
 
 It splits the pane they are already looking at, so their next move is to look right rather than to
 type. The answer says what happened:
 
 ```json
-{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api"}
+{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api --branch cdr-1"}
 ```
 
 `opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,
@@ -129,12 +129,15 @@ someone's screen uninvited is worse than a line they have to copy.
 Whether or not a pane opened, say what to do with it. Name the repository they should point at,
 which is the repository the worktree belongs to:
 
-> Open it with `adiff review open --repo <repo>`, then press `enter` on this branch. The sidebar
-> lists the files; `j` and `k` move down the diff, `]` and `[` walk between files. Select lines with
+> Open it with `adiff review open --repo <repo> --branch <branch>`, which lands on this branch's
+> diff. The sidebar lists the files; `j` and `k` move down the diff, `]` and `[` walk between
+> files, `}` and `{` jump to the next and previous change, `G` goes to the end. Select lines with
 > `v`, write a comment with `c`, stage it with `ctrl+a`, and send the whole review with `S`. Press
 > `?` for the rest.
 
-Fill the repository path in yourself so nobody has to compose the command.
+Fill the repository path and the branch in yourself, so nobody has to compose the command or find
+the branch in a list. `--branch` takes the name `branch list` reports; without it the review opens
+on the worktree list.
 
 Say what you want looked at hardest, and where you are unsure. A reviewer who knows which part you
 doubt spends their attention there. Offer a reading order rather than writing one: if the change is

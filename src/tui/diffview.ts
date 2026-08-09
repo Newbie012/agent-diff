@@ -158,6 +158,10 @@ export class DiffView {
     return this.pinBox
   }
 
+  pinRows(): number {
+    return this.pinBox.height
+  }
+
   private noteRoom(): number {
     return Math.max(NOTE_MIN, this.code.width - this.gutterWidth() - 3)
   }
@@ -346,13 +350,26 @@ export class DiffView {
     return visual > 0 && sources[visual] === sources[visual - 1]
   }
 
+  private lineOfRow(row: number): number | undefined {
+    if (this.starts.size === 0) return undefined
+    for (let at = Math.max(0, row); at >= 0; at -= 1) {
+      const line = this.starts.get(at)
+      if (line !== undefined) return line
+    }
+    return 0
+  }
+
+  private visualOfRow(row: number): number | undefined {
+    const line = this.lineOfRow(row)
+    return line === undefined ? undefined : this.visualOf(line)
+  }
+
   scrollTo(row: number, cursor: number): number {
     const highest = Math.max(0, this.tallest() - this.rows())
-    const wanted = this.visualOf(this.starts.get(row) ?? row)
-    const line = this.starts.get(cursor)
-    const at = line === undefined ? undefined : this.visualOf(line)
-    const expected = cursor >= row && cursor < row + this.rows()
-    const kept = expected && at !== undefined ? Math.max(wanted, at - this.rows() + 1) : wanted
+    const wanted = this.visualOfRow(row) ?? row
+    const at = this.visualOfRow(cursor)
+    const following = at !== undefined && at >= wanted
+    const kept = following ? Math.max(wanted, at - this.rows() + 1) : wanted
     const clamped = Math.max(0, Math.min(highest, kept))
     if (this.code.scrollY !== clamped) this.code.scrollY = clamped
     return clamped

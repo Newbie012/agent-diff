@@ -7,6 +7,7 @@ export type Shape = {
   readonly paint: (state: TuiState) => Effect.Effect<void>
   readonly rows: Effect.Effect<number>
   readonly room: Effect.Effect<number>
+  readonly columns: Effect.Effect<number>
   readonly listen: (mouse: Mouse) => Effect.Effect<void>
 }
 
@@ -26,6 +27,7 @@ const shapeOf = (screen: Screen): Shape => ({
   paint: paintWith(screen),
   rows: Effect.sync(() => screen.viewportRows()),
   room: Effect.sync(() => screen.noteRoom()),
+  columns: Effect.sync(() => screen.columns()),
   listen: listenWith(screen),
 })
 

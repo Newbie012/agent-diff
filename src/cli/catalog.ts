@@ -48,6 +48,13 @@ const repo: OptionSpec = {
   about: "Repository whose worktrees are reviewed",
 }
 
+const opening: OptionSpec = {
+  name: "branch",
+  required: false,
+  value: "name",
+  about: "Branch to open on, as `branch list` reports it. Without it the review opens on the list",
+}
+
 const file: OptionSpec = {
   name: "file",
   required: true,
@@ -87,22 +94,23 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "review open",
-    about: "Open the review terminal. The only command that does not answer in JSON",
+    about:
+      "Open the review terminal. With --branch it opens on that branch rather than the worktree list. The only command that does not answer in JSON",
     group: READ_A_BRANCH,
     addresses: "repo",
     safety: "read",
-    options: [repo],
+    options: [repo, opening],
     dataKey: "",
-    example: "adiff review open --repo .",
+    example: "adiff review open --repo . --branch cdr-1",
   },
   {
     name: "review pane",
     about:
-      "Open the review beside the conversation, in whichever multiplexer is running. Answers with the command when none is",
+      "Open the review beside the conversation, in whichever multiplexer is running. With --branch it opens on that branch. Answers with the command when none is",
     group: READ_A_BRANCH,
     addresses: "repo",
     safety: "read",
-    options: [repo],
+    options: [repo, opening],
     dataKey: "pane",
     example: "adiff review pane --repo .",
   },

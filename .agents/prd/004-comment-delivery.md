@@ -130,6 +130,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   screen that rewrites itself costs more than the wait.
 - **The announcement stays until it is acted on.** It is not a notice that fades, because its
   purpose is to be there when the reviewer next looks up.
+- **The announcement names which comments were answered, not only how many.** A count tells a
+  reviewer that pulling is worth doing without telling them whether it is worth doing now, so the
+  answered comments are listed by file, line, and the words the reviewer wrote, in the
+  [review panel](003-review-terminal.md#the-review-panel). The bodies of the answers stay out of
+  the diff until the reviewer pulls: what changes before they ask is a list beside the code, never
+  the code itself. A footer message is also outlived by the next notice, and the panel is not.
 - **Pulling holds the reader's place.** Reading again keeps the file and line they were on rather
   than jumping to what arrived, for the same reason: they chose when to look, and they did not ask
   to be moved.

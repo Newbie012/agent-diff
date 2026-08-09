@@ -45,11 +45,14 @@ const splitters: ReadonlyArray<Splitter> = [
   },
 ]
 
-const selfInvocation = (repo: string): ReadonlyArray<string> => {
+const onBranch = (branch: string | undefined): ReadonlyArray<string> =>
+  branch === undefined ? [] : ["--branch", branch]
+
+const selfInvocation = (repo: string, branch: string | undefined): ReadonlyArray<string> => {
   const entry = process.argv[1]
   const head =
     entry === undefined ? ["adiff"] : [process.execPath, ...process.execArgv, entry]
-  return [...head, "review", "open", "--repo", repo]
+  return [...head, "review", "open", "--repo", repo, ...onBranch(branch)]
 }
 
 const ran = (binary: string, args: ReadonlyArray<string>): Effect.Effect<boolean> =>
@@ -59,14 +62,18 @@ const ran = (binary: string, args: ReadonlyArray<string>): Effect.Effect<boolean
     )
   })
 
-const split = Effect.fn("Cli.split")(function* (chosen: Splitter, repo: string) {
-  return yield* ran(chosen.binary, chosen.args(repo, selfInvocation(repo)))
+const split = Effect.fn("Cli.split")(function* (
+  chosen: Splitter,
+  repo: string,
+  branch: string | undefined,
+) {
+  return yield* ran(chosen.binary, chosen.args(repo, selfInvocation(repo, branch)))
 })
 
-export const openPane = Effect.fn("Cli.openPane")(function* (repo: string) {
-  const command = `adiff review open --repo ${repo}`
+export const openPane = Effect.fn("Cli.openPane")(function* (repo: string, branch?: string) {
+  const command = `adiff review open --repo ${repo}${branch === undefined ? "" : ` --branch ${branch}`}`
   const chosen = splitters.find((candidate) => candidate.present())
   if (chosen === undefined) return { opened: false, pane: "none", command } satisfies PaneReport
-  const opened = yield* split(chosen, repo)
+  const opened = yield* split(chosen, repo, branch)
   return { opened, pane: chosen.pane, command } satisfies PaneReport
 })

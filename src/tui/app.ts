@@ -7,6 +7,7 @@ import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
   listBranches,
+  type BranchSummary,
   listPatches,
   fileSource,
   listPending,
@@ -38,6 +39,7 @@ import {
   layerContext,
   knownToHaveNoPull,
   pullHere,
+  contextToggled,
   selectedBranch,
   selectedPatch,
   selectedLines,
@@ -45,6 +47,7 @@ import {
   matchHere,
   selectionRange,
   spokenSince,
+  panelEntry,
   threadAtRow,
   threadAtStop,
   WHOLE_FILE,
@@ -53,6 +56,10 @@ import {
 import {
   atFile,
   backspaced,
+  caretHomed,
+  caretJumped,
+  caretMoved,
+  deleted,
   draggedTo,
   gapOpened,
   paletteChoice,
@@ -65,6 +72,8 @@ import {
   withNotice,
   withNoticeHere,
   withWaiting,
+  withArrived,
+  withColumns,
   withContext,
   withBranches,
   withPulls,
@@ -78,6 +87,7 @@ import {
   withSource,
   withLayers,
   withVouched,
+  withDraft,
 } from "./reduce.ts"
 import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import type { Needs, Work } from "./needs.ts"
@@ -117,6 +127,30 @@ const openedPull = (state: string, opened: boolean): string => {
   if (!opened) return "could not reach the pull request"
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
+
+const byWord = (key: KeyEvent): boolean => key.option || key.meta || key.ctrl
+
+const WORD_STEP: Readonly<Record<string, number>> = { b: -1, f: 1 }
+
+const caretSideways = (state: TuiState, key: KeyEvent): TuiState | undefined => {
+  const step = key.name === "left" ? -1 : key.name === "right" ? 1 : 0
+  if (step === 0) return undefined
+  return byWord(key) ? caretJumped(state, step) : caretMoved(state, step)
+}
+
+const caretFor = (state: TuiState, key: KeyEvent): TuiState | undefined => {
+  const sideways = caretSideways(state, key)
+  if (sideways !== undefined) return sideways
+  const word = byWord(key) ? WORD_STEP[key.name] : undefined
+  if (word !== undefined) return caretJumped(state, word)
+  if (key.name === "home") return caretHomed(state, "start")
+  if (key.name === "end") return caretHomed(state, "end")
+  return key.name === "delete" ? deleted(state) : undefined
+}
+
+const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
+
+const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
 
 const keyName = (key: KeyEvent): string => {
   const base = key.shift && key.name.length === 1 ? key.name.toUpperCase() : key.name
@@ -199,7 +233,7 @@ export class App {
       const sent = yield* this.loadSent(branch.branch)
       const said = spokenSince(this.state.sent, sent)
       if (said === 0) return
-      this.commit(withWaiting(this.state, `${said} answered · press r`))
+      this.commit(withWaiting(withArrived(this.state, sent), `${said} answered · press r`))
     })
   }
 
@@ -295,6 +329,10 @@ export class App {
     if (down === 0 && across === 0) return
     this.wheel = 0
     this.sideways = 0
+    if (listens(this.state.screen)) {
+      if (down !== 0) this.commit(paletteMoved(this.state, down))
+      return
+    }
     const moved = down === 0 ? this.measured() : scrolled(this.measured(), down)
     this.commit(across === 0 ? moved : panBy(moved, across))
   }
@@ -303,6 +341,11 @@ export class App {
     const rows = Effect.runSync(this.display.rows)
     if (rows !== this.state.viewport) {
       this.commit({ ...this.state, viewport: rows })
+      return
+    }
+    const columns = Effect.runSync(this.display.columns)
+    if (columns !== this.state.columns) {
+      this.commit(withColumns(this.state, columns))
       return
     }
     const room = Effect.runSync(this.display.room)
@@ -369,6 +412,7 @@ export class App {
       quit: () => Effect.sync(() => this.renderer.destroy()),
       "branch.open": () => this.openBranch(),
       "branch.pull": () => this.showPull(),
+      "compose.open": () => this.compose(),
       "compose.submit": () => this.send(),
       "compose.stage": () => this.stage(),
       "palette.run": () => this.runChoice(),
@@ -397,6 +441,7 @@ export class App {
       "report.send": () => this.sendReport(),
       "context.more": () => this.expand(1),
       "context.less": () => this.expand(-1),
+      "context.whole": () => this.widen(contextToggled(this.state)),
       "tree.expand": () => this.unfold(1),
       "tree.collapse": () => this.unfold(-1),
     }
@@ -456,7 +501,16 @@ export class App {
       this.commit(paletteMoved(this.state, -1))
       return
     }
+    if (this.onCaret(key)) return
     if (PRINTABLE.test(key.sequence)) this.commit(typed(this.state, key.sequence))
+  }
+
+  private onCaret(key: KeyEvent): boolean {
+    if (this.state.screen === "palette") return false
+    const moved = caretFor(this.state, key)
+    if (moved === undefined) return false
+    this.commit(moved)
+    return true
   }
 
   private runChoice(): Work {
@@ -544,6 +598,35 @@ export class App {
     })
   }
 
+  private compose(): Work {
+    return Effect.gen({ self: this }, function* () {
+      if (this.state.focus !== "review") {
+        this.commit(reduce(this.measured(), "compose.open"))
+        return
+      }
+      yield* this.openPanelEntry()
+    })
+  }
+
+  private openPanelEntry(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const entry = panelEntry(this.state)
+      if (entry === undefined) {
+        this.commit(withNoticeHere(this.state, "nothing in the review yet"))
+        return
+      }
+      const at = this.state.patches.findIndex((patch) => patch.path === entry.comment.file)
+      const patch = this.state.patches[at]
+      if (patch === undefined) {
+        this.commit(withNoticeHere(this.state, `${entry.comment.file} is not on this branch`))
+        return
+      }
+      const landed = atFile(this.state, at)
+      this.commit({ ...landed, cursor: rowAtSourceLine(patch, entry.comment.end) })
+      yield* this.loadSource()
+    })
+  }
+
   private settleHere(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
@@ -594,8 +677,10 @@ export class App {
       if (branch === undefined) return
       const path = selectedPatch(this.state)?.path
       const line = sourceLineAt(this.state, this.state.cursor)
+      const offset = this.state.cursor - this.state.top
       const read = yield* this.readBranch(branch.branch)
-      this.commit(withWaiting(withNotice(restoredTo(read, path, line), "read the branch again"), ""))
+      const held = restoredTo(read, path, line, offset)
+      this.commit(withWaiting(withNotice(held, "read the branch again"), ""))
       yield* this.loadSource()
     })
   }
@@ -701,7 +786,11 @@ export class App {
         editStaged({ repo: this.repo, branch: branch.branch, id, body: this.state.draft })
       )
       const pending = yield* (listPending(this.repo, branch.branch))
-      const next = withPending({ ...this.state, editing: undefined, draft: "" }, pending, "pending")
+      const next = withPending(
+        { ...this.state, editing: undefined, draft: "", caret: 0 },
+        pending,
+        "pending",
+      )
       this.commit(withNoticeHere(next, "reworded"))
     })
   }
@@ -760,9 +849,12 @@ export class App {
   }
 
   private expand(delta: number): Work {
+    return this.widen(layerContext(this.state.context, delta))
+  }
+
+  private widen(next: number): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const next = layerContext(this.state.context, delta)
       if (branch === undefined || next === this.state.context) return
       const line = sourceLineAt(this.state, this.state.cursor)
       const patches = yield* (listPatches(this.repo, branch.branch, next))
@@ -789,12 +881,7 @@ export class App {
   private editStagedComment(): void {
     const entry = this.state.pending[this.state.pendingIndex]
     if (entry?.id === undefined) return
-    this.commit({
-      ...this.state,
-      screen: "compose",
-      draft: entry.body,
-      editing: entry.id,
-    })
+    this.commit(withDraft({ ...this.state, screen: "compose", editing: entry.id }, entry.body))
   }
 
   private dropStagedComment(): Work {
@@ -848,7 +935,7 @@ export class App {
       const stamp = new Date().toISOString().replace(/[:.]/g, "-")
       const path = yield* (saveReport(stamp, text))
       copyToClipboard(text)
-      const closed = { ...this.state, screen: this.state.returnTo, draft: "" }
+      const closed = { ...this.state, screen: this.state.returnTo, draft: "", caret: 0 }
       this.commit(withNotice(closed, `report copied — ${path}`))
     })
   }
@@ -886,16 +973,33 @@ export class App {
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
+const openingOn = (
+  branches: ReadonlyArray<BranchSummary>,
+  branch: string | undefined,
+): Option.Option<Session> => {
+  if (branch === undefined) return Option.none()
+  const at = branches.findIndex((candidate) => candidate.branch === branch)
+  return at === -1 ? Option.none() : Option.some({ branchIndex: at, patchIndex: 0, cursor: 0, top: 0 })
+}
+
+export type LaunchOptions = {
+  readonly noticeMs?: number | undefined
+  readonly sessionPath?: string | undefined
+  readonly branch?: string | undefined
+}
+
 export const launch = Effect.fn("Tui.launch")(function* (
   asked: string,
   renderer: CliRenderer,
-  noticeMs?: number,
-  sessionPath?: string,
+  options: LaunchOptions = {},
 ) {
+  const { noticeMs, sessionPath } = options
   const repo = yield* settledPath(asked)
   const branches = yield* listBranches(repo)
-  const resume =
-    sessionPath === undefined
+  const asOpened = openingOn(branches, options.branch)
+  const resume = Option.isSome(asOpened)
+    ? asOpened
+    : sessionPath === undefined
       ? Option.none<Session>()
       : yield* readSession(sessionPath)
   const store = yield* Store
@@ -937,14 +1041,19 @@ export const runOn = Effect.fn("Tui.runOn")(function* (
   repo: string,
   renderer: CliRenderer,
   sessionPath?: string,
+  branch?: string,
 ) {
-  yield* launch(repo, renderer, undefined, sessionPath)
+  yield* launch(repo, renderer, { sessionPath, branch })
   yield* untilDestroyed(renderer)
 })
 
-export const runTui = Effect.fn("Tui.run")(function* (repo: string, sessionPath?: string) {
+export const runTui = Effect.fn("Tui.run")(function* (
+  repo: string,
+  sessionPath?: string,
+  branch?: string,
+) {
   const renderer = yield* Effect.promise(() => createCliRenderer({ exitOnCtrlC: true }))
-  yield* runOn(repo, renderer, sessionPath)
+  yield* runOn(repo, renderer, sessionPath, branch)
 })
 
 export type { Action }
