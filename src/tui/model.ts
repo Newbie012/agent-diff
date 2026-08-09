@@ -49,6 +49,7 @@ export type TuiState = {
   readonly anchorRow: number
   readonly selecting: boolean
   readonly draft: string
+  readonly caret: number
   readonly notice: string
   readonly waiting: string
   readonly query: string
@@ -63,11 +64,12 @@ export type TuiState = {
   readonly editing: string | undefined
   readonly viewport: number
   readonly context: number
+  readonly contextWas: number
   readonly top: number
   readonly source: ReadonlyArray<string>
   readonly full: ReadonlyArray<Patch>
   readonly revealed: ReadonlyArray<Reveal>
-  readonly focus: "tree" | "diff"
+  readonly focus: "tree" | "diff" | "review"
   readonly navOpen: boolean
   readonly wrap: boolean
   readonly pan: number
@@ -81,9 +83,21 @@ export type TuiState = {
   readonly term: string
   readonly matches: ReadonlyArray<Match>
   readonly matchIndex: number
+  readonly arrived: ReadonlyArray<StagedComment>
+  readonly panelOpen: boolean
+  readonly panelIndex: number
+  readonly columns: number
+}
+
+const nothingReviewed = {
+  arrived: [] as ReadonlyArray<StagedComment>,
+  panelOpen: true,
+  panelIndex: 0,
+  columns: 0,
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
+  ...nothingReviewed,
   screen: "branches",
   branches,
   branchIndex: 0,
@@ -95,6 +109,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   anchorRow: 0,
   selecting: false,
   draft: "",
+  caret: 0,
   notice: "",
   waiting: "",
   query: "",
@@ -109,6 +124,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   editing: undefined,
   viewport: 20,
   context: 3,
+  contextWas: 3,
   top: 0,
   source: [],
   full: [],
@@ -128,6 +144,32 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   matchIndex: 0,
   rail: "tree",
 })
+
+const FRAME_PAD = 1
+const BODY_BORDER = 2
+const TREE_MAX = 34
+const TREE_MIN = 18
+const TREE_SHARE = 0.3
+const DIFF_MIN = 24
+const PANEL_WIDTH = 34
+const DIFF_ROOMY = 56
+
+export const bodyRoom = (columns: number): number =>
+  Math.max(0, columns - FRAME_PAD * 2 - BODY_BORDER)
+
+export const treeWidth = (columns: number): number => {
+  const room = bodyRoom(columns)
+  const wanted = Math.min(TREE_MAX, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
+  return Math.max(0, Math.min(wanted, room - DIFF_MIN))
+}
+
+export const reviewWidth = (): number => PANEL_WIDTH
+
+export const panelFits = (state: TuiState): boolean =>
+  bodyRoom(state.columns) - treeWidth(state.columns) - PANEL_WIDTH >= DIFF_ROOMY
+
+export const panelShown = (state: TuiState): boolean =>
+  state.screen !== "branches" && state.panelOpen && panelFits(state)
 
 export const onLayers = (state: TuiState): boolean =>
   state.rail === "layers" && state.layers.length > 0
@@ -374,6 +416,47 @@ export const selectedLineCount = (state: TuiState): number => selectedRows(state
 const lineOf = (row: Patch["rows"][number]): string =>
   Option.match(row.newLine, { onNone: () => "-", onSome: (line) => String(line) })
 
+export const CARET = "▌"
+
+export const caretAt = (state: TuiState): number =>
+  Math.max(0, Math.min(state.draft.length, state.caret))
+
+export const drafted = (state: TuiState): string => {
+  const at = caretAt(state)
+  return `${state.draft.slice(0, at)}${CARET}${state.draft.slice(at)}`
+}
+
+const WORD = /[\p{L}\p{N}_]/u
+
+const wordLeft = (draft: string, from: number): number => {
+  let at = from
+  while (at > 0 && !WORD.test(draft[at - 1] ?? "")) at -= 1
+  while (at > 0 && WORD.test(draft[at - 1] ?? "")) at -= 1
+  return at
+}
+
+const wordRight = (draft: string, from: number): number => {
+  let at = from
+  while (at < draft.length && !WORD.test(draft[at] ?? "")) at += 1
+  while (at < draft.length && WORD.test(draft[at] ?? "")) at += 1
+  return at
+}
+
+export const caretByWord = (state: TuiState, delta: number): number =>
+  delta < 0 ? wordLeft(state.draft, caretAt(state)) : wordRight(state.draft, caretAt(state))
+
+const lineStart = (draft: string, at: number): number => draft.lastIndexOf("\n", at - 1) + 1
+
+const lineEnd = (draft: string, at: number): number => {
+  const found = draft.indexOf("\n", at)
+  return found === -1 ? draft.length : found
+}
+
+export const caretToEdge = (state: TuiState, edge: "start" | "end"): number =>
+  edge === "start"
+    ? lineStart(state.draft, caretAt(state))
+    : lineEnd(state.draft, caretAt(state))
+
 export const editedComment = (state: TuiState): StagedComment | undefined =>
   state.editing === undefined
     ? undefined
@@ -439,6 +522,11 @@ export const selectionReadout = (state: TuiState): string => {
 export const WHOLE_FILE = 100_000
 
 export const CONTEXT_STEPS: ReadonlyArray<number> = [3, 10, 25, 60, WHOLE_FILE]
+
+export const wholeFileOff = (state: TuiState): boolean => state.context < WHOLE_FILE
+
+export const contextToggled = (state: TuiState): number =>
+  wholeFileOff(state) ? WHOLE_FILE : state.contextWas
 
 export const layerContext = (current: number, delta: number): number => {
   const at = CONTEXT_STEPS.indexOf(current)
@@ -530,6 +618,49 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
+
+export type PanelSection = "staged" | "with" | "answered"
+
+export type PanelEntry = {
+  readonly section: PanelSection
+  readonly comment: StagedComment
+  readonly fresh: boolean
+}
+
+const answersIn = (comment: StagedComment): number => comment.answers?.length ?? 0
+
+const newerOf = (state: TuiState, comment: StagedComment): StagedComment => {
+  if (comment.id === undefined) return comment
+  const later = state.arrived.find((entry) => entry.id === comment.id)
+  if (later === undefined) return comment
+  return answersIn(later) > answersIn(comment) ? later : comment
+}
+
+const sectionOf = (comment: StagedComment): PanelSection =>
+  answersIn(comment) > 0 || comment.settled === true ? "answered" : "with"
+
+const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
+  const newer = newerOf(state, comment)
+  return { section: sectionOf(newer), comment: newer, fresh: newer !== comment }
+}
+
+export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
+  const staged = state.pending.map(
+    (comment): PanelEntry => ({ section: "staged", comment, fresh: false }),
+  )
+  const delivered = state.sent.map((comment) => sentEntry(state, comment))
+  return [
+    ...staged,
+    ...delivered.filter((entry) => entry.section === "with"),
+    ...delivered.filter((entry) => entry.section === "answered"),
+  ]
+}
+
+export const panelEntry = (state: TuiState): PanelEntry | undefined =>
+  panelEntries(state)[state.panelIndex]
+
+export const freshAnswers = (state: TuiState): number =>
+  panelEntries(state).filter((entry) => entry.fresh).length
 
 export const spokenSince = (
   seen: ReadonlyArray<StagedComment>,

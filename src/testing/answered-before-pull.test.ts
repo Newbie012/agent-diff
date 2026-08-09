@@ -1,0 +1,90 @@
+import { describe, expect, it } from "@effect/vitest"
+import { TestDriver } from "./index.ts"
+
+const WIDE = { width: 160, height: 32 }
+
+const twoComments = {
+  name: "add-teammate-invitations",
+  files: [
+    {
+      path: "src/api.ts",
+      before: ["const a = 1"],
+      after: ["const a = 1", "const b = 2", "const c = 3"],
+    },
+  ],
+}
+
+const stage = async (driver: TestDriver, branch: string, line: number, body: string) => {
+  await driver.app.runStage({ branch, file: "src/api.ts", start: line, end: line, body })
+}
+
+const openOnTwo = async (
+  driver: TestDriver,
+): Promise<{ readonly ids: ReadonlyArray<string>; readonly worktree: string }> => {
+  const branch = await driver.branch.create(twoComments)
+  await stage(driver, branch.name, 2, "the first question")
+  await stage(driver, branch.name, 3, "the second question")
+  await driver.app.runSubmit(branch.name)
+  const threads = await driver.app.runThreads(branch.name)
+  const listed = threads.envelope as { readonly comments: ReadonlyArray<{ readonly id: string }> }
+  await driver.screen.open(WIDE)
+  await driver.screen.pressKeys(["RETURN"])
+  return { ids: listed.comments.map((comment) => comment.id), worktree: branch.worktree }
+}
+
+describe("knowing what was answered before pulling it", () => {
+  it("names the comment the agent answered, not only how many", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const { ids, worktree } = await openOnTwo(driver)
+
+    // ACT
+    await driver.app.runAnswer({
+      worktree,
+      id: ids[1] ?? "",
+      body: "Dropped it, and the import with it.",
+    })
+
+    // ASSERT
+    const frame = await driver.screen.waitForFrame("Answered")
+    expect(frame).toContain("the second question")
+    expect(frame).toContain("press r")
+  })
+
+  it("still leaves the diff alone until the reviewer pulls", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const { ids, worktree } = await openOnTwo(driver)
+
+    // ACT
+    await driver.app.runAnswer({
+      worktree,
+      id: ids[1] ?? "",
+      body: "Dropped it, and the import with it.",
+    })
+    await driver.screen.waitForFrame("Answered")
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).not.toContain("Dropped it")
+  })
+
+  it("keeps saying so after a notice has come and gone", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const { ids, worktree } = await openOnTwo(driver)
+    await driver.app.runAnswer({
+      worktree,
+      id: ids[1] ?? "",
+      body: "Dropped it, and the import with it.",
+    })
+    await driver.screen.waitForFrame("Answered")
+
+    // ACT
+    await driver.screen.pressKeys(["y"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("Answered")
+    expect(frame).toContain("the second question")
+  })
+})

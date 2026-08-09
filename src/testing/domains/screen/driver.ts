@@ -36,6 +36,7 @@ export type OpenOptions = {
   readonly height?: number
   readonly repo?: string
   readonly upgrades?: boolean
+  readonly branch?: string
 }
 
 export class ScreenTestDriver {
@@ -68,7 +69,11 @@ export class ScreenTestDriver {
     this.scope = scope
     const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
     this.app = await Effect.runPromise(
-      launch(options.repo ?? this.state.repo, setup.renderer, NOTICE_MS, this.state.sessionPath).pipe(
+      launch(options.repo ?? this.state.repo, setup.renderer, {
+        noticeMs: NOTICE_MS,
+        sessionPath: this.state.sessionPath,
+        branch: options.branch,
+      }).pipe(
         Effect.provideContext(context),
       ),
     )
@@ -238,6 +243,13 @@ export class ScreenTestDriver {
   async hoverAt(x: number, y: number): Promise<void> {
     const setup = this.active()
     await setup.mockMouse.moveTo(x, y)
+    await this.app?.settled()
+    await setup.flush()
+  }
+
+  async pressMeta(key: string): Promise<void> {
+    const setup = this.active()
+    setup.mockInput.pressKey(key, { meta: true })
     await this.app?.settled()
     await setup.flush()
   }

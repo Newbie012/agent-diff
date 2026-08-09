@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-04
+- **Last updated:** 2026-08-09
 
 ## Problem Statement
 
@@ -45,6 +45,10 @@ is listed in the footer, so nothing has to be memorised or discovered.
    rest, so that the row I read constantly stays short enough to read.
 10. As a `reviewer`, I want every command I find to name the key that runs it, so that finding it
     once teaches me how to run it next time.
+11. As a `reviewer`, I want every comment I have written on this branch in one place, so that I can
+    see the shape of the review I am handing over rather than reconstruct it file by file.
+12. As a `reviewer`, I want to fix a word in the middle of what I am writing, so that a typo costs
+    one keystroke rather than the rest of the sentence.
 
 ## Implementation Decisions
 
@@ -66,9 +70,9 @@ Three screens, and the keys each answers to:
 | Screen | Keys |
 | --- | --- |
 | Branches | `j`/`down`, `k`/`up` move · `g`/`G` first and last · `enter` opens · `q` quits |
-| Review | `j`/`down`, `k`/`up` move the cursor · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `y` copies it · `/` finds it elsewhere · `w` wraps long lines · `esc` returns to branches · `q` quits |
+| Review | `j`/`down`, `k`/`up` move the cursor · `F` shows the whole file · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `y` copies it · `/` finds it elsewhere · `w` wraps long lines · `a` shows the review panel · `tab` moves between the panes · `esc` returns to branches · `q` quits |
 | Found | `j`/`down`, `k`/`up` move between matches · `enter` opens the file · `esc` returns |
-| Compose | typing edits the draft · `backspace` deletes · `ctrl+s` sends · `esc` discards |
+| Compose | typing edits the draft at the caret · `left`/`right` move it, `alt` with either moves a word · `home`/`end` reach the ends of the line · `backspace`/`delete` remove either side of it · `ctrl+s` sends · `esc` discards |
 | Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
 | Keys | `?` opens it · `j`/`down`, `k`/`up` move · `enter` runs the command · `esc` returns |
 
@@ -78,7 +82,8 @@ Three screens, and the keys each answers to:
   they are ordered by how much a reader would miss them, with the rightmost surviving longest.
 - **`?` lists every key the current screen answers to**, including the ones the palette hides, since
   a glossary that omits how to leave is not a glossary. Rows are ordered by category so the list can
-  be scanned, each names its key, and `enter` runs the highlighted one. `?` is unbound where typing
+  be scanned, each names its key, and `enter` runs the highlighted one. The wheel moves it: a panel a
+  reader is looking at is the one their scrolling should reach, not the diff behind it. `?` is unbound where typing
   is what the screen is for, so a question mark in a comment stays a question mark.
 - **Every row that names a command names its key.** The palette and the sheet render the same row,
   so a command found by typing and a command found by scanning teach the same thing.
@@ -184,6 +189,46 @@ Three screens, and the keys each answers to:
 - **State transitions are a pure function of state and action.** Everything asynchronous — reading
   a diff, submitting a comment — happens outside it, so no screen can be in a state that no key
   could have produced.
+
+#### The review panel
+
+A **review panel** on the right of the diff, holding every comment on the branch in the state it
+is in: `Staged`, `With the agent`, `Answered`.
+
+- **A review is a thing a reviewer holds in their head, and the panel is where it lives instead.**
+  Staged comments were reachable only through a modal that covers the diff, comments already handed
+  over were drawn nowhere at all, and answers were readable only by finding the line they hang off.
+  Three states in three places is a review nobody can see the shape of.
+- **The panel appears only when the diff can spare the columns.** It takes 34 of them and appears
+  when the diff would still hold 56 after the file list has taken its share — enough for a line of
+  code and its numbers. Below that the diff wins, because a review tool that cannot show the code
+  has nothing to hold a review about. `a` hides it and shows it again where there is room, and says
+  so where there is not.
+- **A row names where the comment is and what it says.** The path and line, then the first line the
+  reviewer wrote, so a comment is recognised by its own words rather than by an id.
+- **The panel is a third place to stand.** `tab` reaches it after the file list, `j` and `k` walk
+  it, and `enter` lands the diff cursor on the comment under the cursor, opening its file if the
+  comment is elsewhere. The cursor stays in the panel, so walking a review is one key per comment
+  rather than two.
+- **An answer that has not been pulled is marked where it is listed**, and the panel says how many
+  and which key pulls them. See [PRD 004](004-comment-delivery.md).
+
+#### Writing
+
+- **The caret is somewhere, not always at the end.** `left` and `right` move it a character,
+  `alt` with either moves it a word, `home` and `end` reach the ends of the line it is on, and
+  typing, `backspace` and `delete` all act where it stands. A draft that can only be appended to
+  and truncated from the end makes fixing a word near the beginning cost the whole rest of the
+  sentence, which is enough to stop a reviewer correcting one.
+- **Rewording opens on the end of what was written**, since the reason to reopen a comment is
+  usually to add to it.
+- **The caret is drawn where it is**, so what the next keystroke will do is on the screen rather
+  than inferred.
+
+- **`F` shows the whole file, and `F` again gives the diff back.** The context ladder reaches whole
+  file already, but only by pressing `=` until it stops, and the way back is as many presses of `-`.
+  A reader who opens a file to see what surrounds one hunk wants both moves to cost one key, so the
+  toggle remembers the width they had chosen and returns them to it rather than to the default.
 
 #### Gaps
 

@@ -21,7 +21,14 @@ import {
   filesWithComments,
   rowAtSourceLine,
   stopsAtRow,
+  WHOLE_FILE,
   threadAtStop,
+  panelEntries,
+  panelFits,
+  panelShown,
+  caretAt,
+  caretByWord,
+  caretToEdge,
 } from "./model.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -131,8 +138,30 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
 const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
-const layerDown = (state: TuiState, delta: number): TuiState =>
-  state.focus === "tree" ? inRail(state, delta) : stepStop(state, delta)
+const movePanel = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  panelIndex: clamp(state.panelIndex + delta, 0, Math.max(0, panelEntries(state).length - 1)),
+})
+
+const layerDown = (state: TuiState, delta: number): TuiState => {
+  if (state.focus === "tree") return inRail(state, delta)
+  if (state.focus === "review") return movePanel(state, delta)
+  return stepStop(state, delta)
+}
+
+const nextFocus = (state: TuiState): TuiState["focus"] => {
+  if (state.focus === "diff") return "tree"
+  if (state.focus === "tree") return panelShown(state) ? "review" : "diff"
+  return "diff"
+}
+
+const togglePanel = (state: TuiState): TuiState => {
+  if (!state.panelOpen && !panelFits(state)) {
+    return withNotice(state, "the terminal is too narrow for the review panel")
+  }
+  const panelOpen = !state.panelOpen
+  return { ...state, panelOpen, focus: panelOpen ? state.focus : "diff", panelIndex: 0 }
+}
 
 const toggleRail = (state: TuiState): TuiState => {
   if (state.layers.length === 0) return withNotice(state, "no layers for this branch")
@@ -210,6 +239,7 @@ const openCompose = (state: TuiState): TuiState => {
     ...state,
     screen: "compose",
     draft: "",
+    caret: 0,
     anchorRow: state.selecting ? state.anchorRow : state.cursor,
   }
 }
@@ -217,10 +247,10 @@ const openCompose = (state: TuiState): TuiState => {
 const goBack = (state: TuiState): TuiState => {
   if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "" }
   if (state.screen === "pending") return { ...state, screen: "review" }
-  if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
+  if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "", caret: 0 }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "keys") return { ...state, screen: state.returnTo }
-  if (state.screen === "compose") return { ...state, screen: "review", draft: "" }
+  if (state.screen === "compose") return { ...state, screen: "review", draft: "", caret: 0 }
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
 }
@@ -273,6 +303,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "cursor.pageUp": (state) => moveCursor(state, -Math.max(1, Math.floor(state.viewport / 2))),
   "context.more": (state) => state,
   "context.less": (state) => state,
+  "context.whole": (state) => state,
   "comment.next": (state) => layerComment(state, 1),
   "comment.prev": (state) => layerComment(state, -1),
   "hunk.next": (state) => layerHunk(state, 1),
@@ -292,12 +323,9 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pending.drop": (state) => state,
   "pending.next": (state) => movePending(state, 1),
   "pending.prev": (state) => movePending(state, -1),
-  "compose.newline": (state) => ({ ...state, draft: `${state.draft}\n` }),
-  "focus.toggle": (state) => ({
-    ...state,
-    focus: state.focus === "diff" ? "tree" : "diff",
-    navOpen: true,
-  }),
+  "compose.newline": (state) => inserted(state, "\n"),
+  "focus.toggle": (state) => ({ ...state, focus: nextFocus(state), navOpen: true }),
+  "panel.toggle": togglePanel,
   "nav.zoom": (state) => ({ ...state, navOpen: !state.navOpen, focus: "diff" }),
   "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap, pan: 0 }),
   "pan.right": (state) => panned(state, PAN_STEP),
@@ -310,7 +338,13 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "file.vouch.next": (state) => state,
   "tree.collapse": (state) => fold(state, true),
   "tree.expand": (state) => fold(state, false),
-  "report.open": (state) => ({ ...state, screen: "report", draft: "", returnTo: state.screen }),
+  "report.open": (state) => ({
+    ...state,
+    screen: "report",
+    draft: "",
+    caret: 0,
+    returnTo: state.screen,
+  }),
   "report.send": (state) => state,
   "palette.open": openPalette,
   "keys.open": openKeys,
@@ -344,6 +378,7 @@ export const withContext = (
 ): TuiState => ({
   ...state,
   context,
+  contextWas: state.context < WHOLE_FILE ? state.context : state.contextWas,
   patches,
   revealed: [],
   cursor,
@@ -380,7 +415,19 @@ export const withPending = (
 export const panBy = (state: TuiState, delta: number): TuiState =>
   state.wrap ? state : { ...state, pan: Math.max(0, state.pan + delta) }
 
-export const withSent = (state: TuiState, sent: TuiState["sent"]): TuiState => ({ ...state, sent })
+export const withSent = (state: TuiState, sent: TuiState["sent"]): TuiState => ({
+  ...state,
+  sent,
+  arrived: [],
+  panelIndex: 0,
+})
+
+export const withArrived = (state: TuiState, arrived: TuiState["arrived"]): TuiState => ({
+  ...state,
+  arrived,
+})
+
+export const withColumns = (state: TuiState, columns: number): TuiState => ({ ...state, columns })
 
 export const withLayers = (
   state: TuiState,
@@ -425,15 +472,14 @@ export const restoredTo = (
   state: TuiState,
   path: string | undefined,
   line: number | undefined,
+  offset: number,
 ): TuiState => {
   const index = state.patches.findIndex((patch) => patch.path === path)
   const patch = state.patches[index]
   if (patch === undefined) return state
-  return withCursorVisible({
-    ...state,
-    patchIndex: index,
-    cursor: line === undefined ? 0 : rowAtSourceLine(patch, line),
-  })
+  const cursor = line === undefined ? 0 : rowAtSourceLine(patch, line)
+  const top = clamp(cursor - Math.max(0, offset), 0, Math.max(0, patch.rows.length - 1))
+  return withCursorVisible({ ...state, patchIndex: index, cursor, top })
 }
 
 export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => ({
@@ -449,15 +495,55 @@ export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): Tui
   selecting: false,
 })
 
+const inserted = (state: TuiState, text: string): TuiState => {
+  const at = caretAt(state)
+  return {
+    ...state,
+    draft: `${state.draft.slice(0, at)}${text}${state.draft.slice(at)}`,
+    caret: at + text.length,
+  }
+}
+
 export const typed = (state: TuiState, character: string): TuiState =>
   state.screen === "palette"
     ? { ...state, query: `${state.query}${character}`, paletteIndex: 0 }
-    : { ...state, draft: `${state.draft}${character}` }
+    : inserted(state, character)
 
-export const backspaced = (state: TuiState): TuiState =>
-  state.screen === "palette"
-    ? { ...state, query: state.query.slice(0, -1), paletteIndex: 0 }
-    : { ...state, draft: state.draft.slice(0, -1) }
+export const backspaced = (state: TuiState): TuiState => {
+  if (state.screen === "palette") {
+    return { ...state, query: state.query.slice(0, -1), paletteIndex: 0 }
+  }
+  const at = caretAt(state)
+  if (at === 0) return state
+  return { ...state, draft: `${state.draft.slice(0, at - 1)}${state.draft.slice(at)}`, caret: at - 1 }
+}
+
+export const deleted = (state: TuiState): TuiState => {
+  const at = caretAt(state)
+  if (at >= state.draft.length) return state
+  return { ...state, draft: `${state.draft.slice(0, at)}${state.draft.slice(at + 1)}`, caret: at }
+}
+
+export const caretMoved = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  caret: clamp(caretAt(state) + delta, 0, state.draft.length),
+})
+
+export const caretJumped = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  caret: caretByWord(state, delta),
+})
+
+export const caretHomed = (state: TuiState, edge: "start" | "end"): TuiState => ({
+  ...state,
+  caret: caretToEdge(state, edge),
+})
+
+export const withDraft = (state: TuiState, draft: string): TuiState => ({
+  ...state,
+  draft,
+  caret: draft.length,
+})
 
 export const paletteMoved = (state: TuiState, delta: number): TuiState => movePalette(state, delta)
 
@@ -490,6 +576,7 @@ export const withNotice = (state: TuiState, notice: string): TuiState => ({
   ...state,
   screen: "review",
   draft: "",
+  caret: 0,
   selecting: false,
   notice,
 })

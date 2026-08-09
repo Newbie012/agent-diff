@@ -34,10 +34,17 @@ import {
   selectedPatch,
   selectionRange,
   treeWindow,
+  treeWidth,
   type TuiState,
   WHOLE_FILE,
   type StagedComment,
   proseFor,
+  drafted,
+  panelEntries,
+  panelShown,
+  reviewWidth,
+  type PanelEntry,
+  type PanelSection,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import { marks } from "./marks.ts"
@@ -72,25 +79,12 @@ const PANEL_FLOOR = 6
 const PANEL_FOOT = 2
 const PANEL_QUARTER = 4
 const PANEL_FIFTH = 5
-const TREE_MAX = 34
-const TREE_MIN = 18
-const TREE_SHARE = 0.3
-const DIFF_MIN = 24
-const BODY_BORDER = 2
 const PANE_CHROME = 3
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
 const BRANCH_TAIL = 45
 const EMPTY_LIST = "  nothing to review. No worktree differs from the branch it started from."
 const MODAL_MARGIN = 4
-
-const bodyRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - BODY_BORDER)
-
-const treeWidth = (width: number): number => {
-  const room = bodyRoom(width)
-  const wanted = Math.min(TREE_MAX, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
-  return Math.max(0, Math.min(wanted, room - DIFF_MIN))
-}
 
 const shareOf = (width: number, least: number): number =>
   Math.max(least, Math.min(PANEL_MAX, Math.floor(width * PANEL_SHARE)))
@@ -191,6 +185,29 @@ const makeDiffPane = (renderer: CliRenderer): BoxRenderable =>
     overflow: "hidden",
     visible: false,
   })
+
+const makePanel = (renderer: CliRenderer): { pane: BoxRenderable; text: TextRenderable } => {
+  const pane = new BoxRenderable(renderer, {
+    id: "panel-pane",
+    width: 0,
+    flexShrink: 0,
+    flexDirection: "column",
+    minHeight: 0,
+    overflow: "hidden",
+    border: ["left"],
+    borderColor: palette.rule,
+    visible: false,
+  })
+  const text = new TextRenderable(renderer, {
+    id: "panel",
+    content: "",
+    fg: palette.ink,
+    flexGrow: 1,
+    wrapMode: "none",
+  })
+  pane.add(text)
+  return { pane, text }
+}
 
 const makeListParts = (renderer: CliRenderer): { pane: BoxRenderable; text: TextRenderable } => {
   const pane = makeList(renderer)
@@ -708,6 +725,70 @@ const layerPaint = (state: TuiState, row: LayerRow): string => {
   return row.index === state.layerIndex ? palette.ink : palette.muted
 }
 
+const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
+  staged: "Staged",
+  with: "With the agent",
+  answered: "Answered",
+}
+
+const PANEL_ORDER: ReadonlyArray<PanelSection> = ["staged", "with", "answered"]
+const PANEL_LEAD = 3
+const PANEL_EMPTY = "No comment on this branch yet."
+
+type PanelLine = { readonly text: string; readonly tone: string }
+
+const panelMark = (state: TuiState, at: number): string => {
+  if (at !== state.panelIndex) return " "
+  return state.focus === "review" ? "▸" : "·"
+}
+
+const panelWhere = (entry: PanelEntry, room: number): string => {
+  const where = `:${entry.comment.end}`
+  return `${clipPath(entry.comment.file, Math.max(4, room - where.length))}${where}`
+}
+
+const panelBody = (entry: PanelEntry): string =>
+  entry.comment.body.split("\n").find((line) => line.trim().length > 0) ?? ""
+
+type Placed = { readonly entry: PanelEntry; readonly at: number }
+
+const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
+  const { entry } = placed
+  const lead = `${panelMark(state, placed.at)}${entry.fresh ? marks().comment : " "} `
+  return [
+    { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink },
+    { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted },
+  ]
+}
+
+const panelSection = (
+  state: TuiState,
+  placed: ReadonlyArray<Placed>,
+  section: PanelSection,
+  room: number,
+): ReadonlyArray<PanelLine> => {
+  const here = placed.filter((one) => one.entry.section === section)
+  if (here.length === 0) return []
+  return [
+    { text: "", tone: palette.faint },
+    { text: `${PANEL_TITLES[section]}  ${here.length}`, tone: palette.faint },
+    ...here.flatMap((one) => panelPair(state, one, room)),
+  ]
+}
+
+const PULL_HINT = "answered, press r to pull"
+
+const panelText = (state: TuiState, room: number): StyledText => {
+  const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
+  const fresh = placed.filter((one) => one.entry.fresh).length
+  const banner: ReadonlyArray<PanelLine> =
+    fresh === 0 ? [] : [{ text: clip(`${fresh} ${PULL_HINT}`, room), tone: palette.attention }]
+  const sections = PANEL_ORDER.flatMap((section) => panelSection(state, placed, section, room))
+  const body = sections.slice(sections[0]?.text === "" ? 1 : 0)
+  const lines = body.length === 0 ? [{ text: PANEL_EMPTY, tone: palette.muted }] : body
+  return new StyledText([...banner, ...lines].map((line) => fg(line.tone)(`${line.text}\n`)))
+}
+
 export type Mouse = {
   readonly onScroll: (delta: number) => void
   readonly onPan: (delta: number) => void
@@ -721,6 +802,8 @@ export class Screen {
   private readonly listPane: BoxRenderable
   private readonly list: TextRenderable
   private readonly diffPane: BoxRenderable
+  private readonly panelPane: BoxRenderable
+  private readonly panel: TextRenderable
   private readonly scrim: BoxRenderable
   private readonly gutter: TextRenderable
   private readonly diffScroll: BoxRenderable
@@ -779,6 +862,9 @@ export class Screen {
     this.landing = home.path
     this.landingKeys = home.keys
     this.diffPane = makeDiffPane(renderer)
+    const panel = makePanel(renderer)
+    this.panelPane = panel.pane
+    this.panel = panel.text
     this.diffScroll = makeScroll(renderer)
     this.view = new DiffView(renderer)
     const inside = makeComposeParts(renderer)
@@ -807,8 +893,18 @@ export class Screen {
     this.assemble(renderer)
   }
 
+  private wheelOnSheet(box: BoxRenderable): void {
+    box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
+      const way = event.scroll?.direction
+      if (way !== "up" && way !== "down") return
+      this.mouse?.onScroll(way === "down" ? 1 : -1)
+    }
+  }
+
   listen(mouse: Mouse): void {
     this.mouse = mouse
+    this.wheelOnSheet(this.keys)
+    this.wheelOnSheet(this.palette)
     this.view.listenTo({
       scroll: (delta) => this.mouse?.onScroll(delta),
       pan: (delta) => this.mouse?.onPan(delta),
@@ -841,7 +937,8 @@ export class Screen {
   }
 
   private diffRows(): number {
-    return Math.max(1, this.diffScroll.height)
+    const pane = this.diffPane.height - this.view.pinRows()
+    return Math.max(1, pane > 0 ? pane : this.diffScroll.height)
   }
 
   update(state: TuiState): void {
@@ -862,6 +959,7 @@ export class Screen {
     this.landingKeys.content = this.homeKeys(state)
     this.diffPane.visible = state.screen !== "branches" && !atHome(state)
     if (this.diffPane.visible) this.paintDiff(state)
+    this.paintPanel(state)
     this.paintPane(state)
     this.paintCompose(state)
     this.paintPalette(state)
@@ -959,6 +1057,19 @@ export class Screen {
     return treeWidth(this.renderer.width)
   }
 
+  columns(): number {
+    return this.renderer.width
+  }
+
+  private paintPanel(state: TuiState): void {
+    const shown = this.diffPane.visible && panelShown(state)
+    this.panelPane.visible = shown
+    this.panelPane.width = shown ? reviewWidth() : 0
+    this.panelPane.paddingLeft = shown ? 1 : 0
+    this.panelPane.paddingTop = shown ? 1 : 0
+    this.panel.content = shown ? panelText(state, reviewWidth() - PANE_CHROME) : ""
+  }
+
   private listText(state: TuiState): string | StyledText {
     if (atHome(state)) return this.branchTable(state)
     if (onLayers(state)) return this.layerRail(state)
@@ -994,7 +1105,7 @@ export class Screen {
     this.view.setWrap(state.wrap)
     this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
-    this.view.fit(this.diffScroll.height)
+    this.view.fit(this.diffRows())
     const height = this.view.rows()
     const top = this.view.scrollTo(state.top, state.cursor)
     this.lastTop = top
@@ -1040,6 +1151,7 @@ export class Screen {
     this.watchChips()
     this.body.add(this.listPane)
     this.body.add(this.diffPane)
+    this.body.add(this.panelPane)
     stack(this.compose, [this.composeTitle, this.composeBody, this.composeActions])
     stack(renderer.root, [
       this.header,
@@ -1205,7 +1317,7 @@ export class Screen {
     if (state.screen !== "report") return
     const room = composeRoom(this.renderer.width)
     const lines = laidOut(
-      ["What went wrong? Everything on screen is attached for you.", "", `${state.draft}▌`],
+      ["What went wrong? Everything on screen is attached for you.", "", drafted(state)],
       room.text,
     )
     this.composeTitle.content = "Report a bug"
@@ -1273,7 +1385,7 @@ export class Screen {
     const more = selectedLineCount(state) - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
     const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
-    const written = laidOut(`${state.draft}▌`.split("\n"), room.text)
+    const written = laidOut(drafted(state).split("\n"), room.text)
     const lines = [...quoted, "", ...written]
     this.composeTitle.content = clip(composeTarget(state), room.text)
     this.composeBody.content = lines.join("\n")
