@@ -85,6 +85,7 @@ export type TuiState = {
   readonly matchIndex: number
   readonly arrived: ReadonlyArray<StagedComment>
   readonly panelOpen: boolean
+  readonly panelWas: boolean
   readonly panelIndex: number
   readonly columns: number
 }
@@ -92,6 +93,7 @@ export type TuiState = {
 const nothingReviewed = {
   arrived: [] as ReadonlyArray<StagedComment>,
   panelOpen: true,
+  panelWas: true,
   panelIndex: 0,
   columns: 0,
 }

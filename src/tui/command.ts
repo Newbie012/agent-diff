@@ -254,10 +254,11 @@ export const commands: ReadonlyArray<Command> = [
     category: "Review",
     keys: ["a"],
     screens: ["review"],
+    hint: "review",
   }),
   command({
     action: "nav.zoom",
-    title: "Hide the file list",
+    title: "Hide the file list and the review panel",
     category: "General",
     keys: ["z", "\\"],
     screens: ["review"],
