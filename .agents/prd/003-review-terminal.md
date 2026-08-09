@@ -206,6 +206,10 @@ is in: `Staged`, `With the agent`, `Answered`.
   so where there is not.
 - **A row names where the comment is and what it says.** The path and line, then the first line the
   reviewer wrote, so a comment is recognised by its own words rather than by an id.
+- **`z` gives the diff the whole window.** It cleared the file list and left the review panel
+  standing, which is half a zoom: a reader who wants the code to have the screen wants both rails
+  gone, not one. Pressing it again brings back what was there, so a panel the reader had already
+  shut with `a` stays shut.
 - **The panel is a third place to stand.** `tab` reaches it after the file list, `j` and `k` walk
   it, and `enter` lands the diff cursor on the comment under the cursor, opening its file if the
   comment is elsewhere. The cursor stays in the panel, so walking a review is one key per comment

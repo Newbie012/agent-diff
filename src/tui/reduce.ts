@@ -160,8 +160,21 @@ const togglePanel = (state: TuiState): TuiState => {
     return withNotice(state, "the terminal is too narrow for the review panel")
   }
   const panelOpen = !state.panelOpen
-  return { ...state, panelOpen, focus: panelOpen ? state.focus : "diff", panelIndex: 0 }
+  return {
+    ...state,
+    panelOpen,
+    panelWas: panelOpen,
+    focus: panelOpen ? state.focus : "diff",
+    panelIndex: 0,
+  }
 }
+
+const packedAway = (state: TuiState): boolean => !state.navOpen && !state.panelOpen
+
+const zoom = (state: TuiState): TuiState =>
+  packedAway(state)
+    ? { ...state, navOpen: true, panelOpen: state.panelWas, focus: "diff" }
+    : { ...state, navOpen: false, panelOpen: false, focus: "diff" }
 
 const toggleRail = (state: TuiState): TuiState => {
   if (state.layers.length === 0) return withNotice(state, "no layers for this branch")
@@ -326,7 +339,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "compose.newline": (state) => inserted(state, "\n"),
   "focus.toggle": (state) => ({ ...state, focus: nextFocus(state), navOpen: true }),
   "panel.toggle": togglePanel,
-  "nav.zoom": (state) => ({ ...state, navOpen: !state.navOpen, focus: "diff" }),
+  "nav.zoom": zoom,
   "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap, pan: 0 }),
   "pan.right": (state) => panned(state, PAN_STEP),
   "pan.left": (state) => panned(state, -PAN_STEP),
