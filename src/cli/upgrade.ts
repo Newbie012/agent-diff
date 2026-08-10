@@ -179,20 +179,26 @@ const attempted = (found: UpgradeFound, ran: boolean): string => {
   return `Ran \`${found.command}\`, and adiff ${found.latest} is installed now.`
 }
 
-const REFRESH_MS = 20_000
+const REFRESH_MS = 10_000
 
 export const refreshSkills: Effect.Effect<ReadonlyArray<string>> =
   Effect.callback<ReadonlyArray<string>>((resume) => {
     let said = ""
+    let answered = false
+    const settle = (paths: ReadonlyArray<string>): void => {
+      if (answered) return
+      answered = true
+      resume(Effect.succeed(paths))
+    }
     const child = spawn("adiff", ["skill", "refresh", "--json"], {
       timeout: REFRESH_MS,
       stdio: ["ignore", "pipe", "ignore"],
     })
-    child.stdout.on("data", (chunk: Buffer) => {
+    child.stdout?.on("data", (chunk: Buffer) => {
       said += chunk.toString("utf8")
     })
-    child.on("error", () => resume(Effect.succeed([])))
-    child.on("close", () => resume(Effect.succeed(updatedIn(said))))
+    child.on("error", () => settle([]))
+    child.on("close", (code) => settle(code === 0 ? updatedIn(said) : []))
   }).pipe(Effect.withSpan("Cli.refreshedSkill"))
 
 type Changed = { readonly changes?: ReadonlyArray<{ path?: string; action?: string }> }
