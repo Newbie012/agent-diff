@@ -332,6 +332,17 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: "adiff init --repo . --write",
   },
   {
+    name: "skill refresh",
+    about:
+      "Rewrite the adiff skill wherever it is already installed, in this directory and in your home directory. Installs nothing that is not already there",
+    group: SET_UP,
+    addresses: "none",
+    safety: "write",
+    options: [],
+    dataKey: "changes",
+    example: "adiff skill refresh",
+  },
+  {
     name: "upgrade",
     about:
       "Upgrade this install to the newest build, using whatever installed it. Answers a person in plain text, and a caller in JSON with --json",

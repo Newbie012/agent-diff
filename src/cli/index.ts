@@ -19,8 +19,9 @@ export {
   takeComments,
   toggleVouch,
 } from "./commands.ts"
-export { initRepository } from "./init.ts"
+export { initRepository, refreshSkill } from "./init.ts"
 export { openPane } from "./pane.ts"
+export { refreshSkills, sayRefreshed } from "./upgrade.ts"
 export {
   askLatest,
   findUpgrade,
@@ -33,7 +34,7 @@ export {
   willUpgrade,
 } from "./upgrade.ts"
 export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
-export type { Change, InitReport } from "./init.ts"
+export type { Change, InitReport, SkillReport } from "./init.ts"
 export { searchBranch } from "./search.ts"
 export type { Match } from "./search.ts"
 export { listLayers, setLayers, showLayers } from "./layers.ts"

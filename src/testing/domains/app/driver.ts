@@ -64,10 +64,12 @@ export class AppTestDriver {
   async run(
     args: ReadonlyArray<string>,
     extra: Readonly<Record<string, string>> = {},
+    cwd?: string,
   ): Promise<CliResult> {
     const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot, ...extra }
+    const where = cwd === undefined ? {} : { cwd }
     try {
-      const { stdout, stderr } = await exec(process.execPath, [...NODE_FLAGS, ENTRY, ...args], { env, encoding: "utf8" })
+      const { stdout, stderr } = await exec(process.execPath, [...NODE_FLAGS, ENTRY, ...args], { env, encoding: "utf8", ...where })
       return { code: 0, stdout, stderr, envelope: parse(stdout) }
     } catch (cause) {
       const failed = cause as { code?: number; stdout?: string; stderr?: string }

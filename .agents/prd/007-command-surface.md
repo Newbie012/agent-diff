@@ -70,6 +70,7 @@ takes either.
 | `review pane` | `--repo` | `{ok, opened, pane, command}` |
 | `init` | `--repo [--write] [--skill]` | `{ok, wrote, changes}` |
 | `upgrade` | `[--check] [--json]` | plain text, or `{ok, upgrade}` |
+| `skill refresh` | `[--json]` | `{ok, changes}` |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 
 - **Success is `{"ok":true, …}` on stdout, exit 0.** One line, no indentation. The caller pays for
@@ -149,18 +150,29 @@ takes either.
   conventional name, since a caller reads the options out of `describe` rather than guessing them.
   `--json` changes the shape of the answer and nothing else: `upgrade --json` upgrades, and a caller
   that only wants to know pairs it with `--check`.
-- **Whatever it prints, the first line says what happened.** Already the newest build; a newer build
-  is out and this is its version; the registry never answered. Advice about how upgrading works
-  comes after that, never instead of it. The same sentence opens the `note` field in the envelope.
+- **An upgrade that can be done says two things: the command, and the version it landed on.**
+  Nothing else. A person who typed `upgrade` has decided, so telling them which package manager
+  installed the build, which registry tag matters and what adiff is about to do is a wall of prose
+  standing between them and the one fact they came for. The command is on its own line, prefixed
+  `$`, because they asked what was run; the installer's own output is left alone rather than
+  swallowed, so a slow install visibly lives; and the last line names the version. `--json` runs it
+  silently, because a caller parses stdout.
+- **Explanation is what a refusal is for.** A route adiff cannot run has to say why, because
+  otherwise doing nothing reads as a failure. A route it can run does not, because the outcome
+  speaks. So the one-clause reason lives on the paths that need it and nowhere else.
 - **The already-current answer is one line, and runs nothing.** There is nothing to do, so there is
   nothing to say beyond which build is installed.
-- **It says what it is about to run before it runs it, and shows the package manager working.** The
-  command is on its own line, and the installer's own output is left alone rather than swallowed, so
-  a person watching a slow install can see it is alive. `--json` runs it silently, because a caller
-  parses stdout.
+- **A registry that never answered is worth a line even mid-upgrade**, because the version cannot be
+  named afterwards and a person who is told neither the old nor the new number has learned nothing.
 - **The last line is what happened, not what to do next.** After a successful upgrade it names the
   version now installed, which is what a person who just upgraded wants to know. When the registry
   never answered, adiff does not know that version and says so instead of guessing.
+- **Upgrading rewrites the skill wherever it is already installed.** A build and the skill that
+  documents it are one thing, so leaving last month's skill beside this month's binary hands an
+  agent instructions for a tool that has moved. It rewrites what is there, in the working directory
+  and in the home directory, and installs nothing that was not already there: a skill nobody asked
+  for is not adiff's to add. The line saying so appears only when a file actually changed. `adiff
+  skill refresh` does the same thing on its own.
 - **A route adiff cannot perform explains rather than pretends.** A downloaded binary cannot rewrite
   itself while it is running, and a checkout is not adiff's to pull. Both print why, and the command
   that does it. Doing nothing is the right outcome; sounding like it upgraded is not.
