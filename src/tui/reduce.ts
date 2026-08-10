@@ -5,7 +5,7 @@ import { gapNumbered } from "./gaps.ts"
 import { searchCommands } from "./match.ts"
 import {
   crowdedOf,
-  directoryOfFile,
+  foldersOfFile,
   fileOrder,
   changeAround,
   hunkStarts,
@@ -183,10 +183,14 @@ const toggleRail = (state: TuiState): TuiState => {
 }
 
 const foldDirectory = (state: TuiState, shut: boolean): TuiState => {
-  const directory = directoryOfFile(state, state.patchIndex)
-  if (directory === undefined) return state
-  const closed = state.closed.filter((path) => path !== directory)
-  return { ...state, closed: shut ? [...closed, directory] : closed }
+  const chain = foldersOfFile(state, state.patchIndex)
+  if (chain.length === 0) return state
+  const target = shut
+    ? chain.find((path) => !state.closed.includes(path))
+    : chain.findLast((path) => state.closed.includes(path))
+  if (target === undefined) return state
+  const closed = state.closed.filter((path) => path !== target)
+  return { ...state, closed: shut ? [...closed, target] : closed }
 }
 
 const foldLayer = (state: TuiState, shut: boolean): TuiState => {
