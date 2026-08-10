@@ -355,6 +355,20 @@ export const directoryOfFile = (state: TuiState, fileIndex: number): string | un
   return segments.length < 2 ? undefined : segments.slice(0, -1).join("/")
 }
 
+export const foldersOfFile = (state: TuiState, fileIndex: number): ReadonlyArray<string> => {
+  const patch = state.patches[fileIndex]
+  if (patch === undefined) return []
+  const drawn = new Set(
+    flattenTree(treeOf(state), [])
+      .filter((row) => row.kind !== "file")
+      .map((row) => row.path),
+  )
+  const segments = patch.path.split("/").slice(0, -1)
+  return segments
+    .map((_, at) => segments.slice(0, segments.length - at).join("/"))
+    .filter((path) => drawn.has(path))
+}
+
 export const isReviewed = (state: TuiState, fileIndex: number): boolean => {
   const patch = state.patches[fileIndex]
   return patch !== undefined && state.vouched.includes(patch.path)

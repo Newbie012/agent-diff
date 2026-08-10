@@ -80,6 +80,7 @@ const PANEL_FOOT = 2
 const PANEL_QUARTER = 4
 const PANEL_FIFTH = 5
 const PANE_CHROME = 3
+const PANE_INSET = 1
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
 const BRANCH_TAIL = 45
@@ -1073,9 +1074,10 @@ export class Screen {
   private listText(state: TuiState): string | StyledText {
     if (atHome(state)) return this.branchTable(state)
     if (onLayers(state)) return this.layerRail(state)
-    const height = Math.max(1, this.listPane.height - 1)
+    const room = this.listRoom()
     const pane = this.paneRoom()
-    const window = treeWindow(state, height)
+    const whole = treeWindow(state, room)
+    const window = whole.more === 0 ? whole : treeWindow(state, Math.max(1, room - 1))
     const rows = window.rows.flatMap((row) => [
       fg(row.kind === "file" ? palette.ink : palette.muted)(`${treeLine(state, row, pane)}\n`),
     ])
@@ -1083,10 +1085,18 @@ export class Screen {
     return new StyledText([...rows, ...more])
   }
 
+  private listRoom(): number {
+    return Math.max(1, this.listPane.height - PANE_INSET)
+  }
+
   private layerRail(state: TuiState): StyledText {
-    const height = Math.max(1, this.listPane.height - 1)
+    const banner = state.layersStale ? 1 : 0
+    const height = Math.max(1, this.listRoom() - banner)
     const room = layerRoom(state, this.paneRoom())
-    const window = railWindow(layerRows(state, room.title, room.note), height, state.layerIndex)
+    const all = layerRows(state, room.title, room.note)
+    const whole = railWindow(all, height, state.layerIndex)
+    const window =
+      whole.more === 0 ? whole : railWindow(all, Math.max(1, height - 1), state.layerIndex)
     const rows = window.rows.map((row) =>
       fg(layerPaint(state, row))(`${layerText(state, row, room)}\n`),
     )

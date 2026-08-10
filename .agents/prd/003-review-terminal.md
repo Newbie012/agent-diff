@@ -234,6 +234,17 @@ is in: `Staged`, `With the agent`, `Answered`.
   A reader who opens a file to see what surrounds one hunk wants both moves to cost one key, so the
   toggle remembers the width they had chosen and returns them to it rather than to the default.
 
+- **The list spends a row on `… N more` only when that row buys something.** It reserved one either
+  way, which paid for the pane's own padding and left the count itself to be clipped: the list
+  simply ended, with no sign that it had. The budget names the two costs separately now, so the
+  count is drawn when rows are held back and every row is drawn when they are not.
+- **`h` closes the folder the cursor's file sits in, then the one above it.** A reader whose tree
+  runs past the pane wants fewer rows, and the folder they are standing in is rarely the one worth
+  closing. Pressing it again walks outward to the next folder the tree draws, and `l` opens the
+  outermost closed one first, so the way back in retraces the way out. Only folders on the path to
+  the current file are reachable this way; a folder elsewhere in the tree needs a cursor that can
+  stand on it, which the tree does not have.
+
 #### Gaps
 
 A **gap** is a run of file lines the diff leaves out: above the first hunk, between two hunks, or
