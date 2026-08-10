@@ -219,6 +219,10 @@
   intents:
     - good-tips-joke
     - quick-sheep-rhyme
+"@eliya-oss/agent-diff@0.1.0-alpha.50":
+  dir: ""
+  intents:
+    - upgrade-says-one-thing
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
