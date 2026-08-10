@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -118,6 +118,38 @@ const settleSkill = Effect.fn("Cli.settleSkill")(function* (root: string, write:
   })
   if (write && action !== "unchanged") yield* writeAt(join(root, name), wanted)
   return { path: name, action } satisfies Change
+})
+
+const SKILL_AT = join(".claude", "skills", "adiff", "SKILL.md")
+
+export type SkillReport = { readonly changes: ReadonlyArray<Change> }
+
+const refreshAt = Effect.fn("Cli.refreshAt")(function* (root: string, wanted: string) {
+  const path = join(root, SKILL_AT)
+  if (!existsSync(path)) return []
+  const current = yield* readAt(path)
+  const held = Option.getOrUndefined(current)
+  if (held === wanted) return [{ path, action: "unchanged" } satisfies Change]
+  yield* writeAt(path, wanted)
+  return [{ path, action: "update" } satisfies Change]
+})
+
+const settledRoot = (root: string): string => {
+  try {
+    return realpathSync(root)
+  } catch {
+    return root
+  }
+}
+
+export const refreshSkill = Effect.fn("Cli.refreshSkill")(function* (
+  roots: ReadonlyArray<string>,
+) {
+  const wanted = yield* shippedSkill()
+  const seen = [...new Set(roots.map(settledRoot))]
+  const found: Array<Change> = []
+  for (const root of seen) found.push(...(yield* refreshAt(root, wanted)))
+  return { changes: found } satisfies SkillReport
 })
 
 export const initRepository = Effect.fn("Cli.initRepository")(function* (request: InitRequest) {

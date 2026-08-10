@@ -31,6 +31,7 @@ describe("using adiff without reading its documentation", () => {
       "comment remove",
       "comment restore",
       "init",
+      "skill refresh",
       "upgrade",
       "describe",
     ])

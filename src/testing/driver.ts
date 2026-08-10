@@ -7,6 +7,7 @@ import { createDriverState, type DriverOptions, type DriverState } from "./state
 export class TestDriver implements AsyncDisposable {
   readonly repoPath: string
   readonly storeRoot: string
+  readonly workspacePath: string
   readonly branch: BranchTestDriver
   readonly app: AppTestDriver
   readonly agent: AgentTestDriver
@@ -18,6 +19,7 @@ export class TestDriver implements AsyncDisposable {
     this.state = state
     this.repoPath = state.repo
     this.storeRoot = state.storeRoot
+    this.workspacePath = state.workspace
     this.branch = new BranchTestDriver(state)
     this.app = new AppTestDriver(state)
     this.agent = new AgentTestDriver(state)

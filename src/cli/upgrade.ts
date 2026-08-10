@@ -57,17 +57,11 @@ const commandFor = (route: Route, executable: string, module: string): string =>
 }
 
 const NOTES: Readonly<Record<Route, string>> = {
-  brew: "Homebrew installed this build, so Homebrew replaces it.",
-  npm: `npm installed this build, so npm replaces it. The ${TAG} tag matters: the latest tag on the registry still points at an old build.`,
-  bun: `bun installed this build, so bun replaces it. The ${TAG} tag matters: the latest tag on the registry still points at an old build.`,
-  binary:
-    "This is a downloaded binary, so nothing upgrades it on its own, and a running executable cannot rewrite itself.",
-  source: "This is running from a checkout, so git is what updates it.",
-}
-
-const REFUSALS: Readonly<Partial<Record<Route, string>>> = {
-  binary: `adiff cannot do this one for you. Every build is listed on ${RELEASES}.`,
-  source: "adiff will not pull your checkout for you.",
+  brew: "Homebrew installed it, so Homebrew replaces it.",
+  npm: "npm installed it, so npm replaces it.",
+  bun: "bun installed it, so bun replaces it.",
+  binary: "A running binary cannot rewrite itself.",
+  source: "This is a checkout, so git is what updates it.",
 }
 
 const RUNNABLE: ReadonlySet<Route> = new Set(["brew", "npm", "bun"])
@@ -156,40 +150,77 @@ export const runUpgrade = (found: UpgradeFound, quiet: boolean): Effect.Effect<b
 
 const statusOf = (found: UpgradeFound): string => {
   if (!found.checked)
-    return `adiff ${found.version} is installed. The registry did not answer, so adiff cannot tell whether a newer build is out.`
+    return `adiff ${found.version} is installed. The registry did not answer.`
   if (found.current === true) return `adiff ${found.version} is the newest build.`
-  return `adiff ${found.version} is installed, and ${found.latest} is out.`
+  return `adiff ${found.version} is installed, ${found.latest} is out.`
 }
-
-const refusalOf = (found: UpgradeFound): string => {
-  const refusal = REFUSALS[found.route]
-  return refusal === undefined ? NOTES[found.route] : `${NOTES[found.route]} ${refusal}`
-}
-
-const OFFER = "Run `adiff upgrade` and adiff runs that for you."
 
 export const sayFound = (found: UpgradeFound, check: boolean): string => {
   if (found.current === true) return statusOf(found)
   if (willUpgrade(found, check))
-    return [statusOf(found), `${NOTES[found.route]} Running it now:`, `  ${found.command}`].join(
-      "\n\n",
-    )
-  const offer = RUNNABLE.has(found.route) ? [OFFER] : []
-  return [statusOf(found), refusalOf(found), `  ${found.command}`, ...offer].join("\n\n")
+    return found.checked ? `$ ${found.command}` : `${statusOf(found)}\n$ ${found.command}`
+  const offer = RUNNABLE.has(found.route)
+    ? `Run \`adiff upgrade\`, or \`${found.command}\` yourself.`
+    : `Run: ${found.command}`
+  return `${statusOf(found)} ${NOTES[found.route]} ${offer}`
 }
 
 export const sayDone = (found: UpgradeFound, ran: boolean): string => {
   if (!ran) return `That did not work. Run \`${found.command}\` yourself to see what it said.`
   if (found.latest === undefined)
-    return "That worked. Run `adiff --version` to see which build you have now."
+    return "Upgraded. Run `adiff --version` to see which build you have now."
   return `adiff ${found.latest} is installed now.`
 }
 
 const attempted = (found: UpgradeFound, ran: boolean): string => {
-  if (!ran) return `Ran \`${found.command}\` and it did not work. Run it yourself to see what it said.`
+  if (!ran) return `Ran \`${found.command}\` and it did not work.`
   if (found.latest === undefined)
     return `Ran \`${found.command}\`. Run \`adiff --version\` to see which build you have now.`
   return `Ran \`${found.command}\`, and adiff ${found.latest} is installed now.`
+}
+
+const REFRESH_MS = 10_000
+
+export const refreshSkills: Effect.Effect<ReadonlyArray<string>> =
+  Effect.callback<ReadonlyArray<string>>((resume) => {
+    let said = ""
+    let answered = false
+    const settle = (paths: ReadonlyArray<string>): void => {
+      if (answered) return
+      answered = true
+      resume(Effect.succeed(paths))
+    }
+    const child = spawn("adiff", ["skill", "refresh", "--json"], {
+      timeout: REFRESH_MS,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+    child.stdout?.on("data", (chunk: Buffer) => {
+      said += chunk.toString("utf8")
+    })
+    child.on("error", () => settle([]))
+    child.on("close", (code) => settle(code === 0 ? updatedIn(said) : []))
+  }).pipe(Effect.withSpan("Cli.refreshedSkill"))
+
+type Changed = { readonly changes?: ReadonlyArray<{ path?: string; action?: string }> }
+
+const updatedIn = (said: string): ReadonlyArray<string> => {
+  const parsed = Effect.runSync(
+    Effect.try(() => JSON.parse(said) as Changed).pipe(
+      Effect.orElseSucceed((): Changed => ({})),
+    ),
+  )
+  return (parsed.changes ?? [])
+    .filter((change) => change.action === "update")
+    .flatMap((change) => (change.path === undefined ? [] : [change.path]))
+}
+
+export const sayRefreshed = (paths: ReadonlyArray<string>): string | undefined => {
+  const first = paths[0]
+  if (first === undefined) return undefined
+  const rest = paths.length - 1
+  return rest === 0
+    ? `The skill at ${first} is the newest one too.`
+    : `The skill at ${first} and ${rest} more is the newest one too.`
 }
 
 export const upgradeReport = (
@@ -202,6 +233,6 @@ export const upgradeReport = (
       ? statusOf(found)
       : willUpgrade(found, check)
         ? `${statusOf(found)} ${attempted(found, ran)}`
-        : `${statusOf(found)} ${refusalOf(found)} Run \`${found.command}\` to upgrade.`
+        : `${statusOf(found)} ${NOTES[found.route]} Run \`${found.command}\` to upgrade.`
   return { ...found, ran, note }
 }
