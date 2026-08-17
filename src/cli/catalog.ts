@@ -187,10 +187,10 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment take",
-    about: "Collect the comments this review has not handed over yet. Exactly-once",
+    about: "Collect the comments this review is still owed an answer on. Repeats until answered",
     group: ANSWER_COMMENTS,
     addresses: "review",
-    safety: "write",
+    safety: "read",
     options: [
       ...addressing,
       {

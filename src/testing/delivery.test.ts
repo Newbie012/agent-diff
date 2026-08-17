@@ -1,6 +1,11 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
+type Handed = { readonly id: string }
+
+const idOf = (result: { readonly envelope: unknown }): string =>
+  (result.envelope as { comments: ReadonlyArray<Handed> }).comments[0]?.id ?? ""
+
 describe("handing review comments to the agent", () => {
   it("gives the agent every comment written since it last looked", async () => {
     // ARRANGE
@@ -24,7 +29,7 @@ describe("handing review comments to the agent", () => {
     })
   })
 
-  it("does not hand the same comment to the agent twice", async () => {
+  it("keeps handing a comment over until it is answered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -41,10 +46,37 @@ describe("handing review comments to the agent", () => {
     const result = await driver.app.runTake(branch.worktree)
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ ok: true, comments: [] })
+    expect(result.envelope).toMatchObject({ ok: true, comments: [{ body: "why third" }] })
   })
 
-  it("keeps handing over comments written after the agent caught up", async () => {
+  it("stops handing a comment over once it is answered", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create()
+    await driver.app.runComment({
+      branch: branch.name,
+      file: "src/api.ts",
+      start: 4,
+      end: 4,
+      body: "why third",
+    })
+    const taken = await driver.app.runTake(branch.worktree)
+
+    // ACT
+    await driver.app.runAnswer({
+      worktree: branch.worktree,
+      id: idOf(taken),
+      body: "dropped it",
+    })
+
+    // ASSERT
+    expect((await driver.app.runTake(branch.worktree)).envelope).toMatchObject({
+      ok: true,
+      comments: [],
+    })
+  })
+
+  it("hands over a comment written after the agent caught up", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -55,7 +87,12 @@ describe("handing review comments to the agent", () => {
       end: 4,
       body: "first",
     })
-    await driver.app.runTake(branch.worktree)
+    const taken = await driver.app.runTake(branch.worktree)
+    await driver.app.runAnswer({
+      worktree: branch.worktree,
+      id: idOf(taken),
+      body: "done",
+    })
 
     // ACT
     await driver.app.runComment({

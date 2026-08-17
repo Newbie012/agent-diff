@@ -81,11 +81,11 @@ const rowsCovering = (
 const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
   const state = yield* store.state(worktree.path)
-  const batches = yield* store.inbox(worktree.path)
+  const owed = yield* store.take(worktree.path)
   const told = yield* store.layers(worktree.path)
   return {
     staged: state.pending.length,
-    unread: Math.max(0, batches.length - state.consumed),
+    unread: owed.reduce((total, batch) => total + batch.comments.length, 0),
     layers: Option.match(told, { onNone: () => 0, onSome: (layers) => layers.layers.length }),
     stale: Option.match(told, { onNone: () => false, onSome: (layers) => layers.head !== worktree.head }),
   }

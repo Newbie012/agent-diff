@@ -48,7 +48,7 @@ describe("using adiff without reading its documentation", () => {
     expect(commands).toContainEqual(
       expect.objectContaining({
         name: "comment take",
-        safety: "write",
+        safety: "read",
         dataKey: "comments",
         options: expect.arrayContaining([
           expect.objectContaining({ name: "worktree", required: false }),

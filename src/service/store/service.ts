@@ -146,8 +146,9 @@ const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw:
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
 type Writer = (worktreePath: string, next: BranchState) => Effect.Effect<void, StoreUnwritable>
 type Inbox = (worktreePath: string) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable>
+type Spoken = (worktreePath: string) => Effect.Effect<ReadonlyArray<StoredAnswer>, StoreUnreadable>
 
-const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
+const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox, spoken: Spoken) => {
   const stage = Effect.fn("Store.stage")(function* (worktreePath: string, comment: StoredComment) {
     const current = yield* state(worktreePath)
     const pending = [...current.pending, comment]
@@ -177,9 +178,15 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox) => {
   const take = Effect.fn("Store.take")(function* (worktreePath: string) {
     const batches = yield* inbox(worktreePath)
     const current = yield* state(worktreePath)
-    const pending = batches.slice(current.consumed)
-    if (pending.length > 0) yield* saveState(worktreePath, { ...current, consumed: batches.length })
-    return pending
+    const answered = new Set((yield* spoken(worktreePath)).map((entry) => entry.comment))
+    const owed = (comment: StoredComment): boolean =>
+      !answered.has(comment.id) &&
+      !Object.hasOwn(current.settled, comment.id) &&
+      !Object.hasOwn(current.removed, comment.id)
+    return batches.flatMap((batch) => {
+      const comments = batch.comments.filter(owed)
+      return comments.length === 0 ? [] : [{ id: batch.id, at: batch.at, head: batch.head, comments }]
+    })
   })
 
   return { stage, restage, unstage, take }
@@ -362,7 +369,8 @@ const stateOps = (root: string) => {
 const makeStore = (root: string): Shape => {
   const { submit, inbox } = inboxOps(root)
   const { state, saveState } = stateOps(root)
-  const cursors = cursorOps(state, saveState, inbox)
+  const talk = answerOps(root)
+  const cursors = cursorOps(state, saveState, inbox, talk.answers)
   return {
     root,
     branchAt: (worktreePath: string) => Effect.promise(() => headOf(worktreePath)),
@@ -373,7 +381,7 @@ const makeStore = (root: string): Shape => {
     saveReport: reportOps(root),
     ...settingsOps(root),
     ...upgradeOps(root),
-    ...answerOps(root),
+    ...talk,
     ...layersOps(root),
     ...cursors,
   }
