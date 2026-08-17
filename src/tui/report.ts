@@ -4,6 +4,7 @@ import { selectedBranch, selectedPatch, treeWindow, type TuiState } from "./mode
 export type Surroundings = {
   readonly repo: string
   readonly keys: ReadonlyArray<string>
+  readonly trail: ReadonlyArray<string>
   readonly failure: string
   readonly width: number
   readonly height: number
@@ -40,6 +41,27 @@ const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => 
   `- ${state.staged} staged, ${state.vouched.length} of ${state.patches.length} reviewed`,
 ]
 
+const fenced = (title: string, lines: ReadonlyArray<string>): ReadonlyArray<string> => [
+  `## ${title}`,
+  "",
+  "```",
+  ...lines,
+  "```",
+  "",
+]
+
+const fully = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
+  ...fenced("What led here", around.trail),
+  ...fenced("Keys pressed", [around.keys.join(" ")]),
+  ...fenced("Files", visibleTree(state)),
+  ...fenced("Around the cursor", visibleRows(state)),
+]
+
+const minimal = (): ReadonlyArray<string> => [
+  "_Sent as a minimal report: no file names, no code, no key history._",
+  "",
+]
+
 export const buildReport = (state: TuiState, around: Surroundings): string => {
   const failure = around.failure.length === 0 ? "none" : around.failure.split("\n")[0]
   return [
@@ -52,23 +74,6 @@ export const buildReport = (state: TuiState, around: Surroundings): string => {
     ...facts(state, around),
     `- last internal failure: ${failure}`,
     "",
-    "## Keys pressed",
-    "",
-    "```",
-    around.keys.join(" "),
-    "```",
-    "",
-    "## Files",
-    "",
-    "```",
-    ...visibleTree(state),
-    "```",
-    "",
-    "## Around the cursor",
-    "",
-    "```",
-    ...visibleRows(state),
-    "```",
-    "",
+    ...(state.reportFull ? fully(state, around) : minimal()),
   ].join("\n")
 }

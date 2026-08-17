@@ -90,6 +90,12 @@ Three screens, and the keys each answers to:
   the accent colour on its border and the others stay at the rule colour, so exactly one border is
   lit at any time. The branch list is one pane and answers to no focus, so it keeps its plain frame.
 
+- **A key is the key it sits on, not the letter it types.** A reviewer on a Hebrew or Russian
+  layout presses the key where `s` is and the terminal sends a letter that is bound to nothing, so
+  the review answers to none of its keys. Terminals that speak the kitty keyboard protocol report
+  the key under the letter alongside it, and that is what a binding is matched against. Typing is
+  unaffected: what reaches a comment is still the letter that was typed.
+
 - **The footer carries the keys a reviewer reaches for, and `?` carries the rest.** A screen answers
   to more keys than fit on one row, so the footer names the few that a pass through a review is made
   of and leaves the others to the sheet. Chips give way from the left when the row is crowded, so

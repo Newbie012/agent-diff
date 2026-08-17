@@ -13,6 +13,7 @@ import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
   listBranches,
+  markRead,
   type BranchSummary,
   listPatches,
   fileSource,
@@ -125,6 +126,13 @@ export type AppOptions = {
 
 const PRINTABLE = /^[\S ]$/
 const KEY_HISTORY = 40
+const TRAIL_HISTORY = 20
+
+const momentOf = (named: string, state: TuiState): string => {
+  const file = selectedPatch(state)?.path ?? "none"
+  const place = `${state.screen}/${state.focus}`
+  return `${named.padEnd(16)} ${place.padEnd(16)} row ${String(state.cursor + 1).padStart(5)}  ${file}`
+}
 
 const copyToClipboard = (text: string): void => {
   const encoded = Buffer.from(text, "utf8").toString("base64")
@@ -170,9 +178,15 @@ const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
 
 const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
 
+const laidOut = (key: KeyEvent): string =>
+  key.baseCode === undefined || key.name.length !== 1
+    ? key.name
+    : String.fromCodePoint(key.baseCode)
+
 const keyName = (key: KeyEvent): string => {
   if (key.shift && key.name === "tab") return "shift+tab"
-  const base = key.shift && key.name.length === 1 ? key.name.toUpperCase() : key.name
+  const named = laidOut(key)
+  const base = key.shift && named.length === 1 ? named.toUpperCase() : named
   return key.ctrl ? `ctrl+${base}` : base
 }
 
@@ -192,6 +206,7 @@ export class App {
   private remembered = ""
   private wrapKept = false
   private readonly keys: Array<string> = []
+  private readonly trail: Array<string> = []
   private fading: Fiber.Fiber<void> | undefined
   private wheel = 0
   private sideways = 0
@@ -658,6 +673,16 @@ export class App {
       }
       this.commit(openedAt(this.measured(), at, entry.comment.end))
       yield* this.turnedTo()
+      yield* this.readAnswers(entry.comment.id)
+    })
+  }
+
+  private readAnswers(id: string | undefined): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (id === undefined || branch === undefined) return
+      yield* markRead(this.repo, branch.branch, id)
+      this.commit(withSent(this.state, yield* this.loadSent(branch.branch)))
     })
   }
 
@@ -961,8 +986,11 @@ export class App {
 
   private remember(action: Action | undefined, key: KeyEvent): void {
     if (takesText(this.state.screen) && action === undefined) return
-    this.keys.push(action ?? keyName(key))
+    const named = action ?? keyName(key)
+    this.keys.push(named)
     if (this.keys.length > KEY_HISTORY) this.keys.shift()
+    this.trail.push(momentOf(named, this.state))
+    if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
   }
 
   private sendReport(): Work {
@@ -974,6 +1002,7 @@ export class App {
       const text = buildReport(this.state, {
         repo: this.repo,
         keys: this.keys,
+        trail: this.trail,
         failure: this.failure,
         width: this.renderer.width,
         height: this.renderer.height,

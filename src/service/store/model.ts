@@ -39,6 +39,7 @@ export type BranchState = {
   readonly settled: Readonly<Record<string, string>>
   readonly removed: Readonly<Record<string, string>>
   readonly base: string
+  readonly read: Readonly<Record<string, number>>
 }
 
 export const emptyBranchState: BranchState = {
@@ -48,6 +49,7 @@ export const emptyBranchState: BranchState = {
   settled: {},
   removed: {},
   base: "",
+  read: {},
 }
 
 export type Settings = {

@@ -147,6 +147,11 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   back with its answers and its settled state intact. The terminal names the command that undoes it
   as it removes, because a reviewer who has just made something vanish is the one who needs to know
   it is recoverable.
+- **An answer stays unread until the reviewer opens it.** Which answers have been read is kept
+  beside the comments, not in the session, because the reason to mark one read is to know what is
+  left — and a reviewer who reloads the branch to pick up an answer was losing exactly that. The
+  review panel counts what is unread and drops the count for a comment when it is opened.
+
 - **An answer that lands while the reviewer reads is announced, not applied.** The terminal watches
   the outbox, which only an agent writes, and says how many answers arrived and which key pulls
   them. The screen does not change until the reviewer asks: no rows appear under the cursor, no

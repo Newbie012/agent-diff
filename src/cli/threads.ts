@@ -20,6 +20,7 @@ export type Thread = {
   readonly state: string
   readonly stale: boolean
   readonly outside: boolean
+  readonly unread: number
   readonly answers: ReadonlyArray<ThreadAnswer>
 }
 
@@ -41,6 +42,7 @@ type Reading = {
   readonly removed: Readonly<Record<string, string>>
   readonly head: string
   readonly shown: ReadonlySet<string>
+  readonly read: Readonly<Record<string, number>>
 }
 
 const spoken = (entry: StoredAnswer): ThreadAnswer => ({
@@ -69,6 +71,7 @@ const threadOf = (
     ),
     stale: batch.head !== reading.head,
     outside: !reading.shown.has(comment.anchor.path),
+    unread: Math.max(0, mine.length - (reading.read[comment.id] ?? 0)),
     answers: mine.map(spoken),
   }
 }
@@ -98,6 +101,7 @@ const stagedOf = (entry: {
   state: "staged",
   stale: false,
   outside: false,
+  unread: 0,
   answers: [],
 })
 
@@ -115,6 +119,7 @@ export const listThreads = Effect.fn("Cli.listThreads")(function* (
     removed: current.removed,
     head: worktree.head,
     shown: new Set((yield* patchesOf(worktree)).map((patch: { path: string }) => patch.path)),
+    read: current.read,
   })
   return [...sent, ...current.pending.map(stagedOf)]
 })

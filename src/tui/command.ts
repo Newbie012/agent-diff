@@ -60,6 +60,7 @@ export type Action =
   | "keys.next"
   | "keys.prev"
   | "report.open"
+  | "report.mode"
   | "report.send"
   | "palette.run"
   | "back"
@@ -446,6 +447,14 @@ export const commands: ReadonlyArray<Command> = [
     category: "General",
     keys: ["ctrl+b"],
     screens: ["branches", "review"],
+  }),
+  command({
+    action: "report.mode",
+    title: "Send a minimal report instead of a full one",
+    category: "General",
+    keys: ["ctrl+t"],
+    screens: ["report"],
+    listed: false,
   }),
   command({
     action: "report.send",
