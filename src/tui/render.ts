@@ -62,8 +62,8 @@ const COMPOSE_ACTION_ROWS = 2
 const COMPOSE_PAD = 5
 const COMPOSE_MIN_TEXT = 8
 
-const reportActions = (): StyledText =>
-  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
+const reportActions = (full: boolean): StyledText =>
+  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^t")} ${fg(palette.muted)(full ? "sending everything" : "sending the least")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
 
 const actionsText = (): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^a")} ${fg(palette.muted)("add to review")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("comment now")}`
@@ -763,7 +763,7 @@ type Placed = { readonly entry: PanelEntry; readonly at: number }
 
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
-  const lead = `${panelMark(state, placed.at)}${entry.fresh ? marks().comment : " "} `
+  const lead = `${panelMark(state, placed.at)}${entry.fresh || entry.unread > 0 ? marks().comment : " "} `
   return [
     { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink },
     { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted },
@@ -790,8 +790,10 @@ const PULL_HINT = "answered, press r to pull"
 const panelText = (state: TuiState, room: number): StyledText => {
   const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
   const fresh = placed.filter((one) => one.entry.fresh).length
+  const unread = placed.filter((one) => one.entry.unread > 0).length
+  const said = fresh > 0 ? `${fresh} ${PULL_HINT}` : unread > 0 ? `${unread} unread` : ""
   const banner: ReadonlyArray<PanelLine> =
-    fresh === 0 ? [] : [{ text: clip(`${fresh} ${PULL_HINT}`, room), tone: palette.attention }]
+    said.length === 0 ? [] : [{ text: clip(said, room), tone: palette.attention }]
   const sections = PANEL_ORDER.flatMap((section) => panelSection(state, placed, section, room))
   const body = sections.slice(sections[0]?.text === "" ? 1 : 0)
   const lines = body.length === 0 ? [{ text: PANEL_EMPTY, tone: palette.muted }] : body
@@ -1357,12 +1359,18 @@ export class Screen {
     if (state.screen !== "report") return
     const room = composeRoom(this.renderer.width)
     const lines = laidOut(
-      ["What went wrong? Everything on screen is attached for you.", "", drafted(state)],
+      [
+        state.reportFull
+          ? "What went wrong? Everything on screen is attached for you."
+          : "What went wrong? Only what you type is sent.",
+        "",
+        drafted(state),
+      ],
       room.text,
     )
     this.composeTitle.content = "Report a bug"
     this.composeBody.content = lines.join("\n")
-    this.composeActions.content = reportActions()
+    this.composeActions.content = reportActions(state.reportFull)
     this.compose.height = lines.length + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.width = room.box
     this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))

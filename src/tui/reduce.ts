@@ -365,6 +365,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "review.reload": (state) => state,
   "thread.settle": (state) => state,
   "thread.remove": (state) => state,
+  "report.mode": (state) => ({ ...state, reportFull: !state.reportFull }),
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,

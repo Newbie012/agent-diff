@@ -39,6 +39,7 @@ export const BranchState = Schema.Struct({
   settled: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   removed: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   base: Schema.optionalKey(Schema.String),
+  read: Schema.optionalKey(Schema.Record(Schema.String, Schema.Int)),
 })
 
 export const Settings = Schema.Struct({

@@ -324,10 +324,11 @@ type Reading = {
   readonly settled: Readonly<Record<string, string>>
   readonly head: string
   readonly shown: ReadonlySet<string>
+  readonly read: Readonly<Record<string, number>>
 }
 
 const sentOf = (comment: PendingComment, reading: Reading) => {
-  const { spoken, settled, head, shown } = reading
+  const { spoken, settled, head, shown, read } = reading
   const mine = spoken.filter((entry) => entry.comment === comment.id)
   return {
     id: comment.id,
@@ -339,6 +340,7 @@ const sentOf = (comment: PendingComment, reading: Reading) => {
     settled: Object.hasOwn(settled, comment.id),
     stale: comment.head !== head,
     outside: !shown.has(comment.file),
+    unread: Math.max(0, mine.length - (read[comment.id] ?? 0)),
     asks: mine.at(-1)?.asks === true,
     answers: mine.map(bodyOf),
   }
@@ -356,7 +358,15 @@ export const listSent = Effect.fn("Cli.listSent")(function* (
   const shown = new Set((yield* patchesOf(worktree)).map((patch) => patch.path))
   return flatten(yield* store.inbox(worktree.path))
     .filter((comment) => !Object.hasOwn(current.removed, comment.id))
-    .map((comment) => sentOf(comment, { spoken, settled: current.settled, head: worktree.head, shown }))
+    .map((comment) =>
+      sentOf(comment, {
+        spoken,
+        settled: current.settled,
+        head: worktree.head,
+        shown,
+        read: current.read,
+      }),
+    )
 })
 
 export const submitReview = Effect.fn("Cli.submitReview")(function* (
@@ -534,4 +544,22 @@ export const clearBase = Effect.fn("Cli.clearBase")(function* (repo: string, bra
   yield* store.saveState(worktree.path, { ...current, base: "" })
   const based = yield* baseFor(repo, branch)
   return { branch, base: based.base, basis: based.basis }
+})
+
+export const markRead = Effect.fn("Cli.markRead")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const spoken = yield* store.answers(worktree.path)
+  const seen = spoken.filter((entry) => entry.comment === id).length
+  const current = yield* store.state(worktree.path)
+  if ((current.read[id] ?? 0) >= seen) return { id, unread: 0 }
+  yield* store.saveState(worktree.path, {
+    ...current,
+    read: { ...current.read, [id]: seen },
+  })
+  return { id, unread: 0 }
 })

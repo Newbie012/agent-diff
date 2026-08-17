@@ -44,6 +44,13 @@ the reviewer's decision.
 
 ## Implementation Decisions
 
+- **A report carries everything on the screen, and `ctrl+t` sends the least instead.** What is hard
+  to act on in a report is not missing fields but a missing sequence: the state is captured after
+  the fact, so what led there has to be guessed. A full report carries the last twenty moves with
+  the screen, pane, row and file each was made on. A minimal one carries the words the reviewer
+  typed and nothing else — no file names, no code, no key history — for a report about work that
+  cannot leave the machine.
+
 ### Owns
 
 The report screen, what a report contains, where it is written, and how it reaches the clipboard.

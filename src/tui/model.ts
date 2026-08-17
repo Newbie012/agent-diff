@@ -11,6 +11,7 @@ export type StagedComment = {
   readonly stale?: boolean
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
+  readonly unread?: number
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
@@ -88,6 +89,7 @@ export type TuiState = {
   readonly panelWas: boolean
   readonly panelIndex: number
   readonly columns: number
+  readonly reportFull: boolean
 }
 
 const nothingReviewed = {
@@ -96,6 +98,7 @@ const nothingReviewed = {
   panelWas: true,
   panelIndex: 0,
   columns: 0,
+  reportFull: true,
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
@@ -645,6 +648,7 @@ export type PanelEntry = {
   readonly section: PanelSection
   readonly comment: StagedComment
   readonly fresh: boolean
+  readonly unread: number
 }
 
 const answersIn = (comment: StagedComment): number => comment.answers?.length ?? 0
@@ -661,12 +665,17 @@ const sectionOf = (comment: StagedComment): PanelSection =>
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)
-  return { section: sectionOf(newer), comment: newer, fresh: newer !== comment }
+  return {
+    section: sectionOf(newer),
+    comment: newer,
+    fresh: newer !== comment,
+    unread: newer.unread ?? 0,
+  }
 }
 
 export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   const staged = state.pending.map(
-    (comment): PanelEntry => ({ section: "staged", comment, fresh: false }),
+    (comment): PanelEntry => ({ section: "staged", comment, fresh: false, unread: 0 }),
   )
   const delivered = state.sent.map((comment) => sentEntry(state, comment))
   return [
@@ -687,6 +696,9 @@ export const threadChosen = (state: TuiState): StagedComment | undefined => {
 
 export const freshAnswers = (state: TuiState): number =>
   panelEntries(state).filter((entry) => entry.fresh).length
+
+export const unreadAnswers = (state: TuiState): number =>
+  panelEntries(state).filter((entry) => entry.unread > 0).length
 
 export const spokenSince = (
   seen: ReadonlyArray<StagedComment>,
