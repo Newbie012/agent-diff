@@ -100,6 +100,11 @@ Three screens, and the keys each answers to:
   to more keys than fit on one row, so the footer names the few that a pass through a review is made
   of and leaves the others to the sheet. Chips give way from the left when the row is crowded, so
   they are ordered by how much a reader would miss them, with the rightmost surviving longest.
+- **The footer names the key that copies once a selection is under way.** The terminal owns the
+  mouse while a review is open, so a drag selects lines in adiff rather than making a selection the
+  terminal itself could copy, and the reviewer's usual copy shortcut has nothing to act on. The key
+  that does work was there all along and named nowhere a reviewer would look.
+
 - **`?` lists every key the current screen answers to**, including the ones the palette hides, since
   a glossary that omits how to leave is not a glossary. Rows are ordered by category so the list can
   be scanned, each names its key, and `enter` runs the highlighted one. The wheel moves it: a panel a

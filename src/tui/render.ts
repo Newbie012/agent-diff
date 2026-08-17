@@ -974,6 +974,7 @@ export class Screen {
       staged: state.staged,
       layers: state.layers.length,
       onThread: state.stop > 0 || threadChosen(state) !== undefined,
+      selecting: state.selecting,
       pull: pullHere(state).length > 0,
     })
     this.header.content = this.headerText(state)
