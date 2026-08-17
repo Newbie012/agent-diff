@@ -266,6 +266,10 @@
     - chilly-rats-collect
     - honest-wasps-tie
     - wise-lamps-glow
+"@eliya-oss/agent-diff@0.1.0-alpha.60":
+  dir: ""
+  intents:
+    - adiff-opens-the-review
 "@eliya-oss/agent-diff@0.1.0-alpha.7":
   dir: ""
   intents:
