@@ -240,6 +240,10 @@
   intents:
     - a-review-belongs-to-its-branch
     - take-what-is-unanswered
+"@eliya-oss/agent-diff@0.1.0-alpha.55":
+  dir: ""
+  intents:
+    - a-lit-border-says-where-you-are
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
