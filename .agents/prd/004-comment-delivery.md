@@ -67,10 +67,20 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   and a slug that disagrees is an inbox the agent will never find.
 - **A submission is one line of JSON** carrying its id, timestamp, the HEAD it was written
   against, and its comments. Appending never rewrites what is there.
-- **Taking returns every comment since the cursor, then advances it** to everything currently in
-  the inbox. Taking with nothing new returns an empty list and a zero exit.
-- **The cursor is stored beside the vouches and merged into them, never over them.** Advancing the
-  cursor must not lose a vouch, and recording a vouch must not lose the cursor.
+- **Taking returns every comment that is still owed an answer**, oldest first, and keeps returning
+  it until one exists. Taking with nothing owed returns an empty list and a zero exit. Taking reads;
+  it writes nothing, so it can be run twice with no consequence.
+- **An answer is what retires a comment, not the act of reading it.** A cursor that advanced on read
+  made delivery at-most-once: an agent that took five comments and answered three — because it ran
+  out of room, was interrupted, or simply lost track — left two that nothing would hand over again
+  and no screen would report. The reviewer saw them as sent forever. Since the inbox is append-only
+  and the outbox says exactly which comments were answered, what the agent is owed can be derived
+  rather than remembered, and a dropped comment comes back by itself.
+- **The reviewer can retire a comment too, by settling or removing it.** Both are the reviewer
+  saying they no longer need an answer, so both stop the comment coming back. Without that, a point
+  the reviewer had given up on would follow the agent forever.
+- **What the branch list counts is what the agent still owes**, not what it has yet to read. The two
+  were the same only while reading and answering were the same act.
 - **A comment handed to the agent is flattened out of its submission** into one record per comment:
   timestamp, HEAD, file, side, start, end, snippet, body. The agent never has to understand
   batching to read a comment.

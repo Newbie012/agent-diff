@@ -488,7 +488,7 @@ const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
 
 const waitingLabel = (branch: TuiState["branches"][number]): string => {
   if (branch.staged > 0) return `${branch.staged} staged`
-  return branch.unread > 0 ? `${branch.unread} unread` : ""
+  return branch.unread > 0 ? `${branch.unread} unanswered` : ""
 }
 
 const inRange = (state: TuiState, row: number, from: number, to: number): boolean =>
