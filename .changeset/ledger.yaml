@@ -235,6 +235,11 @@
   dir: ""
   intents:
     - say-what-the-screen-did
+"@eliya-oss/agent-diff@0.1.0-alpha.54":
+  dir: ""
+  intents:
+    - a-review-belongs-to-its-branch
+    - take-what-is-unanswered
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
