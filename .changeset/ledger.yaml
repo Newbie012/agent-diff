@@ -248,6 +248,10 @@
   dir: ""
   intents:
     - a-stacked-branch-shows-its-own-work
+"@eliya-oss/agent-diff@0.1.0-alpha.57":
+  dir: ""
+  intents:
+    - the-release-finishes-itself
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
