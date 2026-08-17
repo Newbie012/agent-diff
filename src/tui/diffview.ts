@@ -297,9 +297,13 @@ export class DiffView {
     return spans
   }
 
+  private hidden(): number {
+    return Math.max(0, this.code.x - this.numbers.x) + SIGN_WIDTH
+  }
+
   private feed(): void {
     const spans = noteSpans(this.display, this.held)
-    this.code.content = textAt(this.display, this.held)
+    this.code.content = textAt(this.display, this.held, this.hidden())
     this.code.onHighlight = (highlights) => {
       const own = this.ownSpans()
       const base = own ?? highlights
@@ -547,8 +551,13 @@ const spansByLine = (
   return held
 }
 
-const textAt = (display: ReadonlyArray<Display>, pan: number): string =>
-  display.map((entry) => heldAt(entry, pan)).join("\n")
+const textAt = (display: ReadonlyArray<Display>, pan: number, covered = 0): string => {
+  const lines = display.map((entry) => heldAt(entry, pan))
+  if (covered === 0) return lines.join("\n")
+  const widest = lines.reduce((most, line) => Math.max(most, line.length), 0)
+  const last = lines.length - 1
+  return lines.map((line, at) => (at === last ? line.padEnd(widest + covered) : line)).join("\n")
+}
 
 const noteSpans = (
   display: ReadonlyArray<Display>,
