@@ -227,6 +227,10 @@
   dir: ""
   intents:
     - see-the-files-you-changed
+"@eliya-oss/agent-diff@0.1.0-alpha.52":
+  dir: ""
+  intents:
+    - paste-lands-in-the-draft
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
