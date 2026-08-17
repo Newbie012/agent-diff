@@ -33,6 +33,7 @@ import {
   selectedBranch,
   selectedPatch,
   selectionRange,
+  threadChosen,
   treeWindow,
   treeWidth,
   type TuiState,
@@ -947,7 +948,7 @@ export class Screen {
     this.chips = hintsFor(state.screen, {
       staged: state.staged,
       layers: state.layers.length,
-      onThread: state.stop > 0,
+      onThread: state.stop > 0 || threadChosen(state) !== undefined,
       pull: pullHere(state).length > 0,
     })
     this.header.content = this.headerText(state)

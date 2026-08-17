@@ -321,7 +321,7 @@ export const railWindow = (
   const block = rows.findLastIndex((row) => row.index === layerIndex) - first + 1
   const wanted = block >= height ? first : first - Math.floor((height - block) / 2)
   const start = Math.max(0, Math.min(rows.length - height, wanted))
-  return { rows: rows.slice(start, start + height), more: rows.length - height }
+  return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
 }
 
 export const selectedBranch = (state: TuiState): BranchSummary | undefined =>
@@ -383,7 +383,7 @@ export const treeWindow = (
   const here = rows.findIndex((row) => row.fileIndex === state.patchIndex)
   const anchor = here === -1 ? 0 : here
   const start = Math.max(0, Math.min(rows.length - height, anchor - Math.floor(height / 2)))
-  return { rows: rows.slice(start, start + height), more: rows.length - height }
+  return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
 }
 
 export const commentsOn = (state: TuiState, fileIndex: number): number => {
@@ -674,6 +674,12 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
 
 export const panelEntry = (state: TuiState): PanelEntry | undefined =>
   panelEntries(state)[state.panelIndex]
+
+export const threadChosen = (state: TuiState): StagedComment | undefined => {
+  if (state.focus !== "review") return undefined
+  const entry = panelEntry(state)
+  return entry === undefined || entry.section === "staged" ? undefined : entry.comment
+}
 
 export const freshAnswers = (state: TuiState): number =>
   panelEntries(state).filter((entry) => entry.fresh).length

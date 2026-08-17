@@ -237,6 +237,13 @@ is in: `Staged`, `With the agent`, `Answered`.
 - **The caret is drawn where it is**, so what the next keystroke will do is on the screen rather
   than inferred.
 
+- **`}` and `{` say when there is no change that way.** A key that lands nowhere and reports nothing
+  reads as a broken key rather than as an edge, so the jump names the edge it hit. Widening the
+  context ladder merges neighbouring hunks into one, which is what makes this worth saying: `+`
+  quietly buys surrounding lines with the changes a reader was stepping between, and a file read
+  whole is a single change with nowhere to jump. When only one change is left, the notice names the
+  ladder as the reason rather than leaving the reader to guess.
+
 - **`F` shows the whole file, and `F` again gives the diff back.** The context ladder reaches whole
   file already, but only by pressing `=` until it stops, and the way back is as many presses of `-`.
   A reader who opens a file to see what surrounds one hunk wants both moves to cost one key, so the
@@ -246,6 +253,11 @@ is in: `Staged`, `With the agent`, `Answered`.
   way, which paid for the pane's own padding and left the count itself to be clipped: the list
   simply ended, with no sign that it had. The budget names the two costs separately now, so the
   count is drawn when rows are held back and every row is drawn when they are not.
+- **`… N more` counts what is below it, not everything undrawn.** The row sits under the list, so it
+  promises more list in the direction it points. Counting every row outside the window made it count
+  upward too: a reader scrolled to the last file was told seventeen more were coming and could find
+  none of them. At the end of the list the count reaches zero, the row goes, and the list takes the
+  row back.
 - **`h` closes the folder the cursor's file sits in, then the one above it.** A reader whose tree
   runs past the pane wants fewer rows, and the folder they are standing in is rarely the one worth
   closing. Pressing it again walks outward to the next folder the tree draws, and `l` opens the

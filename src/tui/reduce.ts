@@ -78,13 +78,24 @@ export const draggedTo = (state: TuiState, from: number, to: number): TuiState =
 const atRow = (state: TuiState, row: number): TuiState =>
   withCursorVisible({ ...state, stop: 0, cursor: clamp(row, 0, lastRow(selectedPatch(state))) })
 
+const noneLeft = (state: TuiState, delta: number): TuiState => {
+  const only = hunkStarts(state).length <= 1
+  const way = delta > 0 ? "after" : "before"
+  return withNotice(
+    state,
+    only
+      ? "this file reads as one change · press - for less context to split it"
+      : `no change ${way} this one`,
+  )
+}
+
 const layerHunk = (state: TuiState, delta: number): TuiState => {
   const starts = hunkStarts(state)
   const target =
     delta > 0
       ? starts.find((start) => start > state.cursor)
       : starts.findLast((start) => start < state.cursor)
-  return target === undefined ? state : atRow(state, target)
+  return target === undefined ? noneLeft(state, delta) : atRow(state, target)
 }
 
 const nextFileWithComments = (state: TuiState, delta: number): number | undefined => {
