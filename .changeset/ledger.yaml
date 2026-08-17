@@ -231,6 +231,10 @@
   dir: ""
   intents:
     - paste-lands-in-the-draft
+"@eliya-oss/agent-diff@0.1.0-alpha.53":
+  dir: ""
+  intents:
+    - say-what-the-screen-did
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
