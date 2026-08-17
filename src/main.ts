@@ -425,7 +425,11 @@ const spoken = (given: ReadonlyArray<string>): string | undefined => {
   return given.some((token) => token === "--help" || token === "-h") ? about(words) : undefined
 }
 
-const said = spoken(argv)
+const watched = (): boolean => process.stdout.isTTY && process.stdin.isTTY
+
+const opening = argv.length === 0 && watched()
+
+const said = opening ? undefined : spoken(argv)
 if (said !== undefined) {
   process.stdout.write(`${said}\n`)
   process.exit(0)
@@ -441,5 +445,8 @@ const reportFailure = (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
   })
 
 Effect.runFork(
-  run(nameOf(argv), optionsFrom(argv)).pipe(Effect.provide(layer), Effect.catchCause(reportFailure)),
+  run(opening ? "review open" : nameOf(argv), opening ? { repo: "." } : optionsFrom(argv)).pipe(
+    Effect.provide(layer),
+    Effect.catchCause(reportFailure),
+  ),
 )
