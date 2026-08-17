@@ -78,6 +78,7 @@ export type Command = {
   readonly counted: boolean
   readonly whenLayers: boolean
   readonly whenThread: boolean
+  readonly whenSelecting: boolean
   readonly whenPull: boolean
   readonly rank: number
 }
@@ -86,6 +87,7 @@ export type Offered = {
   readonly staged: number
   readonly layers: number
   readonly onThread: boolean
+  readonly selecting: boolean
   readonly pull: boolean
 }
 
@@ -97,6 +99,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   counted: false,
   whenLayers: false,
   whenThread: false,
+  whenSelecting: false,
   whenPull: false,
   rank: 0,
   ...input,
@@ -298,6 +301,9 @@ export const commands: ReadonlyArray<Command> = [
     title: "Copy the selection",
     keys: ["y"],
     screens: ["review"],
+    hint: "copy",
+    whenSelecting: true,
+    rank: 1,
   }),
   command({
     action: "search.open",
@@ -653,6 +659,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenStaged || offered.staged > 0)
     .filter((entry) => !entry.whenLayers || offered.layers > 0)
     .filter((entry) => !entry.whenThread || offered.onThread)
+    .filter((entry) => !entry.whenSelecting || offered.selecting)
     .filter((entry) => !entry.whenPull || offered.pull)
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
