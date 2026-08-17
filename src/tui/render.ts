@@ -958,6 +958,10 @@ export class Screen {
     return this.view.room()
   }
 
+  tallestRows(): number {
+    return this.view.tallestRows()
+  }
+
   private diffRows(): number {
     const edges = this.diffPane.border === true ? PANE_EDGES : 0
     const pane = this.diffPane.height - edges - this.view.pinRows()
@@ -1137,11 +1141,11 @@ export class Screen {
     this.view.setWrap(state.wrap)
     this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
-    this.paintSticky(state, state.top)
     this.view.fit(this.diffRows())
     const height = this.view.rows()
-    const top = this.view.scrollTo(state.top, state.cursor)
+    const top = this.view.scrollTo(state.top, state.cursor, state.scroll)
     this.lastTop = top
+    this.paintSticky(state, this.view.rowAt(top))
     this.view.paint(this.linePaint(state), top, height)
     this.paintGutter(state, top, height)
   }

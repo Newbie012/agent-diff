@@ -110,3 +110,31 @@ describe("the review panel with answers waiting", () => {
     expect(await driver.screen.getFrame()).not.toContain("1 unread")
   })
 })
+
+describe("opening one of several answers", () => {
+  it("leaves the panel cursor where it was", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    const both = [2, 3].map((line) =>
+      driver.app.runComment({
+        branch: branch.name,
+        file: "src/api.ts",
+        start: line,
+        end: line,
+        body: `about line ${line}`,
+      }),
+    )
+    await Promise.all(both)
+    await driver.screen.open(WIDE)
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["TAB"])
+    await driver.screen.pressKeys(["j"])
+
+    // ACT
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("about line 3")
+  })
+})

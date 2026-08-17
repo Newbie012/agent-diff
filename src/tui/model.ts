@@ -90,6 +90,8 @@ export type TuiState = {
   readonly panelIndex: number
   readonly columns: number
   readonly reportFull: boolean
+  readonly tallest: number
+  readonly scroll: number
 }
 
 const nothingReviewed = {
@@ -99,6 +101,8 @@ const nothingReviewed = {
   panelIndex: 0,
   columns: 0,
   reportFull: true,
+  tallest: 0,
+  scroll: -1,
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({

@@ -393,6 +393,11 @@ export class App {
       this.commit(withColumns(this.state, columns))
       return
     }
+    const tallest = Effect.runSync(this.display.tallest)
+    if (tallest !== this.state.tallest) {
+      this.commit({ ...this.state, tallest })
+      return
+    }
     const room = Effect.runSync(this.display.room)
     if (room === this.roomed) return
     this.roomed = room
@@ -682,7 +687,9 @@ export class App {
       const branch = selectedBranch(this.state)
       if (id === undefined || branch === undefined) return
       yield* markRead(this.repo, branch.branch, id)
-      this.commit(withSent(this.state, yield* this.loadSent(branch.branch)))
+      const held = this.state.panelIndex
+      const sent = yield* this.loadSent(branch.branch)
+      this.commit({ ...withSent(this.state, sent), panelIndex: held })
     })
   }
 

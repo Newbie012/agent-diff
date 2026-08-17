@@ -44,7 +44,7 @@ const withCursorVisible = (state: TuiState): TuiState => {
   const height = Math.max(1, state.viewport)
   const highest = Math.max(0, rowsIn(state) - height)
   const top = state.cursor < state.top ? state.cursor : state.cursor >= state.top + height ? state.cursor - height + 1 : state.top
-  return { ...state, top: clamp(top, 0, highest) }
+  return { ...state, scroll: -1, top: clamp(top, 0, highest) }
 }
 
 const moveCursor = (state: TuiState, delta: number): TuiState =>
@@ -65,8 +65,10 @@ const stepStop = (state: TuiState, delta: number): TuiState => {
 }
 
 export const scrolled = (state: TuiState, delta: number): TuiState => {
-  const highest = Math.max(0, rowsIn(state) - Math.max(1, state.viewport))
-  return { ...state, top: clamp(state.top + delta, 0, highest) }
+  const height = Math.max(1, state.viewport)
+  const highest = Math.max(0, state.tallest - height)
+  const from = state.scroll === -1 ? state.top : state.scroll
+  return { ...state, scroll: clamp(from + delta, 0, highest) }
 }
 
 export const draggedTo = (state: TuiState, from: number, to: number): TuiState => ({
