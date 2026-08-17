@@ -1,0 +1,5 @@
+## 0.1.0-alpha.56
+
+### Patch Changes
+
+- A branch stacked on another branch shows the work it adds, not its parent's as well. The diff was always taken against the default branch, so branch B built on branch A reported A's files as B's and the reviewer walked files they had already reviewed on A. The base is now whichever local branch this one was started from, found by looking for the closest ancestor branch among the local tips, and every command that resolves a diff takes `--base <ref>` to override the guess. `branch list` reports the base and how it was chosen on each row, so a non-default base is visible rather than surprising, and the review screen says `on <branch>` beside a branch that is not on the default. `adiff base set` remembers a base for a branch and `adiff base clear` goes back to detection. A base that names no ref, or one with no shared history, fails with exit 3 and a suggestion rather than quietly falling back to the default and reporting a file count that looks right.

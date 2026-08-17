@@ -244,6 +244,10 @@
   dir: ""
   intents:
     - a-lit-border-says-where-you-are
+"@eliya-oss/agent-diff@0.1.0-alpha.56":
+  dir: ""
+  intents:
+    - a-stacked-branch-shows-its-own-work
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
