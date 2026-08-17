@@ -61,10 +61,35 @@ Each branch reports:
 | `files` | Files changed against the merge base |
 | `added` / `removed` | Lines added and removed |
 | `own` | True for the repository's own working tree |
+| `base` | The ref the diff is taken against |
+| `basis` | How that ref was arrived at: `default`, `stacked`, or `set` |
 
-- The base is the merge base of the worktree's HEAD and the repo's default branch. The default
-  branch is resolved from `origin/HEAD`, falling back to `origin/master`, `origin/main`, `master`,
-  `main`, then `HEAD`.
+- The base is the merge base of the worktree's HEAD and a base ref. The default branch is resolved
+  from `origin/HEAD`, falling back to `origin/master`, `origin/main`, `master`, `main`, then
+  `HEAD`.
+- **A branch stacked on another branch is diffed against that branch, not against the default.**
+  Branch B built on branch A, with neither merged, shares A's commits; diffing B against the
+  default reports A's files as B's, and the reviewer walks files they already reviewed on A. What
+  a reviewer wants to see is the work this branch adds.
+- **The stack parent is found among the local branches, and it is whichever one's merge base with
+  this branch is furthest ahead of the default branch.** That is the closest ancestor branch, which
+  is the branch this one was started from. A candidate whose merge base is this branch's own tip is
+  a descendant rather than a parent and is passed over; when no candidate's merge base is ahead of
+  the default at all, there is no stack and the default branch is the base.
+- **Detection is the default, and it says what it picked.** A stacked branch reporting its
+  parent's files is always wrong, so guessing is better than not; and a guess that is reported can
+  be corrected, which is what `base` and `basis` on each row are for. `--base <ref>` overrides the
+  guess on any command that resolves a diff, and `--base auto` asks for the guess explicitly.
+- **A base set on a branch is remembered**, beside that branch's comments and layers, because a
+  base does not move during a review and retyping it on every command invites the two to disagree.
+  `base set` records it, `base clear` returns the branch to detection. A recorded base beats
+  detection; `--base` beats both, for the one command it is passed to.
+- **A base that cannot be resolved is an error, never a quiet fall back to the default.** A base
+  that does not name a ref, or names one with no common ancestor, fails the way every other read
+  fails: `ok:false`, exit 3, and a suggestion naming `adiff base clear`. Falling back would report
+  a file count that looks right and is not.
+- **The base is resolved as a ref in the repository, not as a worktree.** The branch being based on
+  need not be checked out anywhere.
 - A branch with `files` of zero is omitted.
 - `own` marks the repository's own working tree, which git reports first.
 - A checkout sitting on the repository's default branch has that branch as its own base, so its

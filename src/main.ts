@@ -19,6 +19,8 @@ import {
   sayRefreshed,
   openPane,
   listBranches,
+  setBase,
+  clearBase,
   listThreads,
   MalformedLayers,
   MissingOption,
@@ -68,8 +70,25 @@ const answer = (options: Options, body: Record<string, unknown>): Effect.Effect<
   })
 
 const branchList = Effect.fn("Main.branchList")(function* (options: Options) {
-  const branches = yield* listBranches(yield* required(options, "repo"))
+  const branches = yield* listBranches(yield* required(options, "repo"), options["base"])
   yield* answer(options, { branches })
+})
+
+const baseSet = Effect.fn("Main.baseSet")(function* (options: Options) {
+  const report = yield* setBase(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "base"),
+  )
+  yield* answer(options, { base: report })
+})
+
+const baseClear = Effect.fn("Main.baseClear")(function* (options: Options) {
+  const report = yield* clearBase(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+  )
+  yield* answer(options, { base: report })
 })
 
 const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
@@ -197,6 +216,7 @@ const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options)
   const report = yield* reviewProgress(
     yield* required(options, "repo"),
     yield* required(options, "branch"),
+    options["base"],
   )
   yield* answer(options, { reviewed: report.vouched, total: report.total, pending: report.pending })
 })
@@ -289,6 +309,8 @@ const describe = Effect.fn("Main.describe")(function* (options: Options) {
 
 const routes = {
   "branch list": branchList,
+  "base set": baseSet,
+  "base clear": baseClear,
   "comment send": commentSend,
   "comment stage": commentStage,
   "comment edit": commentEdit,

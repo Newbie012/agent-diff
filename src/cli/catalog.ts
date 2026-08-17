@@ -41,6 +41,16 @@ const branchOf: OptionSpec = {
 
 export const addressing: ReadonlyArray<OptionSpec> = [worktreeOf, repoOf, branchOf]
 
+const baseOf: OptionSpec = {
+  name: "base",
+  required: false,
+  value: "ref",
+  about:
+    "Ref to diff against, instead of the one this branch is stacked on. `auto` asks for the stacked parent explicitly",
+}
+
+export const based: ReadonlyArray<OptionSpec> = [...addressing, baseOf]
+
 const repo: OptionSpec = {
   name: "repo",
   required: true,
@@ -88,7 +98,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     group: READ_A_BRANCH,
     addresses: "repo",
     safety: "read",
-    options: [repo],
+    options: [repo, baseOf],
     dataKey: "branches",
     example: "adiff branch list --repo . --fields branch,files",
   },
@@ -99,7 +109,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     group: READ_A_BRANCH,
     addresses: "repo",
     safety: "read",
-    options: [repo, opening],
+    options: [repo, opening, baseOf],
     dataKey: "",
     example: "adiff review open --repo . --branch cdr-1",
   },
@@ -110,7 +120,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     group: READ_A_BRANCH,
     addresses: "repo",
     safety: "read",
-    options: [repo, opening],
+    options: [repo, opening, baseOf],
     dataKey: "pane",
     example: "adiff review pane --repo .",
   },
@@ -120,9 +130,37 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     group: READ_A_BRANCH,
     addresses: "review",
     safety: "write",
-    options: [...addressing, file],
+    options: [...based, file],
     dataKey: "reviewed",
     example: "adiff file review --worktree . --file src/api.ts",
+  },
+  {
+    name: "base set",
+    about: "Remember the ref this branch is diffed against, so it is not retyped on every command",
+    group: READ_A_BRANCH,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      {
+        name: "base",
+        required: true,
+        value: "ref",
+        about: "Ref to diff this branch against",
+      },
+    ],
+    dataKey: "base",
+    example: "adiff base set --repo . --branch cdr-2 --base cdr-1",
+  },
+  {
+    name: "base clear",
+    about: "Forget a remembered base, so the branch goes back to using the one it is stacked on",
+    group: READ_A_BRANCH,
+    addresses: "review",
+    safety: "write",
+    options: [...addressing],
+    dataKey: "base",
+    example: "adiff base clear --repo . --branch cdr-2",
   },
   {
     name: "review progress",
@@ -130,7 +168,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     group: READ_A_BRANCH,
     addresses: "review",
     safety: "read",
-    options: [...addressing],
+    options: [...based],
     dataKey: "reviewed",
     example: "adiff review progress --repo . --branch cdr-1",
   },
@@ -235,7 +273,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     addresses: "review",
     safety: "write",
     options: [
-      ...addressing,
+      ...based,
       {
         name: "json",
         required: true,
@@ -253,7 +291,7 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     group: ANSWER_COMMENTS,
     addresses: "review",
     safety: "read",
-    options: [...addressing],
+    options: [...based],
     dataKey: "layers",
     example: "adiff layers show --worktree . --fields layers,uncovered",
   },

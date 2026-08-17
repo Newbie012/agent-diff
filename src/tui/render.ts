@@ -601,8 +601,16 @@ const layersCell = (branch: TuiState["branches"][number]): string => {
   return branch.stale ? `${branch.layers} stale` : `${branch.layers} layers`
 }
 
+const baseLabel = (branch: TuiState["branches"][number]): string =>
+  branch.basis === "default" ? "" : `on ${branch.base}`
+
 const stateCell = (state: TuiState, branch: TuiState["branches"][number]): string =>
-  [branch.own ? "here" : "", state.pulls[branch.branch] ?? "", waitingLabel(branch).trim()]
+  [
+    branch.own ? "here" : "",
+    baseLabel(branch),
+    state.pulls[branch.branch] ?? "",
+    waitingLabel(branch).trim(),
+  ]
     .filter((part) => part.length > 0)
     .join("  ")
 

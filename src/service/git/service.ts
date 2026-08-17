@@ -21,6 +21,10 @@ type Shape = {
     path: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
   readonly grep: (worktree: Worktree, term: string) => Effect.Effect<string>
+  readonly defaultBranch: (repo: string) => Effect.Effect<string>
+  readonly stackParent: (repo: string, branch: string) => Effect.Effect<string>
+  readonly resolves: (repo: string, ref: string) => Effect.Effect<boolean>
+  readonly sharedWith: (repo: string, branch: string, ref: string) => Effect.Effect<string>
 }
 
 export class Git extends Context.Service<Git, Shape>()("adiff/Git") {}
@@ -93,6 +97,45 @@ const toWorktree = Effect.fn("Git.toWorktree")(function* (entry: Entry, base: st
   } satisfies Worktree
 })
 
+const branchTips = Effect.fn("Git.branchTips")(function* (repo: string) {
+  const raw = yield* gitOrEmpty(repo, [
+    "for-each-ref",
+    "--format=%(objectname) %(refname:short)",
+    "refs/heads",
+  ])
+  const tips = new Map<string, Array<string>>()
+  for (const line of raw.split("\n")) {
+    const [sha, ...rest] = line.trim().split(" ")
+    const name = rest.join(" ")
+    if (sha === undefined || sha.length === 0 || name.length === 0) continue
+    const held = tips.get(sha)
+    if (held === undefined) tips.set(sha, [name])
+    else held.push(name)
+  }
+  return tips
+})
+
+const parents = new Map<string, string>()
+
+const parentOf = Effect.fn("Git.parentOf")(function* (repo: string, branch: string, fallback: string) {
+  const own = (yield* gitOrEmpty(repo, ["rev-list", `${fallback}..${branch}`]))
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+  const tip = own[0]
+  if (tip === undefined) return fallback
+  const key = `${repo} ${branch} ${tip} ${fallback}`
+  const known = parents.get(key)
+  if (known !== undefined) return known
+  const tips = yield* branchTips(repo)
+  const found = own
+    .slice(1)
+    .flatMap((sha) => tips.get(sha) ?? [])
+    .find((name) => name !== branch)
+  parents.set(key, found ?? fallback)
+  return found ?? fallback
+})
+
 const splitLines = (text: string): ReadonlyArray<string> => text.split("\n")
 
 const absent = Effect.succeed(Option.none<string>())
@@ -160,6 +203,19 @@ const findRepo = Effect.fn("Git.repoOf")(function* (worktree: string) {
   return trimmed.length === 0 ? resolve(worktree) : resolve(trimmed, "..")
 })
 
+const refResolves = Effect.fn("Git.resolves")(function* (repo: string, ref: string) {
+  const found = yield* gitOrEmpty(repo, ["rev-parse", "--verify", `${ref}^{commit}`])
+  return found.trim().length > 0
+})
+
+const sharedCommit = Effect.fn("Git.sharedWith")(function* (
+  repo: string,
+  branch: string,
+  ref: string,
+) {
+  return (yield* gitOrEmpty(repo, ["merge-base", branch, ref])).trim()
+})
+
 const shape: Shape = {
   worktrees: listWorktrees,
   repoOf: findRepo,
@@ -167,6 +223,11 @@ const shape: Shape = {
   stat: readStat,
   source: readSource,
   grep: readGrep,
+  defaultBranch,
+  stackParent: (repo: string, branch: string) =>
+    defaultBranch(repo).pipe(Effect.flatMap((fallback) => parentOf(repo, branch, fallback))),
+  resolves: refResolves,
+  sharedWith: sharedCommit,
 }
 
 export const GitLive = Layer.succeed(Git)(shape)

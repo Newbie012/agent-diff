@@ -22,6 +22,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "Run `adiff branch list` for the branches that have something to review.",
     retriable: false,
   },
+  UnknownBase: {
+    exit: NOT_FOUND,
+    suggestion:
+      "--base takes a ref this repository can resolve and that shares history with the branch. Run `adiff base clear --repo . --branch <name>` to go back to picking the base automatically.",
+    retriable: false,
+  },
   UnknownFile: {
     exit: NOT_FOUND,
     suggestion: "The error lists the files this branch changed. Use one of those paths.",

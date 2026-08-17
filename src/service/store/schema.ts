@@ -38,6 +38,7 @@ export const BranchState = Schema.Struct({
   pending: Schema.optionalKey(Schema.Array(StoredComment)),
   settled: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   removed: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+  base: Schema.optionalKey(Schema.String),
 })
 
 export const Settings = Schema.Struct({

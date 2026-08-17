@@ -15,7 +15,7 @@ import {
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import { findBranch, patchesOf } from "./commands.ts"
+import { basedOn, findBranch, patchesOf } from "./commands.ts"
 import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
 
 const STALE_ADVICE =
@@ -174,7 +174,10 @@ const resolve = (path: string): Promise<string> => realpath(path).catch(() => pa
 const resolveAll = (paths: ReadonlyArray<string>): Promise<ReadonlyArray<string>> =>
   Promise.all(paths.map(resolve))
 
-export const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (worktreePath: string) {
+export const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (
+  worktreePath: string,
+  base?: string,
+) {
   const git = yield* Git
   const asked = yield* Effect.promise(() => resolve(worktreePath))
   const worktrees = yield* git.worktrees(asked)
@@ -182,9 +185,11 @@ export const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (worktreePath: s
   const resolved = yield* Effect.promise(() => resolveAll(paths))
   const at = resolved.indexOf(asked)
   const found = worktrees[at]
-  return yield* found === undefined
-    ? new UnknownWorktree({ worktree: asked, known: worktrees.map((entry) => entry.path) })
-    : Effect.succeed(found)
+  if (found === undefined) {
+    return yield* new UnknownWorktree({ worktree: asked, known: worktrees.map((entry) => entry.path) })
+  }
+  const repo = yield* git.repoOf(found.path)
+  return (yield* basedOn(repo, found, base)).worktree
 })
 
 const storedLayers = Effect.fn("Cli.storedLayers")(function* (worktree: Worktree) {
@@ -237,5 +242,6 @@ export const listLayers = Effect.fn("Cli.listLayers")(function* (
   return {
     layers: reportedLayers(patches, found.value),
     stale: found.value.head !== worktree.head,
+    rebased: found.value.base !== worktree.base,
   }
 })
