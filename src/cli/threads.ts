@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect"
 import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
-import { findBranch } from "./commands.ts"
+import { findBranch, patchesOf } from "./commands.ts"
 import { worktreeAt } from "./layers.ts"
 import { UnknownComment } from "./error.ts"
 
@@ -19,6 +19,7 @@ export type Thread = {
   readonly body: string
   readonly state: string
   readonly stale: boolean
+  readonly outside: boolean
   readonly answers: ReadonlyArray<ThreadAnswer>
 }
 
@@ -39,6 +40,7 @@ type Reading = {
   readonly settled: Readonly<Record<string, string>>
   readonly removed: Readonly<Record<string, string>>
   readonly head: string
+  readonly shown: ReadonlySet<string>
 }
 
 const spoken = (entry: StoredAnswer): ThreadAnswer => ({
@@ -66,6 +68,7 @@ const threadOf = (
       Object.hasOwn(reading.removed, comment.id),
     ),
     stale: batch.head !== reading.head,
+    outside: !reading.shown.has(comment.anchor.path),
     answers: mine.map(spoken),
   }
 }
@@ -94,18 +97,24 @@ const stagedOf = (entry: {
   body: entry.body,
   state: "staged",
   stale: false,
+  outside: false,
   answers: [],
 })
 
-export const listThreads = Effect.fn("Cli.listThreads")(function* (repo: string, branch: string) {
+export const listThreads = Effect.fn("Cli.listThreads")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
+  const worktree = yield* findBranch(repo, branch, base)
   const current = yield* store.state(worktree.path)
   const sent = threadsIn(yield* store.inbox(worktree.path), {
     answers: yield* store.answers(worktree.path),
     settled: current.settled,
     removed: current.removed,
     head: worktree.head,
+    shown: new Set((yield* patchesOf(worktree)).map((patch: { path: string }) => patch.path)),
   })
   return [...sent, ...current.pending.map(stagedOf)]
 })

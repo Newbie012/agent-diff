@@ -4,6 +4,7 @@ import type {
   MalformedLayers,
   MissingOption,
   NoLayers,
+  UnknownBase,
   UnknownBranch,
   UnknownComment,
   UnknownFile,
@@ -21,6 +22,7 @@ export type Fault =
   | MalformedLayers
   | MissingOption
   | NoLayers
+  | UnknownBase
   | UnknownBranch
   | UnknownComment
   | UnknownFile

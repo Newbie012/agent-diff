@@ -28,6 +28,24 @@ export class BranchTestDriver {
     return { ...model, worktree: await realpath(worktree) }
   }
 
+  async stackOn(parent: CreatedBranch, options: CreateBranchOptions = {}): Promise<CreatedBranch> {
+    const model = generateBranchTestModel(options)
+    const worktree = join(dirname(this.state.repo), model.name)
+    await this.state.git(this.state.repo, [
+      "worktree",
+      "add",
+      "-q",
+      "-b",
+      model.name,
+      worktree,
+      parent.name,
+    ])
+    await series(model.files, (file) => this.write(worktree, file.path, file.after))
+    const stacked = { ...model, worktree: await realpath(worktree) }
+    await this.commitAll(stacked, model.name)
+    return stacked
+  }
+
   async getHead(branch: CreatedBranch): Promise<string> {
     const found = await this.state.git(branch.worktree, ["rev-parse", "HEAD"])
     return found.trim()

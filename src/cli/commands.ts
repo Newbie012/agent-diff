@@ -10,7 +10,14 @@ import {
   type StoreUnreadable,
   type StoreUnwritable,
 } from "../service/store/index.ts"
-import { EmptyReview, UnknownBranch, UnknownComment, UnknownFile, UnselectableRange } from "./error.ts"
+import {
+  EmptyReview,
+  UnknownBase,
+  UnknownBranch,
+  UnknownComment,
+  UnknownFile,
+  UnselectableRange,
+} from "./error.ts"
 
 const CONTEXT = 3
 const WHOLE_FILE = 100_000
@@ -28,6 +35,8 @@ export type BranchSummary = {
   readonly layers: number
   readonly stale: boolean
   readonly own: boolean
+  readonly base: string
+  readonly basis: Basis
 }
 
 export type CommentRequest = {
@@ -42,13 +51,71 @@ export type CommentRequest = {
   readonly at: string
 }
 
-export const findBranch = Effect.fn("Cli.findBranch")(function* (repo: string, branch: string) {
+export type Basis = "default" | "stacked" | "set"
+
+export type Based = { readonly worktree: Worktree; readonly base: string; readonly basis: Basis }
+
+const AUTO = "auto"
+
+const askedFor = (asked: string | undefined, held: string): { ref: string; basis: Basis } => {
+  if (asked !== undefined && asked !== AUTO) return { ref: asked, basis: "set" }
+  if (asked === AUTO) return { ref: "", basis: "stacked" }
+  return held.length === 0 ? { ref: "", basis: "stacked" } : { ref: held, basis: "set" }
+}
+
+export const basedOn = Effect.fn("Cli.basedOn")(function* (
+  repo: string,
+  worktree: Worktree,
+  asked?: string,
+) {
+  const git = yield* Git
+  const store = yield* Store
+  const held = (yield* store.state(worktree.path)).base
+  const wanted = askedFor(asked, held)
+  const fallback = yield* git.defaultBranch(repo)
+  const guessed = wanted.ref.length === 0
+  const ref = guessed ? yield* git.stackParent(repo, worktree.branch) : wanted.ref
+  const asItWas: Based = { worktree, base: ref, basis: "default" }
+  if (!(yield* git.resolves(repo, ref))) {
+    if (guessed) return asItWas
+    return yield* new UnknownBase({ branch: worktree.branch, base: ref, reason: "missing" })
+  }
+  const shared = yield* git.sharedWith(repo, worktree.branch, ref)
+  if (shared.length === 0) {
+    if (guessed) return asItWas
+    return yield* new UnknownBase({ branch: worktree.branch, base: ref, reason: "unrelated" })
+  }
+  const basis: Basis = guessed ? (ref === fallback ? "default" : "stacked") : wanted.basis
+  return {
+    worktree: { ...worktree, base: shared.slice(0, 8) },
+    base: ref,
+    basis,
+  } satisfies Based
+})
+
+const worktreeNamed = Effect.fn("Cli.worktreeNamed")(function* (repo: string, branch: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const found = worktrees.find((worktree) => worktree.branch === branch)
   return yield* found === undefined
     ? new UnknownBranch({ repo, branch, known: worktrees.map((w) => w.branch) })
     : Effect.succeed(found)
+})
+
+export const findBranch = Effect.fn("Cli.findBranch")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
+  return (yield* basedOn(repo, yield* worktreeNamed(repo, branch), base)).worktree
+})
+
+export const baseFor = Effect.fn("Cli.baseFor")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
+  return yield* basedOn(repo, yield* worktreeNamed(repo, branch), base)
 })
 
 export const patchesOf = Effect.fn("Cli.patchesOf")(function* (
@@ -91,11 +158,13 @@ const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   }
 })
 
-export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string) {
+export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string, base?: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const summaries: Array<BranchSummary> = []
-  for (const worktree of worktrees) {
+  for (const found of worktrees) {
+    const based = yield* basedOn(repo, found, base)
+    const worktree = based.worktree
     const stat = yield* git.stat(worktree)
     const waiting = yield* waitingOn(worktree)
     summaries.push({
@@ -110,6 +179,8 @@ export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: strin
       layers: waiting.layers,
       stale: waiting.stale,
       own: worktree.own,
+      base: based.base,
+      basis: based.basis,
     })
   }
   return summaries.filter((summary) => summary.files > 0)
@@ -156,9 +227,10 @@ export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: Vouc
 export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
   repo: string,
   branch: string,
+  base?: string,
 ) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
+  const worktree = yield* findBranch(repo, branch, base)
   const patches = yield* patchesOf(worktree)
   const current = yield* store.state(worktree.path)
   const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
@@ -247,12 +319,15 @@ export const listPending = Effect.fn("Cli.listPending")(function* (repo: string,
 
 const bodyOf = (entry: { readonly body: string }): string => entry.body
 
-const sentOf = (
-  comment: PendingComment,
-  spoken: ReadonlyArray<{ readonly comment: string; readonly body: string; readonly asks: boolean }>,
-  settled: Readonly<Record<string, string>>,
-  head: string,
-) => {
+type Reading = {
+  readonly spoken: ReadonlyArray<{ readonly comment: string; readonly body: string; readonly asks: boolean }>
+  readonly settled: Readonly<Record<string, string>>
+  readonly head: string
+  readonly shown: ReadonlySet<string>
+}
+
+const sentOf = (comment: PendingComment, reading: Reading) => {
+  const { spoken, settled, head, shown } = reading
   const mine = spoken.filter((entry) => entry.comment === comment.id)
   return {
     id: comment.id,
@@ -263,19 +338,25 @@ const sentOf = (
     body: comment.body,
     settled: Object.hasOwn(settled, comment.id),
     stale: comment.head !== head,
+    outside: !shown.has(comment.file),
     asks: mine.at(-1)?.asks === true,
     answers: mine.map(bodyOf),
   }
 }
 
-export const listSent = Effect.fn("Cli.listSent")(function* (repo: string, branch: string) {
+export const listSent = Effect.fn("Cli.listSent")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
+  const worktree = yield* findBranch(repo, branch, base)
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
+  const shown = new Set((yield* patchesOf(worktree)).map((patch) => patch.path))
   return flatten(yield* store.inbox(worktree.path))
     .filter((comment) => !Object.hasOwn(current.removed, comment.id))
-    .map((comment) => sentOf(comment, spoken, current.settled, worktree.head))
+    .map((comment) => sentOf(comment, { spoken, settled: current.settled, head: worktree.head, shown }))
 })
 
 export const submitReview = Effect.fn("Cli.submitReview")(function* (
@@ -421,4 +502,25 @@ export const saveWrap = Effect.fn("Cli.saveWrap")(function* (wrap: boolean) {
   const store = yield* Store
   const current = yield* store.settings
   yield* store.saveSettings({ ...current, wrap })
+})
+
+export const setBase = Effect.fn("Cli.setBase")(function* (
+  repo: string,
+  branch: string,
+  base: string,
+) {
+  const store = yield* Store
+  const based = yield* baseFor(repo, branch, base)
+  const current = yield* store.state(based.worktree.path)
+  yield* store.saveState(based.worktree.path, { ...current, base })
+  return { branch, base: based.base, basis: based.basis }
+})
+
+export const clearBase = Effect.fn("Cli.clearBase")(function* (repo: string, branch: string) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const current = yield* store.state(worktree.path)
+  yield* store.saveState(worktree.path, { ...current, base: "" })
+  const based = yield* baseFor(repo, branch)
+  return { branch, base: based.base, basis: based.basis }
 })

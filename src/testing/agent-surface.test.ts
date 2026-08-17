@@ -17,6 +17,8 @@ describe("using adiff without reading its documentation", () => {
       "review open",
       "review pane",
       "file review",
+      "base set",
+      "base clear",
       "review progress",
       "comment stage",
       "comment edit",
