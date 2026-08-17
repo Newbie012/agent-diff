@@ -72,7 +72,7 @@ Three screens, and the keys each answers to:
 | Branches | `j`/`down`, `k`/`up` move · `g`/`G` first and last · `enter` opens · `q` quits |
 | Review | `j`/`down`, `k`/`up` move the cursor · `F` shows the whole file · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `y` copies it · `/` finds it elsewhere · `w` wraps long lines · `a` shows the review panel · `tab` moves between the panes · `esc` returns to branches · `q` quits |
 | Found | `j`/`down`, `k`/`up` move between matches · `enter` opens the file · `esc` returns |
-| Compose | typing edits the draft at the caret · `left`/`right` move it, `alt` with either moves a word · `home`/`end` reach the ends of the line · `backspace`/`delete` remove either side of it · `ctrl+s` sends · `esc` discards |
+| Compose | typing edits the draft at the caret · a paste lands there whole · `left`/`right` move it, `alt` with either moves a word · `home`/`end` reach the ends of the line · `backspace`/`delete` remove either side of it · `ctrl+s` sends · `esc` discards |
 | Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
 | Keys | `?` opens it · `j`/`down`, `k`/`up` move · `enter` runs the command · `esc` returns |
 
@@ -224,6 +224,14 @@ is in: `Staged`, `With the agent`, `Answered`.
   typing, `backspace` and `delete` all act where it stands. A draft that can only be appended to
   and truncated from the end makes fixing a word near the beginning cost the whole rest of the
   sentence, which is enough to stop a reviewer correcting one.
+- **A paste lands at the caret in one move.** The terminal brackets a paste rather than replaying
+  it as keystrokes, so text arriving that way used to be dropped on the floor and a reviewer
+  quoting a log or an error message had to retype it. The whole paste is inserted where the caret
+  stands, and the caret follows it to the end. Line breaks survive in a draft and become spaces in
+  the palette, whose query is one line. Tabs become two spaces, since a raw tab has no width in a
+  cell grid and pasted code would lose its shape. Everything else a terminal can smuggle in —
+  escape sequences, control characters — is stripped, because a comment is prose that an agent
+  reads back, not a channel to the screen.
 - **Rewording opens on the end of what was written**, since the reason to reopen a comment is
   usually to add to it.
 - **The caret is drawn where it is**, so what the next keystroke will do is on the screen rather
