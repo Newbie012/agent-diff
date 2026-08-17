@@ -256,6 +256,10 @@
   dir: ""
   intents:
     - colour-from-the-file-not-the-diff
+"@eliya-oss/agent-diff@0.1.0-alpha.59":
+  dir: ""
+  intents:
+    - what-you-have-not-read-yet
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
