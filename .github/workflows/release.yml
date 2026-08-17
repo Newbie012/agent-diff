@@ -127,6 +127,7 @@ jobs:
         env:
           NAME: ${{ steps.tarball.outputs.name }}
           VERSION: ${{ steps.version.outputs.version }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set +e
           case "$VERSION" in
@@ -139,23 +140,28 @@ jobs:
 
           explain() {
             CURRENT=$(npm view "$NAME" dist-tags.latest 2>/dev/null || echo "unknown")
-            echo "::notice::Moving the latest dist-tag needs a credential this workflow does not have, so latest still points at $CURRENT. npm said: $1 Point it at $VERSION by hand, or give the workflow an npm automation token."
+            echo "::error::latest still points at $CURRENT rather than $VERSION, so a plain install gets $CURRENT. npm said: $1 Add an npm automation token as the NPM_TOKEN secret, or run: npm dist-tag add $NAME@$VERSION latest"
             exit 0
           }
 
-          CLAIM=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
-            | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).value || '' } catch { '' }")
-          if [ -z "$CLAIM" ]; then
-            explain "GitHub did not return an OIDC id token for audience npm:registry.npmjs.org."
-          fi
+          TOKEN="$NPM_TOKEN"
+          if [ -n "$TOKEN" ]; then
+            echo "::notice::Moving the latest dist-tag with the NPM_TOKEN secret."
+          else
+            CLAIM=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
+              | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).value || '' } catch { '' }")
+            if [ -z "$CLAIM" ]; then
+              explain "GitHub did not return an OIDC id token for audience npm:registry.npmjs.org, and no NPM_TOKEN secret is set."
+            fi
 
-          ESCAPED=$(node -p "encodeURIComponent(process.argv[1])" "$NAME")
-          BODY=$(curl -sS -X POST -H "Authorization: Bearer $CLAIM" \
-            "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/$ESCAPED")
-          TOKEN=$(printf '%s' "$BODY" | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).token || '' } catch { '' }")
-          if [ -z "$TOKEN" ]; then
-            explain "$(printf '%s' "$BODY" | head -c 400 | tr '\n' ' ')"
+            ESCAPED=$(node -p "encodeURIComponent(process.argv[1])" "$NAME")
+            BODY=$(curl -sS -X POST -H "Authorization: Bearer $CLAIM" \
+              "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/$ESCAPED")
+            TOKEN=$(printf '%s' "$BODY" | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).token || '' } catch { '' }")
+            if [ -z "$TOKEN" ]; then
+              explain "$(printf '%s' "$BODY" | head -c 400 | tr '\n' ' ')"
+            fi
           fi
 
           RC=$(mktemp)
