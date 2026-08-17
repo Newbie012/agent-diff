@@ -571,6 +571,11 @@ export const rowAtSourceLine = (patch: Patch, line: number): number => {
   return found?.index ?? 0
 }
 
+export const rowShowing = (patch: Patch, line: number): number | undefined =>
+  patch.rows.find((row) =>
+    Option.match(row.newLine, { onNone: () => false, onSome: (value) => value === line }),
+  )?.index
+
 const lineOnSide = (row: Patch["rows"][number], side: "old" | "new"): number | undefined =>
   Option.getOrUndefined(side === "old" ? row.oldLine : row.newLine)
 
@@ -689,8 +694,15 @@ export const spokenSince = (
 ): number => Math.max(0, answerCount(now) - answerCount(seen))
 
 export const hunkStarts = (state: TuiState): ReadonlyArray<number> => {
-  const patch = selectedPatch(state)
-  return patch === undefined ? [] : patch.hunks.map((hunk) => hunk.startRow)
+  const rows = selectedPatch(state)?.rows ?? []
+  const starts: Array<number> = []
+  let running = false
+  for (const [index, row] of rows.entries()) {
+    const changed = row.kind !== "context"
+    if (changed && !running) starts.push(index)
+    running = changed
+  }
+  return starts
 }
 
 export const changeAround = (state: TuiState): readonly [number, number] | undefined => {

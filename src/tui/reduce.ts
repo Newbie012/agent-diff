@@ -21,6 +21,7 @@ import {
   openCommentRows,
   filesWithComments,
   rowAtSourceLine,
+  rowShowing,
   stopsAtRow,
   WHOLE_FILE,
   threadAtStop,
@@ -79,14 +80,9 @@ const atRow = (state: TuiState, row: number): TuiState =>
   withCursorVisible({ ...state, stop: 0, cursor: clamp(row, 0, lastRow(selectedPatch(state))) })
 
 const noneLeft = (state: TuiState, delta: number): TuiState => {
-  const only = hunkStarts(state).length <= 1
+  const none = hunkStarts(state).length === 0
   const way = delta > 0 ? "after" : "before"
-  return withNotice(
-    state,
-    only
-      ? "this file reads as one change · press - for less context to split it"
-      : `no change ${way} this one`,
-  )
+  return withNotice(state, none ? "nothing changed in this file" : `no change ${way} this one`)
 }
 
 const layerHunk = (state: TuiState, delta: number): TuiState => {
@@ -518,6 +514,20 @@ export const restoredTo = (
   return withCursorVisible({ ...state, patchIndex: index, cursor, top })
 }
 
+export const openedAt = (state: TuiState, patchIndex: number, line: number): TuiState => {
+  const landed = { ...state, patchIndex, stop: 0, anchorRow: 0, selecting: false }
+  const shown = selectedPatch(landed)
+  if (shown === undefined) return { ...landed, cursor: 0, top: 0 }
+  const cursor = rowShowing(shown, line) ?? rowAtSourceLine(shown, line)
+  const height = Math.max(1, landed.viewport)
+  const room = Math.max(0, shown.rows.length - height)
+  return withCursorVisible({
+    ...landed,
+    cursor,
+    top: clamp(cursor - Math.floor(height / 2), 0, room),
+  })
+}
+
 export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => ({
   ...state,
   screen: "review",
@@ -576,6 +586,18 @@ export const backspaced = (state: TuiState): TuiState => {
   if (at === 0) return state
   return { ...state, draft: `${state.draft.slice(0, at - 1)}${state.draft.slice(at)}`, caret: at - 1 }
 }
+
+const cutBackTo = (state: TuiState, to: number): TuiState => {
+  const at = caretAt(state)
+  if (to >= at) return state
+  return { ...state, draft: `${state.draft.slice(0, to)}${state.draft.slice(at)}`, caret: to }
+}
+
+export const wordBackspaced = (state: TuiState): TuiState =>
+  state.screen === "palette" ? backspaced(state) : cutBackTo(state, caretByWord(state, -1))
+
+export const lineBackspaced = (state: TuiState): TuiState =>
+  state.screen === "palette" ? backspaced(state) : cutBackTo(state, caretToEdge(state, "start"))
 
 export const deleted = (state: TuiState): TuiState => {
   const at = caretAt(state)

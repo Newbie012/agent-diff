@@ -25,14 +25,20 @@ const deep = {
 
 const PANE = 36
 
+const insideTheFrame = (frame: string): ReadonlyArray<string> => {
+  const lines = frame.split("\n")
+  const top = lines.findIndex((line) => line.includes("╭"))
+  const bottom = lines.findIndex((line) => line.includes("╰"))
+  return lines.slice(top + 1, bottom === -1 ? undefined : bottom)
+}
+
 const paneRows = (frame: string): ReadonlyArray<string> =>
-  frame
-    .split("\n")
-    .slice(3)
+  insideTheFrame(frame)
     .map((line) => line.slice(0, PANE).replaceAll("│", " ").trimEnd())
     .filter((line) => line.trim().length > 0)
 
-const headerRow = (frame: string): string => frame.split("\n")[1] ?? ""
+const headerRow = (frame: string): string =>
+  frame.split("\n").find((line) => line.trim().length > 0) ?? ""
 
 const nameRows = (frame: string): ReadonlyArray<string> =>
   paneRows(frame)

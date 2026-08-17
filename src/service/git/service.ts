@@ -21,6 +21,10 @@ type Shape = {
     path: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
   readonly grep: (worktree: Worktree, term: string) => Effect.Effect<string>
+  readonly blob: (
+    worktree: Worktree,
+    path: string,
+  ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
   readonly defaultBranch: (repo: string) => Effect.Effect<string>
   readonly stackParent: (repo: string, branch: string) => Effect.Effect<string>
   readonly resolves: (repo: string, ref: string) => Effect.Effect<boolean>
@@ -178,6 +182,12 @@ const readSource = Effect.fn("Git.source")(function* (worktree: Worktree, path: 
   return Option.map(text, splitLines)
 })
 
+const readBlob = Effect.fn("Git.blob")(function* (worktree: Worktree, path: string) {
+  const target = worktree.base.length > 0 ? worktree.base : "HEAD"
+  const raw = yield* gitOrEmpty(worktree.path, ["show", `${target}:${path}`])
+  return raw.length === 0 ? Option.none<ReadonlyArray<string>>() : Option.some(splitLines(raw))
+})
+
 const readGrep = Effect.fn("Git.grep")(function* (worktree: Worktree, term: string) {
   return yield* gitOrEmpty(worktree.path, [
     "grep",
@@ -222,6 +232,7 @@ const shape: Shape = {
   diff: readDiff,
   stat: readStat,
   source: readSource,
+  blob: readBlob,
   grep: readGrep,
   defaultBranch,
   stackParent: (repo: string, branch: string) =>

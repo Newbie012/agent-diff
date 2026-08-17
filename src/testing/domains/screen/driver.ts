@@ -262,6 +262,13 @@ export class ScreenTestDriver {
     await setup.flush()
   }
 
+  async pressBackspaceWith(modifiers: { meta?: boolean; option?: boolean }): Promise<void> {
+    const setup = this.active()
+    setup.mockInput.pressBackspace(modifiers)
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
   async pressCtrl(letter: string): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressKey(letter, { ctrl: true })

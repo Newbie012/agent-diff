@@ -16,6 +16,7 @@ import {
   type BranchSummary,
   listPatches,
   fileSource,
+  fileBefore,
   listPending,
   listSent,
   searchBranch,
@@ -41,6 +42,7 @@ import {
   initialState,
   nextUnreviewed,
   rowAtSourceLine,
+  rowShowing,
   sourceLineAt,
   layerContext,
   knownToHaveNoPull,
@@ -62,7 +64,10 @@ import {
 } from "./model.ts"
 import {
   atFile,
+  openedAt,
   backspaced,
+  wordBackspaced,
+  lineBackspaced,
   caretHomed,
   caretJumped,
   caretMoved,
@@ -154,6 +159,11 @@ const caretFor = (state: TuiState, key: KeyEvent): TuiState | undefined => {
   if (key.name === "home") return caretHomed(state, "start")
   if (key.name === "end") return caretHomed(state, "end")
   return key.name === "delete" ? deleted(state) : undefined
+}
+
+const erasedBy = (state: TuiState, key: KeyEvent): TuiState => {
+  if (key.meta || key.ctrl) return lineBackspaced(state)
+  return key.option ? wordBackspaced(state) : backspaced(state)
 }
 
 const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
@@ -510,7 +520,7 @@ export class App {
   private onText(key: KeyEvent): void {
     if (!takesText(this.state.screen)) return
     if (key.name === "backspace") {
-      this.commit(backspaced(this.state))
+      this.commit(erasedBy(this.state, key))
       return
     }
     if (key.name === "down") {
@@ -641,9 +651,13 @@ export class App {
         this.commit(withNoticeHere(this.state, `${entry.comment.file} is not on this branch`))
         return
       }
-      const landed = atFile(this.state, at)
-      this.commit({ ...landed, cursor: rowAtSourceLine(patch, entry.comment.end) })
-      yield* this.loadSource()
+      const shown = selectedPatch({ ...this.measured(), patchIndex: at })
+      if (shown !== undefined && rowShowing(shown, entry.comment.end) === undefined) {
+        this.commit(withNoticeHere(this.state, "that comment is outside this diff"))
+        return
+      }
+      this.commit(openedAt(this.measured(), at, entry.comment.end))
+      yield* this.turnedTo()
     })
   }
 
@@ -718,7 +732,7 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
       this.commit(reduce(this.measured(), delta > 0 ? "comment.next" : "comment.prev"))
-      if (this.state.patchIndex !== was) yield* this.loadSource()
+      if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
   }
 
@@ -726,7 +740,7 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
       this.commit(reduce(this.measured(), action))
-      if (this.state.patchIndex !== was) yield* this.loadSource()
+      if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
   }
 
@@ -858,13 +872,25 @@ export class App {
     })
   }
 
+  private turnedTo(): Work {
+    return Effect.gen({ self: this }, function* () {
+      this.commit(withSource(this.state, []))
+      yield* this.loadSource()
+    })
+  }
+
   private loadSource(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       const patch = selectedPatch(this.state)
       if (branch === undefined || patch === undefined) return
-      const source = yield* (fileSource(this.repo, branch.branch, patch.path))
+      const asked = patch.path
+      const source = yield* (fileSource(this.repo, branch.branch, asked))
+      if (selectedPatch(this.state)?.path !== asked) return
       this.commit(withSource(this.state, source))
+      yield* this.display.light(asked, "new", source)
+      const before = yield* (fileBefore(this.repo, branch.branch, asked))
+      if (before.length > 0) yield* this.display.light(asked, "old", before)
     })
   }
 

@@ -103,6 +103,9 @@ export class DiffView {
   private readonly pinned: CodeRenderable
   private readonly pinBox: BoxRenderable
   private pinnedText = ""
+  private newLit: ReadonlyArray<ReadonlyArray<Span>> = []
+  private oldLit: ReadonlyArray<ReadonlyArray<Span>> = []
+  private litFor = ""
   private shown: Patch | undefined
   private noted = ""
   private display: ReadonlyArray<Display> = []
@@ -174,6 +177,13 @@ export class DiffView {
     return Math.max(0, this.code.x - this.numbers.x) + SIGN_WIDTH
   }
 
+  private unpin(): void {
+    this.pinnedText = ""
+    this.pinned.content = ""
+    this.pinned.height = 0
+    this.pinBox.height = 0
+  }
+
   pin(lines: ReadonlyArray<string>): void {
     const indent = this.gutterWidth()
     if (this.pinBox.paddingLeft !== indent) this.pinBox.paddingLeft = indent
@@ -237,7 +247,7 @@ export class DiffView {
     const room = notes.length === 0 && prose.length === 0 ? NOTE_MIN : this.noteRoom()
     const key = keyOf(room, notes, prose)
     if (patch === this.shown && key === this.noted) return
-    this.pinnedText = ""
+    this.unpin()
     this.shown = patch
     this.noted = key
     this.display = layout({ patch, notes, room, gaps, prose })
@@ -250,13 +260,54 @@ export class DiffView {
     this.numbers.setLineColors(new Map())
   }
 
+  lit(
+    path: string,
+    side: "new" | "old",
+    lines: ReadonlyArray<string>,
+    found: ReadonlyArray<readonly [number, number, string, unknown?]>,
+  ): void {
+    const held = spansByLine(lines, found)
+    if (side === "new") this.newLit = held
+    else this.oldLit = held
+    this.litFor = path
+    this.feed()
+    this.code.requestRender()
+  }
+
+  private litRow(entry: Display): ReadonlyArray<Span> {
+    if (this.shown === undefined || this.shown.path !== this.litFor) return NO_SPANS
+    const row = this.shown.rows[entry.row]
+    if (row === undefined) return NO_SPANS
+    const fresh = Option.getOrUndefined(row.newLine)
+    if (fresh !== undefined) return this.newLit[fresh - 1] ?? NO_SPANS
+    const gone = Option.getOrUndefined(row.oldLine)
+    return gone === undefined ? NO_SPANS : (this.oldLit[gone - 1] ?? NO_SPANS)
+  }
+
+  private ownSpans(): ReadonlyArray<Span> | undefined {
+    if (this.shown === undefined || this.shown.path !== this.litFor) return undefined
+    const spans: Array<Span> = []
+    let at = 0
+    for (const entry of this.display) {
+      const width = heldAt(entry, this.held).length
+      const here = isChrome(entry) ? NO_SPANS : this.litRow(entry)
+      spans.push(...shifted(here, at, width))
+      at += width + 1
+    }
+    return spans
+  }
+
   private feed(): void {
     const spans = noteSpans(this.display, this.held)
     this.code.content = textAt(this.display, this.held)
-    this.code.onHighlight = (highlights) => [
-      ...highlights.filter((highlight) => !spans.some(([from, to]) => highlight[0] < to && highlight[1] > from)),
-      ...spans,
-    ]
+    this.code.onHighlight = (highlights) => {
+      const own = this.ownSpans()
+      const base = own ?? highlights
+      return [
+        ...base.filter((highlight) => !spans.some(([from, to]) => highlight[0] < to && highlight[1] > from)),
+        ...spans,
+      ]
+    }
   }
 
   setWrap(on: boolean): void {
@@ -427,6 +478,65 @@ const isChrome = (entry: Display): boolean => entry.comment || entry.gap || entr
 
 const heldAt = (entry: Display, pan: number): string =>
   isChrome(entry) && pan > 0 ? `${" ".repeat(pan)}${entry.text}` : entry.text
+
+export type Span = [number, number, string]
+
+const NO_SPANS: ReadonlyArray<Span> = []
+
+const lineStarts = (lines: ReadonlyArray<string>): ReadonlyArray<number> => {
+  const starts: Array<number> = []
+  let at = 0
+  for (const line of lines) {
+    starts.push(at)
+    at += line.length + 1
+  }
+  return starts
+}
+
+const overLine = (start: number, starts: ReadonlyArray<number>): number => {
+  let low = 0
+  let high = starts.length - 1
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if ((starts[mid] ?? 0) <= start) low = mid
+    else high = mid - 1
+  }
+  return low
+}
+
+const shifted = (spans: ReadonlyArray<Span>, at: number, width: number): ReadonlyArray<Span> =>
+  spans
+    .filter(([from]) => from < width)
+    .map(([from, to, group]): Span => [at + from, at + Math.min(to, width), group])
+
+const acrossLines = (
+  lines: ReadonlyArray<string>,
+  starts: ReadonlyArray<number>,
+  held: Array<Array<Span>>,
+  span: readonly [number, number, string],
+): void => {
+  const [from, to, group] = span
+  let at = from
+  let line = overLine(at, starts)
+  while (at < to && line < lines.length) {
+    const start = starts[line] ?? 0
+    const width = lines[line]?.length ?? 0
+    const stop = Math.min(to, start + width)
+    if (stop > at) held[line]?.push([at - start, stop - start, group])
+    at = start + width + 1
+    line += 1
+  }
+}
+
+const spansByLine = (
+  lines: ReadonlyArray<string>,
+  found: ReadonlyArray<readonly [number, number, string, unknown?]>,
+): ReadonlyArray<ReadonlyArray<Span>> => {
+  const starts = lineStarts(lines)
+  const held: Array<Array<Span>> = lines.map(() => [])
+  for (const [from, to, group] of found) acrossLines(lines, starts, held, [from, to, group])
+  return held
+}
 
 const textAt = (display: ReadonlyArray<Display>, pan: number): string =>
   display.map((entry) => heldAt(entry, pan)).join("\n")

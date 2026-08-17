@@ -857,8 +857,8 @@ export class Screen {
     renderer.root.flexDirection = "column"
     renderer.root.paddingLeft = FRAME_PAD
     renderer.root.paddingRight = FRAME_PAD
-    renderer.root.paddingTop = FRAME_PAD
-    renderer.root.paddingBottom = FRAME_PAD
+    renderer.root.paddingTop = 0
+    renderer.root.paddingBottom = 0
 
     this.header = bar(renderer, "header", palette.ink)
     this.footer = bar(renderer, "footer", palette.faint)
@@ -938,7 +938,18 @@ export class Screen {
   }
 
   viewportRows(): number {
-    return this.diffRows()
+    const edges = this.diffPane.border === true ? PANE_EDGES : 0
+    const pane = this.diffPane.height - edges - STICKY_MAX
+    return Math.max(1, pane > 0 ? pane : this.diffRows())
+  }
+
+  lit(
+    path: string,
+    side: "new" | "old",
+    lines: ReadonlyArray<string>,
+    found: ReadonlyArray<readonly [number, number, string, unknown?]>,
+  ): void {
+    this.view.lit(path, side, lines, found)
   }
 
   noteRoom(): number {
@@ -1121,10 +1132,10 @@ export class Screen {
     const shown = shownOf(state)
     if (shown === undefined) return
     const patch = shown.patch
-    this.paintSticky(state, state.top)
     this.view.setWrap(state.wrap)
     this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
+    this.paintSticky(state, state.top)
     this.view.fit(this.diffRows())
     const height = this.view.rows()
     const top = this.view.scrollTo(state.top, state.cursor)
