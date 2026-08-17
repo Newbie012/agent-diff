@@ -274,6 +274,10 @@
   dir: ""
   intents:
     - scroll-past-a-comment
+"@eliya-oss/agent-diff@0.1.0-alpha.62":
+  dir: ""
+  intents:
+    - pan-to-the-end-of-the-line
 "@eliya-oss/agent-diff@0.1.0-alpha.7":
   dir: ""
   intents:
