@@ -22,6 +22,7 @@ const PUMP_MS = 4
 const PUMP_ATTEMPTS = 250
 const REST_PASSES = 4
 const HIGHLIGHT_LINES = 40
+const HIGHLIGHTED: ReadonlyArray<string> = ["diff-code", "diff-pin"]
 const LAYOUT_ATTEMPTS = 30
 
 type Span = { readonly fg: Channels; readonly bg: Channels }
@@ -374,9 +375,20 @@ export class ScreenTestDriver {
     return setup.captureCharFrame()
   }
 
+  private async restCode(): Promise<void> {
+    const setup = this.setup
+    if (setup === undefined) return
+    setup.renderer.stop()
+    const resting = HIGHLIGHTED.map((id) => setup.renderer.root.findDescendantById(id))
+      .filter((found) => found instanceof CodeRenderable)
+      .map((found) => found.highlightingDone)
+    await Promise.all(resting)
+  }
+
   async close(): Promise<void> {
     this.stopWatching()
     this.stopCounting()
+    await this.restCode()
     this.setup?.renderer.destroy()
     this.setup = undefined
     this.app = undefined
