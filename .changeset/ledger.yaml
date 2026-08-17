@@ -252,6 +252,10 @@
   dir: ""
   intents:
     - the-release-finishes-itself
+"@eliya-oss/agent-diff@0.1.0-alpha.58":
+  dir: ""
+  intents:
+    - colour-from-the-file-not-the-diff
 "@eliya-oss/agent-diff@0.1.0-alpha.6":
   dir: ""
   intents:
