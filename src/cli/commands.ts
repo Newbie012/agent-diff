@@ -498,6 +498,17 @@ export const fileSource = Effect.fn("Cli.fileSource")(function* (
   return Option.getOrElse(found, (): ReadonlyArray<string> => [])
 })
 
+export const fileBefore = Effect.fn("Cli.fileBefore")(function* (
+  repo: string,
+  branch: string,
+  file: string,
+) {
+  const git = yield* Git
+  const worktree = yield* findBranch(repo, branch)
+  const found = yield* git.blob(worktree, file)
+  return Option.getOrElse(found, (): ReadonlyArray<string> => [])
+})
+
 export const saveWrap = Effect.fn("Cli.saveWrap")(function* (wrap: boolean) {
   const store = yield* Store
   const current = yield* store.settings

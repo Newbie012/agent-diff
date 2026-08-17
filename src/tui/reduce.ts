@@ -577,6 +577,18 @@ export const backspaced = (state: TuiState): TuiState => {
   return { ...state, draft: `${state.draft.slice(0, at - 1)}${state.draft.slice(at)}`, caret: at - 1 }
 }
 
+const cutBackTo = (state: TuiState, to: number): TuiState => {
+  const at = caretAt(state)
+  if (to >= at) return state
+  return { ...state, draft: `${state.draft.slice(0, to)}${state.draft.slice(at)}`, caret: to }
+}
+
+export const wordBackspaced = (state: TuiState): TuiState =>
+  state.screen === "palette" ? backspaced(state) : cutBackTo(state, caretByWord(state, -1))
+
+export const lineBackspaced = (state: TuiState): TuiState =>
+  state.screen === "palette" ? backspaced(state) : cutBackTo(state, caretToEdge(state, "start"))
+
 export const deleted = (state: TuiState): TuiState => {
   const at = caretAt(state)
   if (at >= state.draft.length) return state

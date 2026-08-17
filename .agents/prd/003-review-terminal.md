@@ -248,6 +248,23 @@ is in: `Staged`, `With the agent`, `Answered`.
   reads back, not a channel to the screen.
 - **Rewording opens on the end of what was written**, since the reason to reopen a comment is
   usually to add to it.
+- **`option` and `command` with backspace take back a word and a line.** A draft is prose, and
+  prose is corrected a word at a time; taking one character back at a time for a mistyped word is
+  the cost the caret rules exist to remove.
+- **The diff is coloured from the file, not from the diff.** Handing the visible rows to the parser
+  hands it a fragment: a hunk that starts inside a JSX block or an object literal has no opening for
+  the parser to find, and the gap rows and comment rows between hunks are not code at all. The whole
+  file is parsed on each side, and the colours for each line are laid onto the rows that show it, so
+  what a line is coloured does not depend on where the hunk around it happens to start.
+- **The pinned scope is cleared when the file under it changes**, rather than being left to whatever
+  the previous file pinned. The memo that skips redrawing an unchanged pin was being reset without
+  the pin itself being cleared, so an unchanged-and-empty chain skipped the redraw and the old
+  file’s scope stayed on the screen.
+- **The rows a reviewer can scroll through do not depend on the pinned scope.** The pin grows and
+  shrinks with the nesting under the cursor, and letting the viewport shrink with it made scrolling
+  a deeply indented file jump: the viewport changed the scroll, the scroll changed the pin, and the
+  pin changed the viewport again. A fixed allowance is reserved for it instead.
+
 - **The caret is drawn where it is**, so what the next keystroke will do is on the screen rather
   than inferred.
 

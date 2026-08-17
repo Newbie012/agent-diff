@@ -4,6 +4,7 @@ export {
   repoOf,
   worktreeOf,
   fileSource,
+  fileBefore,
   listBranches,
   setBase,
   clearBase,

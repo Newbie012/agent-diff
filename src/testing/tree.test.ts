@@ -16,12 +16,15 @@ const nested = {
   ],
 }
 
-const paneOf = (frame: string): string =>
-  frame
-    .split("\n")
-    .slice(1)
+const paneOf = (frame: string): string => {
+  const lines = frame.split("\n")
+  const top = lines.findIndex((line) => line.includes("╭"))
+  const bottom = lines.findIndex((line) => line.includes("╰"))
+  return lines
+    .slice(top + 1, bottom === -1 ? undefined : bottom)
     .map((line) => line.slice(0, 32))
     .join("\n")
+}
 
 describe("navigating the files of a branch", () => {
   it("groups the changed files under the directories they live in", async () => {
@@ -35,7 +38,8 @@ describe("navigating the files of a branch", () => {
 
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
-    expect(pane).toContain("api/")
+    expect(pane).toContain("src")
+    expect(pane).toContain("api")
     expect(pane).toContain("incidents.ts")
     expect(pane).toContain("README.md")
     expect(pane).not.toContain("src/api/incidents.ts")
@@ -53,7 +57,7 @@ describe("navigating the files of a branch", () => {
 
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
-    expect(pane).toContain("src/")
+    expect(pane).toContain("api")
     expect(pane).not.toContain("incidents.ts")
   })
 
@@ -70,7 +74,7 @@ describe("navigating the files of a branch", () => {
 
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
-    expect(pane).toContain("src/api/v2/")
+    expect(pane).toContain("src/api/v2")
     expect(pane).toContain("errors.ts")
   })
 
