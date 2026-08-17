@@ -1,3 +1,4 @@
+import { stripAnsiSequences } from "@opentui/core"
 import { Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { glossaryFor, type Action } from "./command.ts"
@@ -525,6 +526,29 @@ export const typed = (state: TuiState, character: string): TuiState =>
   state.screen === "palette"
     ? { ...state, query: `${state.query}${character}`, paletteIndex: 0 }
     : inserted(state, character)
+
+const TAB_WIDTH = 2
+
+const SPACE_CODE = 0x20
+const ERASED_FROM = 0x7f
+const ERASED_TO = 0x9f
+
+const readable = (character: string): boolean => {
+  if (character === "\n") return true
+  const code = character.codePointAt(0) ?? 0
+  return code >= SPACE_CODE && (code < ERASED_FROM || code > ERASED_TO)
+}
+
+const legible = (text: string): string =>
+  Array.from(text.replace(/\r\n?/g, "\n").replace(/\t/g, " ".repeat(TAB_WIDTH)))
+    .filter(readable)
+    .join("")
+
+export const pasted = (state: TuiState, text: string): TuiState => {
+  const clean = legible(stripAnsiSequences(text))
+  if (clean.length === 0) return state
+  return typed(state, state.screen === "palette" ? clean.replace(/\n/g, " ") : clean)
+}
 
 export const backspaced = (state: TuiState): TuiState => {
   if (state.screen === "palette") {

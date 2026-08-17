@@ -159,6 +159,13 @@ export class ScreenTestDriver {
     await setup.flush()
   }
 
+  async paste(text: string): Promise<void> {
+    const setup = this.active()
+    await setup.mockInput.pasteBracketedText(text)
+    await this.app?.settled()
+    await setup.flush()
+  }
+
   async waitForNoticeToClear(notice: string): Promise<void> {
     const setup = this.active()
     await this.pump(() => !setup.captureCharFrame().includes(notice))

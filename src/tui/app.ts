@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto"
 import { realpath } from "node:fs/promises"
 import { resolve } from "node:path"
-import { createCliRenderer, type CliRenderer, type KeyEvent } from "@opentui/core"
+import {
+  createCliRenderer,
+  decodePasteBytes,
+  type CliRenderer,
+  type KeyEvent,
+  type PasteEvent,
+} from "@opentui/core"
 import { Cause, Deferred, Effect, Fiber, Option, Queue, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
@@ -68,6 +74,7 @@ import {
   reduce,
   scrolled,
   panBy,
+  pasted,
   typed,
   withNotice,
   withNoticeHere,
@@ -198,6 +205,7 @@ export class App {
       }),
     )
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
+    renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
     renderer.on("destroy", () => this.stopPainting())
@@ -258,6 +266,7 @@ export class App {
   private answer(intent: Intent): Work {
     return Intent.$match(intent, {
       Key: ({ key }) => this.onKey(key),
+      Paste: ({ text }) => Effect.sync(() => this.onPaste(text)),
       Task: ({ run }) => run,
       Ping: ({ done }) => Effect.asVoid(Deferred.succeed(done, undefined)),
     })
@@ -292,6 +301,15 @@ export class App {
 
   private dispatch(key: KeyEvent): void {
     Queue.offerUnsafe(this.intents, Intent.Key({ key }))
+  }
+
+  private dispatchPaste(event: PasteEvent): void {
+    Queue.offerUnsafe(this.intents, Intent.Paste({ text: decodePasteBytes(event.bytes) }))
+  }
+
+  private onPaste(text: string): void {
+    if (!takesText(this.state.screen)) return
+    this.commit(pasted(this.state, text))
   }
 
   private fail(cause: unknown): void {
