@@ -148,16 +148,15 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
 })
 
 const FRAME_PAD = 1
-const BODY_BORDER = 2
+const PANE_BORDER = 2
 const TREE_MAX = 34
 const TREE_MIN = 18
 const TREE_SHARE = 0.3
-const DIFF_MIN = 24
+const DIFF_MIN = 26
 const PANEL_WIDTH = 34
-const DIFF_ROOMY = 56
+const DIFF_ROOMY = 58
 
-export const bodyRoom = (columns: number): number =>
-  Math.max(0, columns - FRAME_PAD * 2 - BODY_BORDER)
+export const bodyRoom = (columns: number): number => Math.max(0, columns - FRAME_PAD * 2)
 
 export const treeWidth = (columns: number): number => {
   const room = bodyRoom(columns)
@@ -165,10 +164,10 @@ export const treeWidth = (columns: number): number => {
   return Math.max(0, Math.min(wanted, room - DIFF_MIN))
 }
 
-export const reviewWidth = (): number => PANEL_WIDTH
+export const reviewWidth = (): number => PANEL_WIDTH + PANE_BORDER
 
 export const panelFits = (state: TuiState): boolean =>
-  bodyRoom(state.columns) - treeWidth(state.columns) - PANEL_WIDTH >= DIFF_ROOMY
+  bodyRoom(state.columns) - treeWidth(state.columns) - reviewWidth() >= DIFF_ROOMY
 
 export const panelShown = (state: TuiState): boolean =>
   state.screen !== "branches" && state.panelOpen && panelFits(state)

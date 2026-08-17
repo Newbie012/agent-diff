@@ -76,6 +76,14 @@ Three screens, and the keys each answers to:
 | Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
 | Keys | `?` opens it · `j`/`down`, `k`/`up` move · `enter` runs the command · `esc` returns |
 
+- **Each pane is drawn in its own border, and the focused one is lit.** One frame around everything
+  with rules between the panes drew the seams but never said which side of them the keys were going
+  to. Since `tab` moves between three panes and most keys mean something different in each, where
+  the focus is, is the thing the screen most needs to answer, and a reviewer should not have to
+  press a key to find out. The three panes are separate boxes now: the one holding the focus takes
+  the accent colour on its border and the others stay at the rule colour, so exactly one border is
+  lit at any time. The branch list is one pane and answers to no focus, so it keeps its plain frame.
+
 - **The footer carries the keys a reviewer reaches for, and `?` carries the rest.** A screen answers
   to more keys than fit on one row, so the footer names the few that a pass through a review is made
   of and leaves the others to the sheet. Chips give way from the left when the row is crowded, so

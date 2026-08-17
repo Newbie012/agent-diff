@@ -9,7 +9,7 @@ const twoFiles = {
   ],
 }
 
-const WITH_LIST = 3
+const WITH_LIST = 4
 const WITHOUT_LIST = 2
 
 const rules = (frame: string): number =>

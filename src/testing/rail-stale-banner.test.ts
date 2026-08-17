@@ -62,7 +62,7 @@ describe("the rail on a stale layer set", () => {
 
     // ASSERT
     const rail = railText(frame)
-    expect(rail).toMatch(/invitati\u2026/)
+    expect(rail).toMatch(/invitati\w*\u2026/)
     expect(rail).not.toMatch(/invitatio ns/)
   })
 
