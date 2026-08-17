@@ -86,6 +86,12 @@ takes either.
 | `2` | Usage or validation error. The request was malformed |
 | `3` | Not found. The branch, file, or command does not exist |
 
+- **`adiff` on its own opens the review when a person is watching.** A reviewer typing the name of
+  a tool means to use it, and making them remember `review open --repo .` to get there is a toll on
+  the one command they type most. It opens on the repository they are standing in. When nothing is
+  watching — output piped, or an agent calling it — it explains itself as before, because a command
+  that blocks on a terminal nobody is looking at is worse than a command that says nothing.
+
 - **Every error carries `type`, `retriable`, and `suggestion`.** The suggestion names the command
   that would resolve it, so a caller can recover without reading documentation.
 - **`--fields a,b`** projects the answer down to the named fields, at every level. An agent listing
