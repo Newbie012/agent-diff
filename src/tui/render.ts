@@ -1087,7 +1087,8 @@ export class Screen {
   }
 
   private listRoom(): number {
-    return Math.max(1, this.listPane.height - PANE_INSET)
+    const edges = this.listPane.border === true ? PANE_EDGES : PANE_INSET
+    return Math.max(1, this.listPane.height - edges)
   }
 
   private layerRail(state: TuiState): StyledText {
