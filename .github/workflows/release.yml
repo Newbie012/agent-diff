@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
+          ref: main
 
       - uses: actions/setup-node@v7
         with:
@@ -138,41 +138,55 @@ jobs:
               ;;
           esac
 
-          explain() {
-            CURRENT=$(npm view "$NAME" dist-tags.latest 2>/dev/null || echo "unknown")
-            echo "::error::latest still points at $CURRENT rather than $VERSION, so a plain install gets $CURRENT. npm said: $1 Add an npm automation token as the NPM_TOKEN secret, or run: npm dist-tag add $NAME@$VERSION latest"
+          TRIED=""
+
+          settle() {
+            echo "::notice::latest now points at $VERSION, moved $1."
             exit 0
           }
 
-          TOKEN="$NPM_TOKEN"
-          if [ -n "$TOKEN" ]; then
-            echo "::notice::Moving the latest dist-tag with the NPM_TOKEN secret."
-          else
-            CLAIM=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-              "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
-              | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).value || '' } catch { '' }")
-            if [ -z "$CLAIM" ]; then
-              explain "GitHub did not return an OIDC id token for audience npm:registry.npmjs.org, and no NPM_TOKEN secret is set."
-            fi
+          give_up() {
+            CURRENT=$(npm view "$NAME" dist-tags.latest 2>/dev/null || echo "unknown")
+            echo "::error::latest still points at $CURRENT rather than $VERSION, so a plain install gets $CURRENT. Tried:$TRIED. Give this workflow an npm automation token as the NPM_TOKEN secret — automation tokens are the ones that carry no second factor, which is what every attempt here is missing."
+            exit 0
+          }
 
-            ESCAPED=$(node -p "encodeURIComponent(process.argv[1])" "$NAME")
-            BODY=$(curl -sS -X POST -H "Authorization: Bearer $CLAIM" \
-              "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/$ESCAPED")
-            TOKEN=$(printf '%s' "$BODY" | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).token || '' } catch { '' }")
-            if [ -z "$TOKEN" ]; then
-              explain "$(printf '%s' "$BODY" | head -c 400 | tr '\n' ' ')"
-            fi
+          # The publish step a few lines up authenticated somehow. Try the same way first:
+          # whatever credential it used is already on this runner.
+          OUT=$(npm dist-tag add "$NAME@$VERSION" latest 2>&1) && settle "the way the publish was"
+          TRIED="$TRIED the credential the publish used ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
+
+          if [ -n "$NPM_TOKEN" ]; then
+            RC=$(mktemp)
+            printf '//registry.npmjs.org/:_authToken=%s\n' "$NPM_TOKEN" > "$RC"
+            OUT=$(npm dist-tag add "$NAME@$VERSION" latest --userconfig "$RC" 2>&1)
+            STATUS=$?
+            rm -f "$RC"
+            [ "$STATUS" -eq 0 ] && settle "with the NPM_TOKEN secret"
+            TRIED="$TRIED; the NPM_TOKEN secret ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
+          else
+            TRIED="$TRIED; no NPM_TOKEN secret is set"
           fi
+
+          CLAIM=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
+            | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).value || '' } catch { '' }")
+          [ -z "$CLAIM" ] && TRIED="$TRIED; GitHub returned no OIDC id token" && give_up
+
+          ESCAPED=$(node -p "encodeURIComponent(process.argv[1])" "$NAME")
+          BODY=$(curl -sS -X POST -H "Authorization: Bearer $CLAIM" \
+            "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/$ESCAPED")
+          TOKEN=$(printf '%s' "$BODY" | node -p "try { JSON.parse(require('fs').readFileSync(0, 'utf8')).token || '' } catch { '' }")
+          [ -z "$TOKEN" ] && TRIED="$TRIED; the OIDC exchange ($(printf '%s' "$BODY" | head -c 120 | tr '\n' ' '))" && give_up
 
           RC=$(mktemp)
           printf '//registry.npmjs.org/:_authToken=%s\n' "$TOKEN" > "$RC"
           OUT=$(npm dist-tag add "$NAME@$VERSION" latest --userconfig "$RC" 2>&1)
           STATUS=$?
           rm -f "$RC"
-          if [ "$STATUS" -ne 0 ]; then
-            explain "$(printf '%s' "$OUT" | head -c 400 | tr '\n' ' ')"
-          fi
-          echo "::notice::latest now points at $VERSION."
+          [ "$STATUS" -eq 0 ] && settle "with an OIDC-exchanged token"
+          TRIED="$TRIED; the OIDC-exchanged token ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
+          give_up
 
   announce:
     needs: release
@@ -189,15 +203,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.release.outputs.version }}
         run: |
-          if gh release view "v$VERSION" > /dev/null 2>&1; then
-            echo "::notice::The release for v$VERSION is already open."
-            exit 0
-          fi
-          gh release create "v$VERSION" \
-            --verify-tag \
-            --prerelease \
-            --title "v$VERSION" \
-            --notes "Install with \`brew install Newbie012/tap/adiff\`, or \`npm i -g @eliya-oss/agent-diff@alpha\` if you would rather run it on Node. The binaries below need no runtime at all."
+          for ATTEMPT in 1 2 3 4 5; do
+            if gh release view "v$VERSION" > /dev/null 2>&1; then
+              echo "::notice::The release for v$VERSION is open."
+              exit 0
+            fi
+            if gh release create "v$VERSION" \
+              --verify-tag \
+              --prerelease \
+              --title "v$VERSION" \
+              --notes "Install with \`brew install Newbie012/tap/adiff\`, or \`npm i -g @eliya-oss/agent-diff@alpha\` if you would rather run it on Node. The binaries below need no runtime at all."; then
+              exit 0
+            fi
+            echo "::warning::Attempt $ATTEMPT of 5 to open the release for v$VERSION was turned down. Waiting, then trying again."
+            sleep $((ATTEMPT * 10))
+          done
+          echo "::error::The release for v$VERSION could not be opened after five attempts, so the binaries and the formula have nothing to attach to. The version is published; rerun this job."
+          exit 1
 
   binaries:
     needs: [release, announce]
