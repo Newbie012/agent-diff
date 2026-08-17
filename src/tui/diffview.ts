@@ -415,8 +415,17 @@ export class DiffView {
     return line === undefined ? undefined : this.visualOf(line)
   }
 
-  scrollTo(row: number, cursor: number): number {
+  tallestRows(): number {
+    return this.tallest()
+  }
+
+  scrollTo(row: number, cursor: number, held = -1): number {
     const highest = Math.max(0, this.tallest() - this.rows())
+    if (held >= 0) {
+      const settled = Math.max(0, Math.min(highest, held))
+      if (this.code.scrollY !== settled) this.code.scrollY = settled
+      return settled
+    }
     const wanted = this.visualOfRow(row) ?? row
     const at = this.visualOfRow(cursor)
     const following = at !== undefined && at >= wanted
