@@ -1,5 +1,5 @@
-import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { mkdir, readFile, appendFile, rename, stat, writeFile } from "node:fs/promises"
+import { join, resolve } from "node:path"
 import { Context, Effect, Layer, Option, Schema } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
 import {
@@ -249,13 +249,16 @@ const reportOps = (root: string) =>
 
 const HEAD_REF = /^ref:\s*refs\/heads\/(.+)$/
 
-const headOf = (worktreePath: string): Promise<string> =>
+const gitDirOf = (worktreePath: string): Promise<string> =>
   readFile(join(worktreePath, ".git"), "utf8")
     .then((raw) => {
       const linked = raw.match(/^gitdir:\s*(.+)$/m)
       return linked?.[1] === undefined ? join(worktreePath, ".git") : linked[1].trim()
     })
     .catch(() => join(worktreePath, ".git"))
+
+const headOf = (worktreePath: string): Promise<string> =>
+  gitDirOf(worktreePath)
     .then((dir) => readFile(join(dir, "HEAD"), "utf8"))
     .then((raw) => {
       const named = raw.trim().match(HEAD_REF)
@@ -263,12 +266,56 @@ const headOf = (worktreePath: string): Promise<string> =>
     })
     .catch(() => "")
 
+const repoOf = (worktreePath: string): Promise<string> =>
+  gitDirOf(worktreePath).then((dir) =>
+    readFile(join(dir, "commondir"), "utf8")
+      .then((raw) => resolve(dir, raw.trim()))
+      .catch(() => dir),
+  )
+
 const keyOf = (worktreePath: string): Effect.Effect<string> =>
+  Effect.promise(() =>
+    Promise.all([repoOf(worktreePath), headOf(worktreePath)]).then(
+      ([repo, head]) => `${repo}#${head}`,
+    ),
+  )
+
+const wasKeyOf = (worktreePath: string): Effect.Effect<string> =>
   Effect.promise(() => headOf(worktreePath).then((head) => `${worktreePath}#${head}`))
+
+const there = (path: string): Promise<boolean> =>
+  stat(path).then(
+    () => true,
+    () => false,
+  )
+
+const adopted = new Set<string>()
+
+const moved = (from: string, to: string): Promise<void> =>
+  rename(from, to).catch(() => undefined)
+
+const adopt = Effect.fn("Store.adopt")(function* (root: string, key: string, was: string) {
+  const here = branchDir(root, key)
+  if (yield* Effect.promise(() => there(here))) return key
+  const older = branchDir(root, was)
+  if (!(yield* Effect.promise(() => there(older)))) return key
+  yield* Effect.promise(() => moved(older, here))
+  return key
+})
+
+const keyIn = (root: string, worktreePath: string): Effect.Effect<string> =>
+  Effect.gen(function* () {
+    const key = yield* keyOf(worktreePath)
+    const mark = `${root}#${key}`
+    if (adopted.has(mark)) return key
+    adopted.add(mark)
+    const was = yield* wasKeyOf(worktreePath)
+    return key === was ? key : yield* adopt(root, key, was)
+  })
 
 const answerOps = (root: string) => {
   const answer = Effect.fn("Store.answer")(function* (worktreePath: string, entry: StoredAnswer) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = outboxPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
@@ -278,7 +325,7 @@ const answerOps = (root: string) => {
   })
 
   const answers = Effect.fn("Store.answers")(function* (worktreePath: string) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = outboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -292,7 +339,7 @@ const answerOps = (root: string) => {
 
 const layersOps = (root: string) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = layersPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return Option.none<StoredLayers>()
@@ -303,7 +350,7 @@ const layersOps = (root: string) => {
     worktreePath: string,
     next: StoredLayers,
   ) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = layersPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
@@ -317,7 +364,7 @@ const layersOps = (root: string) => {
 
 const inboxOps = (root: string) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = inboxPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
@@ -327,7 +374,7 @@ const inboxOps = (root: string) => {
   })
 
   const inbox = Effect.fn("Store.inbox")(function* (worktreePath: string) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = inboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -341,7 +388,7 @@ const inboxOps = (root: string) => {
 
 const stateOps = (root: string) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = statePath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -354,7 +401,7 @@ const stateOps = (root: string) => {
     worktreePath: string,
     next: BranchState,
   ) {
-    const key = yield* keyOf(worktreePath)
+    const key = yield* keyIn(root, worktreePath)
     const path = statePath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({

@@ -62,9 +62,16 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 <root>/branches/<slug>/state.json    vouches, how far the agent has read, and settled threads
 ```
 
-- **The slug is derived from the worktree's resolved path.** Any path arriving from outside is
-  resolved first. On macOS a caller's `/var/…` and git's `/private/var/…` are the same worktree,
-  and a slug that disagrees is an inbox the agent will never find.
+- **The slug is derived from the repository and the branch, not from where the worktree sits.** A
+  review belongs to a branch; the directory it was read in is an accident of how the work was set
+  up. Keying on the path meant renaming a worktree, or checking the branch out somewhere else, left
+  the whole review behind with nothing to say it had happened. The repository is identified by its
+  common git directory, which every worktree of one repository shares, so worktrees of the same
+  repository agree on the store and different branches still keep their own.
+- **A store written under the old key is adopted on first use**, by renaming it to the new one. A
+  key that changes shape without a migration orphans every review written before it, silently,
+  which is the failure this rule exists to prevent. Adoption happens once per branch and leaves the
+  contents untouched.
 - **A submission is one line of JSON** carrying its id, timestamp, the HEAD it was written
   against, and its comments. Appending never rewrites what is there.
 - **Taking returns every comment that is still owed an answer**, oldest first, and keeps returning
