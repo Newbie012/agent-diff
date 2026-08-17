@@ -55,6 +55,7 @@ import {
   spokenSince,
   panelEntry,
   threadAtRow,
+  threadChosen,
   threadAtStop,
   WHOLE_FILE,
   type TuiState,
@@ -648,7 +649,7 @@ export class App {
   private settleHere(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const thread = threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      const thread = threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
       const id = thread?.id
       if (branch === undefined || id === undefined) {
         this.commit(withNotice(this.state, "no thread here"))
@@ -664,7 +665,7 @@ export class App {
   private removeHere(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const thread = threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      const thread = threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
       const id = thread?.id
       if (branch === undefined || id === undefined) {
         this.commit(withNotice(this.state, "no thread here"))

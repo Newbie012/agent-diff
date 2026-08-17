@@ -9,10 +9,7 @@ const spread = (count: number) =>
   }))
 
 const holdingBack = (frame: string): string | undefined =>
-  frame
-    .split("\n")
-    .map((row) => row.trim())
-    .find((row) => row.startsWith("…") && row.endsWith("more"))
+  frame.match(/… \d+ more/)?.[0]
 
 const at = (count: number) =>
   it(`never holds one row back with ${count} files`, async () => {

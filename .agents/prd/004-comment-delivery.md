@@ -88,6 +88,13 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   well as on code, so the reviewer settles the one they are looking at. A line carrying two threads
   offers each in turn, and settling elsewhere needs a thread named by id, which is what the command
   line is for.
+- **The review panel settles and removes the thread it is standing on.** Not every comment can be
+  reached from the diff: the file it was written on may have been deleted since, or simply not be
+  the file on the screen, and then the cursor can never stand on it. The panel lists those comments
+  either way, so a panel that could show a comment but not act on it left the reviewer with a point
+  they could see, could not settle, and could only be rid of from the command line. With the panel
+  focused, settling and removing act on the entry under its cursor, and the footer offers the key
+  there for the same reason it offers it on a thread in the diff.
 - **A thread is one stop, not one per row.** Wrapped over several rows and carrying answers, a
   thread can run to eight; stepping through each of them costs keystrokes for nothing, because
   every action applies to the whole thread.
