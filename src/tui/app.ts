@@ -161,6 +161,7 @@ const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
 const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
 
 const keyName = (key: KeyEvent): string => {
+  if (key.shift && key.name === "tab") return "shift+tab"
   const base = key.shift && key.name.length === 1 ? key.name.toUpperCase() : key.name
   return key.ctrl ? `ctrl+${base}` : base
 }

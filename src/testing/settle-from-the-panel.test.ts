@@ -30,7 +30,7 @@ const commentedElsewhere = async (driver: TestDriver): Promise<void> => {
   })
   await driver.screen.open(WIDE)
   await driver.screen.pressKeys(["RETURN"])
-  await driver.screen.pressKeys(["TAB", "TAB"])
+  await driver.screen.pressKeys(["TAB"])
 }
 
 describe("a comment the diff cannot reach", () => {

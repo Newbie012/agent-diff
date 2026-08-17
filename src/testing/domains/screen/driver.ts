@@ -322,6 +322,29 @@ export class ScreenTestDriver {
     await setup.waitForVisualIdle()
   }
 
+  async pressShiftTab(): Promise<void> {
+    const setup = this.active()
+    setup.mockInput.pressTab({ shift: true })
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
+  async listForegroundsOfEach(mark: string): Promise<ReadonlyArray<string>> {
+    const setup = this.active()
+    await setup.waitForVisualIdle()
+    this.guard()
+    const line = setup
+      .captureSpans()
+      .lines.find((candidate) => candidate.spans.map((span) => span.text).join("").includes(mark))
+    if (line === undefined) return []
+    return line.spans.flatMap((span) =>
+      span.text
+        .split("")
+        .filter((character) => character === mark)
+        .map(() => fgOf(span)),
+    )
+  }
+
   async listForegroundsOn(text: string): Promise<ReadonlyArray<string>> {
     const setup = this.active()
     await this.settleHighlighting()

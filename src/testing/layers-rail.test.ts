@@ -49,7 +49,7 @@ const railRows = (frame: string): ReadonlyArray<string> =>
   frame
     .split("\n")
     .slice(1)
-    .map((line) => line.slice(0, 35).trimEnd())
+    .map((line) => (line.split("│")[1] ?? "").trimEnd())
 
 const paneOf = (frame: string): string => railRows(frame).join("\n")
 

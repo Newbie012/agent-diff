@@ -23,6 +23,7 @@ export type Action =
   | "file.next"
   | "file.prev"
   | "focus.toggle"
+  | "focus.back"
   | "panel.toggle"
   | "nav.zoom"
   | "wrap.toggle"
@@ -247,6 +248,14 @@ export const commands: ReadonlyArray<Command> = [
     category: "General",
     keys: ["tab"],
     screens: ["review"],
+  }),
+  command({
+    action: "focus.back",
+    title: "Switch pane, the other way",
+    category: "General",
+    keys: ["shift+tab"],
+    screens: ["review"],
+    listed: false,
   }),
   command({
     action: "panel.toggle",

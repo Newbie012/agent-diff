@@ -70,11 +70,25 @@ Three screens, and the keys each answers to:
 | Screen | Keys |
 | --- | --- |
 | Branches | `j`/`down`, `k`/`up` move · `g`/`G` first and last · `enter` opens · `q` quits |
-| Review | `j`/`down`, `k`/`up` move the cursor · `F` shows the whole file · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `y` copies it · `/` finds it elsewhere · `w` wraps long lines · `a` shows the review panel · `tab` moves between the panes · `esc` returns to branches · `q` quits |
+| Review | `j`/`down`, `k`/`up` move the cursor · `F` shows the whole file · `[`/`]` previous and next file · `l`/`h` open and close what the cursor is on · `v` starts a selection · `V` selects the change under the cursor · `c`/`enter` composes · `y` copies it · `/` finds it elsewhere · `w` wraps long lines · `a` shows the review panel · `tab` moves between the panes left to right, `shift+tab` back · `esc` returns to branches · `q` quits |
 | Found | `j`/`down`, `k`/`up` move between matches · `enter` opens the file · `esc` returns |
 | Compose | typing edits the draft at the caret · a paste lands there whole · `left`/`right` move it, `alt` with either moves a word · `home`/`end` reach the ends of the line · `backspace`/`delete` remove either side of it · `ctrl+s` sends · `esc` discards |
 | Review list | `j`/`down`, `k`/`up` move · `e` rewords · `X` withdraws · `ctrl+s` sends the review · `esc` returns |
 | Keys | `?` opens it · `j`/`down`, `k`/`up` move · `enter` runs the command · `esc` returns |
+
+- **`tab` walks the panes the way they are drawn, and `shift+tab` walks back.** The cycle used to
+  start in the middle and jump to the left pane, then across to the right, which is an order no one
+  can predict from looking at the screen. It follows the panes left to right now, and the reverse
+  key exists because a cycle you can only go forward through makes overshooting cost two more
+  presses. A pane that is not on the screen is not in the cycle.
+
+- **Each pane is drawn in its own border, and the focused one is lit.** One frame around everything
+  with rules between the panes drew the seams but never said which side of them the keys were going
+  to. Since `tab` moves between three panes and most keys mean something different in each, where
+  the focus is, is the thing the screen most needs to answer, and a reviewer should not have to
+  press a key to find out. The three panes are separate boxes now: the one holding the focus takes
+  the accent colour on its border and the others stay at the rule colour, so exactly one border is
+  lit at any time. The branch list is one pane and answers to no focus, so it keeps its plain frame.
 
 - **The footer carries the keys a reviewer reaches for, and `?` carries the rest.** A screen answers
   to more keys than fit on one row, so the footer names the few that a pass through a review is made

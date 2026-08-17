@@ -81,6 +81,7 @@ const PANEL_FOOT = 2
 const PANEL_QUARTER = 4
 const PANEL_FIFTH = 5
 const PANE_CHROME = 3
+const PANE_EDGES = 2
 const PANE_INSET = 1
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
@@ -171,7 +172,6 @@ const makeList = (renderer: CliRenderer): BoxRenderable => {
     flexDirection: "column",
     minHeight: 0,
     overflow: "hidden",
-    border: ["right"],
     borderColor: palette.rule,
   })
   return box
@@ -196,7 +196,6 @@ const makePanel = (renderer: CliRenderer): { pane: BoxRenderable; text: TextRend
     flexDirection: "column",
     minHeight: 0,
     overflow: "hidden",
-    border: ["left"],
     borderColor: palette.rule,
     visible: false,
   })
@@ -939,7 +938,8 @@ export class Screen {
   }
 
   private diffRows(): number {
-    const pane = this.diffPane.height - this.view.pinRows()
+    const edges = this.diffPane.border === true ? PANE_EDGES : 0
+    const pane = this.diffPane.height - edges - this.view.pinRows()
     return Math.max(1, pane > 0 ? pane : this.diffScroll.height)
   }
 
@@ -1068,7 +1068,7 @@ export class Screen {
     this.panelPane.visible = shown
     this.panelPane.width = shown ? reviewWidth() : 0
     this.panelPane.paddingLeft = shown ? 1 : 0
-    this.panelPane.paddingTop = shown ? 1 : 0
+    this.panelPane.paddingTop = 0
     this.panel.content = shown ? panelText(state, reviewWidth() - PANE_CHROME) : ""
   }
 
@@ -1087,7 +1087,8 @@ export class Screen {
   }
 
   private listRoom(): number {
-    return Math.max(1, this.listPane.height - PANE_INSET)
+    const edges = this.listPane.border === true ? PANE_EDGES : PANE_INSET
+    return Math.max(1, this.listPane.height - edges)
   }
 
   private layerRail(state: TuiState): StyledText {
@@ -1264,22 +1265,31 @@ export class Screen {
     const inset = onBranches ? 0 : 1
     this.listPane.width = onBranches ? this.homeRoom(state) : this.paneRoom()
     this.listPane.visible = onBranches || state.navOpen
-    this.listPane.border = onBranches ? [] : ["right"]
     this.listPane.paddingLeft = inset
-    this.listPane.paddingRight = inset
-    this.listPane.paddingTop = inset
+    this.listPane.paddingRight = 0
+    this.listPane.paddingTop = 0
     this.listPane.marginRight = 0
     this.diffPane.paddingLeft = inset
     this.list.flexGrow = inset
+    this.paintFocus(state, onBranches)
     this.paintChrome(onBranches)
+  }
+
+  private paintFocus(state: TuiState, onBranches: boolean): void {
+    const lit = (held: TuiState["focus"]): string =>
+      !onBranches && state.focus === held ? palette.accent : palette.rule
+    for (const pane of [this.listPane, this.diffPane, this.panelPane]) {
+      pane.border = onBranches ? [] : true
+      pane.borderStyle = "rounded"
+    }
+    this.listPane.borderColor = onBranches ? palette.rule : lit("tree")
+    this.diffPane.borderColor = lit("diff")
+    this.panelPane.borderColor = lit("review")
   }
 
   private paintChrome(onBranches: boolean): void {
     const place = onBranches ? "center" : "flex-start"
-    this.body.border = onBranches ? [] : true
-    this.body.borderStyle = "rounded"
-    this.body.borderColor = palette.rule
-    this.listPane.borderColor = palette.rule
+    this.body.border = []
     this.listPane.backgroundColor = "transparent"
     this.logo.visible = onBranches
     this.landing.visible = onBranches
