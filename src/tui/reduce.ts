@@ -161,10 +161,16 @@ const layerDown = (state: TuiState, delta: number): TuiState => {
   return stepStop(state, delta)
 }
 
-const nextFocus = (state: TuiState): TuiState["focus"] => {
-  if (state.focus === "diff") return "tree"
-  if (state.focus === "tree") return panelShown(state) ? "review" : "diff"
-  return "diff"
+const PANES: ReadonlyArray<TuiState["focus"]> = ["tree", "diff", "review"]
+
+const panesShown = (state: TuiState): ReadonlyArray<TuiState["focus"]> =>
+  PANES.filter((pane) => pane !== "review" || panelShown(state))
+
+const focusStepped = (state: TuiState, delta: number): TuiState["focus"] => {
+  const shown = panesShown(state)
+  const at = shown.indexOf(state.focus)
+  const from = at === -1 ? 0 : at
+  return shown[(from + delta + shown.length) % shown.length] ?? state.focus
 }
 
 const togglePanel = (state: TuiState): TuiState => {
@@ -353,7 +359,8 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pending.next": (state) => movePending(state, 1),
   "pending.prev": (state) => movePending(state, -1),
   "compose.newline": (state) => inserted(state, "\n"),
-  "focus.toggle": (state) => ({ ...state, focus: nextFocus(state), navOpen: true }),
+  "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1), navOpen: true }),
+  "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1), navOpen: true }),
   "panel.toggle": togglePanel,
   "nav.zoom": zoom,
   "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap, pan: 0 }),

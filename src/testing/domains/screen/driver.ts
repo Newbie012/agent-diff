@@ -322,6 +322,13 @@ export class ScreenTestDriver {
     await setup.waitForVisualIdle()
   }
 
+  async pressShiftTab(): Promise<void> {
+    const setup = this.active()
+    setup.mockInput.pressTab({ shift: true })
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
   async listForegroundsOfEach(mark: string): Promise<ReadonlyArray<string>> {
     const setup = this.active()
     await setup.waitForVisualIdle()
