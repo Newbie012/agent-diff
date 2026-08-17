@@ -50,7 +50,23 @@ describe("jumping between changes", () => {
     expect(await driver.screen.getFrame()).toContain("no change before this one")
   })
 
-  it("blames the context ladder when the file reads as one change", async () => {
+  it("still finds the next change when the whole file is shown", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(twoChanges)
+    await driver.screen.open()
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["F"])
+
+    // ACT
+    await driver.screen.pressKeys(["}"])
+
+    // ASSERT
+    const marked = (await driver.screen.getFrame()).split("\n").find((row) => row.includes("▎"))
+    expect(marked ?? "").toMatch(/\d+ [+-] /)
+  })
+
+  it("says so when nothing changed in the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneChange)
@@ -61,6 +77,25 @@ describe("jumping between changes", () => {
     await driver.screen.pressKeys(["}"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("this file reads as one change")
+    expect(await driver.screen.getFrame()).toContain("no change")
+  })
+})
+
+describe("where a change jump lands", () => {
+  it("lands on the changed line, not the context above it", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(twoChanges)
+    await driver.screen.open()
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ACT
+    await driver.screen.pressKeys(["}"])
+
+    // ASSERT
+    const marked = (await driver.screen.getFrame())
+      .split("\n")
+      .find((row) => row.includes("▎"))
+    expect(marked ?? "").toMatch(/\d+ [+-] /)
   })
 })

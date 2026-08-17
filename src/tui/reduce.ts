@@ -21,6 +21,7 @@ import {
   openCommentRows,
   filesWithComments,
   rowAtSourceLine,
+  rowShowing,
   stopsAtRow,
   WHOLE_FILE,
   threadAtStop,
@@ -79,14 +80,9 @@ const atRow = (state: TuiState, row: number): TuiState =>
   withCursorVisible({ ...state, stop: 0, cursor: clamp(row, 0, lastRow(selectedPatch(state))) })
 
 const noneLeft = (state: TuiState, delta: number): TuiState => {
-  const only = hunkStarts(state).length <= 1
+  const none = hunkStarts(state).length === 0
   const way = delta > 0 ? "after" : "before"
-  return withNotice(
-    state,
-    only
-      ? "this file reads as one change · press - for less context to split it"
-      : `no change ${way} this one`,
-  )
+  return withNotice(state, none ? "nothing changed in this file" : `no change ${way} this one`)
 }
 
 const layerHunk = (state: TuiState, delta: number): TuiState => {
@@ -516,6 +512,20 @@ export const restoredTo = (
   const cursor = line === undefined ? 0 : rowAtSourceLine(patch, line)
   const top = clamp(cursor - Math.max(0, offset), 0, Math.max(0, patch.rows.length - 1))
   return withCursorVisible({ ...state, patchIndex: index, cursor, top })
+}
+
+export const openedAt = (state: TuiState, patchIndex: number, line: number): TuiState => {
+  const landed = { ...state, patchIndex, stop: 0, anchorRow: 0, selecting: false }
+  const shown = selectedPatch(landed)
+  if (shown === undefined) return { ...landed, cursor: 0, top: 0 }
+  const cursor = rowShowing(shown, line) ?? rowAtSourceLine(shown, line)
+  const height = Math.max(1, landed.viewport)
+  const room = Math.max(0, shown.rows.length - height)
+  return withCursorVisible({
+    ...landed,
+    cursor,
+    top: clamp(cursor - Math.floor(height / 2), 0, room),
+  })
 }
 
 export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => ({

@@ -268,6 +268,9 @@ is in: `Staged`, `With the agent`, `Answered`.
 - **The caret is drawn where it is**, so what the next keystroke will do is on the screen rather
   than inferred.
 
+- **`}` and `{` land on the change, not on the context above it.** A hunk begins with its leading
+  context, so jumping to the hunk left the cursor three lines short of the thing it was jumping to.
+  The key is called next change, and that is where it goes.
 - **`}` and `{` say when there is no change that way.** A key that lands nowhere and reports nothing
   reads as a broken key rather than as an edge, so the jump names the edge it hit. Widening the
   context ladder merges neighbouring hunks into one, which is what makes this worth saying: `+`

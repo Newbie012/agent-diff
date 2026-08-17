@@ -42,6 +42,7 @@ import {
   initialState,
   nextUnreviewed,
   rowAtSourceLine,
+  rowShowing,
   sourceLineAt,
   layerContext,
   knownToHaveNoPull,
@@ -63,6 +64,7 @@ import {
 } from "./model.ts"
 import {
   atFile,
+  openedAt,
   backspaced,
   wordBackspaced,
   lineBackspaced,
@@ -649,9 +651,13 @@ export class App {
         this.commit(withNoticeHere(this.state, `${entry.comment.file} is not on this branch`))
         return
       }
-      const landed = atFile(this.state, at)
-      this.commit({ ...landed, cursor: rowAtSourceLine(patch, entry.comment.end) })
-      yield* this.loadSource()
+      const shown = selectedPatch({ ...this.measured(), patchIndex: at })
+      if (shown !== undefined && rowShowing(shown, entry.comment.end) === undefined) {
+        this.commit(withNoticeHere(this.state, "that comment is outside this diff"))
+        return
+      }
+      this.commit(openedAt(this.measured(), at, entry.comment.end))
+      yield* this.turnedTo()
     })
   }
 

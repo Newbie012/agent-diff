@@ -57,7 +57,7 @@ describe("moving around a long diff", () => {
     expect(await cursorOn(driver)).toContain("export function wide")
   })
 
-  it("jumps to the next hunk, skipping the context between them", async () => {
+  it("jumps from one change to the next, skipping the context between them", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)
@@ -65,9 +65,9 @@ describe("moving around a long diff", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ACT
-    await driver.screen.pressKeys(["}"])
+    await driver.screen.pressKeys(["}", "}"])
 
     // ASSERT
-    expect(await cursorOn(driver)).toContain("keep37")
+    expect(await cursorOn(driver)).toContain("const last = 2")
   })
 })
