@@ -79,6 +79,7 @@ import {
   paletteClosed,
   paletteMoved,
   reduce,
+  railMoved,
   scrolled,
   panBy,
   pasted,
@@ -229,6 +230,7 @@ export class App {
         onPan: (delta) => this.onPanWheel(delta),
         onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
         onChip: (key) => this.dispatchTask(this.onKey(asKey(key))),
+        onRail: (delta) => this.dispatchTask(this.rolled(delta)),
       }),
     )
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
@@ -772,6 +774,14 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
       this.commit(reduce(this.measured(), action))
+      if (this.state.patchIndex !== was) yield* this.turnedTo()
+    })
+  }
+
+  private rolled(delta: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      const was = this.state.patchIndex
+      this.commit(railMoved(this.measured(), delta))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
   }

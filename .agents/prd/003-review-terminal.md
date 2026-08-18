@@ -96,6 +96,11 @@ Three screens, and the keys each answers to:
   the key under the letter alongside it, and that is what a binding is matched against. Typing is
   unaffected: what reaches a comment is still the letter that was typed.
 
+- **The wheel over the file list walks it.** Every other pane answers the wheel and the list did
+  not, so a reviewer scrolling the file they were looking at got nothing at all and no sign why. It
+  moves between files rather than scrolling rows of its own, because the list already follows the
+  file being read and two ideas of where the list is would disagree the moment either moved.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should

@@ -148,6 +148,8 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
 const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
+export const railMoved = (state: TuiState, delta: number): TuiState => inRail(state, delta)
+
 const movePanel = (state: TuiState, delta: number): TuiState => ({
   ...state,
   panelIndex: clamp(state.panelIndex + delta, 0, Math.max(0, panelEntries(state).length - 1)),
