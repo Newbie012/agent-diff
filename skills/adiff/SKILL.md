@@ -73,6 +73,20 @@ adiff comment answer --worktree . --id <id> --question --body "Drop it, or keep 
 That marks the thread as waiting on them rather than on you. Do not use it to check in; use it when
 the work genuinely stops without an answer.
 
+## When the reviewer writes back
+
+A reviewer can reply to an answer, and the reply arrives through `comment take` like any other
+comment — with an `id` of its own that you answer against, and a `thread` carrying what was said
+before it, oldest first:
+
+```json
+{"body":"the imports","replyTo":"c1","thread":[{"voice":"reviewer","body":"why two of these"},{"voice":"agent","body":"which two did you mean"}]}
+```
+
+Read the thread before answering. A reply is usually short because it is the rest of a sentence you
+already have: "the imports" only means something next to the question it answers. Answer it against
+its own id, not the id of the comment that started the thread.
+
 Settling a thread is the reviewer's to do, not yours. They raised the point, so they decide it is
 closed.
 

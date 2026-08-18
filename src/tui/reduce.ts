@@ -315,6 +315,7 @@ const openCompose = (state: TuiState): TuiState => {
     ...state,
     screen: "compose",
     draft: "",
+    replyTo: undefined,
     anchorRow: state.selecting ? state.anchorRow : state.cursor,
   }
 }
@@ -324,7 +325,7 @@ const goBack = (state: TuiState): TuiState => {
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "keys") return { ...state, screen: state.returnTo, query: "" }
-  if (state.screen === "compose") return { ...state, screen: "review", draft: "" }
+  if (state.screen === "compose") return { ...state, screen: "review", draft: "", replyTo: undefined }
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
 }
@@ -399,6 +400,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "select.swap": swapEnds,
   "compose.open": openCompose,
   "compose.submit": (state) => state,
+  "thread.reply": (state) => state,
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1), navOpen: true }),
   "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1), navOpen: true }),
   "panel.toggle": togglePanel,

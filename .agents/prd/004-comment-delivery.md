@@ -38,6 +38,10 @@ without a comment going missing between two takes.
    contract rather than the process.
 6. As a `reviewer`, I want a comment to go the moment I finish writing it, so that there is no
    second step between having a point and the agent having it.
+7. As a `reviewer`, I want to write back to an answer, so that a point that was not understood the
+   first time can be pressed without opening a second thread about the same line.
+8. As an `agent`, I want a reply to arrive with the conversation it belongs to, so that "no, the
+   other one" is something I can act on.
 
 ## Implementation Decisions
 
@@ -134,6 +138,27 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **Nothing that has been sent can be reworded or withdrawn.** A submission is append-only and the
   agent may already have acted on it. Rewording a point that has gone is a new comment, or an
   answer.
+- **A reply is a comment that continues a thread, not a new one.** A point that was answered badly
+  had nowhere to go: the reviewer could settle it, remove it, or write a second comment on the same
+  line that the agent had no reason to connect to the first. A reply carries the id of the comment
+  it continues and the anchor of that comment, so it travels the same append-only inbox, is owed an
+  answer like any comment, and is handed over exactly once. Delivery learns nothing new.
+
+- **A reply is handed over with the conversation so far** — the point that started the thread and
+  every answer and reply since, oldest first. An agent that receives "no, the other one" on its own
+  cannot act on it, and the store already holds what it needs.
+
+- **Replying to a settled thread opens it again.** Settling says the reviewer needs nothing more;
+  writing again says they do. Leaving it settled would hide the reply behind a folded thread and
+  leave the agent owing an answer nobody could see.
+
+- **A thread is one conversation on screen, in the order it happened.** The reviewer's point, the
+  agent's answer, the reply, the answer to that — a thread that showed the reviewer's messages
+  together and the agent's together would read as two monologues rather than the exchange it was.
+
+- **What is unread is what the agent said.** A reviewer does not need telling about their own
+  replies, so the count that draws the eye to a thread still counts answers.
+
 - **A sent comment can be removed from the review, which is not the same as unsending it.** A point
   made by mistake, or overtaken by the code moving on, sits in the diff with no way to be rid of
   it. Removing takes it out of the reviewer's view and leaves the delivery record whole: the batch

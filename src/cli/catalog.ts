@@ -184,6 +184,25 @@ export const catalog: ReadonlyArray<CommandSpec> = [
       'adiff comment send --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"',
   },
   {
+    name: "comment reply",
+    about: "Write back to a comment already sent, continuing its thread",
+    group: WRITE_COMMENTS,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      {
+        name: "to",
+        required: true,
+        value: "id",
+        about: "The comment being continued, as `comment list` reports it",
+      },
+      { name: "body", required: true, value: "text", about: "What to tell the agent" },
+    ],
+    dataKey: "batch",
+    example: 'adiff comment reply --repo . --branch cdr-1 --to c1 --body "the other one"',
+  },
+  {
     name: "comment take",
     about: "Collect the comments this review is still owed an answer on. Repeats until answered",
     group: ANSWER_COMMENTS,

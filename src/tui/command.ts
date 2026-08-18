@@ -33,6 +33,7 @@ export type Action =
   | "rail.toggle"
   | "tree.winnow"
   | "panel.winnow"
+  | "thread.reply"
   | "panel.flip"
   | "review.reload"
   | "thread.settle"
@@ -450,6 +451,17 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["review"],
     hint: "settle read",
     rank: 1,
+  }),
+  command({
+    action: "thread.reply",
+    panes: ["review", "diff"],
+    hint: "reply",
+    rank: 1,
+    title: "Write back to the thread here",
+    category: "Comments",
+    keys: ["R"],
+    screens: ["review"],
+    whenThread: true,
   }),
   command({
     action: "thread.remove",

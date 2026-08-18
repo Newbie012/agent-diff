@@ -583,6 +583,7 @@ const notesOf = (
       stale: entry.stale === true,
       asks: entry.asks === true,
       answers: entry.answers ?? [],
+      turns: entry.turns ?? [],
     }))
 
 const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> =>

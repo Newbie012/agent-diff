@@ -21,6 +21,7 @@ describe("using adiff without reading its documentation", () => {
       "base clear",
       "review progress",
       "comment send",
+      "comment reply",
       "comment take",
       "comment answer",
       "layers set",

@@ -11,6 +11,7 @@ export type StagedComment = {
   readonly stale?: boolean
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
+  readonly turns?: ReadonlyArray<{ readonly voice: "reviewer" | "agent"; readonly body: string }>
   readonly unread?: number
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
@@ -54,6 +55,7 @@ export type TuiState = {
   readonly cursor: number
   readonly stop: number
   readonly opened: ReadonlyArray<string>
+  readonly replyTo?: string | undefined
   readonly anchorRow: number
   readonly selecting: boolean
   readonly draft: string
@@ -527,6 +529,7 @@ export const composeRoom = (columns: number): number =>
 
 export const composeTarget = (state: TuiState): string => {
   const patch = selectedPatch(state)
+  if (state.replyTo !== undefined) return replyTarget(state)
   if (patch === undefined) return ""
   const [from, to] = selectionRange(state)
   const anchor = anchorFor(patch, from, to)
@@ -535,6 +538,12 @@ export const composeTarget = (state: TuiState): string => {
     onSome: (found) => (found.start === found.end ? `${found.start}` : `${found.start}-${found.end}`),
   })
   return span === "" ? `Comment on ${patch.path}` : `Comment on ${patch.path}:${span}`
+}
+
+const replyTarget = (state: TuiState): string => {
+  const thread = state.sent.find((entry) => entry.id === state.replyTo)
+  if (thread === undefined) return "Reply"
+  return `Reply on ${thread.file}:${thread.end}`
 }
 
 export const pickedText = (state: TuiState): string | undefined => {

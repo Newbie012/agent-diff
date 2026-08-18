@@ -280,6 +280,25 @@ export class AppTestDriver {
     ])
   }
 
+  runReply(options: {
+    readonly branch: string
+    readonly to: string
+    readonly body: string
+  }): Promise<CliResult> {
+    return this.run([
+      "comment",
+      "reply",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--to",
+      options.to,
+      "--body",
+      options.body,
+    ])
+  }
+
   runProgress(branch: string): Promise<CliResult> {
     return this.run(["review", "progress", "--repo", this.state.repo, "--branch", branch])
   }

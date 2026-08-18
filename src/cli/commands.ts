@@ -12,6 +12,7 @@ import {
 import {
   UnknownBase,
   UnknownBranch,
+  UnknownComment,
   UnknownFile,
   UnselectableRange,
 } from "./error.ts"
@@ -270,17 +271,58 @@ export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
 
 const bodyOf = (entry: { readonly body: string }): string => entry.body
 
+const saidTo = (
+  spoken: ReadonlyArray<{ readonly comment: string }>,
+  id: string,
+): number => spoken.filter((entry) => entry.comment === id).length
+
+export type Turn = {
+  readonly voice: "reviewer" | "agent"
+  readonly body: string
+}
+
+type Spoken = {
+  readonly comment: string
+  readonly body: string
+  readonly asks: boolean
+  readonly at: string
+}
+
 type Reading = {
-  readonly spoken: ReadonlyArray<{ readonly comment: string; readonly body: string; readonly asks: boolean }>
+  readonly spoken: ReadonlyArray<Spoken>
   readonly settled: Readonly<Record<string, string>>
   readonly head: string
   readonly shown: ReadonlySet<string>
   readonly read: Readonly<Record<string, number>>
 }
 
-const sentOf = (comment: PendingComment, reading: Reading) => {
+type Spun = {
+  readonly voice: "reviewer" | "agent"
+  readonly body: string
+  readonly at: string
+  readonly asks: boolean
+}
+
+const spunOf = (
+  replies: ReadonlyArray<PendingComment>,
+  said: ReadonlyArray<Spoken>,
+): ReadonlyArray<Spun> =>
+  [
+    ...replies.map((reply) => ({ voice: "reviewer" as const, body: reply.body, at: reply.at, asks: false })),
+    ...said.map((entry) => ({ voice: "agent" as const, body: entry.body, at: entry.at, asks: entry.asks })),
+  ].toSorted((one, other) => (one.at < other.at ? -1 : one.at > other.at ? 1 : 0))
+
+const sentOf = (
+  comment: PendingComment,
+  replies: ReadonlyArray<PendingComment>,
+  reading: Reading,
+) => {
   const { spoken, settled, head, shown, read } = reading
-  const mine = spoken.filter((entry) => entry.comment === comment.id)
+  const ids = new Set([comment.id, ...replies.map((reply) => reply.id)])
+  const said = spoken.filter((entry) => ids.has(entry.comment))
+  const seen = [...ids].reduce((total, id) => total + (read[id] ?? 0), 0)
+  const spun = spunOf(replies, said)
+  const last = spun.at(-1)
   return {
     id: comment.id,
     file: comment.file,
@@ -291,9 +333,10 @@ const sentOf = (comment: PendingComment, reading: Reading) => {
     settled: Object.hasOwn(settled, comment.id),
     stale: comment.head !== head,
     outside: !shown.has(comment.file),
-    unread: Math.max(0, mine.length - (read[comment.id] ?? 0)),
-    asks: mine.at(-1)?.asks === true,
-    answers: mine.map(bodyOf),
+    unread: Math.max(0, said.length - seen),
+    asks: last?.voice === "agent" && last.asks,
+    answers: said.map(bodyOf),
+    turns: spun.map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn),
   }
 }
 
@@ -303,17 +346,22 @@ export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading)
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
-  return flatten(yield* store.inbox(worktree.path))
-    .filter((comment) => !Object.hasOwn(current.removed, comment.id))
-    .map((comment) =>
-      sentOf(comment, {
-        spoken,
-        settled: current.settled,
-        head: worktree.head,
-        shown,
-        read: current.read,
-      }),
-    )
+  const held = flatten(yield* store.inbox(worktree.path)).filter(
+    (comment) => !Object.hasOwn(current.removed, comment.id),
+  )
+  const replies = held.filter((comment) => comment.replyTo !== undefined)
+  const conversation = {
+    spoken,
+    settled: current.settled,
+    head: worktree.head,
+    shown,
+    read: current.read,
+  }
+  const under = (comment: PendingComment): ReadonlyArray<PendingComment> =>
+    replies.filter((reply) => reply.replyTo === comment.id)
+  return held
+    .filter((comment) => comment.replyTo === undefined)
+    .map((comment) => sentOf(comment, under(comment), conversation))
 })
 
 export const listSent = Effect.fn("Cli.listSent")(function* (
@@ -357,6 +405,42 @@ export const submitComment = Effect.fn("Cli.submitComment")(function* (request: 
   return batch
 })
 
+export type ReplyRequest = {
+  readonly repo: string
+  readonly branch: string
+  readonly to: string
+  readonly body: string
+  readonly id: string
+  readonly at: string
+}
+
+const without = (
+  held: Readonly<Record<string, string>>,
+  key: string,
+): Readonly<Record<string, string>> =>
+  Object.fromEntries(Object.entries(held).filter(([held_]) => held_ !== key))
+
+export const submitReply = Effect.fn("Cli.submitReply")(function* (request: ReplyRequest) {
+  const store = yield* Store
+  const worktree = yield* findBranch(request.repo, request.branch)
+  const batches = yield* store.inbox(worktree.path)
+  const found = batches.flatMap((batch) => batch.comments).find((one) => one.id === request.to)
+  if (found === undefined) return yield* new UnknownComment({ id: request.to })
+  const root = found.replyTo ?? found.id
+  const batch: Batch = {
+    id: request.id,
+    at: request.at,
+    head: worktree.head,
+    comments: [{ id: request.id, anchor: found.anchor, body: request.body, replyTo: root }],
+  }
+  yield* store.submit(worktree.path, batch)
+  const current = yield* store.state(worktree.path)
+  if (Object.hasOwn(current.settled, root)) {
+    yield* store.saveState(worktree.path, { ...current, settled: without(current.settled, root) })
+  }
+  return batch
+})
+
 export const listPatches = Effect.fn("Cli.listPatches")(function* (
   repo: string,
   branch: string,
@@ -377,6 +461,8 @@ export type PendingComment = {
   readonly end: number
   readonly snippet: string
   readonly body: string
+  readonly replyTo?: string | undefined
+  readonly thread?: ReadonlyArray<Turn> | undefined
 }
 
 const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =>
@@ -391,13 +477,35 @@ const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =
       end: comment.anchor.end,
       snippet: comment.anchor.snippet,
       body: comment.body,
+      replyTo: comment.replyTo,
     })),
   )
+
+const threadBefore = (
+  reply: PendingComment,
+  held: ReadonlyArray<PendingComment>,
+  spoken: ReadonlyArray<Spoken>,
+): ReadonlyArray<Turn> => {
+  const root = reply.replyTo
+  const mine = held.filter((one) => one.id === root || one.replyTo === root)
+  const ids = new Set(mine.map((one) => one.id))
+  const said = spoken.filter((entry) => ids.has(entry.comment))
+  return spunOf(
+    mine.filter((one) => one.at < reply.at),
+    said.filter((entry) => entry.at < reply.at),
+  ).map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn)
+}
 
 export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* Effect.promise(() => realpath(worktree))
-  return flatten(yield* store.take(resolved))
+  const owed = flatten(yield* store.take(resolved))
+  if (owed.every((one) => one.replyTo === undefined)) return owed
+  const held = flatten(yield* store.inbox(resolved))
+  const spoken = yield* store.answers(resolved)
+  const carried = (one: PendingComment): PendingComment =>
+    one.replyTo === undefined ? one : Object.assign({}, one, { thread: threadBefore(one, held, spoken) })
+  return owed.map(carried)
 })
 
 export const repoOf = Effect.fn("Cli.repoOf")(function* (worktree: string) {
@@ -496,12 +604,14 @@ export const markRead = Effect.fn("Cli.markRead")(function* (
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
   const spoken = yield* store.answers(worktree.path)
-  const seen = spoken.filter((entry) => entry.comment === id).length
+  const held = flatten(yield* store.inbox(worktree.path))
+  const ids = [id, ...held.filter((one) => one.replyTo === id).map((one) => one.id)]
+  const counted = ids.map((one) => ({ id: one, seen: saidTo(spoken, one) }))
   const current = yield* store.state(worktree.path)
-  if ((current.read[id] ?? 0) >= seen) return { id, unread: 0 }
-  yield* store.saveState(worktree.path, {
-    ...current,
-    read: { ...current.read, [id]: seen },
-  })
+  const owed = counted.filter((one) => (current.read[one.id] ?? 0) < one.seen)
+  if (owed.length === 0) return { id, unread: 0 }
+  const read = { ...current.read }
+  for (const one of owed) read[one.id] = one.seen
+  yield* store.saveState(worktree.path, { ...current, read })
   return { id, unread: 0 }
 })

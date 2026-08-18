@@ -22,18 +22,27 @@ export type Thread = {
   readonly outside: boolean
   readonly unread: number
   readonly answers: ReadonlyArray<ThreadAnswer>
+  readonly turns: ReadonlyArray<ThreadTurn>
+  readonly settled: boolean
+}
+
+export type ThreadTurn = {
+  readonly voice: "reviewer" | "agent"
+  readonly body: string
+  readonly at: string
 }
 
 const stateOf = (
-  answers: ReadonlyArray<StoredAnswer>,
+  turns: ReadonlyArray<ThreadTurn>,
+  asked: boolean,
   isSettled: boolean,
   isRemoved: boolean,
 ): Thread["state"] => {
   if (isRemoved) return "removed"
   if (isSettled) return "done"
-  const last = answers.at(-1)
-  if (last === undefined) return "sent"
-  return last.asks ? "question" : "answered"
+  const last = turns.at(-1)
+  if (last === undefined || last.voice === "reviewer") return "sent"
+  return asked ? "question" : "answered"
 }
 
 type Reading = {
@@ -51,12 +60,31 @@ const spoken = (entry: StoredAnswer): ThreadAnswer => ({
   asks: entry.asks,
 })
 
-const threadOf = (
-  comment: Batch["comments"][number],
-  batch: Batch,
-  reading: Reading,
-): Thread => {
-  const mine = reading.answers.filter((entry) => entry.comment === comment.id)
+type Held = {
+  readonly comment: Batch["comments"][number]
+  readonly batch: Batch
+}
+
+const turnsOf = (
+  replies: ReadonlyArray<Held>,
+  said: ReadonlyArray<StoredAnswer>,
+): ReadonlyArray<ThreadTurn> =>
+  [
+    ...replies.map((held) => ({
+      voice: "reviewer" as const,
+      body: held.comment.body,
+      at: held.batch.at,
+    })),
+    ...said.map((entry) => ({ voice: "agent" as const, body: entry.body, at: entry.at })),
+  ].toSorted((one, other) => (one.at < other.at ? -1 : one.at > other.at ? 1 : 0))
+
+const threadOf = (held: Held, replies: ReadonlyArray<Held>, reading: Reading): Thread => {
+  const { comment, batch } = held
+  const ids = new Set([comment.id, ...replies.map((one) => one.comment.id)])
+  const mine = reading.answers.filter((entry) => ids.has(entry.comment))
+  const seen = [...ids].reduce((total, id) => total + (reading.read[id] ?? 0), 0)
+  const turns = turnsOf(replies, mine)
+  const settled = Object.hasOwn(reading.settled, comment.id)
   return {
     id: comment.id,
     file: comment.anchor.path,
@@ -64,20 +92,25 @@ const threadOf = (
     start: comment.anchor.start,
     end: comment.anchor.end,
     body: comment.body,
-    state: stateOf(
-      mine,
-      Object.hasOwn(reading.settled, comment.id),
-      Object.hasOwn(reading.removed, comment.id),
-    ),
+    state: stateOf(turns, mine.at(-1)?.asks === true, settled, Object.hasOwn(reading.removed, comment.id)),
     stale: batch.head !== reading.head,
     outside: !reading.shown.has(comment.anchor.path),
-    unread: Math.max(0, mine.length - (reading.read[comment.id] ?? 0)),
+    unread: Math.max(0, mine.length - seen),
     answers: mine.map(spoken),
+    turns,
+    settled,
   }
 }
 
-const threadsIn = (batches: ReadonlyArray<Batch>, reading: Reading): ReadonlyArray<Thread> =>
-  batches.flatMap((batch) => batch.comments.map((comment) => threadOf(comment, batch, reading)))
+const threadsIn = (batches: ReadonlyArray<Batch>, reading: Reading): ReadonlyArray<Thread> => {
+  const held = batches.flatMap((batch) => batch.comments.map((comment) => ({ comment, batch })))
+  const replies = held.filter((one) => one.comment.replyTo !== undefined)
+  const under = (one: Held): ReadonlyArray<Held> =>
+    replies.filter((reply) => reply.comment.replyTo === one.comment.id)
+  return held
+    .filter((one) => one.comment.replyTo === undefined)
+    .map((one) => threadOf(one, under(one), reading))
+}
 
 const idsIn = (batches: ReadonlyArray<Batch>): ReadonlyArray<string> =>
   batches.flatMap((batch) => batch.comments.map((comment) => comment.id))

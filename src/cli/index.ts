@@ -22,6 +22,7 @@ export {
   saveWrap,
   saveSticky,
   submitComment,
+  submitReply,
   takeComments,
   toggleVouch,
 } from "./commands.ts"
