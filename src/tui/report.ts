@@ -1,4 +1,5 @@
 import { hostname, platform } from "node:os"
+import manifest from "../../package.json" with { type: "json" }
 import { selectedBranch, selectedPatch, treeWindow, type TuiState } from "./model.ts"
 
 export type Surroundings = {
@@ -32,7 +33,7 @@ const visibleTree = (state: TuiState): ReadonlyArray<string> =>
   })
 
 const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
-  `- adiff on Node ${process.version}, ${platform()}, ${hostname()}`,
+  `- adiff ${manifest.version} on Node ${process.version}, ${platform()}, ${hostname()}`,
   `- terminal ${around.width}x${around.height}`,
   `- repo \`${around.repo}\``,
   `- branch \`${selectedBranch(state)?.branch ?? "none"}\``,

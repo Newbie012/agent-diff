@@ -53,7 +53,7 @@ const commandFor = (route: Route, executable: string, module: string): string =>
   if (route === "npm") return `npm i -g ${PACKAGE}@${TAG}`
   if (route === "bun") return `bun add -g ${PACKAGE}@${TAG}`
   if (route === "source") return `git -C ${checkoutOf(module)} pull && pnpm install && pnpm build`
-  return `curl -fsSL ${RELEASES}/download/${assetOf()} -o ${executable} && chmod +x ${executable}`
+  return `curl -fsSL ${RELEASES}/download/${assetOf()}.tar.gz | tar -xzO ${assetOf()} > ${executable} && chmod +x ${executable}`
 }
 
 const NOTES: Readonly<Record<Route, string>> = {

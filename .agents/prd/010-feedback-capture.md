@@ -67,7 +67,7 @@ The keys themselves ([PRD 003](003-review-terminal.md)); the store's root
   ([PRD 003](003-review-terminal.md)).
 - **A report is markdown**, in this order: the reviewer's description first, because that is the
   part a human reads; then the facts.
-- **The facts are** the adiff version, the Node version and platform, the terminal size, the repo,
+- **The facts are** the adiff version as the build reports it, the Node version and platform, the terminal size, the repo,
   the branch, the file and cursor position, the screen the reviewer was on, the count of files
   reviewed, the last internal failure if one occurred, the last keys pressed, and the
   screen as rendered.
