@@ -320,6 +320,10 @@
   intents:
     - a-smaller-download
     - the-mouse-over-the-code
+"@eliya-oss/agent-diff@0.1.0-alpha.71":
+  dir: ""
+  intents:
+    - hide-what-is-settled
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
