@@ -831,6 +831,13 @@ export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
         row.fileIndex === undefined ? [] : [row.fileIndex],
       )
 
+export const filePlace = (state: TuiState): { readonly at: number; readonly of: number } => {
+  const order = fileOrder(state)
+  const at = order.indexOf(state.patchIndex)
+  if (at === -1) return { at: state.patchIndex + 1, of: state.patches.length }
+  return { at: at + 1, of: order.length }
+}
+
 export const layerFile = (state: TuiState, delta: number): number => {
   const order = fileOrder(state)
   const position = order.indexOf(state.patchIndex)
