@@ -6,6 +6,7 @@ export {
   fileSource,
   fileBefore,
   listBranches,
+  summaryFor,
   markRead,
   setBase,
   clearBase,

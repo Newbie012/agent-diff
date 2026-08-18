@@ -180,6 +180,15 @@ const summaryOf = Effect.fn("Cli.summaryOf")(function* (
   } satisfies BranchSummary
 })
 
+export const summaryFor = Effect.fn("Cli.summaryFor")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
+  const worktree = yield* findBranch(repo, branch, base)
+  return yield* summaryOf(repo, worktree, base)
+})
+
 export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string, base?: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
