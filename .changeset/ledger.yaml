@@ -315,6 +315,11 @@
   dir: ""
   intents:
     - spicy-plums-chew
+"@eliya-oss/agent-diff@0.1.0-alpha.70":
+  dir: ""
+  intents:
+    - a-smaller-download
+    - the-mouse-over-the-code
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
