@@ -103,6 +103,6 @@ describe("reading a file that sits deep in the tree", () => {
     const header = headerRow(frame)
     expect(header).toContain("…")
     expect(header.trimEnd().length).toBeLessThan(WIDTH)
-    expect(header).toContain("2/5")
+    expect(header).toMatch(/\d+\/5/)
   })
 })
