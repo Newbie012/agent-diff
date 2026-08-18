@@ -306,6 +306,11 @@
     - copy-what-the-cursor-is-on
     - one-way-to-send
     - walking-a-tall-comment
+"@eliya-oss/agent-diff@0.1.0-alpha.69":
+  dir: ""
+  intents:
+    - a-comment-out-of-reach
+    - keys-of-the-pane-you-are-in
 "@eliya-oss/agent-diff@0.1.0-alpha.7":
   dir: ""
   intents:
