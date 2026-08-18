@@ -14,17 +14,16 @@ const twoComments = {
   ],
 }
 
-const stage = async (driver: TestDriver, branch: string, line: number, body: string) => {
-  await driver.app.runStage({ branch, file: "src/api.ts", start: line, end: line, body })
+const say = async (driver: TestDriver, branch: string, line: number, body: string) => {
+  await driver.app.runComment({ branch, file: "src/api.ts", start: line, end: line, body })
 }
 
 const openOnTwo = async (
   driver: TestDriver,
 ): Promise<{ readonly ids: ReadonlyArray<string>; readonly worktree: string }> => {
   const branch = await driver.branch.create(twoComments)
-  await stage(driver, branch.name, 2, "the first question")
-  await stage(driver, branch.name, 3, "the second question")
-  await driver.app.runSubmit(branch.name)
+  await say(driver, branch.name, 2, "the first question")
+  await say(driver, branch.name, 3, "the second question")
   const threads = await driver.app.runThreads(branch.name)
   const listed = threads.envelope as { readonly comments: ReadonlyArray<{ readonly id: string }> }
   await driver.screen.open(WIDE)

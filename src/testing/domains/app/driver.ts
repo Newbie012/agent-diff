@@ -164,26 +164,6 @@ export class AppTestDriver {
     return this.run(["layers", "show", "--worktree", worktree, ...(fields ?? [])])
   }
 
-  runStage(options: CommentOptions): Promise<CliResult> {
-    return this.run([
-      "comment",
-      "stage",
-      "--repo",
-      this.state.repo,
-      "--branch",
-      options.branch,
-      "--file",
-      options.file,
-      "--start",
-      String(options.start),
-      "--end",
-      String(options.end),
-      "--body",
-      options.body,
-      ...(options.side === undefined ? [] : ["--side", options.side]),
-    ])
-  }
-
   runAnswer(options: {
     readonly worktree: string
     readonly id: string
@@ -244,10 +224,6 @@ export class AppTestDriver {
       "--id",
       options.id,
     ])
-  }
-
-  runSubmit(branch: string): Promise<CliResult> {
-    return this.run(["review", "send", "--repo", this.state.repo, "--branch", branch])
   }
 
   runPane(options: { readonly env?: Readonly<Record<string, string>> } = {}): Promise<CliResult> {

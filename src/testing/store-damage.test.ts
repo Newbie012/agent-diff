@@ -32,7 +32,7 @@ describe("a store file that cannot be trusted", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await damage(driver, branch, "state.json", '{"pending":[{"id":"a",')
+    await damage(driver, branch, "state.json", '{"vouches":{"src/api.ts":')
 
     // ACT
     const result = await driver.app.runProgress(branch.name)
@@ -49,7 +49,7 @@ describe("a store file that cannot be trusted", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await damage(driver, branch, "state.json", '{"pending":"not a list"}')
+    await damage(driver, branch, "state.json", '{"vouches":"not a map"}')
 
     // ACT
     const result = await driver.app.runProgress(branch.name)
@@ -81,7 +81,7 @@ describe("a store file that cannot be trusted", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -93,6 +93,6 @@ describe("a store file that cannot be trusted", () => {
     const result = await driver.app.runProgress(branch.name)
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ ok: true, pending: 1 })
+    expect(result.envelope).toMatchObject({ ok: true, total: 1 })
   })
 })

@@ -20,7 +20,7 @@ const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
 const rowWith = (frame: string, text: string): string => rowsWith(frame, text)[0] ?? ""
 
 describe("how a comment sits in the diff", () => {
-  it("says whether it is staged or already sent", async () => {
+  it("says a comment has gone to the agent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -31,13 +31,13 @@ describe("how a comment sits in the diff", () => {
     // ACT
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("short one")
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
     const lines = frame.split("\n")
     const anchor = lines.findIndex((line) => line.includes("const first = 1"))
-    expect(lines[anchor + 1]).toContain("staged")
+    expect(lines[anchor + 1]).toContain("sent")
     expect(lines[anchor + 2]).toContain("short one")
   })
 
@@ -52,7 +52,7 @@ describe("how a comment sits in the diff", () => {
     // ACT
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText(long)
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -74,7 +74,7 @@ describe("how a comment sits in the diff", () => {
     // ACT
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText(long)
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     const frame = await driver.screen.getFrame()

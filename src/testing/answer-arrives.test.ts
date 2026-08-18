@@ -16,14 +16,13 @@ const openOnComment = async (
   driver: TestDriver,
 ): Promise<{ readonly id: string; readonly worktree: string }> => {
   const branch = await driver.branch.create(oneFile)
-  await driver.app.runStage({
+  await driver.app.runComment({
     branch: branch.name,
     file: "src/api.ts",
     start: 2,
     end: 2,
     body: "why this one",
   })
-  await driver.app.runSubmit(branch.name)
   const threads = await driver.app.runThreads(branch.name)
   const listed = threads.envelope as { readonly comments: ReadonlyArray<{ readonly id: string }> }
   await driver.screen.open()

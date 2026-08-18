@@ -50,13 +50,6 @@ export type Action =
   | "select.swap"
   | "compose.open"
   | "compose.submit"
-  | "compose.stage"
-  | "pending.open"
-  | "pending.submit"
-  | "pending.edit"
-  | "pending.drop"
-  | "pending.next"
-  | "pending.prev"
   | "compose.newline"
   | "palette.open"
   | "keys.open"
@@ -77,7 +70,7 @@ export type Command = {
   readonly screens: ReadonlyArray<Screen>
   readonly hint: string
   readonly listed: boolean
-  readonly whenStaged: boolean
+  readonly whenComments: boolean
   readonly counted: boolean
   readonly whenLayers: boolean
   readonly whenThread: boolean
@@ -88,7 +81,7 @@ export type Command = {
 }
 
 export type Offered = {
-  readonly staged: number
+  readonly comments: number
   readonly layers: number
   readonly onThread: boolean
   readonly selecting: boolean
@@ -100,7 +93,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   category: "Review",
   hint: "",
   listed: true,
-  whenStaged: false,
+  whenComments: false,
   counted: false,
   whenLayers: false,
   whenThread: false,
@@ -216,7 +209,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Next comment",
     keys: ["n"],
     screens: ["review"],
-    whenStaged: true,
+    whenComments: true,
   }),
   command({
     action: "comment.prev",
@@ -304,7 +297,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "selection.copy",
-    title: "Copy the selection",
+    title: "Copy the selection, or the line the cursor is on",
     keys: ["y"],
     screens: ["review"],
     hint: "copy",
@@ -505,7 +498,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Find a command",
     category: "General",
     keys: ["ctrl+p"],
-    screens: ["review", "pending"],
+    screens: ["review"],
     listed: false,
   }),
   command({
@@ -514,65 +507,6 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["ctrl+s"],
     screens: ["compose"],
     hint: "send",
-    listed: false,
-  }),
-  command({
-    action: "pending.open",
-    title: "Send what is staged",
-    keys: ["S"],
-    screens: ["review"],
-    hint: "send",
-    whenStaged: true,
-    counted: true,
-    rank: 6,
-  }),
-  command({
-    action: "pending.submit",
-    title: "Send the review",
-    keys: ["ctrl+s"],
-    screens: ["pending"],
-    hint: "send",
-    listed: false,
-    rank: 2,
-  }),
-  command({
-    action: "pending.edit",
-    title: "Reword this comment",
-    category: "Review",
-    keys: ["e"],
-    screens: ["pending"],
-    hint: "reword",
-    rank: 3,
-  }),
-  command({
-    action: "pending.drop",
-    title: "Withdraw this comment",
-    category: "Review",
-    keys: ["X"],
-    screens: ["pending"],
-    hint: "withdraw",
-    rank: 4,
-  }),
-  command({
-    action: "pending.next",
-    title: "Next staged comment",
-    keys: ["down", "j"],
-    screens: ["pending"],
-    listed: false,
-  }),
-  command({
-    action: "pending.prev",
-    title: "Previous staged comment",
-    keys: ["up", "k"],
-    screens: ["pending"],
-    listed: false,
-  }),
-  command({
-    action: "compose.stage",
-    title: "Add to review",
-    keys: ["ctrl+a"],
-    screens: ["compose"],
-    hint: "stage",
     listed: false,
   }),
   command({
@@ -595,7 +529,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "List every key",
     category: "General",
     keys: ["?"],
-    screens: ["branches", "review", "pending", "search"],
+    screens: ["branches", "review", "search"],
     hint: "keys",
     rank: 5,
     listed: false,
@@ -621,7 +555,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Go back",
     category: "General",
     keys: ["escape", "q"],
-    screens: ["review", "compose", "palette", "pending", "report", "search", "keys"],
+    screens: ["review", "compose", "palette", "report", "search", "keys"],
     hint: "back",
     listed: false,
     rank: 9,
@@ -686,7 +620,7 @@ export const hintsFor = (
 ): ReadonlyArray<{ key: string; hint: string; press: string }> =>
   commandsFor(screen)
     .filter((entry) => entry.hint.length > 0)
-    .filter((entry) => !entry.whenStaged || offered.staged > 0)
+    .filter((entry) => !entry.whenComments || offered.comments > 0)
     .filter((entry) => !entry.whenLayers || offered.layers > 0)
     .filter((entry) => !entry.whenThread || offered.onThread)
     .filter((entry) => !entry.whenSelecting || offered.selecting)
@@ -695,6 +629,6 @@ export const hintsFor = (
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
       key: displayKey(entry.keys[0] ?? ""),
-      hint: entry.counted ? `${entry.hint} ${offered.staged}` : entry.hint,
+      hint: entry.counted ? `${entry.hint} ${offered.comments}` : entry.hint,
       press: entry.keys[0] ?? "",
     }))

@@ -11,10 +11,10 @@ const one = {
   ],
 }
 
-const stage = async (driver: TestDriver, body: string): Promise<void> => {
+const say = async (driver: TestDriver, body: string): Promise<void> => {
   await driver.screen.pressKeys(["c"])
   await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("a")
+  await driver.screen.pressCtrl("s")
 }
 
 describe("finding a command from the review list", () => {
@@ -25,8 +25,7 @@ describe("finding a command from the review list", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["j"])
-    await stage(driver, "worth a look")
-    await driver.screen.pressKeys(["S"])
+    await say(driver, "worth a look")
 
     // ACT
     await driver.screen.pressCtrl("p")
@@ -34,7 +33,7 @@ describe("finding a command from the review list", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("Commands")
-    expect(frame).toContain("Withdraw")
+    expect(frame).toContain("Next line")
   })
 
   it("comes back to the list when dismissed", async () => {
@@ -44,8 +43,7 @@ describe("finding a command from the review list", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["j"])
-    await stage(driver, "worth a look")
-    await driver.screen.pressKeys(["S"])
+    await say(driver, "worth a look")
     await driver.screen.pressCtrl("p")
 
     // ACT

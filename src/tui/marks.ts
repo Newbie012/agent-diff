@@ -1,6 +1,5 @@
 export type MarkSet = {
   readonly comment: string
-  readonly staged: string
   readonly sent: string
   readonly rule: string
   readonly cursor: string
@@ -14,7 +13,6 @@ export type MarkSet = {
 const sets: Readonly<Record<string, MarkSet>> = {
   ring: {
     comment: "○",
-    staged: "○",
     sent: "✓",
     rule: "│",
     cursor: "▎",
@@ -26,7 +24,6 @@ const sets: Readonly<Record<string, MarkSet>> = {
   },
   bubble: {
     comment: "◗",
-    staged: "◗",
     sent: "◖",
     rule: "┃",
     cursor: "▌",
@@ -38,7 +35,6 @@ const sets: Readonly<Record<string, MarkSet>> = {
   },
   quote: {
     comment: "❞",
-    staged: "❝",
     sent: "✓",
     rule: "┊",
     cursor: "▎",
@@ -50,7 +46,6 @@ const sets: Readonly<Record<string, MarkSet>> = {
   },
   diamond: {
     comment: "◆",
-    staged: "◇",
     sent: "◈",
     rule: "╎",
     cursor: "▎",
@@ -62,7 +57,6 @@ const sets: Readonly<Record<string, MarkSet>> = {
   },
   dot: {
     comment: "●",
-    staged: "●",
     sent: "✓",
     rule: "▏",
     cursor: "▎",
@@ -81,7 +75,6 @@ const ring: MarkSet = {
   folderOpen: "",
   file: "",
   comment: "○",
-  staged: "○",
   sent: "✓",
   rule: "│",
   cursor: "▎",

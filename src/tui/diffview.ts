@@ -105,7 +105,10 @@ export class DiffView {
   private pinnedText = ""
   private newLit: ReadonlyArray<ReadonlyArray<Span>> = []
   private oldLit: ReadonlyArray<ReadonlyArray<Span>> = []
-  private litFor = ""
+  private newFor = ""
+  private oldFor = ""
+  private newText: ReadonlyArray<string> = []
+  private oldText: ReadonlyArray<string> = []
   private shown: Patch | undefined
   private noted = ""
   private display: ReadonlyArray<Display> = []
@@ -211,6 +214,7 @@ export class DiffView {
     this.numbers.onMouseDown = (event: { y: number }) => handlers.down(event.y)
     this.numbers.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)
     this.numbers.onMouseDragEnd = (event: { y: number }) => handlers.dragEnd(event.y)
+    this.numbers.onMouseUp = (event: { y: number }) => handlers.dragEnd(event.y)
   }
 
   refresh(): void {
@@ -267,25 +271,39 @@ export class DiffView {
     found: ReadonlyArray<readonly [number, number, string, unknown?]>,
   ): void {
     const held = spansByLine(lines, found)
-    if (side === "new") this.newLit = held
-    else this.oldLit = held
-    this.litFor = path
+    if (side === "new") {
+      this.newLit = held
+      this.newText = lines
+      this.newFor = path
+    } else {
+      this.oldLit = held
+      this.oldText = lines
+      this.oldFor = path
+    }
     this.feed()
     this.code.requestRender()
   }
 
   private litRow(entry: Display): ReadonlyArray<Span> {
-    if (this.shown === undefined || this.shown.path !== this.litFor) return NO_SPANS
-    const row = this.shown.rows[entry.row]
+    const row = this.shown?.rows[entry.row]
     if (row === undefined) return NO_SPANS
     const fresh = Option.getOrUndefined(row.newLine)
-    if (fresh !== undefined) return this.newLit[fresh - 1] ?? NO_SPANS
+    if (fresh !== undefined) return this.sideRow(row.text, fresh, "new")
     const gone = Option.getOrUndefined(row.oldLine)
-    return gone === undefined ? NO_SPANS : (this.oldLit[gone - 1] ?? NO_SPANS)
+    return gone === undefined ? NO_SPANS : this.sideRow(row.text, gone, "old")
+  }
+
+  private sideRow(text: string, line: number, side: "new" | "old"): ReadonlyArray<Span> {
+    const path = side === "new" ? this.newFor : this.oldFor
+    if (this.shown?.path !== path) return NO_SPANS
+    const source = side === "new" ? this.newText : this.oldText
+    if (!sameLine(source[line - 1], text)) return NO_SPANS
+    return (side === "new" ? this.newLit : this.oldLit)[line - 1] ?? NO_SPANS
   }
 
   private ownSpans(): ReadonlyArray<Span> | undefined {
-    if (this.shown === undefined || this.shown.path !== this.litFor) return undefined
+    if (this.shown === undefined) return undefined
+    if (this.shown.path !== this.newFor && this.shown.path !== this.oldFor) return undefined
     const spans: Array<Span> = []
     let at = 0
     for (const entry of this.display) {
@@ -423,6 +441,14 @@ export class DiffView {
     return this.tallest()
   }
 
+  blockAt(row: number, stop: number): { readonly start: number; readonly rows: number } {
+    const first = this.display.findIndex((entry) => entry.row === row && entry.stop === stop)
+    if (first === -1) return { start: 0, rows: 0 }
+    let last = first
+    while (this.display[last + 1]?.row === row && this.display[last + 1]?.stop === stop) last += 1
+    return { start: first, rows: last - first + 1 }
+  }
+
   scrollTo(row: number, cursor: number, held = -1): number {
     const highest = Math.max(0, this.tallest() - this.rows())
     if (held >= 0) {
@@ -491,6 +517,9 @@ const isChrome = (entry: Display): boolean => entry.comment || entry.gap || entr
 
 const heldAt = (entry: Display, pan: number): string =>
   isChrome(entry) && pan > 0 ? `${" ".repeat(pan)}${entry.text}` : entry.text
+
+const sameLine = (source: string | undefined, row: string): boolean =>
+  source !== undefined && source.trimEnd() === row.trimEnd()
 
 export type Span = [number, number, string]
 
@@ -594,10 +623,9 @@ const wrap = (text: string, room: number): ReadonlyArray<string> => {
 const headOf = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
   if (note.settled) return `${marks().sent} settled${moved}`
-  if (note.asks) return `${marks().staged} asked back${moved}`
+  if (note.asks) return `${marks().comment} asked back${moved}`
   if (note.answers.length > 0) return `${marks().sent} answered${moved}`
-  if (note.sent) return `${marks().sent} sent${moved}`
-  return `${marks().staged} staged`
+  return `${marks().sent} sent${moved}`
 }
 
 const spokenLines = (body: string, room: number): ReadonlyArray<string> => {

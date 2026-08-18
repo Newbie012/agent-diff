@@ -53,8 +53,6 @@ takes either.
 | --- | --- | --- |
 | `branch list` | `--repo` | `{ok, branches: [...]}` |
 | `comment send` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
-| `comment stage` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, pending}` |
-| `comment edit` | `<review> --id --body` | `{ok, pending}` |
 | `comment take` | `<review> [--wait <seconds>]` | `{ok, comments: [...], branch}` |
 | `comment answer` | `<review> --id --body [--question]` | `{ok, answered}` |
 | `comment list` | `<review>` | `{ok, comments: [...]}` |
@@ -62,8 +60,7 @@ takes either.
 | `comment remove` | `<review> --id` | `{ok, removed}` |
 | `comment restore` | `<review> --id` | `{ok, restored}` |
 | `file review` | `<review> --file` | `{ok, reviewed, total}` |
-| `review send` | `<review>` | `{ok, sent}` |
-| `review progress` | `<review>` | `{ok, reviewed, total, pending}` |
+| `review progress` | `<review>` | `{ok, reviewed, total}` |
 | `layers set` | `<review> --json <file\|->` | `{ok, layers}` |
 | `layers show` | `<review>` | `{ok, layers}` |
 | `review open` | `--repo` | opens the terminal |
@@ -226,13 +223,12 @@ takes either.
   `--repo --branch`, four took `--worktree`, and an agent that took comments could not then list
   them. Every command that acts on a review now accepts either form and resolves the other itself.
   Neither is the primary; they are two ways to write the same identity.
-- **Verbs mean the same thing wherever they appear.** `comment send` sends one comment now,
-  `review send` sends the staged review as one batch. The action is the same, so the verb is the
-  same and the noun carries the difference. `comment stage` is what puts a comment in the review
-  that `review send` sends.
-- **Taking a comment out is one verb.** `comment remove` withdraws a comment whether it was staged
-  or already delivered. The two cases differ in the record kept, which is adiff's problem and not
-  the caller's, so they do not need two verbs.
+- **There is one way to send a comment.** `comment send` sends one comment against a line range,
+  and it goes at once. The surface used to carry a second way — stage several, then send them as
+  one review — which meant two verbs, two shapes of answer and two states a comment could be in,
+  to save an agent one wake-up it never noticed.
+- **Taking a comment out is one verb.** `comment remove` withdraws a comment that has been sent,
+  and what is kept of it is adiff's problem rather than the caller's.
 - **`comment list` reports comments, and an answer is a field on one.** A comment carries its
   answers, whether it is settled, and whether it has gone stale. There is no separate thread noun
   in the surface, because a thread is what a comment looks like once someone has replied.

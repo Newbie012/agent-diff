@@ -41,10 +41,7 @@ import {
   settleThread,
   setLayers,
   showLayers,
-  stageComment,
-  editStaged,
   submitComment,
-  submitReview,
   takeComments,
   toggleVouch,
   worktreeOf,
@@ -156,7 +153,7 @@ const commentRemove = Effect.fn("Main.commentRemove")(function* (options: Option
     yield* required(options, "id"),
     options["at"] ?? new Date().toISOString(),
   )
-  yield* answer(options, { removed: report.removed, staged: report.staged })
+  yield* answer(options, { removed: report.removed })
 })
 
 const commentRestore = Effect.fn("Main.commentRestore")(function* (options: Options) {
@@ -166,41 +163,6 @@ const commentRestore = Effect.fn("Main.commentRestore")(function* (options: Opti
     yield* required(options, "id"),
   )
   yield* answer(options, { restored: report.restored })
-})
-
-const commentStage = Effect.fn("Main.commentStage")(function* (options: Options) {
-  const report = yield* stageComment({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
-    file: yield* required(options, "file"),
-    start: yield* numeric(options, "start"),
-    end: yield* numeric(options, "end"),
-    body: yield* required(options, "body"),
-    side: options["side"] === "old" ? "old" : "new",
-    id: options["id"] ?? randomUUID(),
-    at: options["at"] ?? new Date().toISOString(),
-  })
-  yield* answer(options, { pending: report.pending })
-})
-
-const commentEdit = Effect.fn("Main.commentEdit")(function* (options: Options) {
-  const report = yield* editStaged({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
-    id: yield* required(options, "id"),
-    body: yield* required(options, "body"),
-  })
-  yield* answer(options, { pending: report.pending })
-})
-
-const reviewSend = Effect.fn("Main.reviewSend")(function* (options: Options) {
-  const report = yield* submitReview(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    options["id"] ?? randomUUID(),
-    options["at"] ?? new Date().toISOString(),
-  )
-  yield* answer(options, { sent: report.submitted })
 })
 
 const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
@@ -218,7 +180,7 @@ const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options)
     yield* required(options, "branch"),
     options["base"],
   )
-  yield* answer(options, { reviewed: report.vouched, total: report.total, pending: report.pending })
+  yield* answer(options, { reviewed: report.vouched, total: report.total })
 })
 
 const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
@@ -312,15 +274,12 @@ const routes = {
   "base set": baseSet,
   "base clear": baseClear,
   "comment send": commentSend,
-  "comment stage": commentStage,
-  "comment edit": commentEdit,
   "comment take": commentTake,
   "comment answer": commentAnswer,
   "comment list": commentList,
   "comment resolve": commentResolve,
   "comment remove": commentRemove,
   "comment restore": commentRestore,
-  "review send": reviewSend,
   "review pane": reviewPane,
   "review progress": reviewStatus,
   "layers set": layersSet,

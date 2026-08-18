@@ -31,6 +31,8 @@ import {
   caretAt,
   caretByWord,
   caretToEdge,
+  treeRows,
+  treeStart,
 } from "./model.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -133,11 +135,6 @@ const panned = (state: TuiState, delta: number): TuiState => {
   return { ...state, pan: Math.max(0, state.pan + delta) }
 }
 
-const movePending = (state: TuiState, delta: number): TuiState => ({
-  ...state,
-  pendingIndex: clamp(state.pendingIndex + delta, 0, Math.max(0, state.pending.length - 1)),
-})
-
 const moveLayer = (state: TuiState, delta: number): TuiState => {
   const layerIndex = clamp(state.layerIndex + delta, 0, Math.max(0, state.layers.length - 1))
   const landed = { ...state, layerIndex }
@@ -148,7 +145,14 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
 const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
-export const railMoved = (state: TuiState, delta: number): TuiState => inRail(state, delta)
+export const railScrolled = (state: TuiState, delta: number): TuiState => {
+  if (onLayers(state)) return inRail(state, delta)
+  const height = Math.max(1, state.railRows)
+  const rows = treeRows(state).length
+  if (rows <= height) return state
+  const start = treeStart(state, height)
+  return { ...state, railScroll: clamp(start + delta, 0, rows - height) }
+}
 
 const movePanel = (state: TuiState, delta: number): TuiState => ({
   ...state,
@@ -281,7 +285,6 @@ const openCompose = (state: TuiState): TuiState => {
 
 const goBack = (state: TuiState): TuiState => {
   if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "" }
-  if (state.screen === "pending") return { ...state, screen: "review" }
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "", caret: 0 }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "keys") return { ...state, screen: state.returnTo }
@@ -351,13 +354,6 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "select.swap": swapEnds,
   "compose.open": openCompose,
   "compose.submit": (state) => state,
-  "compose.stage": (state) => state,
-  "pending.open": (state) => state,
-  "pending.submit": (state) => state,
-  "pending.edit": (state) => state,
-  "pending.drop": (state) => state,
-  "pending.next": (state) => movePending(state, 1),
-  "pending.prev": (state) => movePending(state, -1),
   "compose.newline": (state) => inserted(state, "\n"),
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1), navOpen: true }),
   "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1), navOpen: true }),
@@ -445,12 +441,6 @@ export const gapOpened = (state: TuiState, gap: number, delta: number): TuiState
   const landed = clamp(wanted, 0, lastRow(selectedPatch(opened)))
   return withCursorVisible({ ...opened, cursor: landed, anchorRow: landed, selecting: false })
 }
-
-export const withPending = (
-  state: TuiState,
-  pending: TuiState["pending"],
-  screen: TuiState["screen"],
-): TuiState => ({ ...state, pending, pendingIndex: 0, staged: pending.length, screen })
 
 export const panBy = (state: TuiState, delta: number): TuiState =>
   state.wrap ? state : { ...state, pan: Math.max(0, state.pan + delta) }

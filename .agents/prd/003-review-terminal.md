@@ -39,8 +39,8 @@ is listed in the footer, so nothing has to be memorised or discovered.
    everywhere, so that reading three lines above one hunk costs three lines and not a whole file.
 7. As a `reviewer`, I want to pick up the agent's newest work without leaving the review, so that
    the diff I am reading is the code that exists.
-8. As a `reviewer`, I want to fix or withdraw a comment I have staged, so that reading back what I
-   wrote is worth doing.
+8. As a `reviewer`, I want a comment to be sent when I finish writing it, so that reviewing is one
+   move and not two.
 9. As a `reviewer`, I want the footer to carry the few keys I reach for and one key that lists the
    rest, so that the row I read constantly stays short enough to read.
 10. As a `reviewer`, I want every command I find to name the key that runs it, so that finding it
@@ -96,10 +96,40 @@ Three screens, and the keys each answers to:
   the key under the letter alongside it, and that is what a binding is matched against. Typing is
   unaffected: what reaches a comment is still the letter that was typed.
 
-- **The wheel over the file list walks it.** Every other pane answers the wheel and the list did
-  not, so a reviewer scrolling the file they were looking at got nothing at all and no sign why. It
-  moves between files rather than scrolling rows of its own, because the list already follows the
-  file being read and two ideas of where the list is would disagree the moment either moved.
+- **The wheel over the file list moves the list, not the file.** A branch of forty files is taller
+  than the pane, and looking further down it should not mean opening every file on the way: each one
+  loads a diff the reader did not ask for. The file being read stays where it is, and the list holds
+  wherever it was left until the reader picks another file, at which point it follows again.
+
+- **A row is coloured only while its source line still says what the row says.** Colour comes from
+  parsing the whole file, and the file is read from the worktree while the rows come from the diff
+  taken when the review opened. An edit between the two shifts every line after it, and colours drawn
+  by line number then land on the wrong words. A row whose source line no longer matches is left
+  plain, which reads as unfinished rather than as wrong.
+
+- **Colouring a file waits on nothing the reader is doing.** A grammar is fetched the first time a
+  kind of file is opened, and reading it took as long as it took while every key pressed in the
+  meantime waited behind it. The colour pass runs beside the review instead, and the file that has
+  been left is dropped rather than drawn over the one now on screen.
+
+- **A comment taller than the pane is walked through, not stepped over.** A long answer is one stop
+  for the cursor, and one press used to carry the reader from its first line to the line below its
+  last, with everything between it readable only by wheel. While a stop is taller than the pane the
+  same press moves a page down it, and the press that reaches its end is the one that leaves it.
+
+- **The wheel carries on from where the pane is, not from where the cursor last put it.** The two
+  were counted differently — one in rows of the file, one in rows drawn — so the first notch after
+  a comment scrolled past jumped the pane somewhere else entirely before scrolling at all.
+
+- **Dragging over lines copies them when the drag ends.** Selecting text in a terminal that draws
+  its own panes gives the reader nothing, and the habit is older than any key this review offers.
+  The rows stay selected afterwards, so the drag can be followed by a comment on the same lines.
+
+- **`y` copies what the cursor is on when nothing is selected.** Taking a line out of the review to
+  paste it somewhere else is the common case, and starting a selection to copy a single line is
+  ceremony. On an answer it copies the answer, which is the other thing worth taking whole. On a
+  Mac the text is handed to the pasteboard as well as offered to the terminal, because a terminal
+  that ignores the escape leaves the reader with nothing and no way to tell.
 
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
@@ -127,11 +157,12 @@ Three screens, and the keys each answers to:
 - **Every row that names a command names its key.** The palette and the sheet render the same row,
   so a command found by typing and a command found by scanning teach the same thing.
 
-- **Rewording a staged comment reopens the compose panel on its text**, and staging again replaces
-  that comment rather than adding one. The comment keeps its id and its
-  [anchor](CONTEXT.md#anchor), so it stays the comment the reviewer wrote, wherever the cursor has
-  since moved.
-- **Withdrawing is one deliberate keystroke and no confirmation.** `X` takes a shift, so it is not
+- **The compose panel has one way out: the comment goes.** It used to have two, one that sent and
+  one that held the comment back for a review sent later, and the second was never the one reached
+  for. A point written while reading is a point worth making now, and the screen that listed what
+  was held back, the keys that reworded and withdrew from it, and the count in the footer all go
+  with it.
+- **Withdrawing a comment that has gone is one deliberate keystroke and no confirmation.** `X` takes a shift, so it is not
   reached by accident while scanning the list, and a prompt for every withdrawal would cost more
   than retyping the occasional comment. The notice names what went.
 - **`w` wraps the diff, so a long line is readable to its end.** Wrapped or not, a line keeps one
@@ -196,8 +227,8 @@ Three screens, and the keys each answers to:
 - **The command palette opens wherever a reader is moving around**, over the diff and over the
   review list. It stays shut where a reader is typing, since a draft is not a place to run a
   command from, and on the worktree list, whose three actions are already on screen.
-- **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key,
-  the staged review and the search results are measured against the width and the height of the
+- **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key
+  and the search results are measured against the width and the height of the
   screen rather than against one fixed size. On a wide terminal a command keeps its whole title and
   a match keeps its whole line, instead of being cut short beside empty columns; on a tall terminal
   the list runs down to the room the screen has, instead of stopping at a count fixed for a short

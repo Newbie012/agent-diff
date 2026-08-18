@@ -36,18 +36,6 @@ type Shape = {
     worktreePath: string,
     state: BranchState,
   ) => Effect.Effect<void, StoreUnwritable>
-  readonly stage: (
-    worktreePath: string,
-    comment: StoredComment,
-  ) => Effect.Effect<ReadonlyArray<StoredComment>, StoreUnreadable | StoreUnwritable>
-  readonly restage: (
-    worktreePath: string,
-    comment: StoredComment,
-  ) => Effect.Effect<Option.Option<ReadonlyArray<StoredComment>>, StoreUnreadable | StoreUnwritable>
-  readonly unstage: (
-    worktreePath: string,
-    id: string,
-  ) => Effect.Effect<Option.Option<ReadonlyArray<StoredComment>>, StoreUnreadable | StoreUnwritable>
   readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
   readonly settings: Effect.Effect<Settings, StoreUnreadable>
   readonly saveSettings: (next: Settings) => Effect.Effect<void, StoreUnwritable>
@@ -144,37 +132,10 @@ const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw:
 })
 
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
-type Writer = (worktreePath: string, next: BranchState) => Effect.Effect<void, StoreUnwritable>
 type Inbox = (worktreePath: string) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable>
 type Spoken = (worktreePath: string) => Effect.Effect<ReadonlyArray<StoredAnswer>, StoreUnreadable>
 
-const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox, spoken: Spoken) => {
-  const stage = Effect.fn("Store.stage")(function* (worktreePath: string, comment: StoredComment) {
-    const current = yield* state(worktreePath)
-    const pending = [...current.pending, comment]
-    yield* saveState(worktreePath, { ...current, pending })
-    return pending
-  })
-
-  const restage = Effect.fn("Store.restage")(function* (
-    worktreePath: string,
-    comment: StoredComment,
-  ) {
-    const current = yield* state(worktreePath)
-    if (!current.pending.some((entry) => entry.id === comment.id)) return Option.none()
-    const pending = current.pending.map((entry) => (entry.id === comment.id ? comment : entry))
-    yield* saveState(worktreePath, { ...current, pending })
-    return Option.some(pending)
-  })
-
-  const unstage = Effect.fn("Store.unstage")(function* (worktreePath: string, id: string) {
-    const current = yield* state(worktreePath)
-    if (!current.pending.some((entry) => entry.id === id)) return Option.none()
-    const pending = current.pending.filter((entry) => entry.id !== id)
-    yield* saveState(worktreePath, { ...current, pending })
-    return Option.some(pending)
-  })
-
+const cursorOps = (state: Reader, inbox: Inbox, spoken: Spoken) => {
   const take = Effect.fn("Store.take")(function* (worktreePath: string) {
     const batches = yield* inbox(worktreePath)
     const current = yield* state(worktreePath)
@@ -189,7 +150,7 @@ const cursorOps = (state: Reader, saveState: Writer, inbox: Inbox, spoken: Spoke
     })
   })
 
-  return { stage, restage, unstage, take }
+  return { take }
 }
 
 const settingsOps = (root: string) => {
@@ -417,7 +378,7 @@ const makeStore = (root: string): Shape => {
   const { submit, inbox } = inboxOps(root)
   const { state, saveState } = stateOps(root)
   const talk = answerOps(root)
-  const cursors = cursorOps(state, saveState, inbox, talk.answers)
+  const cursors = cursorOps(state, inbox, talk.answers)
   return {
     root,
     branchAt: (worktreePath: string) => Effect.promise(() => headOf(worktreePath)),

@@ -35,7 +35,6 @@ export type Batch = {
 export type BranchState = {
   readonly vouches: Readonly<Record<string, string>>
   readonly consumed: number
-  readonly pending: ReadonlyArray<StoredComment>
   readonly settled: Readonly<Record<string, string>>
   readonly removed: Readonly<Record<string, string>>
   readonly base: string
@@ -45,7 +44,6 @@ export type BranchState = {
 export const emptyBranchState: BranchState = {
   vouches: {},
   consumed: 0,
-  pending: [],
   settled: {},
   removed: {},
   base: "",

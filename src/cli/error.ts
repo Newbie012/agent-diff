@@ -39,10 +39,6 @@ export class MissingOption extends Data.TaggedError("MissingOption")<{
   readonly usage?: string
 }> {}
 
-export class EmptyReview extends Data.TaggedError("EmptyReview")<{
-  readonly branch: string
-}> {}
-
 export class UnknownWorktree extends Data.TaggedError("UnknownWorktree")<{
   readonly worktree: string
   readonly known: ReadonlyArray<string>

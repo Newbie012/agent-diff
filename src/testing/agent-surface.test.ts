@@ -20,9 +20,6 @@ describe("using adiff without reading its documentation", () => {
       "base set",
       "base clear",
       "review progress",
-      "comment stage",
-      "comment edit",
-      "review send",
       "comment send",
       "comment take",
       "comment answer",
@@ -71,7 +68,7 @@ describe("using adiff without reading its documentation", () => {
     expect(result.code).toBe(2)
     expect(result.envelope).toMatchObject({
       ok: false,
-      error: { type: "UnknownCommand", didYouMean: "comment edit" },
+      error: { type: "UnknownCommand", didYouMean: "comment remove" },
     })
   })
 

@@ -12,11 +12,11 @@ const oneFile = {
 }
 
 describe("choosing which branch needs you", () => {
-  it("says how many comments are waiting to be sent", async () => {
+  it("says nothing is unanswered when the agent has taken every comment", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -30,7 +30,7 @@ describe("choosing which branch needs you", () => {
     // ASSERT
     expect(result.envelope).toMatchObject({
       ok: true,
-      branches: [{ branch: branch.name, staged: 1, unread: 0 }],
+      branches: [{ branch: branch.name, unread: 1 }],
     })
   })
 
@@ -52,7 +52,7 @@ describe("choosing which branch needs you", () => {
     // ASSERT
     expect(result.envelope).toMatchObject({
       ok: true,
-      branches: [{ branch: branch.name, staged: 0, unread: 1 }],
+      branches: [{ branch: branch.name, unread: 1 }],
     })
   })
 
@@ -60,7 +60,7 @@ describe("choosing which branch needs you", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -74,19 +74,19 @@ describe("choosing which branch needs you", () => {
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
     const row = rows.find((line) => line.includes("cdr-1-add-third"))
-    expect(row).toContain("1 staged")
+    expect(row).toContain("1 unanswe")
   })
 })
 
 describe("coming back to the branch list", () => {
-  it("shows work staged since the list was last drawn", async () => {
+  it("shows a comment sent since the list was last drawn", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN", "c"])
     await driver.screen.typeText("hold this")
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ACT
     await driver.screen.pressEscape()
@@ -94,6 +94,6 @@ describe("coming back to the branch list", () => {
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
     const row = rows.find((line) => line.includes("cdr-1-add-third"))
-    expect(row).toContain("1 staged")
+    expect(row).toContain("1 unanswe")
   })
 })

@@ -1,4 +1,6 @@
+import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
+import { platform } from "node:os"
 import { realpath } from "node:fs/promises"
 import { resolve } from "node:path"
 import {
@@ -18,17 +20,12 @@ import {
   listPatches,
   fileSource,
   fileBefore,
-  listPending,
   listSent,
   searchBranch,
   listLayers,
   reviewProgress,
   saveReport,
   saveWrap,
-  stageComment,
-  editStaged,
-  dropStaged,
-  submitReview,
   submitComment,
   toggleVouch,
   removeComment,
@@ -80,7 +77,7 @@ import {
   paletteClosed,
   paletteMoved,
   reduce,
-  railMoved,
+  railScrolled,
   scrolled,
   panBy,
   pasted,
@@ -98,12 +95,10 @@ import {
   withPatches,
   restoredTo,
   withMatches,
-  withPending,
   withSent,
   withSource,
   withLayers,
   withVouched,
-  withDraft,
 } from "./reduce.ts"
 import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import type { Needs, Work } from "./needs.ts"
@@ -145,9 +140,23 @@ const momentOf = (named: string, state: TuiState, elapsed: number): string => {
 const noticeOf = (notice: string, elapsed: number): string =>
   `${clockOf(elapsed)}  ${"said".padEnd(16)} ${notice}`
 
+const handOver = (text: string): void => {
+  if (platform() !== "darwin" || !process.stdout.isTTY) return
+  const pipe = spawn("pbcopy", { stdio: ["pipe", "ignore", "ignore"] })
+  pipe.on("error", () => undefined)
+  pipe.stdin.on("error", () => undefined)
+  pipe.stdin.end(text)
+}
+
 const copyToClipboard = (text: string): void => {
   const encoded = Buffer.from(text, "utf8").toString("base64")
   process.stdout.write(`\u001B]52;c;${encoded}\u0007`)
+  handOver(text)
+}
+
+const lineUnder = (state: TuiState): ReadonlyArray<string> => {
+  const row = selectedPatch(state)?.rows[state.cursor]
+  return row === undefined ? [] : [row.text]
 }
 
 const asKey = (name: string): KeyEvent =>
@@ -223,6 +232,7 @@ export class App {
   private wheel = 0
   private sideways = 0
   private listening: Fiber.Fiber<void> | undefined
+  private lighting: Fiber.Fiber<void, unknown> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -239,7 +249,7 @@ export class App {
       this.display.listen({
         onScroll: (delta) => this.onWheel(delta),
         onPan: (delta) => this.onPanWheel(delta),
-        onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
+        onDrag: (from, to, done) => this.dragged(from, to, done),
         onChip: (key) => this.dispatchTask(this.onKey(asKey(key))),
         onRail: (delta) => this.dispatchTask(this.rolled(delta)),
       }),
@@ -248,6 +258,7 @@ export class App {
     renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
+    renderer.on("destroy", () => this.stopLighting())
     renderer.on("destroy", () => this.stopPainting())
     renderer.on("destroy", () => this.stopConsuming())
     renderer.on("frame", () => this.syncGeometry())
@@ -364,7 +375,12 @@ export class App {
     if (this.consuming === undefined) return Promise.resolve()
     const done = Deferred.makeUnsafe<void>()
     Queue.offerUnsafe(this.intents, Intent.Ping({ done }))
-    return Effect.runPromise(Deferred.await(done))
+    return Effect.runPromise(Effect.andThen(Deferred.await(done), this.stillLighting()))
+  }
+
+  private stillLighting(): Effect.Effect<void> {
+    const fiber = this.lighting
+    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
   }
 
   private onWheel(delta: number): void {
@@ -391,7 +407,7 @@ export class App {
       if (down !== 0) this.commit(paletteMoved(this.state, down))
       return
     }
-    const moved = down === 0 ? this.measured() : scrolled(this.measured(), down)
+    const moved = down === 0 ? this.measured() : scrolled(this.standing(), down)
     this.commit(across === 0 ? moved : panBy(moved, across))
   }
 
@@ -411,10 +427,20 @@ export class App {
       this.commit({ ...this.state, tallest })
       return
     }
+    const railRows = Effect.runSync(this.display.rail)
+    if (railRows !== this.state.railRows) {
+      this.commit({ ...this.state, railRows })
+      return
+    }
     const room = Effect.runSync(this.display.room)
     if (room === this.roomed) return
     this.roomed = room
     Effect.runSync(this.display.paint(this.state))
+  }
+
+  private standing(): TuiState {
+    const held = this.measured()
+    return held.scroll >= 0 ? held : { ...held, scroll: Effect.runSync(this.display.at) }
   }
 
   private measured(): TuiState {
@@ -433,7 +459,8 @@ export class App {
     return Date.now() - this.began
   }
 
-  private commit(next: TuiState): void {
+  private commit(given: TuiState): void {
+    const next = given.patchIndex === this.state.patchIndex ? given : { ...given, railScroll: -1 }
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
@@ -459,6 +486,12 @@ export class App {
 
   watch(fiber: Fiber.Fiber<void>): void {
     this.consuming = fiber
+  }
+
+  private stopLighting(): void {
+    const fiber = this.lighting
+    this.lighting = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
   }
 
   private stopFading(): void {
@@ -487,29 +520,24 @@ export class App {
       "branch.pull": () => this.showPull(),
       "compose.open": () => this.compose(),
       "compose.submit": () => this.send(),
-      "compose.stage": () => this.stage(),
       "palette.run": () => this.runChoice(),
       "comment.next": () => this.walkComments(1),
       "comment.prev": () => this.walkComments(-1),
       "file.next": () => this.moveFile(1),
       "file.prev": () => this.moveFile(-1),
-      "cursor.next": () => this.commitSynced("cursor.next"),
-      "cursor.prev": () => this.commitSynced("cursor.prev"),
+      "cursor.next": () => this.stepped(1),
+      "cursor.prev": () => this.stepped(-1),
       "rail.toggle": () => this.commitSynced("rail.toggle"),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
       "thread.settle": () => this.settleHere(),
       "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
-      "selection.copy": () => Effect.sync(() => this.copySelection()),
+      "selection.copy": () => Effect.sync(() => this.copySelection(false)),
       "search.open": () => this.findSelection(),
       "search.jump": () => this.openMatch(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
-      "pending.open": () => this.openPending(),
-      "pending.edit": () => Effect.sync(() => this.editStagedComment()),
-      "pending.drop": () => this.dropStagedComment(),
-      "pending.submit": () => this.sendReview(),
       "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
       back: () => this.goBack(),
       "report.send": () => this.sendReport(),
@@ -604,11 +632,10 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const patches = yield* (listPatches(this.repo, name))
       const progress = yield* (reviewProgress(this.repo, name))
-      const pending = yield* (listPending(this.repo, name))
       const layers = yield* (listLayers(this.repo, name))
       const sent = yield* this.loadSent(name)
       const opened = withVouched(withPatches(this.state, patches), progress.vouched)
-      return withLayers(withSent(withPending(opened, pending, "review"), sent), layers)
+      return withLayers(withSent(opened, sent), layers)
     })
   }
 
@@ -621,15 +648,27 @@ export class App {
     })
   }
 
-  private copySelection(): void {
-    const lines = selectedLines(this.state)
+  private dragged(from: number, to: number, done: boolean): void {
+    this.commit(draggedTo(this.measured(), from, to))
+    if (done && from !== to) this.copySelection(true)
+  }
+
+  private copySelection(keep: boolean): void {
+    const said = keep ? withNoticeHere : withNotice
+    const thread = threadAtStop(this.state)
+    if (thread !== undefined) {
+      copyToClipboard(`${thread.body}\n`)
+      this.commit(said(this.state, "comment copied"))
+      return
+    }
+    const lines = this.state.selecting ? selectedLines(this.state) : lineUnder(this.state)
     if (lines.length === 0) {
-      this.commit(withNoticeHere(this.state, "nothing selected"))
+      this.commit(withNoticeHere(this.state, "nothing to copy"))
       return
     }
     copyToClipboard(`${lines.join("\n")}\n`)
     const many = lines.length === 1 ? "1 line copied" : `${lines.length} lines copied`
-    this.commit(withNotice(this.state, many))
+    this.commit(said(this.state, many))
   }
 
   private findSelection(): Work {
@@ -807,6 +846,25 @@ export class App {
     })
   }
 
+  private stepped(delta: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      if (this.paged(delta)) return
+      yield* this.commitSynced(delta > 0 ? "cursor.next" : "cursor.prev")
+    })
+  }
+
+  private paged(delta: number): boolean {
+    if (this.state.screen !== "review" || this.state.focus !== "diff") return false
+    const state = this.standing()
+    const span = Effect.runSync(this.display.block(state.cursor, state.stop))
+    const height = Math.max(1, state.viewport)
+    if (span.rows <= height) return false
+    const room = delta > 0 ? span.start + span.rows - height : span.start
+    if (delta > 0 ? state.scroll >= room : state.scroll <= room) return false
+    this.commit(scrolled(state, delta * Math.max(1, height - 2)))
+    return true
+  }
+
   private commitSynced(action: Action): Work {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
@@ -818,7 +876,7 @@ export class App {
   private rolled(delta: number): Work {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
-      this.commit(railMoved(this.measured(), delta))
+      this.commit(railScrolled(this.measured(), delta))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
   }
@@ -847,64 +905,6 @@ export class App {
         return
       }
       this.commit(withNotice(atFile(next, target), `marked ${patch.path}`))
-    })
-  }
-
-  private request(): Parameters<typeof submitComment>[0] | undefined {
-    const patch = selectedPatch(this.state)
-    const branch = selectedBranch(this.state)
-    const [from, to] = selectionRange(this.state)
-    if (patch === undefined || branch === undefined || this.state.draft.length === 0) return undefined
-    const anchor = anchorFor(patch, from, to)
-    if (Option.isNone(anchor)) return undefined
-    return {
-      repo: this.repo,
-      branch: branch.branch,
-      file: patch.path,
-      side: anchor.value.side,
-      start: anchor.value.start,
-      end: anchor.value.end,
-      body: this.state.draft,
-      id: randomUUID(),
-      at: new Date().toISOString(),
-    }
-  }
-
-  private stage(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const editing = this.state.editing
-      if (editing !== undefined) {
-        yield* this.restage(editing)
-        return
-      }
-      const request = this.request()
-      if (request === undefined) {
-        this.commit(withNotice(this.state, "nothing to stage"))
-        return
-      }
-      yield* (stageComment(request))
-      const branch = selectedBranch(this.state)
-      const pending =
-        branch === undefined ? [] : yield* (listPending(this.repo, branch.branch))
-      const next = withPending(this.state, pending, "review")
-      this.commit(withNotice(next, `${pending.length} staged, press S to send`))
-    })
-  }
-
-  private restage(id: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      yield* (
-        editStaged({ repo: this.repo, branch: branch.branch, id, body: this.state.draft })
-      )
-      const pending = yield* (listPending(this.repo, branch.branch))
-      const next = withPending(
-        { ...this.state, editing: undefined, draft: "", caret: 0 },
-        pending,
-        "pending",
-      )
-      this.commit(withNoticeHere(next, "reworded"))
     })
   }
 
@@ -967,9 +967,21 @@ export class App {
       const source = yield* (fileSource(this.repo, branch.branch, asked))
       if (selectedPatch(this.state)?.path !== asked) return
       this.commit(withSource(this.state, source))
-      yield* this.display.light(asked, "new", source)
       const before = yield* (fileBefore(this.repo, branch.branch, asked))
-      if (before.length > 0) yield* this.display.light(asked, "old", before)
+      if (selectedPatch(this.state)?.path !== asked) return
+      this.stopLighting()
+      this.lighting = yield* Effect.forkDetach(this.lightUp(asked, source, before))
+    })
+  }
+
+  private lightUp(
+    path: string,
+    source: ReadonlyArray<string>,
+    before: ReadonlyArray<string>,
+  ): Work {
+    return Effect.gen({ self: this }, function* () {
+      yield* this.display.light(path, "new", source)
+      if (before.length > 0) yield* this.display.light(path, "old", before)
     })
   }
 
@@ -987,54 +999,6 @@ export class App {
       const patch = selectedPatch(widened)
       const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)
       this.commit(withContext(this.state, next, patches, cursor))
-    })
-  }
-
-  private openPending(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const pending = yield* (listPending(this.repo, branch.branch))
-      if (pending.length === 0) {
-        this.commit(withNotice(this.state, "nothing staged"))
-        return
-      }
-      this.commit(withPending(this.state, pending, "pending"))
-    })
-  }
-
-  private editStagedComment(): void {
-    const entry = this.state.pending[this.state.pendingIndex]
-    if (entry?.id === undefined) return
-    this.commit(withDraft({ ...this.state, screen: "compose", editing: entry.id }, entry.body))
-  }
-
-  private dropStagedComment(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      const entry = this.state.pending[this.state.pendingIndex]
-      if (branch === undefined || entry?.id === undefined) return
-      yield* (dropStaged(this.repo, branch.branch, entry.id))
-      const pending = yield* (listPending(this.repo, branch.branch))
-      const kept = withPending(this.state, pending, pending.length === 0 ? "review" : "pending")
-      const at = Math.min(this.state.pendingIndex, Math.max(0, pending.length - 1))
-      const said = pending.length === 0 ? "nothing staged" : `withdrawn — ${pending.length} left`
-      this.commit(withNoticeHere({ ...kept, pendingIndex: at }, said))
-    })
-  }
-
-  private sendReview(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const report = yield* (
-        submitReview(this.repo, branch.branch, randomUUID(), new Date().toISOString())
-      )
-      const cleared = withSent(
-        withPending(this.state, [], "review"),
-        yield* this.loadSent(branch.branch),
-      )
-      this.commit(withNotice(cleared, `review sent — ${report.submitted} comment${report.submitted === 1 ? "" : "s"}, one wake-up`))
     })
   }
 

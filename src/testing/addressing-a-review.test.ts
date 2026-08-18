@@ -110,37 +110,6 @@ describe("naming the review an agent is standing in", () => {
 })
 
 describe("taking a comment out of the review", () => {
-  it("withdraws one that was only staged, without a second verb for it", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
-    await driver.app.run([
-      "comment",
-      "stage",
-      "--worktree",
-      branch.worktree,
-      "--file",
-      "src/api.ts",
-      "--start",
-      "1",
-      "--end",
-      "1",
-      "--body",
-      "not sure about this",
-      "--id",
-      "c-staged",
-    ])
-
-    // ACT
-    const result = await driver.app.runRemove({ branch: branch.name, id: "c-staged" })
-
-    // ASSERT
-    expect(result.code).toBe(0)
-    expect(result.envelope).toMatchObject({ ok: true, staged: true })
-    const after = await driver.app.runProgress(branch.name)
-    expect(after.envelope).toMatchObject({ pending: 0 })
-  })
-
   it("says a comment that was already sent came out of the sent record", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -161,7 +130,7 @@ describe("taking a comment out of the review", () => {
     })
 
     // ASSERT
-    expect(result.envelope).toMatchObject({ ok: true, staged: false })
+    expect(result.envelope).toMatchObject({ ok: true, removed: expect.any(String) })
   })
 })
 

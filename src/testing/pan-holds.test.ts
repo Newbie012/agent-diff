@@ -29,14 +29,13 @@ describe("panning past the edge of a line", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(wide)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
       end: 2,
       body: "why is this here",
     })
-    await driver.app.runSubmit(branch.name)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
 
