@@ -29,6 +29,7 @@ import {
   panelFits,
   panelShown,
   caretAt,
+  caretByRow,
   caretByWord,
   caretToEdge,
   treeRows,
@@ -278,6 +279,15 @@ const atBranch = (state: TuiState, at: number): TuiState => ({
   branchIndex: clamp(at, 0, Math.max(0, state.branches.length - 1)),
 })
 
+export const grownBy = (state: TuiState, delta: number): TuiState => {
+  const held = state.selecting ? state : { ...state, selecting: true, anchorRow: state.cursor }
+  return withCursorVisible({
+    ...held,
+    stop: 0,
+    cursor: clamp(held.cursor + delta, 0, lastRow(selectedPatch(state))),
+  })
+}
+
 const startSelection = (state: TuiState): TuiState => ({
   ...state,
   selecting: true,
@@ -368,6 +378,8 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "file.next": (state) => moveFile(state, 1),
   "file.prev": (state) => moveFile(state, -1),
   "select.start": startSelection,
+  "select.grow": (state) => grownBy(state, 1),
+  "select.shrink": (state) => grownBy(state, -1),
   "select.hunk": selectHunk,
   "select.swap": swapEnds,
   "compose.open": openCompose,
@@ -638,6 +650,16 @@ export const caretMoved = (state: TuiState, delta: number): TuiState => ({
 export const caretJumped = (state: TuiState, delta: number): TuiState => ({
   ...state,
   caret: caretByWord(state, delta),
+})
+
+export const caretRowed = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  caret: caretByRow(state, delta),
+})
+
+export const caretEnded = (state: TuiState, edge: "start" | "end"): TuiState => ({
+  ...state,
+  caret: edge === "start" ? 0 : state.draft.length,
 })
 
 export const caretHomed = (state: TuiState, edge: "start" | "end"): TuiState => ({

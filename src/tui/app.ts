@@ -75,7 +75,9 @@ import {
   lineBackspaced,
   caretHomed,
   caretJumped,
+  caretEnded,
   caretMoved,
+  caretRowed,
   deleted,
   draggedTo,
   pickedIn,
@@ -177,14 +179,15 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
-const byWord = (key: KeyEvent): boolean => key.option || key.meta || key.ctrl
+const byWord = (key: KeyEvent): boolean => key.option || key.ctrl
 
 const WORD_STEP: Readonly<Record<string, number>> = { b: -1, f: 1 }
 
 const caretSideways = (state: TuiState, key: KeyEvent): TuiState | undefined => {
   const step = key.name === "left" ? -1 : key.name === "right" ? 1 : 0
   if (step === 0) return undefined
-  return byWord(key) ? caretJumped(state, step) : caretMoved(state, step)
+  if (key.meta) return caretHomed(state, step > 0 ? "end" : "start")
+  return key.option || key.ctrl ? caretJumped(state, step) : caretMoved(state, step)
 }
 
 const caretFor = (state: TuiState, key: KeyEvent): TuiState | undefined => {
@@ -211,8 +214,10 @@ const laidOut = (key: KeyEvent): string =>
     ? key.name
     : String.fromCodePoint(key.baseCode)
 
+const ARROWS: ReadonlySet<string> = new Set(["up", "down", "left", "right"])
+
 const keyName = (key: KeyEvent): string => {
-  if (key.shift && key.name === "tab") return "shift+tab"
+  if (key.shift && (key.name === "tab" || ARROWS.has(key.name))) return `shift+${key.name}`
   const named = laidOut(key)
   const base = key.shift && named.length === 1 ? named.toUpperCase() : named
   return key.ctrl ? `ctrl+${base}` : base
@@ -614,16 +619,19 @@ export class App {
       this.commit(erasedBy(this.state, key))
       return
     }
-    if (key.name === "down") {
-      this.commit(paletteMoved(this.state, 1))
-      return
-    }
-    if (key.name === "up") {
-      this.commit(paletteMoved(this.state, -1))
+    if (key.name === "down" || key.name === "up") {
+      this.commit(this.steppedText(key))
       return
     }
     if (this.onCaret(key)) return
     if (PRINTABLE.test(key.sequence)) this.commit(typed(this.state, key.sequence))
+  }
+
+  private steppedText(key: KeyEvent): TuiState {
+    const delta = key.name === "down" ? 1 : -1
+    if (listens(this.state.screen)) return paletteMoved(this.state, delta)
+    if (key.meta) return caretEnded(this.state, delta > 0 ? "end" : "start")
+    return caretRowed(this.measured(), delta)
   }
 
   private onCaret(key: KeyEvent): boolean {

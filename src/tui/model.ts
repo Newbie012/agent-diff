@@ -465,15 +465,57 @@ export const selectedLineCount = (state: TuiState): number => selectedRows(state
 const lineOf = (row: Patch["rows"][number]): string =>
   Option.match(row.newLine, { onNone: () => "-", onSome: (line) => String(line) })
 
-export const CARET = "▌"
+export type LaidRow = { readonly text: string; readonly from: number }
+
+const brokenAt = (text: string, room: number): number => {
+  const space = text.lastIndexOf(" ", room)
+  return space > 0 ? space + 1 : room
+}
+
+const laidLine = (line: string, from: number, room: number): ReadonlyArray<LaidRow> => {
+  const rows: Array<LaidRow> = []
+  let at = 0
+  while (line.length - at > room) {
+    const width = brokenAt(line.slice(at), room)
+    rows.push({ text: line.slice(at, at + width), from: from + at })
+    at += width
+  }
+  rows.push({ text: line.slice(at), from: from + at })
+  return rows
+}
+
+export const laidDraft = (draft: string, room: number): ReadonlyArray<LaidRow> => {
+  const width = Math.max(1, room)
+  const rows: Array<LaidRow> = []
+  let from = 0
+  for (const line of draft.split("\n")) {
+    rows.push(...laidLine(line, from, width))
+    from += line.length + 1
+  }
+  return rows
+}
+
+export const caretRow = (rows: ReadonlyArray<LaidRow>, caret: number): number => {
+  const at = rows.findIndex((row) => caret >= row.from && caret <= row.from + row.text.length)
+  return at === -1 ? Math.max(0, rows.length - 1) : at
+}
+
+export const caretColumn = (rows: ReadonlyArray<LaidRow>, caret: number): number =>
+  caret - (rows[caretRow(rows, caret)]?.from ?? 0)
+
+export const caretOn = (
+  rows: ReadonlyArray<LaidRow>,
+  row: number,
+  column: number,
+): number => {
+  const held = rows[Math.max(0, Math.min(rows.length - 1, row))]
+  if (held === undefined) return 0
+  const last = held.text.endsWith(" ") ? held.text.length - 1 : held.text.length
+  return held.from + Math.min(column, Math.max(0, last))
+}
 
 export const caretAt = (state: TuiState): number =>
   Math.max(0, Math.min(state.draft.length, state.caret))
-
-export const drafted = (state: TuiState): string => {
-  const at = caretAt(state)
-  return `${state.draft.slice(0, at)}${CARET}${state.draft.slice(at)}`
-}
 
 const WORD = /[\p{L}\p{N}_]/u
 
@@ -499,6 +541,27 @@ const lineStart = (draft: string, at: number): number => draft.lastIndexOf("\n",
 const lineEnd = (draft: string, at: number): number => {
   const found = draft.indexOf("\n", at)
   return found === -1 ? draft.length : found
+}
+
+const COMPOSE_BOX = 72
+const COMPOSE_MARGIN = 4
+const COMPOSE_PAD = 5
+const COMPOSE_LEAST = 8
+
+export const composeBox = (columns: number): number =>
+  Math.max(0, Math.min(COMPOSE_BOX, columns - COMPOSE_MARGIN))
+
+export const composeRoom = (columns: number): number =>
+  Math.max(COMPOSE_LEAST, composeBox(columns) - COMPOSE_PAD)
+
+export const caretByRow = (state: TuiState, delta: number): number => {
+  const rows = laidDraft(state.draft, composeRoom(state.columns))
+  const at = caretAt(state)
+  const here = caretRow(rows, at)
+  const wanted = here + delta
+  if (wanted < 0) return 0
+  if (wanted >= rows.length) return state.draft.length
+  return caretOn(rows, wanted, caretColumn(rows, at))
 }
 
 export const caretToEdge = (state: TuiState, edge: "start" | "end"): number =>

@@ -306,6 +306,17 @@ export class ScreenTestDriver {
     return this.findPainted(marker, fgOf)
   }
 
+  async paintedWith(marker: string): Promise<ReadonlyArray<string>> {
+    const setup = this.active()
+    const wanted = marker.toLowerCase()
+    await this.settleHighlighting()
+    this.guard()
+    return setup
+      .captureSpans()
+      .lines.flatMap((line) => line.spans.filter((span) => bgOf(span) === wanted))
+      .map((span) => span.text)
+  }
+
   private async findPainted(
     marker: string,
     read: (span: Span) => string,
@@ -358,6 +369,13 @@ export class ScreenTestDriver {
   async pressTab(): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressTab({})
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
+  async pressShiftArrow(way: "up" | "down"): Promise<void> {
+    const setup = this.active()
+    setup.mockInput.pressKey(way === "down" ? "ARROW_DOWN" : "ARROW_UP", { shift: true })
     await this.app?.settled()
     await setup.waitForVisualIdle()
   }
