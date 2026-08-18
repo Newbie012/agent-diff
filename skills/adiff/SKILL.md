@@ -24,7 +24,9 @@ Each comment carries the code it is about. `snippet` is the exact text the revie
 `side` says whether the line numbers are in the new file (`new`) or the version being replaced
 (`old`), and `head` is the commit the diff was read at.
 
-A comment is handed over exactly once. A second `take` returns only what was written since.
+A comment keeps coming back until it is answered. A second `take` returns it again, so answer what
+you take. Settling or removing it also retires it: those are the reviewer saying they no longer
+need one.
 
 ## Wait for the next one
 
@@ -38,6 +40,10 @@ An empty `comments` array means the wait expired with nothing new — that is no
 Run the wait in the background, not in the foreground. A foreground wait holds the turn, so you
 cannot do anything else and the person you are working with cannot talk to you. Backgrounded, the
 harness brings you back the moment a comment lands.
+
+Keep one wait per worktree. A second wait returns the same comments as the first, so two of them
+running at once is two of you answering the same comment. Before starting one, check whether one is
+already running.
 
 Re-arm it after each comment you handle, and keep it running while you work. A reviewer reads at
 their own pace, so comments arrive minutes apart, and the whole point is that they reach you as

@@ -17,6 +17,7 @@ const reported = async (driver: TestDriver, minimal: boolean): Promise<string> =
   await driver.branch.create(oneFile)
   await driver.screen.open()
   await driver.screen.pressKeys(["RETURN", "j"])
+  await driver.screen.pressKeys(["n"])
   await driver.screen.pressCtrl("b")
   await driver.screen.typeText("something went wrong")
   if (minimal) await driver.screen.pressCtrl("t")
@@ -27,6 +28,17 @@ const reported = async (driver: TestDriver, minimal: boolean): Promise<string> =
 }
 
 describe("reporting a bug", () => {
+  it("carries the notices the reviewer was shown, with the clock", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    const text = await reported(driver, false)
+
+    // ASSERT
+    expect(text).toMatch(/\d+:\d\d\s+said\s+\S/)
+  })
+
   it("sends everything on screen by default", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

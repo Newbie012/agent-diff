@@ -128,11 +128,20 @@ const PRINTABLE = /^[\S ]$/
 const KEY_HISTORY = 40
 const TRAIL_HISTORY = 20
 
-const momentOf = (named: string, state: TuiState): string => {
+const clockOf = (elapsed: number): string => {
+  const seconds = Math.floor(elapsed / 1000)
+  const shown = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
+  return shown.padStart(6)
+}
+
+const momentOf = (named: string, state: TuiState, elapsed: number): string => {
   const file = selectedPatch(state)?.path ?? "none"
   const place = `${state.screen}/${state.focus}`
-  return `${named.padEnd(16)} ${place.padEnd(16)} row ${String(state.cursor + 1).padStart(5)}  ${file}`
+  return `${clockOf(elapsed)}  ${named.padEnd(16)} ${place.padEnd(16)} row ${String(state.cursor + 1).padStart(5)}  ${file}`
 }
+
+const noticeOf = (notice: string, elapsed: number): string =>
+  `${clockOf(elapsed)}  ${"said".padEnd(16)} ${notice}`
 
 const copyToClipboard = (text: string): void => {
   const encoded = Buffer.from(text, "utf8").toString("base64")
@@ -207,6 +216,7 @@ export class App {
   private wrapKept = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
+  private readonly began = Date.now()
   private fading: Fiber.Fiber<void> | undefined
   private wheel = 0
   private sideways = 0
@@ -416,12 +426,22 @@ export class App {
     Effect.runSync(SubscriptionRef.set(this.held, next))
   }
 
+  private since(): number {
+    return Date.now() - this.began
+  }
+
   private commit(next: TuiState): void {
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
+    if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
     this.rememberWrap(next)
     this.write(next)
     if (appeared) this.fade()
+  }
+
+  private recordNotice(notice: string): void {
+    this.trail.push(noticeOf(notice, this.since()))
+    if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
   }
 
   private stopPainting(): void {
@@ -996,7 +1016,7 @@ export class App {
     const named = action ?? keyName(key)
     this.keys.push(named)
     if (this.keys.length > KEY_HISTORY) this.keys.shift()
-    this.trail.push(momentOf(named, this.state))
+    this.trail.push(momentOf(named, this.state, this.since()))
     if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
   }
 
