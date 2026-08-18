@@ -33,6 +33,7 @@ import {
   toggleVouch,
   removeComment,
   settleThread,
+  settleRead,
 } from "../cli/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
@@ -478,6 +479,7 @@ export class App {
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
       "thread.settle": () => this.settleHere(),
+      "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
       "selection.copy": () => Effect.sync(() => this.copySelection()),
       "search.open": () => this.findSelection(),
@@ -692,6 +694,21 @@ export class App {
       const held = this.state.panelIndex
       const sent = yield* this.loadSent(branch.branch)
       this.commit({ ...withSent(this.state, sent), panelIndex: held })
+    })
+  }
+
+  private settleWhatIsRead(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      const done = yield* settleRead(this.repo, branch.branch, new Date().toISOString())
+      if (done.settled === 0) {
+        this.commit(withNotice(this.state, "nothing read is waiting to be settled"))
+        return
+      }
+      const sent = yield* this.loadSent(branch.branch)
+      const said = `settled ${done.settled} read comment${done.settled === 1 ? "" : "s"}`
+      this.commit(withNotice(withSent(this.state, sent), said))
     })
   }
 

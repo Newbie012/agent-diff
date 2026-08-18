@@ -34,6 +34,7 @@ export type Action =
   | "panel.flip"
   | "review.reload"
   | "thread.settle"
+  | "thread.settleRead"
   | "thread.remove"
   | "tree.collapse"
   | "tree.expand"
@@ -388,6 +389,13 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["review"],
     hint: "settle",
     whenThread: true,
+  }),
+  command({
+    action: "thread.settleRead",
+    title: "Settle every answer already read",
+    category: "Review",
+    keys: ["D"],
+    screens: ["review"],
   }),
   command({
     action: "thread.remove",

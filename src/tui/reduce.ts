@@ -368,6 +368,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,
   "thread.settle": (state) => state,
+  "thread.settleRead": (state) => state,
   "thread.remove": (state) => state,
   "report.mode": (state) => ({ ...state, reportFull: !state.reportFull }),
   "panel.flip": (state) => ({ ...state, newestFirst: !state.newestFirst, panelIndex: 0 }),
