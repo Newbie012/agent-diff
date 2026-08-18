@@ -31,16 +31,19 @@ describe("the scope pinned above the diff", () => {
     await driver.screen.open({ width: 120, height: 20 })
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["G"])
-    expect(pinned(await driver.screen.getFrame())).toBe(true)
+    const withPin = await driver.screen.getFrame()
+    expect(pinned(withPin), withPin).toBe(true)
 
     // ACT
     await driver.screen.pressKeys(["S"])
 
     // ASSERT
-    expect(pinned(await driver.screen.getFrame())).toBe(false)
+    const without = await driver.screen.getFrame()
+    expect(pinned(without), without).toBe(false)
     await driver.screen.restart({ width: 120, height: 20 })
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["G"])
-    expect(pinned(await driver.screen.getFrame())).toBe(false)
+    const again = await driver.screen.getFrame()
+    expect(pinned(again), again).toBe(false)
   })
 })
