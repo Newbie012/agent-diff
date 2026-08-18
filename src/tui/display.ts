@@ -10,6 +10,11 @@ export type Shape = {
   readonly room: Effect.Effect<number>
   readonly tallest: Effect.Effect<number>
   readonly rail: Effect.Effect<number>
+  readonly at: Effect.Effect<number>
+  readonly block: (
+    row: number,
+    stop: number,
+  ) => Effect.Effect<{ readonly start: number; readonly rows: number }>
   readonly columns: Effect.Effect<number>
   readonly listen: (mouse: Mouse) => Effect.Effect<void>
   readonly light: (
@@ -53,6 +58,8 @@ const shapeOf = (screen: Screen): Shape => ({
   room: Effect.sync(() => screen.noteRoom()),
   tallest: Effect.sync(() => screen.tallestRows()),
   rail: Effect.sync(() => screen.railRows()),
+  at: Effect.sync(() => screen.scrolledAt()),
+  block: (row, stop) => Effect.sync(() => screen.blockAt(row, stop)),
   columns: Effect.sync(() => screen.columns()),
   listen: listenWith(screen),
   light: (path, side, lines) => lightWith(screen, path, side, lines),

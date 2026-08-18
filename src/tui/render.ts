@@ -978,6 +978,14 @@ export class Screen {
     return this.listRoom()
   }
 
+  scrolledAt(): number {
+    return this.lastTop
+  }
+
+  blockAt(row: number, stop: number): { readonly start: number; readonly rows: number } {
+    return this.view.blockAt(row, stop)
+  }
+
   private diffRows(): number {
     const edges = this.diffPane.border === true ? PANE_EDGES : 0
     const pane = this.diffPane.height - edges - this.view.pinRows()

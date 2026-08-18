@@ -398,7 +398,7 @@ export class App {
       if (down !== 0) this.commit(paletteMoved(this.state, down))
       return
     }
-    const moved = down === 0 ? this.measured() : scrolled(this.measured(), down)
+    const moved = down === 0 ? this.measured() : scrolled(this.standing(), down)
     this.commit(across === 0 ? moved : panBy(moved, across))
   }
 
@@ -427,6 +427,11 @@ export class App {
     if (room === this.roomed) return
     this.roomed = room
     Effect.runSync(this.display.paint(this.state))
+  }
+
+  private standing(): TuiState {
+    const held = this.measured()
+    return held.scroll >= 0 ? held : { ...held, scroll: Effect.runSync(this.display.at) }
   }
 
   private measured(): TuiState {
@@ -512,8 +517,8 @@ export class App {
       "comment.prev": () => this.walkComments(-1),
       "file.next": () => this.moveFile(1),
       "file.prev": () => this.moveFile(-1),
-      "cursor.next": () => this.commitSynced("cursor.next"),
-      "cursor.prev": () => this.commitSynced("cursor.prev"),
+      "cursor.next": () => this.stepped(1),
+      "cursor.prev": () => this.stepped(-1),
       "rail.toggle": () => this.commitSynced("rail.toggle"),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
@@ -824,6 +829,25 @@ export class App {
       this.commit(reduce(this.measured(), delta > 0 ? "comment.next" : "comment.prev"))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
+  }
+
+  private stepped(delta: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      if (this.paged(delta)) return
+      yield* this.commitSynced(delta > 0 ? "cursor.next" : "cursor.prev")
+    })
+  }
+
+  private paged(delta: number): boolean {
+    if (this.state.screen !== "review" || this.state.focus !== "diff") return false
+    const state = this.standing()
+    const span = Effect.runSync(this.display.block(state.cursor, state.stop))
+    const height = Math.max(1, state.viewport)
+    if (span.rows <= height) return false
+    const room = delta > 0 ? span.start + span.rows - height : span.start
+    if (delta > 0 ? state.scroll >= room : state.scroll <= room) return false
+    this.commit(scrolled(state, delta * Math.max(1, height - 2)))
+    return true
   }
 
   private commitSynced(action: Action): Work {

@@ -112,6 +112,15 @@ Three screens, and the keys each answers to:
   meantime waited behind it. The colour pass runs beside the review instead, and the file that has
   been left is dropped rather than drawn over the one now on screen.
 
+- **A comment taller than the pane is walked through, not stepped over.** A long answer is one stop
+  for the cursor, and one press used to carry the reader from its first line to the line below its
+  last, with everything between it readable only by wheel. While a stop is taller than the pane the
+  same press moves a page down it, and the press that reaches its end is the one that leaves it.
+
+- **The wheel carries on from where the pane is, not from where the cursor last put it.** The two
+  were counted differently — one in rows of the file, one in rows drawn — so the first notch after
+  a comment scrolled past jumped the pane somewhere else entirely before scrolling at all.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should

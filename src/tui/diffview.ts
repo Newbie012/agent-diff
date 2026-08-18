@@ -440,6 +440,14 @@ export class DiffView {
     return this.tallest()
   }
 
+  blockAt(row: number, stop: number): { readonly start: number; readonly rows: number } {
+    const first = this.display.findIndex((entry) => entry.row === row && entry.stop === stop)
+    if (first === -1) return { start: 0, rows: 0 }
+    let last = first
+    while (this.display[last + 1]?.row === row && this.display[last + 1]?.stop === stop) last += 1
+    return { start: first, rows: last - first + 1 }
+  }
+
   scrollTo(row: number, cursor: number, held = -1): number {
     const highest = Math.max(0, this.tallest() - this.rows())
     if (held >= 0) {
