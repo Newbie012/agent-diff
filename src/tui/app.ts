@@ -223,6 +223,7 @@ export class App {
   private wheel = 0
   private sideways = 0
   private listening: Fiber.Fiber<void> | undefined
+  private lighting: Fiber.Fiber<void, unknown> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -248,6 +249,7 @@ export class App {
     renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
+    renderer.on("destroy", () => this.stopLighting())
     renderer.on("destroy", () => this.stopPainting())
     renderer.on("destroy", () => this.stopConsuming())
     renderer.on("frame", () => this.syncGeometry())
@@ -364,7 +366,12 @@ export class App {
     if (this.consuming === undefined) return Promise.resolve()
     const done = Deferred.makeUnsafe<void>()
     Queue.offerUnsafe(this.intents, Intent.Ping({ done }))
-    return Effect.runPromise(Deferred.await(done))
+    return Effect.runPromise(Effect.andThen(Deferred.await(done), this.stillLighting()))
+  }
+
+  private stillLighting(): Effect.Effect<void> {
+    const fiber = this.lighting
+    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
   }
 
   private onWheel(delta: number): void {
@@ -465,6 +472,12 @@ export class App {
 
   watch(fiber: Fiber.Fiber<void>): void {
     this.consuming = fiber
+  }
+
+  private stopLighting(): void {
+    const fiber = this.lighting
+    this.lighting = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
   }
 
   private stopFading(): void {
@@ -973,10 +986,21 @@ export class App {
       const source = yield* (fileSource(this.repo, branch.branch, asked))
       if (selectedPatch(this.state)?.path !== asked) return
       this.commit(withSource(this.state, source))
-      yield* this.display.light(asked, "new", source)
       const before = yield* (fileBefore(this.repo, branch.branch, asked))
       if (selectedPatch(this.state)?.path !== asked) return
-      if (before.length > 0) yield* this.display.light(asked, "old", before)
+      this.stopLighting()
+      this.lighting = yield* Effect.forkDetach(this.lightUp(asked, source, before))
+    })
+  }
+
+  private lightUp(
+    path: string,
+    source: ReadonlyArray<string>,
+    before: ReadonlyArray<string>,
+  ): Work {
+    return Effect.gen({ self: this }, function* () {
+      yield* this.display.light(path, "new", source)
+      if (before.length > 0) yield* this.display.light(path, "old", before)
     })
   }
 

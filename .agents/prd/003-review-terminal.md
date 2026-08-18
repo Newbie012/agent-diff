@@ -107,6 +107,11 @@ Three screens, and the keys each answers to:
   by line number then land on the wrong words. A row whose source line no longer matches is left
   plain, which reads as unfinished rather than as wrong.
 
+- **Colouring a file waits on nothing the reader is doing.** A grammar is fetched the first time a
+  kind of file is opened, and reading it took as long as it took while every key pressed in the
+  meantime waited behind it. The colour pass runs beside the review instead, and the file that has
+  been left is dropped rather than drawn over the one now on screen.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should
