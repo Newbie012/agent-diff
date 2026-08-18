@@ -31,6 +31,7 @@ export type Action =
   | "pan.left"
   | "rail.toggle"
   | "tree.winnow"
+  | "panel.winnow"
   | "panel.flip"
   | "review.reload"
   | "thread.settle"
@@ -443,8 +444,18 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["review"],
   }),
   command({
+    action: "panel.winnow",
+    panes: ["review"],
+    title: "Hide the threads already settled",
+    category: "Comments",
+    keys: ["f"],
+    screens: ["review"],
+    hint: "hide settled",
+    rank: 3,
+  }),
+  command({
     action: "tree.winnow",
-    panes: ["tree"],
+    panes: ["tree", "diff"],
     title: "Hide the files already reviewed",
     category: "Files",
     keys: ["f"],
@@ -639,9 +650,11 @@ export const glossaryFor = (screen: Screen): ReadonlyArray<Command> =>
       left.category.localeCompare(right.category) || left.title.localeCompare(right.title),
   )
 
-export const actionFor = (screen: Screen, key: string): Action | undefined => {
+export const actionFor = (screen: Screen, key: string, pane?: Pane): Action | undefined => {
   if (takesText(screen) && PRINTABLE_KEY.test(key)) return undefined
-  return commandsFor(screen).find((entry) => entry.keys.includes(key))?.action
+  const found = commandsFor(screen).filter((entry) => entry.keys.includes(key))
+  const here = pane === undefined ? undefined : found.find((entry) => entry.panes.includes(pane))
+  return (here ?? found[0])?.action
 }
 
 export const keyFor = (screen: Screen, action: Action): string =>

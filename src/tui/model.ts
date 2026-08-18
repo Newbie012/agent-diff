@@ -86,6 +86,7 @@ export type TuiState = {
   readonly columns: number
   readonly reportFull: boolean
   readonly hideReviewed: boolean
+  readonly hideSettled: boolean
   readonly newestFirst: boolean
   readonly tallest: number
   readonly scroll: number
@@ -101,6 +102,7 @@ const nothingReviewed = {
   columns: 0,
   reportFull: true,
   hideReviewed: false,
+  hideSettled: false,
   newestFirst: true,
   tallest: 0,
   scroll: -1,
@@ -681,7 +683,10 @@ const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
 }
 
 export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
-  const delivered = state.sent.map((comment) => sentEntry(state, comment))
+  const shown = state.hideSettled
+    ? state.sent.filter((comment) => comment.settled !== true)
+    : state.sent
+  const delivered = shown.map((comment) => sentEntry(state, comment))
   const ordered = (section: PanelSection): ReadonlyArray<PanelEntry> => {
     const found = delivered.filter((entry) => entry.section === section)
     return state.newestFirst ? found.toReversed() : found

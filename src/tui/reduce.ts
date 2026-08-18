@@ -372,6 +372,11 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "report.mode": (state) => ({ ...state, reportFull: !state.reportFull }),
   "panel.flip": (state) => ({ ...state, newestFirst: !state.newestFirst, panelIndex: 0 }),
   "tree.winnow": (state) => ({ ...state, hideReviewed: !state.hideReviewed }),
+  "panel.winnow": (state) => ({
+    ...state,
+    hideSettled: !state.hideSettled,
+    panelIndex: 0,
+  }),
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,

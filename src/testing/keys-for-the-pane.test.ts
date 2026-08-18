@@ -34,7 +34,7 @@ describe("the keys the footer carries", () => {
 
     // ASSERT
     expect(onTheDiff).toContain("v select")
-    expect(onTheDiff).not.toContain("f hide read")
+    expect(onTheDiff).not.toContain("s layers")
     expect(onTheTree).toContain("f hide read")
     expect(onTheTree).not.toContain("v select")
     expect(onTheReview).toContain("D settle read")
