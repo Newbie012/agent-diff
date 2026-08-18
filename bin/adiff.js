@@ -27,8 +27,11 @@ const MESSAGE = [
   "Every other adiff command runs here. Install Node 26 to open the terminal.",
 ].join("\n")
 
+const watched = () => Boolean(process.stdout.isTTY) && Boolean(process.stdin.isTTY)
+
 const drawsTerminal = (argv) => {
   const words = argv.filter((token) => !token.startsWith("--"))
+  if (argv.length === 0) return watched()
   return words[0] === "review" && words[1] === "open"
 }
 

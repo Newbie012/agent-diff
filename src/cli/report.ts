@@ -125,14 +125,18 @@ export const failure = (cause: unknown): { readonly line: string; readonly exit:
   const advice = ADVICE[tag] ?? FALLBACK
   const spread = typeof cause === "object" && cause !== null ? { ...cause } : { detail: String(cause) }
   const { _tag: _ignored, ...detail } = spread as Record<string, unknown>
+  const said =
+    cause instanceof Error && Object.keys(detail).length === 0
+      ? { detail: cause.message }
+      : detail
   return {
     line: JSON.stringify({
       ok: false,
       error: {
-        ...detail,
+        ...said,
         type: tag,
         retriable: advice.retriable,
-        suggestion: sharpen(tag, detail, advice.suggestion),
+        suggestion: sharpen(tag, said, advice.suggestion),
       },
     }),
     exit: advice.exit,
