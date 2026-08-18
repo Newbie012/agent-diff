@@ -15,6 +15,7 @@ export type StoredComment = {
   readonly id: string
   readonly anchor: Anchor
   readonly body: string
+  readonly replyTo?: string
 }
 
 export type StoredAnswer = {

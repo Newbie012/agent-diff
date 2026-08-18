@@ -1,0 +1,56 @@
+import { describe, expect, it } from "@effect/vitest"
+import { TestDriver } from "./index.ts"
+
+const threaded = async (driver: TestDriver, asks = true) => {
+  const branch = await driver.branch.create()
+  const sent = await driver.app.runComment({
+    branch: branch.name,
+    file: "src/api.ts",
+    start: 1,
+    end: 1,
+    body: "why two of these",
+  })
+  const id = (sent.envelope as { batch: { comments: ReadonlyArray<{ id: string }> } }).batch
+    .comments[0]?.id as string
+  await driver.app.runAnswer({
+    worktree: branch.worktree,
+    id,
+    body: "which two did you mean",
+    asks,
+  })
+  await driver.screen.open({ width: 120, height: 30, branch: branch.name })
+  await driver.screen.pressKeys(["n"])
+  return { branch, id }
+}
+
+describe("replying from the terminal", () => {
+  it("opens a box that says which thread is being answered", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await threaded(driver)
+
+    // ACT
+    await driver.screen.pressKeys(["R"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("Reply on src/api.ts")
+  })
+
+  it("sends what was written, and shows it under the answer it followed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await threaded(driver)
+    await driver.screen.pressKeys(["R"])
+
+    // ACT
+    await driver.screen.typeText("the imports")
+    await driver.screen.pressKeys(["ctrl+s"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("the imports")
+    const answer = frame.indexOf("which two did you mean")
+    expect(answer).toBeGreaterThan(-1)
+    expect(frame.indexOf("the imports", answer)).toBeGreaterThan(answer)
+  })
+})

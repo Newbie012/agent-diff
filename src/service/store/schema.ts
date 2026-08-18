@@ -15,6 +15,7 @@ export const StoredComment = Schema.Struct({
   id: Schema.String,
   anchor: Anchor,
   body: Schema.String,
+  replyTo: Schema.optionalKey(Schema.String),
 })
 
 export const StoredAnswer = Schema.Struct({

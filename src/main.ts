@@ -42,6 +42,7 @@ import {
   setLayers,
   showLayers,
   submitComment,
+  submitReply,
   takeComments,
   toggleVouch,
   worktreeOf,
@@ -97,6 +98,18 @@ const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
     end: yield* numeric(options, "end"),
     body: yield* required(options, "body"),
     side: options["side"] === "old" ? "old" : "new",
+    id: options["id"] ?? randomUUID(),
+    at: options["at"] ?? new Date().toISOString(),
+  })
+  yield* answer(options, { batch })
+})
+
+const commentReply = Effect.fn("Main.commentReply")(function* (options: Options) {
+  const batch = yield* submitReply({
+    repo: yield* required(options, "repo"),
+    branch: yield* required(options, "branch"),
+    to: yield* required(options, "to"),
+    body: yield* required(options, "body"),
     id: options["id"] ?? randomUUID(),
     at: options["at"] ?? new Date().toISOString(),
   })
@@ -274,6 +287,7 @@ const routes = {
   "base set": baseSet,
   "base clear": baseClear,
   "comment send": commentSend,
+  "comment reply": commentReply,
   "comment take": commentTake,
   "comment answer": commentAnswer,
   "comment list": commentList,

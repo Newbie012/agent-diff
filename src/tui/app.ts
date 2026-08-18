@@ -31,6 +31,7 @@ import {
   saveWrap,
   saveSticky,
   submitComment,
+  submitReply,
   toggleVouch,
   removeComment,
   settleThread,
@@ -571,6 +572,7 @@ export class App {
       "thread.settle": () => this.settleHere(),
       "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
+      "thread.reply": () => this.replyHere(),
       "selection.copy": () => Effect.sync(() => this.copySelection(false)),
       "search.open": () => this.findSelection(),
       "search.jump": () => this.openMatch(),
@@ -860,6 +862,18 @@ export class App {
     })
   }
 
+  private replyHere(): Work {
+    return Effect.sync(() => {
+      const thread =
+        threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      if (thread?.id === undefined) {
+        this.commit(withNotice(this.state, "no thread here"))
+        return
+      }
+      this.commit({ ...this.state, screen: "compose", draft: "", replyTo: thread.id })
+    })
+  }
+
   private staying(state: TuiState, id: string): TuiState {
     const at = panelIndexOf(state, id)
     const last = Math.max(0, panelEntries(state).length - 1)
@@ -1136,6 +1150,27 @@ export class App {
   }
 
   private send(): Work {
+    return this.state.replyTo === undefined ? this.sendComment() : this.sendReply(this.state.replyTo)
+  }
+
+  private sendReply(to: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined || this.state.draft.length === 0) return
+      yield* submitReply({
+        repo: this.repo,
+        branch: branch.branch,
+        to,
+        body: yield* this.display.written,
+        id: randomUUID(),
+        at: new Date().toISOString(),
+      })
+      const sent = yield* this.loadSent(branch.branch)
+      this.commit(withNotice(withSent({ ...this.state, replyTo: undefined }, sent), "sent to the agent"))
+    })
+  }
+
+  private sendComment(): Work {
     return Effect.gen({ self: this }, function* () {
       const patch = selectedPatch(this.state)
       const branch = selectedBranch(this.state)

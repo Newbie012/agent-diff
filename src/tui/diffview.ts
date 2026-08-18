@@ -33,6 +33,7 @@ export type Note = {
   readonly stale: boolean
   readonly asks: boolean
   readonly answers: ReadonlyArray<string>
+  readonly turns: ReadonlyArray<{ readonly voice: "reviewer" | "agent"; readonly body: string }>
 }
 
 type Display = {
@@ -56,6 +57,7 @@ const WASH: Partial<Record<RowKind, LinePaint>> = {
 
 const NOTE_MIN = 24
 const ANSWER_MARK = "↳"
+const REPLY_MARK = "»"
 const OVERSCAN = 2
 const SIGN_WIDTH = 2
 const SCROLL_ROWS = 1
@@ -679,13 +681,17 @@ const headOf = (note: Note): string => {
   return `${marks().sent} sent${moved}`
 }
 
-const spokenLines = (body: string, room: number): ReadonlyArray<string> => {
+const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {
   const wrapped = wrap(body.replaceAll("\n", " "), Math.max(NOTE_MIN, room - 2))
-  return wrapped.map((text, at) => (at === 0 ? `${ANSWER_MARK} ${text}` : `  ${text}`))
+  return wrapped.map((text, at) => (at === 0 ? `${mark} ${text}` : `  ${text}`))
 }
 
 const answerLines = (note: Note, room: number): ReadonlyArray<string> =>
-  note.answers.flatMap((body) => spokenLines(body, room))
+  note.turns.length > 0
+    ? note.turns.flatMap((turn) =>
+        spokenLines(turn.body, room, turn.voice === "agent" ? ANSWER_MARK : REPLY_MARK),
+      )
+    : note.answers.flatMap((body) => spokenLines(body, room, ANSWER_MARK))
 
 const noteLines = (note: Note, room: number): ReadonlyArray<string> =>
   note.folded
