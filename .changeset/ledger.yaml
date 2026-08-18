@@ -378,6 +378,10 @@
   dir: ""
   intents:
     - writing-back-to-an-answer
+"@eliya-oss/agent-diff@0.1.0-alpha.83":
+  dir: ""
+  intents:
+    - a-thread-that-gained-a-word
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
