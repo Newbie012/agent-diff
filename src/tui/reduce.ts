@@ -148,6 +148,8 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
 const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
+export const railMoved = (state: TuiState, delta: number): TuiState => inRail(state, delta)
+
 const movePanel = (state: TuiState, delta: number): TuiState => ({
   ...state,
   panelIndex: clamp(state.panelIndex + delta, 0, Math.max(0, panelEntries(state).length - 1)),
@@ -366,8 +368,11 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,
   "thread.settle": (state) => state,
+  "thread.settleRead": (state) => state,
   "thread.remove": (state) => state,
   "report.mode": (state) => ({ ...state, reportFull: !state.reportFull }),
+  "panel.flip": (state) => ({ ...state, newestFirst: !state.newestFirst, panelIndex: 0 }),
+  "tree.winnow": (state) => ({ ...state, hideReviewed: !state.hideReviewed }),
   "rail.toggle": toggleRail,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,

@@ -45,7 +45,14 @@ export { searchBranch } from "./search.ts"
 export type { Match } from "./search.ts"
 export { listLayers, setLayers, showLayers } from "./layers.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
-export { answerComment, listThreads, removeComment, restoreComment, settleThread } from "./threads.ts"
+export {
+  answerComment,
+  listThreads,
+  removeComment,
+  restoreComment,
+  settleRead,
+  settleThread,
+} from "./threads.ts"
 export type { Thread, ThreadAnswer } from "./threads.ts"
 export { numeric, optionsFrom, required } from "./parse.ts"
 export { addressing, catalog, commandNames, findCommand, nearestCommand, verbsUnder } from "./catalog.ts"

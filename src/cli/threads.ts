@@ -204,3 +204,30 @@ export const restoreComment = Effect.fn("Cli.restoreComment")(function* (
   yield* store.saveState(worktree.path, { ...current, removed: without(current.removed, id) })
   return { restored: id }
 })
+
+export const settleRead = Effect.fn("Cli.settleRead")(function* (
+  repo: string,
+  branch: string,
+  at: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  const current = yield* store.state(worktree.path)
+  const voiced = yield* store.answers(worktree.path)
+  const answered = (id: string): number => voiced.filter((entry) => entry.comment === id).length
+  const ripe = idsIn(yield* store.inbox(worktree.path)).filter((id) => {
+    const said = answered(id)
+    return (
+      said > 0 &&
+      (current.read[id] ?? 0) >= said &&
+      !Object.hasOwn(current.settled, id) &&
+      !Object.hasOwn(current.removed, id)
+    )
+  })
+  if (ripe.length === 0) return { settled: 0 }
+  yield* store.saveState(worktree.path, {
+    ...current,
+    settled: { ...current.settled, ...Object.fromEntries(ripe.map((id) => [id, at])) },
+  })
+  return { settled: ripe.length }
+})

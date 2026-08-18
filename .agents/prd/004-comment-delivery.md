@@ -147,6 +147,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   back with its answers and its settled state intact. The terminal names the command that undoes it
   as it removes, because a reviewer who has just made something vanish is the one who needs to know
   it is recoverable.
+- **`D` settles every answer the reviewer has already read.** A pass over a long review leaves a
+  dozen points that were answered, read, and are done with — and scrolling past them is the cost of
+  not saying so one at a time. Only a thread that has an answer and has been opened qualifies:
+  settling a point the agent never answered would close a conversation that never happened, and
+  settling one whose answer has not been read would close it unread.
+
 - **An answer stays unread until the reviewer opens it.** Which answers have been read is kept
   beside the comments, not in the session, because the reason to mark one read is to know what is
   left — and a reviewer who reloads the branch to pick up an answer was losing exactly that. The

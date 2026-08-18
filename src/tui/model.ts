@@ -90,6 +90,8 @@ export type TuiState = {
   readonly panelIndex: number
   readonly columns: number
   readonly reportFull: boolean
+  readonly hideReviewed: boolean
+  readonly newestFirst: boolean
   readonly tallest: number
   readonly scroll: number
 }
@@ -101,6 +103,8 @@ const nothingReviewed = {
   panelIndex: 0,
   columns: 0,
   reportFull: true,
+  hideReviewed: false,
+  newestFirst: true,
   tallest: 0,
   scroll: -1,
 }
@@ -341,8 +345,14 @@ export const pullHere = (state: TuiState): string =>
 export const knownToHaveNoPull = (state: TuiState): boolean =>
   state.forge === "answered" && pullHere(state).length === 0
 
+const kept = (state: TuiState, at: number): boolean =>
+  !state.hideReviewed || at === state.patchIndex || !isReviewed(state, at)
+
 export const treeOf = (state: TuiState): Tree =>
-  buildTree(state.patches.map((patch) => patch.path))
+  buildTree(state.patches.map((patch, at) => (kept(state, at) ? patch.path : "")))
+
+export const reviewedCountIn = (state: TuiState): number =>
+  state.patches.filter((_, at) => isReviewed(state, at)).length
 
 export const CROWDED = 8
 
@@ -682,11 +692,11 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
     (comment): PanelEntry => ({ section: "staged", comment, fresh: false, unread: 0 }),
   )
   const delivered = state.sent.map((comment) => sentEntry(state, comment))
-  return [
-    ...staged,
-    ...delivered.filter((entry) => entry.section === "with"),
-    ...delivered.filter((entry) => entry.section === "answered"),
-  ]
+  const ordered = (section: PanelSection): ReadonlyArray<PanelEntry> => {
+    const found = delivered.filter((entry) => entry.section === section)
+    return state.newestFirst ? found.toReversed() : found
+  }
+  return [...staged, ...ordered("with"), ...ordered("answered")]
 }
 
 export const panelEntry = (state: TuiState): PanelEntry | undefined =>

@@ -29,6 +29,7 @@ import {
   selectedLineCount,
   snippetOf,
   reviewedCount,
+  reviewedCountIn,
   pullHere,
   selectedBranch,
   selectedPatch,
@@ -805,6 +806,7 @@ export type Mouse = {
   readonly onPan: (delta: number) => void
   readonly onDrag: (from: number, to: number, done: boolean) => void
   readonly onChip: (key: string) => void
+  readonly onRail: (delta: number) => void
 }
 
 export class Screen {
@@ -904,6 +906,14 @@ export class Screen {
     this.assemble(renderer)
   }
 
+  private wheelOnRail(box: BoxRenderable | TextRenderable): void {
+    box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
+      const way = event.scroll?.direction
+      if (way !== "up" && way !== "down") return
+      this.mouse?.onRail(way === "down" ? 1 : -1)
+    }
+  }
+
   private wheelOnSheet(box: BoxRenderable): void {
     box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
       const way = event.scroll?.direction
@@ -916,6 +926,8 @@ export class Screen {
     this.mouse = mouse
     this.wheelOnSheet(this.keys)
     this.wheelOnSheet(this.palette)
+    this.wheelOnRail(this.listPane)
+    this.wheelOnRail(this.list)
     this.view.listenTo({
       scroll: (delta) => this.mouse?.onScroll(delta),
       pan: (delta) => this.mouse?.onPan(delta),
@@ -975,6 +987,7 @@ export class Screen {
       layers: state.layers.length,
       onThread: state.stop > 0 || threadChosen(state) !== undefined,
       selecting: state.selecting,
+      reviewed: reviewedCountIn(state),
       pull: pullHere(state).length > 0,
     })
     this.header.content = this.headerText(state)

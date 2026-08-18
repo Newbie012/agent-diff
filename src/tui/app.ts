@@ -33,6 +33,7 @@ import {
   toggleVouch,
   removeComment,
   settleThread,
+  settleRead,
 } from "../cli/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
@@ -79,6 +80,7 @@ import {
   paletteClosed,
   paletteMoved,
   reduce,
+  railMoved,
   scrolled,
   panBy,
   pasted,
@@ -239,6 +241,7 @@ export class App {
         onPan: (delta) => this.onPanWheel(delta),
         onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
         onChip: (key) => this.dispatchTask(this.onKey(asKey(key))),
+        onRail: (delta) => this.dispatchTask(this.rolled(delta)),
       }),
     )
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
@@ -496,6 +499,7 @@ export class App {
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
       "thread.settle": () => this.settleHere(),
+      "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
       "selection.copy": () => Effect.sync(() => this.copySelection()),
       "search.open": () => this.findSelection(),
@@ -713,6 +717,21 @@ export class App {
     })
   }
 
+  private settleWhatIsRead(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      const done = yield* settleRead(this.repo, branch.branch, new Date().toISOString())
+      if (done.settled === 0) {
+        this.commit(withNotice(this.state, "nothing read is waiting to be settled"))
+        return
+      }
+      const sent = yield* this.loadSent(branch.branch)
+      const said = `settled ${done.settled} read comment${done.settled === 1 ? "" : "s"}`
+      this.commit(withNotice(withSent(this.state, sent), said))
+    })
+  }
+
   private settleHere(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
@@ -792,6 +811,14 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
       this.commit(reduce(this.measured(), action))
+      if (this.state.patchIndex !== was) yield* this.turnedTo()
+    })
+  }
+
+  private rolled(delta: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      const was = this.state.patchIndex
+      this.commit(railMoved(this.measured(), delta))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
   }
