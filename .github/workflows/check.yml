@@ -12,10 +12,9 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-
 
       - uses: actions/setup-node@v7
         with:
@@ -31,7 +30,25 @@ jobs:
 
       - run: pnpm build
 
-      - run: pnpm test
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - run: npm install -g --allow-scripts=pnpm pnpm@12.0.0-beta.3
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm vitest run --shard=${{ matrix.shard }}/3
         env:
           NODE_OPTIONS: --experimental-ffi
 
