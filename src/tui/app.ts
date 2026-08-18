@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import { appendFileSync } from "node:fs"
 import { randomUUID } from "node:crypto"
 import { platform } from "node:os"
 import { realpath } from "node:fs/promises"
@@ -367,6 +368,7 @@ export class App {
   }
 
   private dispatch(key: KeyEvent): void {
+    if (this.renderer.hasSelection) this.renderer.clearSelection()
     Queue.offerUnsafe(this.intents, Intent.Key({ key }))
   }
 
@@ -676,6 +678,11 @@ export class App {
 
   private copyDragged(): void {
     const taken = this.renderer.getSelection()?.getSelectedText() ?? ""
+    const where = process.env["ADIFF_TRACE"]
+    if (where !== undefined) {
+      const holder = this.renderer.getSelectionContainer()?.id ?? "none"
+      appendFileSync(where, `${this.state.screen} in=${holder} ${JSON.stringify(taken).slice(0, 70)}\n`)
+    }
     if (taken.trim().length === 0) return
     copyToClipboard(taken)
     const lines = taken.split("\n").length

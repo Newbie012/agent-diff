@@ -1,4 +1,4 @@
-import { CodeRenderable } from "@opentui/core"
+import { CodeRenderable, Renderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { GitLive } from "../../../service/git/index.ts"
@@ -256,6 +256,13 @@ export class ScreenTestDriver {
     await this.app?.settled()
     await setup.waitForVisualIdle()
     this.guard()
+  }
+
+  async selectableAt(x: number, y: number): Promise<boolean> {
+    const setup = this.active()
+    const at = setup.renderer.hitTest(x, y)
+    const found = Renderable.renderablesByNumber.get(at)
+    return found?.selectable === true
   }
 
   async pressEscape(): Promise<void> {
