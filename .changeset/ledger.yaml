@@ -333,6 +333,10 @@
   intents:
     - a-shorter-readme
     - everything-is-copyable
+"@eliya-oss/agent-diff@0.1.0-alpha.74":
+  dir: ""
+  intents:
+    - a-box-that-behaves
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
