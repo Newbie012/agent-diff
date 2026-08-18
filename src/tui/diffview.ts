@@ -11,6 +11,7 @@ import {
 import { Option } from "effect"
 import { lineOn, type Patch, type Row, type RowKind } from "../domain/patch/index.ts"
 import { marks } from "./marks.ts"
+import type { Picked } from "./model.ts"
 import { palette, syntaxTheme } from "./theme.ts"
 
 export type LinePaint = { readonly gutter: RGBA; readonly content: RGBA }
@@ -63,6 +64,8 @@ const PAN_COLUMNS = 8
 type Wheel = {
   readonly scroll?: { readonly direction?: string; readonly delta?: number }
   readonly modifiers?: { readonly shift?: boolean }
+  readonly preventDefault?: () => void
+  readonly stopPropagation?: () => void
 }
 
 type Wheeled = {
@@ -79,12 +82,17 @@ const WAYS: Readonly<Record<string, { readonly step: number; readonly across: bo
 
 const notchesIn = (event: Wheel): number => Math.max(1, event.scroll?.delta ?? 1)
 
+const takenOver = (event: Wheel): void => {
+  event.preventDefault?.()
+  event.stopPropagation?.()
+}
+
 const wheelTo = (event: Wheel, handlers: Wheeled): void => {
   const way = WAYS[event.scroll?.direction ?? ""]
   if (way === undefined) return
+  takenOver(event)
   const step = way.step * notchesIn(event)
-  const across = way.across || event.modifiers?.shift === true
-  if (across) handlers.pan(step * PAN_COLUMNS)
+  if (way.across || event.modifiers?.shift === true) handlers.pan(step * PAN_COLUMNS)
   else handlers.scroll(step * SCROLL_ROWS)
 }
 
@@ -116,6 +124,7 @@ export class DiffView {
   private fitted = 1
   private wrapped = false
   private held = 0
+  private picked: Picked | undefined
 
   constructor(renderer: CliRenderer) {
     this.code = new CodeRenderable(renderer, {
@@ -206,16 +215,17 @@ export class DiffView {
   listenTo(handlers: {
     readonly scroll: (delta: number) => void
     readonly pan: (delta: number) => void
-    readonly down: (y: number) => void
-    readonly drag: (y: number) => void
-    readonly dragEnd: (y: number) => void
+    readonly down: (y: number, x: number) => void
+    readonly drag: (y: number, x: number) => void
+    readonly dragEnd: (y: number, x: number) => void
   }): void {
-    this.numbers.onMouseScroll = (event: Wheel) => wheelTo(event, handlers)
     for (const target of [this.numbers, this.code]) {
-      target.onMouseDown = (event: { y: number }) => handlers.down(event.y)
-      target.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)
-      target.onMouseDragEnd = (event: { y: number }) => handlers.dragEnd(event.y)
-      target.onMouseUp = (event: { y: number }) => handlers.dragEnd(event.y)
+      target.onMouseScroll = (event: Wheel) => wheelTo(event, handlers)
+      target.onMouseDown = (event: { y: number; x: number }) => handlers.down(event.y, event.x)
+      target.onMouseDrag = (event: { y: number; x: number }) => handlers.drag(event.y, event.x)
+      target.onMouseDragEnd = (event: { y: number; x: number }) =>
+        handlers.dragEnd(event.y, event.x)
+      target.onMouseUp = (event: { y: number; x: number }) => handlers.dragEnd(event.y, event.x)
     }
   }
 
@@ -321,8 +331,24 @@ export class DiffView {
     return Math.max(0, this.code.x - this.numbers.x) + SIGN_WIDTH
   }
 
+  private pickedSpans(): ReadonlyArray<Span> {
+    const picked = this.picked
+    if (picked === undefined) return NO_SPANS
+    let at = 0
+    for (const entry of this.display) {
+      const width = heldAt(entry, this.held).length
+      if (entry.row === picked.row && entry.stop === 0 && !isChrome(entry)) {
+        const from = Math.min(picked.from, width)
+        const to = Math.min(picked.to, width)
+        return from >= to ? NO_SPANS : [[at + from, at + to, "picked"]]
+      }
+      at += width + 1
+    }
+    return NO_SPANS
+  }
+
   private feed(): void {
-    const spans = noteSpans(this.display, this.held)
+    const spans = [...noteSpans(this.display, this.held), ...this.pickedSpans()]
     this.code.content = textAt(this.display, this.held, this.hidden())
     this.code.onHighlight = (highlights) => {
       const own = this.ownSpans()
@@ -447,6 +473,17 @@ export class DiffView {
     return this.visualOfRow(row)
   }
 
+  pick(picked: Picked | undefined): void {
+    if (alike(this.picked, picked)) return
+    this.picked = picked
+    this.feed()
+    this.code.requestRender()
+  }
+
+  columnAt(x: number): number {
+    return Math.max(0, x - this.code.x + this.held)
+  }
+
   blockAt(row: number, stop: number): { readonly start: number; readonly rows: number } {
     const first = this.display.findIndex((entry) => entry.row === row && entry.stop === stop)
     if (first === -1) return { start: 0, rows: 0 }
@@ -520,6 +557,14 @@ const groupOf = (entry: Display): string | undefined => {
 }
 
 const isChrome = (entry: Display): boolean => entry.comment || entry.gap || entry.prose
+
+const alike = (left: Picked | undefined, right: Picked | undefined): boolean =>
+  left === right ||
+  (left !== undefined &&
+    right !== undefined &&
+    left.row === right.row &&
+    left.from === right.from &&
+    left.to === right.to)
 
 const heldAt = (entry: Display, pan: number): string =>
   isChrome(entry) && pan > 0 ? `${" ".repeat(pan)}${entry.text}` : entry.text

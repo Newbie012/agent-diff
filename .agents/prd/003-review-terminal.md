@@ -138,6 +138,24 @@ Three screens, and the keys each answers to:
 - **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
   the code and ended there reached nothing, so the copy that should have followed it never ran.
 
+- **A drag inside one line copies the characters it covered.** Selecting part of a line is what a
+  reader does to take a name out of the diff, and copying the whole line instead is not the same
+  thing. The covered characters are washed while the drag holds, and what lands on the clipboard is
+  exactly what was washed.
+
+- **The wheel over the diff belongs to the review, not to the pane underneath.** The text pane
+  scrolls itself when it is handed a wheel event, which moved what was drawn without the review
+  knowing, so the next keystroke put the view back where the review still believed it was. The
+  review takes the event and stops it there, and what is drawn and what is believed stay one thing.
+
+- **The scope pinned above the diff can be turned off, and stays off.** It costs rows on a short
+  terminal and moves the diff whenever the scope changes, which is not what everyone wants while
+  reading. `S` toggles it and the choice is kept with the other settings.
+
+- **Nothing typed into a panel moves the diff behind it.** The panel grows as it is written into,
+  which resized the diff, which changed the pinned scope, which resized it again. While a screen is
+  for typing, the diff behind it holds the rows it had.
+
 - **Dragging over lines copies them when the drag ends.** Selecting text in a terminal that draws
   its own panes gives the reader nothing, and the habit is older than any key this review offers.
   The rows stay selected afterwards, so the drag can be followed by a comment on the same lines.

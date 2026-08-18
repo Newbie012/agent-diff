@@ -160,6 +160,10 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   open forever. Opening it from the panel counts as reading it even when there is nowhere to jump
   to, and settling or removing it marks whatever it was answered with as read.
 
+- **Settling a thread from the panel leaves the cursor on that thread.** Settling moves it from what
+  the agent holds to what it has answered, and a cursor that is only a position in a list then lands
+  on whichever thread has taken its place. The cursor follows the thread it acted on.
+
 - **An answer stays unread until the reviewer opens it.** Which answers have been read is kept
   beside the comments, not in the session, because the reason to mark one read is to know what is
   left — and a reviewer who reloads the branch to pick up an answer was losing exactly that. The

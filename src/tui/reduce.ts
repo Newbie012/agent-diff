@@ -42,7 +42,8 @@ const lastRow = (patch: Patch | undefined): number => Math.max(0, (patch?.rows.l
 
 const rowsIn = (state: TuiState): number => selectedPatch(state)?.rows.length ?? 0
 
-const withCursorVisible = (state: TuiState): TuiState => {
+const withCursorVisible = (given: TuiState): TuiState => {
+  const state = given.picked === undefined ? given : { ...given, picked: undefined }
   const height = Math.max(1, state.viewport)
   const highest = Math.max(0, rowsIn(state) - height)
   const top = state.cursor < state.top ? state.cursor : state.cursor >= state.top + height ? state.cursor - height + 1 : state.top
@@ -75,9 +76,23 @@ export const scrolled = (state: TuiState, delta: number): TuiState => {
 
 export const draggedTo = (state: TuiState, from: number, to: number): TuiState => ({
   ...state,
+  picked: undefined,
   selecting: true,
   anchorRow: clamp(from, 0, lastRow(selectedPatch(state))),
   cursor: clamp(to, 0, lastRow(selectedPatch(state))),
+})
+
+export const pickedIn = (
+  state: TuiState,
+  row: number,
+  from: number,
+  to: number,
+): TuiState => ({
+  ...state,
+  selecting: false,
+  anchorRow: clamp(row, 0, lastRow(selectedPatch(state))),
+  cursor: clamp(row, 0, lastRow(selectedPatch(state))),
+  picked: { row, from: Math.min(from, to), to: Math.max(from, to) },
 })
 
 const atRow = (state: TuiState, row: number): TuiState =>
@@ -363,6 +378,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "panel.toggle": togglePanel,
   "nav.zoom": zoom,
   "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap, pan: 0 }),
+  "sticky.toggle": (state) => ({ ...state, sticky: !state.sticky }),
   "pan.right": (state) => panned(state, PAN_STEP),
   "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,

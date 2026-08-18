@@ -27,6 +27,7 @@ export type Action =
   | "panel.toggle"
   | "nav.zoom"
   | "wrap.toggle"
+  | "sticky.toggle"
   | "pan.right"
   | "pan.left"
   | "rail.toggle"
@@ -364,6 +365,14 @@ export const commands: ReadonlyArray<Command> = [
     category: "Selecting",
     title: "Grow the selection from its other end",
     keys: ["o"],
+    screens: ["review"],
+  }),
+  command({
+    action: "sticky.toggle",
+    panes: ["diff"],
+    title: "Show or hide the scope above the diff",
+    category: "Reading",
+    keys: ["S"],
     screens: ["review"],
   }),
   command({

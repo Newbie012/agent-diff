@@ -26,6 +26,7 @@ import {
   reviewProgress,
   saveReport,
   saveWrap,
+  saveSticky,
   submitComment,
   toggleVouch,
   removeComment,
@@ -49,12 +50,16 @@ import {
   contextToggled,
   selectedBranch,
   selectedPatch,
+  pickedText,
   selectedLines,
+  type Spot,
   searchTerm,
   matchHere,
   selectionRange,
   spokenSince,
   panelEntry,
+  panelEntries,
+  panelIndexOf,
   threadAtRow,
   threadChosen,
   threadAtStop,
@@ -72,6 +77,7 @@ import {
   caretMoved,
   deleted,
   draggedTo,
+  pickedIn,
   gapOpened,
   paletteChoice,
   paletteClosed,
@@ -119,6 +125,7 @@ export type AppOptions = {
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
   readonly wrap?: boolean | undefined
+  readonly sticky?: boolean | undefined
 }
 
 const PRINTABLE = /^[\S ]$/
@@ -225,6 +232,7 @@ export class App {
   private readonly sessionPath: string | undefined
   private remembered = ""
   private wrapKept = false
+  private stickyKept = true
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
   private readonly began = Date.now()
@@ -240,6 +248,7 @@ export class App {
     this.noticeMs = options.noticeMs ?? NOTICE_MS
     this.sessionPath = options.sessionPath
     this.wrapKept = options.wrap === true
+    this.stickyKept = options.sticky !== false
     this.held = options.state
     this.display = options.display
     this.painting = options.painting
@@ -254,6 +263,7 @@ export class App {
         onRail: (delta) => this.dispatchTask(this.rolled(delta)),
       }),
     )
+    renderer.on("selection", () => this.copyDragged())
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
     renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
     renderer.on("destroy", () => this.stopWatching())
@@ -339,6 +349,12 @@ export class App {
     if (next.wrap === this.wrapKept) return
     this.wrapKept = next.wrap
     this.dispatchTask(Effect.asVoid(saveWrap(next.wrap)))
+  }
+
+  private rememberSticky(next: TuiState): void {
+    if (next.sticky === this.stickyKept) return
+    this.stickyKept = next.sticky
+    this.dispatchTask(Effect.asVoid(saveSticky(next.sticky)))
   }
 
   private rememberPlace(next: TuiState): void {
@@ -465,6 +481,7 @@ export class App {
     if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
     this.rememberWrap(next)
+    this.rememberSticky(next)
     this.write(next)
     if (appeared) this.fade()
   }
@@ -648,9 +665,22 @@ export class App {
     })
   }
 
-  private dragged(from: number, to: number, done: boolean): void {
-    this.commit(draggedTo(this.measured(), from, to))
-    if (done && from !== to) this.copySelection(true)
+  private dragged(from: Spot, to: Spot, done: boolean): void {
+    const along = from.row === to.row && from.column !== to.column
+    const held = this.measured()
+    this.commit(
+      along ? pickedIn(held, from.row, from.column, to.column) : draggedTo(held, from.row, to.row),
+    )
+    if (done && (along || from.row !== to.row)) this.copySelection(true)
+  }
+
+  private copyDragged(): void {
+    const taken = this.renderer.getSelection()?.getSelectedText() ?? ""
+    if (taken.trim().length === 0) return
+    copyToClipboard(taken)
+    const lines = taken.split("\n").length
+    const said = lines === 1 ? `${taken.length} characters copied` : `${lines} lines copied`
+    this.commit(withNoticeHere(this.state, said))
   }
 
   private copySelection(keep: boolean): void {
@@ -659,6 +689,12 @@ export class App {
     if (thread !== undefined) {
       copyToClipboard(`${thread.body}\n`)
       this.commit(said(this.state, "comment copied"))
+      return
+    }
+    const taken = pickedText(this.state)
+    if (taken !== undefined) {
+      copyToClipboard(taken)
+      this.commit(said(this.state, `${taken.length} characters copied`))
       return
     }
     const lines = this.state.selecting ? selectedLines(this.state) : lineUnder(this.state)
@@ -785,8 +821,14 @@ export class App {
       yield* (settleThread(this.repo, branch.branch, id, new Date().toISOString()))
       const sent = yield* this.loadSent(branch.branch)
       const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
-      this.commit(withNotice(held, "settled"))
+      this.commit(withNotice(this.staying(held, id), "settled"))
     })
+  }
+
+  private staying(state: TuiState, id: string): TuiState {
+    const at = panelIndexOf(state, id)
+    const last = Math.max(0, panelEntries(state).length - 1)
+    return { ...state, panelIndex: Math.min(at, last) }
   }
 
   private removeHere(): Work {
@@ -1079,6 +1121,7 @@ export class App {
 
 const turnedOver = (state: TuiState): TuiState => ({
   ...state,
+  picked: undefined,
   railScroll: -1,
   scroll: -1,
   selecting: false,
@@ -1120,9 +1163,10 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const store = yield* Store
   const settings = yield* store.settings
   const wrap = settings.wrap === true
+  const sticky = settings.sticky !== false
   const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
   const waiting = yield* upgradeHint
-  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap, waiting })
+  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap, sticky, waiting })
   const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )
@@ -1137,6 +1181,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
     sessionPath,
     resume: Option.getOrUndefined(resume),
     wrap,
+    sticky,
     intents,
   })
   app.watch(yield* Effect.forkDetach(app.consume()))

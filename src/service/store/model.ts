@@ -52,6 +52,7 @@ export const emptyBranchState: BranchState = {
 
 export type Settings = {
   readonly wrap?: boolean
+  readonly sticky?: boolean
 }
 
 export type UpgradeCheck = {
