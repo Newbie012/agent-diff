@@ -48,6 +48,8 @@ export type Action =
   | "match.prev"
   | "selection.copy"
   | "select.start"
+  | "select.grow"
+  | "select.shrink"
   | "select.hunk"
   | "select.swap"
   | "compose.open"
@@ -311,6 +313,24 @@ export const commands: ReadonlyArray<Command> = [
     category: "Branches",
     keys: ["G"],
     screens: ["branches"],
+  }),
+  command({
+    action: "select.grow",
+    panes: ["diff"],
+    title: "Take the line below into the selection",
+    category: "Selecting",
+    keys: ["shift+down"],
+    screens: ["review"],
+    listed: false,
+  }),
+  command({
+    action: "select.shrink",
+    panes: ["diff"],
+    title: "Take the line above into the selection",
+    category: "Selecting",
+    keys: ["shift+up"],
+    screens: ["review"],
+    listed: false,
   }),
   command({
     action: "select.hunk",

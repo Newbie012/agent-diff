@@ -40,7 +40,12 @@ import {
   WHOLE_FILE,
   type StagedComment,
   proseFor,
-  drafted,
+  caretAt,
+  composeBox,
+  composeRoom as composeText,
+  caretColumn,
+  caretRow,
+  laidDraft,
   panelEntries,
   panelShown,
   reviewWidth,
@@ -60,8 +65,6 @@ const FRAME_PAD = 1
 const MODAL_ROOM = 8
 const COMPOSE_CHROME = 3
 const COMPOSE_ACTION_ROWS = 2
-const COMPOSE_PAD = 5
-const COMPOSE_MIN_TEXT = 8
 
 const reportActions = (full: boolean): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^t")} ${fg(palette.muted)(full ? "sending everything" : "sending the least")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
@@ -120,9 +123,31 @@ const panelRows = (height: number, part: number): number =>
 
 type ComposeRoom = { readonly box: number; readonly text: number }
 
-const composeRoom = (width: number): ComposeRoom => {
-  const box = modalWidth(width, COMPOSE_WIDTH)
-  return { box, text: Math.max(COMPOSE_MIN_TEXT, box - COMPOSE_PAD) }
+const composeRoom = (width: number): ComposeRoom => ({
+  box: composeBox(width),
+  text: composeText(width),
+})
+
+const CARET_ROOM = 1
+
+const draftText = (state: TuiState, room: number): { rows: ReadonlyArray<TextChunk>; height: number } => {
+  const rows = laidDraft(state.draft, room)
+  const at = caretAt(state)
+  const here = caretRow(rows, at)
+  const column = caretColumn(rows, at)
+  const drawn = rows.flatMap((row, index) => {
+    const tail = index === rows.length - 1 ? "" : "\n"
+    if (index !== here) return [fg(palette.ink)(`${row.text}${tail}`)]
+    const before = row.text.slice(0, column)
+    const under = row.text.slice(column, column + CARET_ROOM)
+    const after = row.text.slice(column + CARET_ROOM)
+    return [
+      fg(palette.ink)(before),
+      bg(palette.ink)(fg(palette.panel)(under.length === 0 ? " " : under)),
+      fg(palette.ink)(`${after}${tail}`),
+    ]
+  })
+  return { rows: drawn, height: rows.length }
 }
 
 const laidOut = (lines: ReadonlyArray<string>, room: number): ReadonlyArray<string> =>
@@ -1395,20 +1420,18 @@ export class Screen {
     this.compose.visible = state.screen === "compose" || state.screen === "report"
     if (state.screen !== "report") return
     const room = composeRoom(this.renderer.width)
-    const lines = laidOut(
-      [
-        state.reportFull
-          ? "What went wrong? Everything on screen is attached for you."
-          : "What went wrong? Only what you type is sent.",
-        "",
-        drafted(state),
-      ],
-      room.text,
-    )
+    const asked = state.reportFull
+      ? "What went wrong? Everything on screen is attached for you."
+      : "What went wrong? Only what you type is sent."
+    const written = draftText(state, room.text)
+    const lead = laidOut([asked, ""], room.text)
     this.composeTitle.content = "Report a bug"
-    this.composeBody.content = lines.join("\n")
+    this.composeBody.content = new StyledText([
+      ...lead.map((line) => fg(palette.muted)(`${line}\n`)),
+      ...written.rows,
+    ])
     this.composeActions.content = reportActions(state.reportFull)
-    this.compose.height = lines.length + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
+    this.compose.height = lead.length + written.height + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.width = room.box
     this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))
     this.compose.top = Math.max(2, Math.floor(this.renderer.height / 4))
@@ -1470,12 +1493,14 @@ export class Screen {
     const more = selectedLineCount(state) - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
     const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
-    const written = laidOut(drafted(state).split("\n"), room.text)
-    const lines = [...quoted, "", ...written]
+    const written = draftText(state, room.text)
     this.composeTitle.content = clip(composeTarget(state), room.text)
-    this.composeBody.content = lines.join("\n")
+    this.composeBody.content = new StyledText([
+      ...[...quoted, ""].map((line) => fg(palette.muted)(`${line}\n`)),
+      ...written.rows,
+    ])
     this.composeActions.content = actionsText()
-    const height = lines.length + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
+    const height = quoted.length + 1 + written.height + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.height = height
     this.compose.width = room.box
     this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))

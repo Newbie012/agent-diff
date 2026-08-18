@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
+import { palette } from "../tui/index.ts"
 
 const oneFile = {
   name: "add-teammate-invitations",
@@ -33,7 +34,8 @@ describe("writing a comment", () => {
     await driver.screen.pressKeys(typing("el"))
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("hel▌lo")
+    expect(await driver.screen.getFrame()).toContain("hello")
+    expect(await driver.screen.paintedWith(palette.ink)).toContain("l")
   })
 
   it("deletes behind the caret rather than at the end", async () => {
@@ -46,7 +48,8 @@ describe("writing a comment", () => {
     await driver.screen.pressKeys(["ARROW_LEFT", "ARROW_LEFT", "BACKSPACE"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("a▌bc")
+    expect(await driver.screen.getFrame()).toContain("abc")
+    expect(await driver.screen.paintedWith(palette.ink)).toContain("b")
   })
 
   it("moves a whole word at a time", async () => {
@@ -60,7 +63,8 @@ describe("writing a comment", () => {
     await driver.screen.pressKeys(typing("first "))
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("first ▌second")
+    expect(await driver.screen.getFrame()).toContain("first second")
+    expect(await driver.screen.paintedWith(palette.ink)).toContain("s")
   })
 
   it("sends what was written, not the caret", async () => {
@@ -76,6 +80,6 @@ describe("writing a comment", () => {
 
     // ASSERT
     const frame = await driver.screen.waitForFrame("hello")
-    expect(frame).not.toContain("hel▌lo")
+    expect(frame).not.toContain("▌")
   })
 })

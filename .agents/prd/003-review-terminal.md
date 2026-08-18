@@ -138,6 +138,20 @@ Three screens, and the keys each answers to:
 - **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
   the code and ended there reached nothing, so the copy that should have followed it never ran.
 
+- **The compose box behaves the way a text box behaves.** It carried a caret that was a character
+  spliced into the draft, so every move shifted the words around it, and the wrap it drew collapsed
+  runs of spaces the reviewer had typed. The draft is laid out as it was written, and the caret is
+  the cell it stands on rather than a character between two others.
+
+- **The arrows walk the box the way they walk any other.** Up and down move a line at a time through
+  the wrap, not through a list somewhere else. `option` with left or right moves a word, `cmd` moves
+  to the ends of the line, and `cmd` with up or down moves to the ends of the draft, which is what
+  the same keys do in every box on a Mac.
+
+- **`shift` with an arrow grows the selection from the cursor.** Selecting lines to comment on took
+  `v` first, which is a thing to know before it is a thing to do. Holding shift is the habit every
+  editor teaches, and what it selects is what `c` then comments on.
+
 - **Every character on the screen is text that can be selected.** A panel drawn by a list widget
   paints rows the terminal cannot hand back, so a title, a path or a command in one could not be
   copied while everything around it could. The palette, the sheet of keys and the search results are
