@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process"
-import { appendFileSync } from "node:fs"
 import { randomUUID } from "node:crypto"
 import { platform } from "node:os"
 import { realpath } from "node:fs/promises"
@@ -179,30 +178,39 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
-const byWord = (key: KeyEvent): boolean => key.option || key.ctrl
+const byLine = (key: KeyEvent): boolean => key.super === true
+
+const byWord = (key: KeyEvent): boolean => !byLine(key) && (key.option || key.meta || key.ctrl)
 
 const WORD_STEP: Readonly<Record<string, number>> = { b: -1, f: 1 }
 
 const caretSideways = (state: TuiState, key: KeyEvent): TuiState | undefined => {
   const step = key.name === "left" ? -1 : key.name === "right" ? 1 : 0
   if (step === 0) return undefined
-  if (key.meta) return caretHomed(state, step > 0 ? "end" : "start")
-  return key.option || key.ctrl ? caretJumped(state, step) : caretMoved(state, step)
+  if (byLine(key)) return caretHomed(state, step > 0 ? "end" : "start")
+  return byWord(key) ? caretJumped(state, step) : caretMoved(state, step)
 }
+
+const EDGE_KEYS: Readonly<Record<string, "start" | "end">> = { home: "start", end: "end" }
+
+const EMACS_EDGE: Readonly<Record<string, "start" | "end">> = { a: "start", e: "end" }
+
+const edgeFor = (key: KeyEvent): "start" | "end" | undefined =>
+  EDGE_KEYS[key.name] ?? (key.ctrl ? EMACS_EDGE[key.name] : undefined)
 
 const caretFor = (state: TuiState, key: KeyEvent): TuiState | undefined => {
   const sideways = caretSideways(state, key)
   if (sideways !== undefined) return sideways
   const word = byWord(key) ? WORD_STEP[key.name] : undefined
   if (word !== undefined) return caretJumped(state, word)
-  if (key.name === "home") return caretHomed(state, "start")
-  if (key.name === "end") return caretHomed(state, "end")
+  const edge = edgeFor(key)
+  if (edge !== undefined) return caretHomed(state, edge)
   return key.name === "delete" ? deleted(state) : undefined
 }
 
 const erasedBy = (state: TuiState, key: KeyEvent): TuiState => {
-  if (key.meta || key.ctrl) return lineBackspaced(state)
-  return key.option ? wordBackspaced(state) : backspaced(state)
+  if (byLine(key)) return lineBackspaced(state)
+  return byWord(key) ? wordBackspaced(state) : backspaced(state)
 }
 
 const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
@@ -239,6 +247,7 @@ export class App {
   private remembered = ""
   private wrapKept = false
   private stickyKept = true
+  private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
   private readonly began = Date.now()
@@ -271,6 +280,7 @@ export class App {
     )
     renderer.on("selection", () => this.copyDragged())
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
+    renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
     renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
@@ -373,8 +383,18 @@ export class App {
   }
 
   private dispatch(key: KeyEvent): void {
+    if (key.eventType === "release") {
+      this.letGo(key)
+      return
+    }
     if (this.renderer.hasSelection) this.renderer.clearSelection()
     Queue.offerUnsafe(this.intents, Intent.Key({ key }))
+  }
+
+  private letGo(key: KeyEvent): void {
+    if (!key.name.endsWith("shift") || !this.grewWithShift) return
+    this.grewWithShift = false
+    Queue.offerUnsafe(this.intents, Intent.Key({ key: asKey("c") }))
   }
 
   private dispatchPaste(event: PasteEvent): void {
@@ -599,6 +619,7 @@ export class App {
   private onKey(key: KeyEvent, forced?: Action): Work {
     return Effect.gen({ self: this }, function* () {
       const action = forced ?? actionFor(this.state.screen, keyName(key), this.state.focus)
+      this.grewWithShift = action === "select.grow" || action === "select.shrink"
       this.remember(action, key)
       if (action === undefined) {
         this.onText(key)
@@ -613,6 +634,11 @@ export class App {
     })
   }
 
+  private typedIn(key: KeyEvent): boolean {
+    if (key.ctrl || key.option || key.meta || key.super === true) return false
+    return PRINTABLE.test(key.sequence)
+  }
+
   private onText(key: KeyEvent): void {
     if (!takesText(this.state.screen)) return
     if (key.name === "backspace") {
@@ -624,13 +650,13 @@ export class App {
       return
     }
     if (this.onCaret(key)) return
-    if (PRINTABLE.test(key.sequence)) this.commit(typed(this.state, key.sequence))
+    if (this.typedIn(key)) this.commit(typed(this.state, key.sequence))
   }
 
   private steppedText(key: KeyEvent): TuiState {
     const delta = key.name === "down" ? 1 : -1
     if (listens(this.state.screen)) return paletteMoved(this.state, delta)
-    if (key.meta) return caretEnded(this.state, delta > 0 ? "end" : "start")
+    if (byLine(key)) return caretEnded(this.state, delta > 0 ? "end" : "start")
     return caretRowed(this.measured(), delta)
   }
 
@@ -686,11 +712,6 @@ export class App {
 
   private copyDragged(): void {
     const taken = this.renderer.getSelection()?.getSelectedText() ?? ""
-    const where = process.env["ADIFF_TRACE"]
-    if (where !== undefined) {
-      const holder = this.renderer.getSelectionContainer()?.id ?? "none"
-      appendFileSync(where, `${this.state.screen} in=${holder} ${JSON.stringify(taken).slice(0, 70)}\n`)
-    }
     if (taken.trim().length === 0) return
     copyToClipboard(taken)
     const lines = taken.split("\n").length
@@ -1227,7 +1248,7 @@ export const runTui = Effect.fn("Tui.run")(function* (
   sessionPath?: string,
   branch?: string,
 ) {
-  const renderer = yield* Effect.promise(() => createCliRenderer({ exitOnCtrlC: true }))
+  const renderer = yield* Effect.promise(() => createCliRenderer({ exitOnCtrlC: true, useKittyKeyboard: { events: true } }))
   yield* runOn(repo, renderer, sessionPath, branch)
 })
 

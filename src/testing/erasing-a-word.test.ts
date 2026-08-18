@@ -39,7 +39,7 @@ describe("erasing what was typed", () => {
     await composing(driver, "all of this goes")
 
     // ACT
-    await driver.screen.pressBackspaceWith({ meta: true })
+    await driver.screen.pressBackspaceWith({ super: true })
 
     // ASSERT
     expect(await driver.screen.getFrame()).not.toContain("all of this")

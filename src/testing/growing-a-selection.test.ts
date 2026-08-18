@@ -29,6 +29,35 @@ describe("holding shift with the arrows", () => {
     expect(await driver.screen.getFrame()).toContain("3 lines")
   })
 
+  it("opens the comment box when the shift is let go", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(file)
+    await driver.screen.open({ width: 120, height: 20 })
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressShiftArrow("down")
+
+    // ACT
+    await driver.screen.releaseShift()
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("Comment on src/api.ts")
+  })
+
+  it("leaves a selection made without shift alone", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(file)
+    await driver.screen.open({ width: 120, height: 20 })
+    await driver.screen.pressKeys(["RETURN", "v", "j"])
+
+    // ACT
+    await driver.screen.releaseShift()
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).not.toContain("Comment on")
+  })
+
   it("leaves the selection where c can comment on it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

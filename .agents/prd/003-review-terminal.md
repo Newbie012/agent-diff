@@ -148,9 +148,18 @@ Three screens, and the keys each answers to:
   to the ends of the line, and `cmd` with up or down moves to the ends of the draft, which is what
   the same keys do in every box on a Mac.
 
+- **A modifier means what the terminal says it means.** Cmd arrives as super and option as option or
+  meta, and reading one for the other put the caret at the start of a line where a word was meant.
+  Cmd moves to the ends, option and control move by word, and a key held with any of them is never
+  typed into the draft. `ctrl+a` and `ctrl+e` reach the ends of a line, as they do in every box on a
+  Mac.
+
 - **`shift` with an arrow grows the selection from the cursor.** Selecting lines to comment on took
   `v` first, which is a thing to know before it is a thing to do. Holding shift is the habit every
-  editor teaches, and what it selects is what `c` then comments on.
+  editor teaches, and what it selects is what `c` then comments on. Letting the shift go opens the
+  comment on it, where the terminal reports releases: the gesture is one movement, and the reviewer
+  who did not mean it presses escape. Where releases are not reported, `c` is the same one keypress
+  it always was.
 
 - **Every character on the screen is text that can be selected.** A panel drawn by a list widget
   paints rows the terminal cannot hand back, so a title, a path or a command in one could not be

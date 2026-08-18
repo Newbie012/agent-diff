@@ -288,7 +288,11 @@ export class ScreenTestDriver {
     await setup.flush()
   }
 
-  async pressBackspaceWith(modifiers: { meta?: boolean; option?: boolean }): Promise<void> {
+  async pressBackspaceWith(modifiers: {
+    meta?: boolean
+    option?: boolean
+    super?: boolean
+  }): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressBackspace(modifiers)
     await this.app?.settled()
@@ -369,6 +373,24 @@ export class ScreenTestDriver {
   async pressTab(): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressTab({})
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
+  async releaseShift(): Promise<void> {
+    const setup = this.active()
+    setup.renderer.keyInput.emit("keyrelease", {
+      name: "leftshift",
+      ctrl: false,
+      meta: false,
+      shift: false,
+      option: false,
+      sequence: "",
+      number: false,
+      raw: "",
+      eventType: "release",
+      source: "kitty",
+    } as never)
     await this.app?.settled()
     await setup.waitForVisualIdle()
   }
