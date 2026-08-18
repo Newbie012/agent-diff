@@ -1155,6 +1155,9 @@ const turnedOver = (state: TuiState): TuiState => ({
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
+const missing = (branch: string | undefined, found: Option.Option<Session>): string =>
+  branch !== undefined && Option.isNone(found) ? `no worktree here is on ${branch}` : ""
+
 const openingOn = (
   branches: ReadonlyArray<BranchSummary>,
   branch: string | undefined,
@@ -1179,10 +1182,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const repo = yield* settledPath(asked)
   const branches = yield* listBranches(repo)
   const asOpened = openingOn(branches, options.branch)
-  const missed =
-    options.branch !== undefined && Option.isNone(asOpened)
-      ? `no worktree here is on ${options.branch}`
-      : ""
+  const missed = missing(options.branch, asOpened)
   const resume = Option.isSome(asOpened)
     ? asOpened
     : sessionPath === undefined
