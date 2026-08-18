@@ -286,6 +286,10 @@
   dir: ""
   intents:
     - bare-adiff-finds-its-runtime
+"@eliya-oss/agent-diff@0.1.0-alpha.65":
+  dir: ""
+  intents:
+    - a-report-that-remembers
 "@eliya-oss/agent-diff@0.1.0-alpha.7":
   dir: ""
   intents:
