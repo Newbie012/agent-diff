@@ -517,32 +517,6 @@ export const caretOn = (
 export const caretAt = (state: TuiState): number =>
   Math.max(0, Math.min(state.draft.length, state.caret))
 
-const WORD = /[\p{L}\p{N}_]/u
-
-const wordLeft = (draft: string, from: number): number => {
-  let at = from
-  while (at > 0 && !WORD.test(draft[at - 1] ?? "")) at -= 1
-  while (at > 0 && WORD.test(draft[at - 1] ?? "")) at -= 1
-  return at
-}
-
-const wordRight = (draft: string, from: number): number => {
-  let at = from
-  while (at < draft.length && !WORD.test(draft[at] ?? "")) at += 1
-  while (at < draft.length && WORD.test(draft[at] ?? "")) at += 1
-  return at
-}
-
-export const caretByWord = (state: TuiState, delta: number): number =>
-  delta < 0 ? wordLeft(state.draft, caretAt(state)) : wordRight(state.draft, caretAt(state))
-
-const lineStart = (draft: string, at: number): number => draft.lastIndexOf("\n", at - 1) + 1
-
-const lineEnd = (draft: string, at: number): number => {
-  const found = draft.indexOf("\n", at)
-  return found === -1 ? draft.length : found
-}
-
 const COMPOSE_BOX = 72
 const COMPOSE_MARGIN = 4
 const COMPOSE_PAD = 5
@@ -553,21 +527,6 @@ export const composeBox = (columns: number): number =>
 
 export const composeRoom = (columns: number): number =>
   Math.max(COMPOSE_LEAST, composeBox(columns) - COMPOSE_PAD)
-
-export const caretByRow = (state: TuiState, delta: number): number => {
-  const rows = laidDraft(state.draft, composeRoom(state.columns))
-  const at = caretAt(state)
-  const here = caretRow(rows, at)
-  const wanted = here + delta
-  if (wanted < 0) return 0
-  if (wanted >= rows.length) return state.draft.length
-  return caretOn(rows, wanted, caretColumn(rows, at))
-}
-
-export const caretToEdge = (state: TuiState, edge: "start" | "end"): number =>
-  edge === "start"
-    ? lineStart(state.draft, caretAt(state))
-    : lineEnd(state.draft, caretAt(state))
 
 export const composeTarget = (state: TuiState): string => {
   const patch = selectedPatch(state)

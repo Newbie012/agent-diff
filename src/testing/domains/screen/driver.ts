@@ -288,7 +288,11 @@ export class ScreenTestDriver {
     await setup.flush()
   }
 
-  async pressBackspaceWith(modifiers: { meta?: boolean; option?: boolean }): Promise<void> {
+  async pressBackspaceWith(modifiers: {
+    meta?: boolean
+    option?: boolean
+    super?: boolean
+  }): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressBackspace(modifiers)
     await this.app?.settled()
@@ -304,6 +308,13 @@ export class ScreenTestDriver {
 
   async findForeground(marker: string): Promise<ReadonlyArray<string>> {
     return this.findPainted(marker, fgOf)
+  }
+
+  async caretOffset(): Promise<number> {
+    const setup = this.active()
+    await setup.waitForVisualIdle()
+    const found = setup.renderer.root.findDescendantById("compose-body")
+    return (found as unknown as { cursorOffset: number } | undefined)?.cursorOffset ?? -1
   }
 
   async paintedWith(marker: string): Promise<ReadonlyArray<string>> {
@@ -369,6 +380,24 @@ export class ScreenTestDriver {
   async pressTab(): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressTab({})
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
+  async releaseShift(): Promise<void> {
+    const setup = this.active()
+    setup.renderer.keyInput.emit("keyrelease", {
+      name: "leftshift",
+      ctrl: false,
+      meta: false,
+      shift: false,
+      option: false,
+      sequence: "",
+      number: false,
+      raw: "",
+      eventType: "release",
+      source: "kitty",
+    } as never)
     await this.app?.settled()
     await setup.waitForVisualIdle()
   }

@@ -13,10 +13,15 @@ const firstDiffRow = (frame: string): string =>
   frame
     .split("\n")
     .slice(2)
-    .map((line) => line.slice(34, 74))
+    .map((line) => line.slice(34, 90))
     .find((line) => line.trim().length > 2) ?? ""
 
-const pinned = (frame: string): boolean => firstDiffRow(frame).includes(SCOPE)
+const numbered = (row: string): boolean => /\d/.test(row.slice(0, 12))
+
+const pinned = (frame: string): boolean => {
+  const row = firstDiffRow(frame)
+  return row.includes(SCOPE) && !numbered(row)
+}
 
 describe("the scope pinned above the diff", () => {
   it("goes away on S, comes back on S, and is remembered", async () => {

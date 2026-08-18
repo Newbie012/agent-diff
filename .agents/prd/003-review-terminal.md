@@ -138,19 +138,33 @@ Three screens, and the keys each answers to:
 - **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
   the code and ended there reached nothing, so the copy that should have followed it never ran.
 
-- **The compose box behaves the way a text box behaves.** It carried a caret that was a character
-  spliced into the draft, so every move shifted the words around it, and the wrap it drew collapsed
-  runs of spaces the reviewer had typed. The draft is laid out as it was written, and the caret is
-  the cell it stands on rather than a character between two others.
+- **The compose box is a text box the terminal library already has.** A hand-written one carried a
+  caret spliced into the draft as a character, a wrap that collapsed spaces, and a movement key for
+  each thing a reader expects — each of them a thing to get wrong, and several were. It is
+  opentui's textarea now: the caret is the terminal's own, and undo, selection, word and line
+  movement come with it rather than being written again here.
 
 - **The arrows walk the box the way they walk any other.** Up and down move a line at a time through
   the wrap, not through a list somewhere else. `option` with left or right moves a word, `cmd` moves
   to the ends of the line, and `cmd` with up or down moves to the ends of the draft, which is what
-  the same keys do in every box on a Mac.
+  the same keys do in every box on a Mac. The keys the box does not carry by default are added to
+  it, rather than handled beside it.
+
+- **What is pasted is cleaned wherever it came from.** The box takes the paste, and anything a
+  terminal can smuggle in is taken back out of what it holds, rather than trusted at the door.
+
+- **A modifier means what the terminal says it means.** Cmd arrives as super and option as option or
+  meta, and reading one for the other put the caret at the start of a line where a word was meant.
+  Cmd moves to the ends, option and control move by word, and a key held with any of them is never
+  typed into the draft. `ctrl+a` and `ctrl+e` reach the ends of a line, as they do in every box on a
+  Mac.
 
 - **`shift` with an arrow grows the selection from the cursor.** Selecting lines to comment on took
   `v` first, which is a thing to know before it is a thing to do. Holding shift is the habit every
-  editor teaches, and what it selects is what `c` then comments on.
+  editor teaches, and what it selects is what `c` then comments on. Letting the shift go opens the
+  comment on it, where the terminal reports releases: the gesture is one movement, and the reviewer
+  who did not mean it presses escape. Where releases are not reported, `c` is the same one keypress
+  it always was.
 
 - **Every character on the screen is text that can be selected.** A panel drawn by a list widget
   paints rows the terminal cannot hand back, so a title, a path or a command in one could not be

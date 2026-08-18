@@ -4,7 +4,17 @@ import {
   TextRenderable,
   type CliRenderer,
 } from "@opentui/core"
-import { ASCIIFontRenderable, bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
+import {
+  ASCIIFontRenderable,
+  bg,
+  fg,
+  StyledText,
+  t,
+  TextareaRenderable,
+  defaultTextareaKeyBindings,
+  type KeyBinding,
+  type TextChunk,
+} from "@opentui/core"
 import { displayKey, hintsFor, takesText, type Command } from "./command.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
@@ -40,18 +50,15 @@ import {
   WHOLE_FILE,
   type StagedComment,
   proseFor,
-  caretAt,
   composeBox,
   composeRoom as composeText,
-  caretColumn,
-  caretRow,
-  laidDraft,
   panelEntries,
   panelShown,
   reviewWidth,
   type PanelEntry,
   type PanelSection,
   type Spot,
+  laidDraft,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import { marks } from "./marks.ts"
@@ -127,28 +134,6 @@ const composeRoom = (width: number): ComposeRoom => ({
   box: composeBox(width),
   text: composeText(width),
 })
-
-const CARET_ROOM = 1
-
-const draftText = (state: TuiState, room: number): { rows: ReadonlyArray<TextChunk>; height: number } => {
-  const rows = laidDraft(state.draft, room)
-  const at = caretAt(state)
-  const here = caretRow(rows, at)
-  const column = caretColumn(rows, at)
-  const drawn = rows.flatMap((row, index) => {
-    const tail = index === rows.length - 1 ? "" : "\n"
-    if (index !== here) return [fg(palette.ink)(`${row.text}${tail}`)]
-    const before = row.text.slice(0, column)
-    const under = row.text.slice(column, column + CARET_ROOM)
-    const after = row.text.slice(column + CARET_ROOM)
-    return [
-      fg(palette.ink)(before),
-      bg(palette.ink)(fg(palette.panel)(under.length === 0 ? " " : under)),
-      fg(palette.ink)(`${after}${tail}`),
-    ]
-  })
-  return { rows: drawn, height: rows.length }
-}
 
 const laidOut = (lines: ReadonlyArray<string>, room: number): ReadonlyArray<string> =>
   lines.flatMap((line) => {
@@ -441,11 +426,23 @@ const makeLogo = (renderer: CliRenderer): ASCIIFontRenderable =>
     flexShrink: 0,
   })
 
+const MAC_KEYS: ReadonlyArray<KeyBinding> = [
+  { name: "left", super: true, action: "line-home" },
+  { name: "right", super: true, action: "line-end" },
+  { name: "left", super: true, shift: true, action: "select-line-home" },
+  { name: "right", super: true, shift: true, action: "select-line-end" },
+  { name: "up", super: true, action: "buffer-home" },
+  { name: "down", super: true, action: "buffer-end" },
+  { name: "backspace", super: true, action: "delete-to-line-start" },
+  { name: "backspace", meta: true, action: "delete-word-backward" },
+]
+
 const makeComposeParts = (
   renderer: CliRenderer,
 ): {
   readonly title: TextRenderable
-  readonly body: TextRenderable
+  readonly quoted: TextRenderable
+  readonly body: TextareaRenderable
   readonly actions: TextRenderable
 } => ({
   title: new TextRenderable(renderer, {
@@ -454,11 +451,22 @@ const makeComposeParts = (
     fg: palette.ink,
     wrapMode: "none",
   }),
-  body: new TextRenderable(renderer, {
-    id: "compose-body",
+  quoted: new TextRenderable(renderer, {
+    id: "compose-quoted",
     content: "",
-    fg: palette.ink,
+    fg: palette.muted,
     wrapMode: "none",
+  }),
+  body: new TextareaRenderable(renderer, {
+    id: "compose-body",
+    wrapMode: "word",
+    keyBindings: [...defaultTextareaKeyBindings, ...MAC_KEYS],
+    backgroundColor: palette.panel,
+    focusedBackgroundColor: palette.panel,
+    textColor: palette.ink,
+    focusedTextColor: palette.ink,
+    cursorColor: palette.ink,
+    placeholder: "",
   }),
   actions: new TextRenderable(renderer, {
     id: "compose-actions",
@@ -866,7 +874,8 @@ export class Screen {
   private shown: TuiState | undefined
   private chips: ReadonlyArray<{ key: string; hint: string; press: string }> = []
   private readonly composeTitle: TextRenderable
-  private readonly composeBody: TextRenderable
+  private readonly composeQuoted: TextRenderable
+  private readonly composeBody: TextareaRenderable
   private readonly composeActions: TextRenderable
   private readonly footer: TextRenderable
   private readonly palette: BoxRenderable
@@ -916,6 +925,7 @@ export class Screen {
     const inside = makeComposeParts(renderer)
     this.compose = makeCompose(renderer)
     this.composeTitle = inside.title
+    this.composeQuoted = inside.quoted
     this.composeBody = inside.body
     this.composeActions = inside.actions
     this.scrim = makeScrim(renderer)
@@ -1010,6 +1020,10 @@ export class Screen {
 
   tallestRows(): number {
     return this.view.tallestRows()
+  }
+
+  writing(): TextareaRenderable {
+    return this.composeBody
   }
 
   railRows(): number {
@@ -1242,7 +1256,7 @@ export class Screen {
     this.body.add(this.listPane)
     this.body.add(this.diffPane)
     this.body.add(this.panelPane)
-    stack(this.compose, [this.composeTitle, this.composeBody, this.composeActions])
+    stack(this.compose, [this.composeTitle, this.composeQuoted, this.composeBody, this.composeActions])
     stack(renderer.root, [
       this.header,
       this.body,
@@ -1423,15 +1437,13 @@ export class Screen {
     const asked = state.reportFull
       ? "What went wrong? Everything on screen is attached for you."
       : "What went wrong? Only what you type is sent."
-    const written = draftText(state, room.text)
-    const lead = laidOut([asked, ""], room.text)
+    const lead = laidOut([asked], room.text)
     this.composeTitle.content = "Report a bug"
-    this.composeBody.content = new StyledText([
-      ...lead.map((line) => fg(palette.muted)(`${line}\n`)),
-      ...written.rows,
-    ])
+    this.composeQuoted.content = lead.join("\n")
+    this.composeQuoted.height = lead.length
+    const written = this.fitBody(state, room.text)
     this.composeActions.content = reportActions(state.reportFull)
-    this.compose.height = lead.length + written.height + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
+    this.compose.height = lead.length + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.width = room.box
     this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))
     this.compose.top = Math.max(2, Math.floor(this.renderer.height / 4))
@@ -1482,25 +1494,27 @@ export class Screen {
     }
   }
 
+  private fitBody(state: TuiState, room: number): number {
+    if (this.composeBody.width !== room) this.composeBody.width = room
+    const rows = Math.max(1, laidDraft(state.draft, room).length)
+    if (this.composeBody.height !== rows) this.composeBody.height = rows
+    return rows
+  }
+
   private paintCompose(state: TuiState): void {
     this.compose.visible = state.screen === "compose"
-    if (state.screen !== "compose") {
-      this.composeBody.content = ""
-      return
-    }
+    if (state.screen !== "compose") return
     const room = composeRoom(this.renderer.width)
     const snippet = snippetOf(state, SNIPPET_LINES)
     const more = selectedLineCount(state) - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
     const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
-    const written = draftText(state, room.text)
     this.composeTitle.content = clip(composeTarget(state), room.text)
-    this.composeBody.content = new StyledText([
-      ...[...quoted, ""].map((line) => fg(palette.muted)(`${line}\n`)),
-      ...written.rows,
-    ])
+    this.composeQuoted.content = [...quoted, ""].join("\n")
+    this.composeQuoted.height = quoted.length + 1
+    const written = this.fitBody(state, room.text)
     this.composeActions.content = actionsText()
-    const height = quoted.length + 1 + written.height + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
+    const height = quoted.length + 1 + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.height = height
     this.compose.width = room.box
     this.compose.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room.box) / 2))
