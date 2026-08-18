@@ -297,14 +297,38 @@ const makePalette = (renderer: CliRenderer): BoxRenderable => {
 type PaletteParts = {
   readonly box: BoxRenderable
   readonly title: TextRenderable
-  readonly query: TextRenderable
+  readonly query: TextareaRenderable
   readonly choices: TextRenderable
 }
+
+type FoundParts = {
+  readonly box: BoxRenderable
+  readonly title: TextRenderable
+  readonly peek: TextRenderable
+  readonly choices: TextRenderable
+}
+
+const asking = (renderer: CliRenderer, id: string): TextareaRenderable =>
+  new TextareaRenderable(renderer, {
+    id,
+    height: ROW_HEIGHT,
+    wrapMode: "none",
+    flexShrink: 0,
+    marginLeft: GUTTER_X,
+    marginRight: GUTTER_X,
+    placeholder: "Type to filter…",
+    placeholderColor: palette.faint,
+    backgroundColor: palette.panel,
+    focusedBackgroundColor: palette.panel,
+    textColor: palette.ink,
+    focusedTextColor: palette.ink,
+    cursorColor: palette.ink,
+  })
 
 const makePaletteParts = (renderer: CliRenderer): PaletteParts => {
   const box = makePalette(renderer)
   const title = bar(renderer, "palette-title", palette.faint)
-  const query = bar(renderer, "palette-query", palette.ink)
+  const query = asking(renderer, "palette-query")
   const choices = makeChoices(renderer)
   box.add(title)
   box.add(query)
@@ -380,16 +404,16 @@ const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
   return parts
 }
 
-const makeFoundParts = (renderer: CliRenderer): PaletteParts => {
+const makeFoundParts = (renderer: CliRenderer): FoundParts => {
   const box = makePalette(renderer)
   const title = bar(renderer, "found-title", palette.faint)
-  const query = bar(renderer, "found-peek", palette.muted)
+  const peek = bar(renderer, "found-peek", palette.muted)
   const choices = makeChoices(renderer)
   box.id = "found"
   box.add(title)
   box.add(choices)
-  box.add(query)
-  return { box, title, query, choices }
+  box.add(peek)
+  return { box, title, peek, choices }
 }
 
 const FONTS = ["tiny", "block", "shade", "slick", "huge", "grid", "pallet"] as const
@@ -435,6 +459,8 @@ const MAC_KEYS: ReadonlyArray<KeyBinding> = [
   { name: "down", super: true, action: "buffer-end" },
   { name: "backspace", super: true, action: "delete-to-line-start" },
   { name: "backspace", meta: true, action: "delete-word-backward" },
+  { name: "return", shift: true, action: "newline" },
+  { name: "return", meta: true, action: "newline" },
 ]
 
 const makeComposeParts = (
@@ -880,11 +906,11 @@ export class Screen {
   private readonly footer: TextRenderable
   private readonly palette: BoxRenderable
   private readonly paletteTitle: TextRenderable
-  private readonly paletteQuery: TextRenderable
+  private readonly paletteQuery: TextareaRenderable
   private readonly paletteChoices: TextRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
-  private readonly keysQuery: TextRenderable
+  private readonly keysQuery: TextareaRenderable
   private readonly keysChoices: TextRenderable
   private readonly found: BoxRenderable
   private readonly foundTitle: TextRenderable
@@ -941,7 +967,7 @@ export class Screen {
     this.keysChoices = modals.keys.choices
     this.found = modals.found.box
     this.foundTitle = modals.found.title
-    this.foundPeek = modals.found.query
+    this.foundPeek = modals.found.peek
     this.foundChoices = modals.found.choices
 
     this.assemble(renderer)
@@ -1026,6 +1052,11 @@ export class Screen {
     return this.composeBody
   }
 
+  asking(screen: TuiState["screen"]): TextareaRenderable | undefined {
+    if (screen === "palette") return this.paletteQuery
+    return screen === "keys" ? this.keysQuery : undefined
+  }
+
   railRows(): number {
     return this.listRoom()
   }
@@ -1086,15 +1117,12 @@ export class Screen {
   private paintPalette(state: TuiState): void {
     this.palette.visible = state.screen === "palette"
     if (state.screen !== "palette") {
-      this.paletteQuery.content = ""
       this.paletteTitle.content = ""
       this.paletteChoices.content = ""
       return
     }
     const matches = paletteMatches(state)
     this.paletteTitle.content = matches.length === 0 ? "No command matches" : "Commands"
-    this.paletteQuery.content =
-      state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
     const room = panelWidth(this.renderer.width)
     const paletteRoom = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
@@ -1115,7 +1143,6 @@ export class Screen {
     this.keys.visible = state.screen === "keys"
     if (state.screen !== "keys") {
       this.keysTitle.content = ""
-      this.keysQuery.content = ""
       this.keysChoices.content = ""
       return
     }
@@ -1123,7 +1150,6 @@ export class Screen {
     const room = panelWidth(this.renderer.width)
     this.keysTitle.content =
       rows.length === 0 ? "No key matches" : `Keys here, ${rows.length} of them`
-    this.keysQuery.content = state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
     const keysRoom = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
       rows.length + PENDING_CHROME,

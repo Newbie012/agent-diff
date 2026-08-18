@@ -5,11 +5,9 @@ import { platform } from "node:os"
 import { resolve } from "node:path"
 import {
   createCliRenderer,
-  decodePasteBytes,
   stripAnsiSequences,
   type CliRenderer,
   type KeyEvent,
-  type PasteEvent,
 } from "@opentui/core"
 import { Cause, Deferred, Effect, Fiber, Option, Queue, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
@@ -70,7 +68,6 @@ import {
 import {
   atFile,
   openedAt,
-  backspaced,
   draggedTo,
   pickedIn,
   gapOpened,
@@ -82,8 +79,6 @@ import {
   scrolled,
   panBy,
   legible,
-  pasted,
-  typed,
   withNotice,
   withNoticeHere,
   withWaiting,
@@ -125,7 +120,6 @@ export type AppOptions = {
   readonly sticky?: boolean | undefined
 }
 
-const PRINTABLE = /^[\S ]$/
 const KEY_HISTORY = 40
 const TRAIL_HISTORY = 20
 
@@ -244,9 +238,9 @@ export class App {
     )
     renderer.on("selection", () => this.copyDragged())
     Effect.runSync(options.display.onWritten((text) => this.readBack(text)))
+    Effect.runSync(options.display.onAsked((text) => this.askedBack(text)))
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
     renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
-    renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
     renderer.on("destroy", () => this.stopLighting())
@@ -308,7 +302,6 @@ export class App {
   private answer(intent: Intent): Work {
     return Intent.$match(intent, {
       Key: ({ key }) => this.onKey(key),
-      Paste: ({ text }) => Effect.sync(() => this.onPaste(text)),
       Task: ({ run }) => run,
       Ping: ({ done }) => Effect.asVoid(Deferred.succeed(done, undefined)),
     })
@@ -360,16 +353,6 @@ export class App {
     if (!key.name.endsWith("shift") || !this.grewWithShift) return
     this.grewWithShift = false
     Queue.offerUnsafe(this.intents, Intent.Key({ key: asKey("c") }))
-  }
-
-  private dispatchPaste(event: PasteEvent): void {
-    Queue.offerUnsafe(this.intents, Intent.Paste({ text: decodePasteBytes(event.bytes) }))
-  }
-
-  private onPaste(text: string): void {
-    if (writesInto(this.state.screen)) return
-    if (!takesText(this.state.screen)) return
-    this.commit(pasted(this.state, text))
   }
 
   private fail(cause: unknown): void {
@@ -601,30 +584,32 @@ export class App {
     })
   }
 
-  private typedIn(key: KeyEvent): boolean {
-    if (key.ctrl || key.option || key.meta || key.super === true) return false
-    return PRINTABLE.test(key.sequence)
-  }
-
   private onText(key: KeyEvent): void {
     if (!listens(this.state.screen)) return
-    if (key.name === "backspace") {
-      this.commit(backspaced(this.state))
-      return
-    }
     if (key.name === "down" || key.name === "up") {
       this.commit(paletteMoved(this.state, key.name === "down" ? 1 : -1))
-      return
     }
-    if (this.typedIn(key)) this.commit(typed(this.state, key.sequence))
   }
 
   private turnWriting(next: TuiState): void {
+    if (listens(next.screen) !== listens(this.state.screen) || next.screen !== this.state.screen) {
+      Effect.runSync(this.display.askOn(listens(next.screen) ? next.screen : undefined))
+    }
     const was = writesInto(this.state.screen)
     const now = writesInto(next.screen)
     if (was === now) return
     if (now) Effect.runSync(this.display.write(next.draft))
     Effect.runSync(this.display.writeOn(now))
+  }
+
+  private askedBack(text: string): void {
+    const clean = legible(text).replaceAll("\n", " ")
+    if (clean !== text) {
+      Effect.runSync(this.display.askWith(clean))
+      return
+    }
+    if (!listens(this.state.screen) || clean === this.state.query) return
+    this.commit({ ...this.state, query: clean, paletteIndex: 0 })
   }
 
   private readBack(text: string): void {

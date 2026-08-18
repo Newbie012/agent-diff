@@ -1,7 +1,9 @@
 import type { CliRenderer } from "@opentui/core"
 import { getTreeSitterClient, pathToFiletype } from "@opentui/core"
 import { Context, Effect, Layer } from "effect"
-import type { TuiState } from "./model.ts"
+import type { Screen as ScreenName, TuiState } from "./model.ts"
+
+const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys"]
 import { Screen, type Mouse } from "./render.ts"
 
 export type Shape = {
@@ -15,6 +17,9 @@ export type Shape = {
   readonly write: (text: string) => Effect.Effect<void>
   readonly writeIn: (text: string) => Effect.Effect<void>
   readonly writeOn: (on: boolean) => Effect.Effect<void>
+  readonly askOn: (screen: ScreenName | undefined) => Effect.Effect<void>
+  readonly onAsked: (told: (text: string) => void) => Effect.Effect<void>
+  readonly askWith: (text: string) => Effect.Effect<void>
   readonly at: Effect.Effect<number>
   readonly rowAt: (visual: number) => Effect.Effect<number>
   readonly screenRowOf: (row: number) => Effect.Effect<number | undefined>
@@ -74,6 +79,28 @@ const shapeOf = (screen: Screen): Shape => ({
   writeIn: (text) => Effect.sync(() => screen.writing().insertText(text)),
   writeOn: (on) =>
     Effect.sync(() => (on ? screen.writing().focus() : screen.writing().blur())),
+  askOn: (which) =>
+    Effect.sync(() => {
+      for (const name of ASKING) {
+        const box = screen.asking(name)
+        if (box === undefined) continue
+        if (name === which) {
+          box.setText("")
+          box.focus()
+        } else box.blur()
+      }
+    }),
+  askWith: (text) =>
+    Effect.sync(() => {
+      for (const name of ASKING) screen.asking(name)?.setText(text)
+    }),
+  onAsked: (told) =>
+    Effect.sync(() => {
+      for (const name of ASKING) {
+        const box = screen.asking(name)
+        if (box !== undefined) box.onContentChange = () => told(box.plainText)
+      }
+    }),
   at: Effect.sync(() => screen.scrolledAt()),
   rowAt: (visual) => Effect.sync(() => screen.rowAtScreen(visual)),
   screenRowOf: (row) => Effect.sync(() => screen.screenRowOf(row)),

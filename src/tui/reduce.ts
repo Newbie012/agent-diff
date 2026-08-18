@@ -1,4 +1,3 @@
-import { stripAnsiSequences } from "@opentui/core"
 import { Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { type Action } from "./command.ts"
@@ -28,7 +27,6 @@ import {
   panelEntries,
   panelFits,
   panelShown,
-  caretAt,
   treeRows,
   treeStart,
 } from "./model.ts"
@@ -381,7 +379,6 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "select.swap": swapEnds,
   "compose.open": openCompose,
   "compose.submit": (state) => state,
-  "compose.newline": (state) => inserted(state, "\n"),
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1), navOpen: true }),
   "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1), navOpen: true }),
   "panel.toggle": togglePanel,
@@ -572,23 +569,6 @@ export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): Tui
   selecting: false,
 })
 
-const inserted = (state: TuiState, text: string): TuiState => {
-  const at = caretAt(state)
-  return {
-    ...state,
-    draft: `${state.draft.slice(0, at)}${text}${state.draft.slice(at)}`,
-    caret: at + text.length,
-  }
-}
-
-const asksAQuery = (state: TuiState): boolean =>
-  state.screen === "palette" || state.screen === "keys"
-
-export const typed = (state: TuiState, character: string): TuiState =>
-  asksAQuery(state)
-    ? { ...state, query: `${state.query}${character}`, paletteIndex: 0 }
-    : inserted(state, character)
-
 const TAB_WIDTH = 2
 
 const SPACE_CODE = 0x20
@@ -605,21 +585,6 @@ export const legible = (text: string): string =>
   Array.from(text.replace(/\r\n?/g, "\n").replace(/\t/g, " ".repeat(TAB_WIDTH)))
     .filter(readable)
     .join("")
-
-export const pasted = (state: TuiState, text: string): TuiState => {
-  const clean = legible(stripAnsiSequences(text))
-  if (clean.length === 0) return state
-  return typed(state, asksAQuery(state) ? clean.replace(/\n/g, " ") : clean)
-}
-
-export const backspaced = (state: TuiState): TuiState => {
-  if (asksAQuery(state)) {
-    return { ...state, query: state.query.slice(0, -1), paletteIndex: 0 }
-  }
-  const at = caretAt(state)
-  if (at === 0) return state
-  return { ...state, draft: `${state.draft.slice(0, at - 1)}${state.draft.slice(at)}`, caret: at - 1 }
-}
 
 export const withDraft = (state: TuiState, draft: string): TuiState => ({
   ...state,

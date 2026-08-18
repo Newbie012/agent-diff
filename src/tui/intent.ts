@@ -4,7 +4,6 @@ import type { Work } from "./needs.ts"
 
 export type Intent = Data.TaggedEnum<{
   Key: { readonly key: KeyEvent }
-  Paste: { readonly text: string }
   Task: { readonly run: Work }
   Ping: { readonly done: Deferred.Deferred<void> }
 }>

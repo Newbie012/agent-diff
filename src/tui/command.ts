@@ -54,7 +54,6 @@ export type Action =
   | "select.swap"
   | "compose.open"
   | "compose.submit"
-  | "compose.newline"
   | "palette.open"
   | "keys.open"
   | "keys.next"
@@ -594,14 +593,6 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["ctrl+s"],
     screens: ["compose"],
     hint: "send",
-    listed: false,
-  }),
-  command({
-    action: "compose.newline",
-    category: "Comments",
-    title: "New line",
-    keys: ["return"],
-    screens: ["compose"],
     listed: false,
   }),
   command({

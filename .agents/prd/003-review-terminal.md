@@ -138,6 +138,12 @@ Three screens, and the keys each answers to:
 - **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
   the code and ended there reached nothing, so the copy that should have followed it never ran.
 
+- **A box that takes typing is the terminal library's, not this one's.** The compose box, the report
+  box and the filter above the palette and the sheet of keys are all opentui's text box, so a caret,
+  a selection, undo, word and line movement and paste come from one place and behave the same in
+  each. What is typed there is mirrored back into the review's own state, which is what a comment,
+  a report and a filter are made of.
+
 - **The compose box is a text box the terminal library already has.** A hand-written one carried a
   caret spliced into the draft as a character, a wrap that collapsed spaces, and a movement key for
   each thing a reader expects — each of them a thing to get wrong, and several were. It is
