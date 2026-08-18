@@ -94,6 +94,8 @@ export type TuiState = {
   readonly newestFirst: boolean
   readonly tallest: number
   readonly scroll: number
+  readonly railRows: number
+  readonly railScroll: number
 }
 
 const nothingReviewed = {
@@ -107,6 +109,8 @@ const nothingReviewed = {
   newestFirst: true,
   tallest: 0,
   scroll: -1,
+  railRows: 12,
+  railScroll: -1,
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
@@ -390,15 +394,23 @@ export const isReviewed = (state: TuiState, fileIndex: number): boolean => {
   return patch !== undefined && state.vouched.includes(patch.path)
 }
 
+export const treeStart = (state: TuiState, height: number): number => {
+  const rows = treeRows(state)
+  if (rows.length <= height) return 0
+  const last = rows.length - height
+  if (state.railScroll >= 0) return Math.min(state.railScroll, last)
+  const here = rows.findIndex((row) => row.fileIndex === state.patchIndex)
+  const anchor = here === -1 ? 0 : here
+  return Math.max(0, Math.min(last, anchor - Math.floor(height / 2)))
+}
+
 export const treeWindow = (
   state: TuiState,
   height: number,
 ): { readonly rows: ReadonlyArray<TreeRow>; readonly more: number } => {
   const rows = treeRows(state)
   if (rows.length <= height) return { rows, more: 0 }
-  const here = rows.findIndex((row) => row.fileIndex === state.patchIndex)
-  const anchor = here === -1 ? 0 : here
-  const start = Math.max(0, Math.min(rows.length - height, anchor - Math.floor(height / 2)))
+  const start = treeStart(state, height)
   return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
 }
 

@@ -105,7 +105,10 @@ export class DiffView {
   private pinnedText = ""
   private newLit: ReadonlyArray<ReadonlyArray<Span>> = []
   private oldLit: ReadonlyArray<ReadonlyArray<Span>> = []
-  private litFor = ""
+  private newFor = ""
+  private oldFor = ""
+  private newText: ReadonlyArray<string> = []
+  private oldText: ReadonlyArray<string> = []
   private shown: Patch | undefined
   private noted = ""
   private display: ReadonlyArray<Display> = []
@@ -267,25 +270,39 @@ export class DiffView {
     found: ReadonlyArray<readonly [number, number, string, unknown?]>,
   ): void {
     const held = spansByLine(lines, found)
-    if (side === "new") this.newLit = held
-    else this.oldLit = held
-    this.litFor = path
+    if (side === "new") {
+      this.newLit = held
+      this.newText = lines
+      this.newFor = path
+    } else {
+      this.oldLit = held
+      this.oldText = lines
+      this.oldFor = path
+    }
     this.feed()
     this.code.requestRender()
   }
 
   private litRow(entry: Display): ReadonlyArray<Span> {
-    if (this.shown === undefined || this.shown.path !== this.litFor) return NO_SPANS
-    const row = this.shown.rows[entry.row]
+    const row = this.shown?.rows[entry.row]
     if (row === undefined) return NO_SPANS
     const fresh = Option.getOrUndefined(row.newLine)
-    if (fresh !== undefined) return this.newLit[fresh - 1] ?? NO_SPANS
+    if (fresh !== undefined) return this.sideRow(row.text, fresh, "new")
     const gone = Option.getOrUndefined(row.oldLine)
-    return gone === undefined ? NO_SPANS : (this.oldLit[gone - 1] ?? NO_SPANS)
+    return gone === undefined ? NO_SPANS : this.sideRow(row.text, gone, "old")
+  }
+
+  private sideRow(text: string, line: number, side: "new" | "old"): ReadonlyArray<Span> {
+    const path = side === "new" ? this.newFor : this.oldFor
+    if (this.shown?.path !== path) return NO_SPANS
+    const source = side === "new" ? this.newText : this.oldText
+    if (!sameLine(source[line - 1], text)) return NO_SPANS
+    return (side === "new" ? this.newLit : this.oldLit)[line - 1] ?? NO_SPANS
   }
 
   private ownSpans(): ReadonlyArray<Span> | undefined {
-    if (this.shown === undefined || this.shown.path !== this.litFor) return undefined
+    if (this.shown === undefined) return undefined
+    if (this.shown.path !== this.newFor && this.shown.path !== this.oldFor) return undefined
     const spans: Array<Span> = []
     let at = 0
     for (const entry of this.display) {
@@ -491,6 +508,9 @@ const isChrome = (entry: Display): boolean => entry.comment || entry.gap || entr
 
 const heldAt = (entry: Display, pan: number): string =>
   isChrome(entry) && pan > 0 ? `${" ".repeat(pan)}${entry.text}` : entry.text
+
+const sameLine = (source: string | undefined, row: string): boolean =>
+  source !== undefined && source.trimEnd() === row.trimEnd()
 
 export type Span = [number, number, string]
 

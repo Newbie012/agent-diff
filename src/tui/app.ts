@@ -80,7 +80,7 @@ import {
   paletteClosed,
   paletteMoved,
   reduce,
-  railMoved,
+  railScrolled,
   scrolled,
   panBy,
   pasted,
@@ -411,6 +411,11 @@ export class App {
       this.commit({ ...this.state, tallest })
       return
     }
+    const railRows = Effect.runSync(this.display.rail)
+    if (railRows !== this.state.railRows) {
+      this.commit({ ...this.state, railRows })
+      return
+    }
     const room = Effect.runSync(this.display.room)
     if (room === this.roomed) return
     this.roomed = room
@@ -433,7 +438,8 @@ export class App {
     return Date.now() - this.began
   }
 
-  private commit(next: TuiState): void {
+  private commit(given: TuiState): void {
+    const next = given.patchIndex === this.state.patchIndex ? given : { ...given, railScroll: -1 }
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
@@ -818,7 +824,7 @@ export class App {
   private rolled(delta: number): Work {
     return Effect.gen({ self: this }, function* () {
       const was = this.state.patchIndex
-      this.commit(railMoved(this.measured(), delta))
+      this.commit(railScrolled(this.measured(), delta))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
     })
   }
@@ -969,6 +975,7 @@ export class App {
       this.commit(withSource(this.state, source))
       yield* this.display.light(asked, "new", source)
       const before = yield* (fileBefore(this.repo, branch.branch, asked))
+      if (selectedPatch(this.state)?.path !== asked) return
       if (before.length > 0) yield* this.display.light(asked, "old", before)
     })
   }

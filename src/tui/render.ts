@@ -974,6 +974,10 @@ export class Screen {
     return this.view.tallestRows()
   }
 
+  railRows(): number {
+    return this.listRoom()
+  }
+
   private diffRows(): number {
     const edges = this.diffPane.border === true ? PANE_EDGES : 0
     const pane = this.diffPane.height - edges - this.view.pinRows()

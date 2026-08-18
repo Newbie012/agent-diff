@@ -31,6 +31,8 @@ import {
   caretAt,
   caretByWord,
   caretToEdge,
+  treeRows,
+  treeStart,
 } from "./model.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -148,7 +150,14 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
 const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
-export const railMoved = (state: TuiState, delta: number): TuiState => inRail(state, delta)
+export const railScrolled = (state: TuiState, delta: number): TuiState => {
+  if (onLayers(state)) return inRail(state, delta)
+  const height = Math.max(1, state.railRows)
+  const rows = treeRows(state).length
+  if (rows <= height) return state
+  const start = treeStart(state, height)
+  return { ...state, railScroll: clamp(start + delta, 0, rows - height) }
+}
 
 const movePanel = (state: TuiState, delta: number): TuiState => ({
   ...state,

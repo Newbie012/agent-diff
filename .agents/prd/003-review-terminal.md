@@ -96,10 +96,16 @@ Three screens, and the keys each answers to:
   the key under the letter alongside it, and that is what a binding is matched against. Typing is
   unaffected: what reaches a comment is still the letter that was typed.
 
-- **The wheel over the file list walks it.** Every other pane answers the wheel and the list did
-  not, so a reviewer scrolling the file they were looking at got nothing at all and no sign why. It
-  moves between files rather than scrolling rows of its own, because the list already follows the
-  file being read and two ideas of where the list is would disagree the moment either moved.
+- **The wheel over the file list moves the list, not the file.** A branch of forty files is taller
+  than the pane, and looking further down it should not mean opening every file on the way: each one
+  loads a diff the reader did not ask for. The file being read stays where it is, and the list holds
+  wherever it was left until the reader picks another file, at which point it follows again.
+
+- **A row is coloured only while its source line still says what the row says.** Colour comes from
+  parsing the whole file, and the file is read from the worktree while the rows come from the diff
+  taken when the review opened. An edit between the two shifts every line after it, and colours drawn
+  by line number then land on the wrong words. A row whose source line no longer matches is left
+  plain, which reads as unfinished rather than as wrong.
 
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
