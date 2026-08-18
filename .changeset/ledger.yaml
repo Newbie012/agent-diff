@@ -328,6 +328,11 @@
   dir: ""
   intents:
     - what-the-terminal-sends
+"@eliya-oss/agent-diff@0.1.0-alpha.73":
+  dir: ""
+  intents:
+    - a-shorter-readme
+    - everything-is-copyable
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
