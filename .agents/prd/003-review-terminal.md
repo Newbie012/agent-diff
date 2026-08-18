@@ -232,6 +232,15 @@ Three screens, and the keys each answers to:
   list. The same key means the same thing in both panes — put away what is done here — and which
   pane is in focus decides what "done" refers to.
 
+- **A review opened on one branch waits for that branch, not for the rest.** Reading every worktree
+  before drawing anything makes the wait the sum of what the machine holds, when the reviewer asked
+  for one of them. The named one is read first and drawn, and the others arrive behind it, in time
+  for the list they belong to.
+
+- **What a branch is made of is read at once.** Its diff, what has been marked read, its layers and
+  the comments already sent do not depend on each other, and reading them one after another was
+  most of the wait on a branch of a hundred files.
+
 - **Coming back to a place that is no longer a place to work lands beside it.** A review reopened
   from a session, or opened on a branch named on the command line, was put back on the row it was
   left on, which may be a row standing for lines it hides — and the first key pressed there is

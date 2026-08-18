@@ -15,6 +15,7 @@ import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
   listBranches,
+  summaryFor,
   markRead,
   type BranchSummary,
   listPatches,
@@ -118,6 +119,7 @@ export type AppOptions = {
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
+  readonly partial?: boolean | undefined
   readonly wrap?: boolean | undefined
   readonly sticky?: boolean | undefined
 }
@@ -273,6 +275,7 @@ export class App {
     const resume = options.resume
     this.dispatchTask(this.loadPulls())
     if (resume !== undefined) this.dispatchTask(this.resume(resume))
+    if (options.partial === true) this.dispatchTask(this.fillBranches())
   }
 
   listen(fiber: Fiber.Fiber<void>): void {
@@ -676,10 +679,15 @@ export class App {
 
   private readBranch(name: string): Work<TuiState> {
     return Effect.gen({ self: this }, function* () {
-      const patches = yield* (listPatches(this.repo, name))
-      const progress = yield* (reviewProgress(this.repo, name))
-      const layers = yield* (listLayers(this.repo, name))
-      const sent = yield* this.loadSent(name)
+      const [patches, progress, layers, sent] = yield* Effect.all(
+        [
+          listPatches(this.repo, name),
+          reviewProgress(this.repo, name),
+          listLayers(this.repo, name),
+          this.loadSent(name),
+        ],
+        { concurrency: "unbounded" },
+      )
       const opened = withVouched(withPatches(this.state, patches), progress.vouched)
       return withLayers(withSent(opened, sent), layers)
     })
@@ -873,6 +881,17 @@ export class App {
       const sent = yield* this.loadSent(branch.branch)
       const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
       this.commit(withNotice(held, "removed, restore it with comment restore"))
+    })
+  }
+
+  private fillBranches(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const here = selectedBranch(this.state)?.branch
+      const branches = yield* (listBranches(this.repo))
+      const read = withBranches(this.state, branches)
+      const at = branches.findIndex((candidate) => candidate.branch === here)
+      this.commit(at === -1 ? read : { ...read, branchIndex: at })
+      this.dispatchTask(this.loadPulls())
     })
   }
 
@@ -1160,6 +1179,21 @@ const turnedOver = (state: TuiState): TuiState => ({
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
+const settingsHeld = Effect.gen(function* () {
+  const store = yield* Store
+  const settings = yield* store.settings
+  return { wrap: settings.wrap === true, sticky: settings.sticky !== false }
+})
+
+const firstBranches = Effect.fn("Tui.firstBranches")(function* (
+  repo: string,
+  branch: string | undefined,
+) {
+  if (branch === undefined) return yield* listBranches(repo)
+  const only = yield* summaryFor(repo, branch).pipe(Effect.orElseSucceed(() => undefined))
+  return only === undefined ? yield* listBranches(repo) : [only]
+})
+
 const missing = (branch: string | undefined, found: Option.Option<Session>): string =>
   branch !== undefined && Option.isNone(found) ? `no worktree here is on ${branch}` : ""
 
@@ -1185,7 +1219,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
 ) {
   const { noticeMs, sessionPath } = options
   const repo = yield* settledPath(asked)
-  const branches = yield* listBranches(repo)
+  const branches = yield* firstBranches(repo, options.branch)
   const asOpened = openingOn(branches, options.branch)
   const missed = missing(options.branch, asOpened)
   const resume = Option.isSome(asOpened)
@@ -1194,21 +1228,19 @@ export const launch = Effect.fn("Tui.launch")(function* (
       ? Option.none<Session>()
       : yield* readSession(sessionPath)
   const store = yield* Store
-  const settings = yield* store.settings
-  const wrap = settings.wrap === true
-  const sticky = settings.sticky !== false
+  const kept = yield* settingsHeld
   const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
   const waiting = yield* upgradeHint
   const state = yield* SubscriptionRef.make({
     ...initialState(branches),
-    wrap,
-    sticky,
+    ...kept,
     waiting,
     notice: missed,
   })
   const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )
+  const partial = options.branch !== undefined && branches.length === 1
   const intents = yield* Queue.unbounded<Intent>()
   const app = new App({
     renderer,
@@ -1219,8 +1251,9 @@ export const launch = Effect.fn("Tui.launch")(function* (
     noticeMs,
     sessionPath,
     resume: Option.getOrUndefined(resume),
-    wrap,
-    sticky,
+    wrap: kept.wrap,
+    sticky: kept.sticky,
+    partial,
     intents,
   })
   app.watch(yield* Effect.forkDetach(app.consume()))
