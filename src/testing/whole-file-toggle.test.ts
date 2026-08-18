@@ -18,6 +18,7 @@ const opened = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(oneChange)
   await driver.screen.open()
   await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 }
 
 describe("showing the whole file", () => {

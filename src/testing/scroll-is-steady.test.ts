@@ -38,6 +38,7 @@ describe("the pinned scope", () => {
     // ACT
     await driver.screen.open({ width: 100, height: 16 })
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ASSERT
     expect(diffRows(await driver.screen.getFrame())[0]).toContain("export const outer")
@@ -49,6 +50,7 @@ describe("the pinned scope", () => {
     await driver.branch.create(indented)
     await driver.screen.open({ width: 100, height: 16 })
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ACT
     await driver.screen.pressKeys(["F"])

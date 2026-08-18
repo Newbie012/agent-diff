@@ -443,7 +443,7 @@ export const markedRows = (state: TuiState): ReadonlySet<number> => {
   return new Set(rows)
 }
 
-const carriesLine = (row: Patch["rows"][number]): boolean =>
+export const carriesLine = (row: Patch["rows"][number]): boolean =>
   Option.isSome(row.newLine) || Option.isSome(row.oldLine)
 
 const selectedRows = (state: TuiState): ReadonlyArray<Patch["rows"][number]> => {
@@ -771,6 +771,12 @@ export const hunkStarts = (state: TuiState): ReadonlyArray<number> => {
   return starts
 }
 
+export const openingRow = (state: TuiState, patchIndex: number): number => {
+  const rows = state.patches[patchIndex]?.rows ?? []
+  const at = rows.findIndex((row) => carriesLine(row))
+  return at === -1 ? 0 : at
+}
+
 export const changeAround = (state: TuiState): readonly [number, number] | undefined => {
   const rows = selectedPatch(state)?.rows ?? []
   const changed = (at: number): boolean => {
@@ -805,7 +811,9 @@ export const countsOf = (state: TuiState, fileIndex: number): string => {
 export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
   onLayers(state)
     ? layerFiles(state, state.layerIndex)
-    : treeRows(state).flatMap((row) => (row.fileIndex === undefined ? [] : [row.fileIndex]))
+    : flattenTree(treeOf(state), []).flatMap((row) =>
+        row.fileIndex === undefined ? [] : [row.fileIndex],
+      )
 
 export const layerFile = (state: TuiState, delta: number): number => {
   const order = fileOrder(state)

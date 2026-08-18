@@ -232,6 +232,16 @@ Three screens, and the keys each answers to:
   list. The same key means the same thing in both panes — put away what is done here — and which
   pane is in focus decides what "done" refers to.
 
+- **A file opens on a line, not on the row that stands for the ones it hides.** A change deep in a
+  file draws a row saying how many lines are folded above it, and the cursor landed there, so the
+  first key a reviewer presses on a file could be answered with "no line here to comment on". It
+  lands on the first row that is a line, and `g` goes to that same row.
+
+- **Walking between files is not stopped by a folder being shut.** A folder of more than a handful
+  of files starts closed, and the walk between files followed the rows the tree drew — which, in a
+  branch whose files all sit in one folder, is none of them. It follows every file the branch
+  changed, and opens the folder the file it lands on sits in.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should

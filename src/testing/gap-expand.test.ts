@@ -47,6 +47,7 @@ describe("opening the lines a diff leaves out", () => {
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ASSERT
     expect(hiddenCounts(await driver.screen.getFrame())).toEqual([27])
@@ -58,6 +59,7 @@ describe("opening the lines a diff leaves out", () => {
     await driver.branch.create(deep)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
     expect(await driver.screen.getFrame()).not.toContain("kept20")
 
     // ACT
@@ -76,6 +78,7 @@ describe("opening the lines a diff leaves out", () => {
     await driver.branch.create(deep)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ACT
     await driver.screen.pressKeys(["l", "l", "l"])
@@ -92,6 +95,7 @@ describe("opening the lines a diff leaves out", () => {
     await driver.branch.create(deep)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["l"])
     expect(await driver.screen.getFrame()).toContain("kept20")
 
@@ -108,6 +112,7 @@ describe("opening the lines a diff leaves out", () => {
     await driver.branch.create(spread)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
     expect(hiddenCounts(await driver.screen.getFrame())).toEqual([17, 14])
 
     // ACT
@@ -123,6 +128,7 @@ describe("opening the lines a diff leaves out", () => {
     await driver.branch.create(nested)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ACT
     await driver.screen.pressKeys(["h"])
@@ -145,6 +151,7 @@ describe("how a gap row reads", () => {
     await driver.branch.create(deep)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ACT
     await driver.screen.pressKeys(["j"])
@@ -162,6 +169,7 @@ describe("how a gap row reads", () => {
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ASSERT
     expect(gapRows(await driver.screen.getFrame())[0]).not.toMatch(/│[▎●\s]*\d/)
@@ -175,6 +183,7 @@ describe("commenting on a line a gap gave back", () => {
     const branch = await driver.branch.create(deep)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["l"])
     await driver.screen.pressKeys(["j"])
 

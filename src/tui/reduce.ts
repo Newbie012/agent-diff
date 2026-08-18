@@ -1,11 +1,13 @@
 import { Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { type Action } from "./command.ts"
-import { gapNumbered } from "./gaps.ts"
+import { gapNumbered, gapRowSet, shownOf } from "./gaps.ts"
 import { searchCommands, searchGlossary } from "./match.ts"
 import {
   crowdedOf,
+  carriesLine,
   foldersOfFile,
+  openingRow,
   fileOrder,
   changeAround,
   hunkStarts,
@@ -249,11 +251,26 @@ const moveBranch = (state: TuiState, delta: number): TuiState => ({
   branchIndex: clamp(state.branchIndex + delta, 0, Math.max(0, state.branches.length - 1)),
 })
 
+const landingOn = (state: TuiState, patchIndex: number): number => {
+  const held = { ...state, patchIndex }
+  const drawn = shownOf(held)
+  if (drawn === undefined) return openingRow(state, patchIndex)
+  const hidden = gapRowSet(drawn)
+  const at = drawn.patch.rows.findIndex((row) => !hidden.has(row.index) && carriesLine(row))
+  return at === -1 ? openingRow(state, patchIndex) : at
+}
+
+const revealing = (state: TuiState, patchIndex: number): ReadonlyArray<string> => {
+  const wanted = foldersOfFile({ ...state, patchIndex }, patchIndex)
+  return state.closed.filter((path) => !wanted.includes(path))
+}
+
 const moveFile = (state: TuiState, delta: number): TuiState => ({
   ...state,
+  closed: revealing(state, layerFile(state, delta)),
   patchIndex: layerFile(state, delta),
   top: 0,
-  cursor: 0,
+  cursor: landingOn(state, layerFile(state, delta)),
   anchorRow: 0,
   selecting: false,
 })
@@ -357,7 +374,11 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "branch.open": (state) => state,
   "branch.pull": (state) => state,
   "cursor.next": (state) => layerDown(state, 1),
-  "cursor.top": (state) => atRow(state, 0),
+  "cursor.top": (state) => ({
+    ...atRow(state, landingOn(state, state.patchIndex)),
+    top: 0,
+    scroll: -1,
+  }),
   "cursor.bottom": (state) => atRow(state, lastRow(selectedPatch(state))),
   "cursor.pageDown": (state) => moveCursor(state, Math.max(1, Math.floor(state.viewport / 2))),
   "cursor.pageUp": (state) => moveCursor(state, -Math.max(1, Math.floor(state.viewport / 2))),
@@ -428,8 +449,9 @@ export const reduce = (state: TuiState, action: Action): TuiState => transitions
 
 export const atFile = (state: TuiState, patchIndex: number): TuiState => ({
   ...state,
+  closed: revealing(state, patchIndex),
   patchIndex,
-  cursor: 0,
+  cursor: landingOn(state, patchIndex),
   anchorRow: 0,
   selecting: false,
 })
@@ -554,18 +576,23 @@ export const openedAt = (state: TuiState, patchIndex: number, line: number): Tui
   })
 }
 
-export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => ({
-  ...state,
-  screen: "review",
-  patches,
-  full: [],
-  revealed: [],
-  closed: crowdedOf(patches),
-  patchIndex: fileOrder({ ...state, patches, closed: crowdedOf(patches) })[0] ?? 0,
-  cursor: 0,
-  anchorRow: 0,
-  selecting: false,
-})
+export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => {
+  const closed = crowdedOf(patches)
+  const opened = { ...state, patches, closed }
+  const patchIndex = fileOrder(opened)[0] ?? 0
+  return {
+    ...state,
+    screen: "review",
+    patches,
+    full: [],
+    revealed: [],
+    closed,
+    patchIndex,
+    cursor: landingOn(opened, patchIndex),
+    anchorRow: 0,
+    selecting: false,
+  }
+}
 
 const TAB_WIDTH = 2
 

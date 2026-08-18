@@ -1237,7 +1237,10 @@ export const runTui = Effect.fn("Tui.run")(function* (
   branch?: string,
 ) {
   const renderer = yield* Effect.promise(() =>
-    createCliRenderer({ exitOnCtrlC: true, useKittyKeyboard: { events: true } }),
+    createCliRenderer({
+      exitOnCtrlC: true,
+      useKittyKeyboard: { events: true, allKeysAsEscapes: true },
+    }),
   )
   yield* Effect.ensuring(
     runOn(repo, renderer, sessionPath, branch),
