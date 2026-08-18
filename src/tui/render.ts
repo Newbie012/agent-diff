@@ -6,11 +6,11 @@ import {
   type CliRenderer,
 } from "@opentui/core"
 import { ASCIIFontRenderable, bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
-import { displayKey, glossaryFor, hintsFor, type Command } from "./command.ts"
+import { displayKey, hintsFor, type Command } from "./command.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
-import { paletteMatches } from "./reduce.ts"
+import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
   composeTarget,
   commentsOn,
@@ -348,7 +348,6 @@ const makeModals = (renderer: CliRenderer) => ({
 const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
   const parts = makePaletteParts(renderer)
   parts.box.id = "keys"
-  parts.query.height = 0
   return parts
 }
 
@@ -826,6 +825,7 @@ export class Screen {
   private readonly paletteChoices: SelectRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
+  private readonly keysQuery: TextRenderable
   private readonly keysChoices: SelectRenderable
   private readonly found: BoxRenderable
   private readonly foundTitle: TextRenderable
@@ -877,6 +877,7 @@ export class Screen {
     this.paletteChoices = modals.palette.choices
     this.keys = modals.keys.box
     this.keysTitle = modals.keys.title
+    this.keysQuery = modals.keys.query
     this.keysChoices = modals.keys.choices
     this.found = modals.found.box
     this.foundTitle = modals.found.title
@@ -962,6 +963,14 @@ export class Screen {
     return this.lastTop
   }
 
+  rowAtScreen(visual: number): number {
+    return this.view.rowAt(visual)
+  }
+
+  screenRowOf(row: number): number | undefined {
+    return this.view.screenRowOf(row)
+  }
+
   blockAt(row: number, stop: number): { readonly start: number; readonly rows: number } {
     return this.view.blockAt(row, stop)
   }
@@ -981,6 +990,7 @@ export class Screen {
       selecting: state.selecting,
       reviewed: reviewedCountIn(state),
       pull: pullHere(state).length > 0,
+      pane: state.screen === "review" ? state.focus : "diff",
     })
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
@@ -1034,12 +1044,15 @@ export class Screen {
     this.keys.visible = state.screen === "keys"
     if (state.screen !== "keys") {
       this.keysTitle.content = ""
+      this.keysQuery.content = ""
       this.keysChoices.options = []
       return
     }
-    const rows = glossaryFor(state.returnTo)
+    const rows = keyMatches(state)
     const room = panelWidth(this.renderer.width)
-    this.keysTitle.content = `Every key here, ${rows.length} of them`
+    this.keysTitle.content =
+      rows.length === 0 ? "No key matches" : `Keys here, ${rows.length} of them`
+    this.keysQuery.content = state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
     this.keysChoices.options = rows.map((entry) => ({
       name: commandRow(entry, room - MODAL_ROOM),
       description: "",

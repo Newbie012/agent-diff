@@ -154,6 +154,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   settling a point the agent never answered would close a conversation that never happened, and
   settling one whose answer has not been read would close it unread.
 
+- **A comment out of reach of the diff is still read, settled and removed from the panel.** The
+  lines a comment was written against can leave the diff — the branch moves on, the file is reverted
+  — and the comment then had no way to be opened, so its answer stayed unread and its thread stayed
+  open forever. Opening it from the panel counts as reading it even when there is nowhere to jump
+  to, and settling or removing it marks whatever it was answered with as read.
+
 - **An answer stays unread until the reviewer opens it.** Which answers have been read is kept
   beside the comments, not in the session, because the reason to mark one read is to know what is
   left — and a reviewer who reloads the branch to pick up an answer was losing exactly that. The

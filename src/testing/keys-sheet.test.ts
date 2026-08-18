@@ -69,7 +69,6 @@ describe("the sheet of every key", () => {
     const frame = await driver.screen.getFrame()
     const row = (text: string): string =>
       frame.split("\n").find((line) => line.includes(text)) ?? ""
-    expect(row("Wrap long lines")).toContain("w")
     expect(row("Find a command")).toContain("^p")
     expect(frame).toContain("Report a bug")
   })
@@ -95,6 +94,7 @@ describe("the sheet of every key", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["?"])
+    await driver.screen.typeText("wrap")
 
     // ACT
     await driver.screen.pressEscape()
@@ -112,6 +112,7 @@ describe("the sheet of every key", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["?"])
+    await driver.screen.typeText("wrap")
     expect(await driver.screen.getFrame()).toContain("Wrap long lines")
 
     // ACT
@@ -155,6 +156,6 @@ describe("finding a command by typing", () => {
     const frame = await driver.screen.getFrame()
     const row = frame.split("\n").find((line) => line.includes("Wrap long lines")) ?? ""
     expect(row).toContain("w")
-    expect(row).toContain("General")
+    expect(row).toContain("Reading")
   })
 })

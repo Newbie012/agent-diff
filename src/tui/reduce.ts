@@ -1,9 +1,9 @@
 import { stripAnsiSequences } from "@opentui/core"
 import { Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
-import { glossaryFor, type Action } from "./command.ts"
+import { type Action } from "./command.ts"
 import { gapNumbered } from "./gaps.ts"
-import { searchCommands } from "./match.ts"
+import { searchCommands, searchGlossary } from "./match.ts"
 import {
   crowdedOf,
   foldersOfFile,
@@ -287,7 +287,7 @@ const goBack = (state: TuiState): TuiState => {
   if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "" }
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "", caret: 0 }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
-  if (state.screen === "keys") return { ...state, screen: state.returnTo }
+  if (state.screen === "keys") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "compose") return { ...state, screen: "review", draft: "", caret: 0 }
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
@@ -321,8 +321,11 @@ const movePalette = (state: TuiState, delta: number): TuiState => ({
 
 export const paletteMatches = (state: TuiState) => searchCommands(state.returnTo, state.query)
 
+export const keyMatches = (state: TuiState) =>
+  searchGlossary(state.returnTo, state.query)
+
 export const offered = (state: TuiState) =>
-  state.screen === "keys" ? glossaryFor(state.returnTo) : paletteMatches(state)
+  state.screen === "keys" ? keyMatches(state) : paletteMatches(state)
 
 export const paletteChoice = (state: TuiState): Action | undefined =>
   offered(state)[state.paletteIndex]?.action
@@ -548,8 +551,11 @@ const inserted = (state: TuiState, text: string): TuiState => {
   }
 }
 
+const asksAQuery = (state: TuiState): boolean =>
+  state.screen === "palette" || state.screen === "keys"
+
 export const typed = (state: TuiState, character: string): TuiState =>
-  state.screen === "palette"
+  asksAQuery(state)
     ? { ...state, query: `${state.query}${character}`, paletteIndex: 0 }
     : inserted(state, character)
 
@@ -573,11 +579,11 @@ const legible = (text: string): string =>
 export const pasted = (state: TuiState, text: string): TuiState => {
   const clean = legible(stripAnsiSequences(text))
   if (clean.length === 0) return state
-  return typed(state, state.screen === "palette" ? clean.replace(/\n/g, " ") : clean)
+  return typed(state, asksAQuery(state) ? clean.replace(/\n/g, " ") : clean)
 }
 
 export const backspaced = (state: TuiState): TuiState => {
-  if (state.screen === "palette") {
+  if (asksAQuery(state)) {
     return { ...state, query: state.query.slice(0, -1), paletteIndex: 0 }
   }
   const at = caretAt(state)
@@ -592,10 +598,10 @@ const cutBackTo = (state: TuiState, to: number): TuiState => {
 }
 
 export const wordBackspaced = (state: TuiState): TuiState =>
-  state.screen === "palette" ? backspaced(state) : cutBackTo(state, caretByWord(state, -1))
+  asksAQuery(state) ? backspaced(state) : cutBackTo(state, caretByWord(state, -1))
 
 export const lineBackspaced = (state: TuiState): TuiState =>
-  state.screen === "palette" ? backspaced(state) : cutBackTo(state, caretToEdge(state, "start"))
+  asksAQuery(state) ? backspaced(state) : cutBackTo(state, caretToEdge(state, "start"))
 
 export const deleted = (state: TuiState): TuiState => {
   const at = caretAt(state)

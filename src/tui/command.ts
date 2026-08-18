@@ -77,8 +77,13 @@ export type Command = {
   readonly whenSelecting: boolean
   readonly whenReviewed: boolean
   readonly whenPull: boolean
+  readonly panes: ReadonlyArray<Pane>
   readonly rank: number
 }
+
+export type Pane = "tree" | "diff" | "review"
+
+const EVERY_PANE: ReadonlyArray<Pane> = ["tree", "diff", "review"]
 
 export type Offered = {
   readonly comments: number
@@ -87,10 +92,11 @@ export type Offered = {
   readonly selecting: boolean
   readonly reviewed: number
   readonly pull: boolean
+  readonly pane: Pane
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
-  category: "Review",
+  category: "Reading",
   hint: "",
   listed: true,
   whenComments: false,
@@ -100,6 +106,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenSelecting: false,
   whenReviewed: false,
   whenPull: false,
+  panes: EVERY_PANE,
   rank: 0,
   ...input,
 })
@@ -143,7 +150,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "branch.pull",
     title: "Open the pull request in a browser",
-    category: "Review",
+    category: "Branches",
     keys: ["p"],
     screens: ["review"],
     hint: "pull request",
@@ -152,60 +159,70 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "cursor.next",
+    category: "Moving",
     title: "Next line",
     keys: ["down", "j"],
     screens: ["review"],
   }),
   command({
     action: "cursor.prev",
+    category: "Moving",
     title: "Previous line",
     keys: ["up", "k"],
     screens: ["review"],
   }),
   command({
     action: "cursor.top",
+    category: "Moving",
     title: "Go to first line",
     keys: ["g"],
     screens: ["review"],
   }),
   command({
     action: "cursor.bottom",
+    category: "Moving",
     title: "Go to last line",
     keys: ["G"],
     screens: ["review"],
   }),
   command({
     action: "cursor.pageDown",
+    category: "Moving",
     title: "Half page down",
     keys: ["ctrl+d"],
     screens: ["review"],
   }),
   command({
     action: "cursor.pageUp",
+    category: "Moving",
     title: "Half page up",
     keys: ["ctrl+u"],
     screens: ["review"],
   }),
   command({
     action: "context.more",
+    category: "Reading",
     title: "Show more context",
     keys: ["+", "="],
     screens: ["review"],
   }),
   command({
     action: "context.less",
+    category: "Reading",
     title: "Show less context",
     keys: ["-", "_"],
     screens: ["review"],
   }),
   command({
     action: "context.whole",
+    category: "Reading",
     title: "Show the whole file, or go back to the diff",
     keys: ["F"],
     screens: ["review"],
   }),
   command({
     action: "comment.next",
+    category: "Comments",
     title: "Next comment",
     keys: ["n"],
     screens: ["review"],
@@ -213,24 +230,28 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "comment.prev",
+    category: "Comments",
     title: "Previous comment",
     keys: ["N"],
     screens: ["review"],
   }),
   command({
     action: "hunk.next",
+    category: "Moving",
     title: "Next change",
     keys: ["}"],
     screens: ["review"],
   }),
   command({
     action: "hunk.prev",
+    category: "Moving",
     title: "Previous change",
     keys: ["{"],
     screens: ["review"],
   }),
   command({
     action: "file.next",
+    panes: ["tree", "diff"],
     title: "Next file",
     category: "Files",
     keys: ["]"],
@@ -248,14 +269,14 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "focus.toggle",
     title: "Switch pane",
-    category: "General",
+    category: "Reading",
     keys: ["tab"],
     screens: ["review"],
   }),
   command({
     action: "focus.back",
     title: "Switch pane, the other way",
-    category: "General",
+    category: "Reading",
     keys: ["shift+tab"],
     screens: ["review"],
     listed: false,
@@ -263,7 +284,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "panel.toggle",
     title: "Show or hide the review panel",
-    category: "Review",
+    category: "Comments",
     keys: ["a"],
     screens: ["review"],
     hint: "review",
@@ -271,7 +292,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "nav.zoom",
     title: "Hide the file list and the review panel",
-    category: "General",
+    category: "Reading",
     keys: ["z", "\\"],
     screens: ["review"],
   }),
@@ -291,12 +312,15 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "select.hunk",
+    category: "Selecting",
     title: "Select the change under the cursor",
     keys: ["V"],
     screens: ["review"],
   }),
   command({
     action: "selection.copy",
+    panes: ["diff"],
+    category: "Selecting",
     title: "Copy the selection, or the line the cursor is on",
     keys: ["y"],
     screens: ["review"],
@@ -306,6 +330,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "search.open",
+    category: "Selecting",
     title: "Find the selection elsewhere",
     keys: ["/"],
     screens: ["review"],
@@ -335,6 +360,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "select.swap",
+    category: "Selecting",
     title: "Grow the selection from its other end",
     keys: ["o"],
     screens: ["review"],
@@ -342,18 +368,20 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "wrap.toggle",
     title: "Wrap long lines",
-    category: "General",
+    category: "Reading",
     keys: ["w"],
     screens: ["review"],
   }),
   command({
     action: "pan.right",
+    category: "Reading",
     title: "Pan the diff right",
     keys: [">"],
     screens: ["review"],
   }),
   command({
     action: "pan.left",
+    category: "Reading",
     title: "Pan the diff left",
     keys: ["<"],
     screens: ["review"],
@@ -370,14 +398,15 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "review.reload",
     title: "Read the branch again",
-    category: "Review",
+    category: "Branches",
     keys: ["r"],
     screens: ["review"],
   }),
   command({
     action: "thread.settle",
+    panes: ["diff", "review"],
     title: "Settle the thread here",
-    category: "Review",
+    category: "Comments",
     keys: ["d"],
     screens: ["review"],
     hint: "settle",
@@ -385,27 +414,37 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.settleRead",
+    panes: ["review"],
     title: "Settle every answer already read",
-    category: "Review",
+    category: "Comments",
     keys: ["D"],
     screens: ["review"],
+    hint: "settle read",
+    rank: 1,
   }),
   command({
     action: "thread.remove",
+    panes: ["review"],
+    hint: "remove",
+    rank: 2,
     title: "Remove the comment here",
-    category: "Review",
+    category: "Comments",
     keys: ["X"],
     screens: ["review"],
   }),
   command({
     action: "panel.flip",
+    panes: ["review"],
+    hint: "order",
+    rank: 4,
     title: "Read the review oldest first, or newest first",
-    category: "Review",
+    category: "Comments",
     keys: ["O"],
     screens: ["review"],
   }),
   command({
     action: "tree.winnow",
+    panes: ["tree"],
     title: "Hide the files already reviewed",
     category: "Files",
     keys: ["f"],
@@ -416,6 +455,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "rail.toggle",
+    panes: ["tree"],
     title: "Switch between layers and files",
     category: "Files",
     keys: ["s"],
@@ -440,6 +480,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "file.vouch",
+    panes: ["tree", "diff"],
     title: "Mark reviewed",
     category: "Files",
     keys: ["m"],
@@ -456,6 +497,8 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "select.start",
+    panes: ["diff"],
+    category: "Selecting",
     title: "Start a selection",
     keys: ["v"],
     screens: ["review"],
@@ -464,6 +507,8 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "compose.open",
+    panes: ["diff"],
+    category: "Comments",
     title: "Comment on the selection",
     keys: ["c", "return"],
     screens: ["review"],
@@ -473,20 +518,21 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "report.open",
     title: "Report a bug",
-    category: "General",
+    category: "App",
     keys: ["ctrl+b"],
     screens: ["branches", "review"],
   }),
   command({
     action: "report.mode",
     title: "Send a minimal report instead of a full one",
-    category: "General",
+    category: "App",
     keys: ["ctrl+t"],
     screens: ["report"],
     listed: false,
   }),
   command({
     action: "report.send",
+    category: "App",
     title: "Send the report",
     keys: ["ctrl+s"],
     screens: ["report"],
@@ -496,13 +542,14 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "palette.open",
     title: "Find a command",
-    category: "General",
+    category: "App",
     keys: ["ctrl+p"],
     screens: ["review"],
     listed: false,
   }),
   command({
     action: "compose.submit",
+    category: "Comments",
     title: "Send the comment",
     keys: ["ctrl+s"],
     screens: ["compose"],
@@ -511,6 +558,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "compose.newline",
+    category: "Comments",
     title: "New line",
     keys: ["return"],
     screens: ["compose"],
@@ -518,6 +566,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "palette.run",
+    category: "App",
     title: "Run the highlighted command",
     keys: ["return"],
     screens: ["palette", "keys"],
@@ -527,7 +576,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "keys.open",
     title: "List every key",
-    category: "General",
+    category: "App",
     keys: ["?"],
     screens: ["branches", "review", "search"],
     hint: "keys",
@@ -537,7 +586,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "keys.next",
     title: "Next key",
-    category: "General",
+    category: "App",
     keys: ["down", "j"],
     screens: ["keys"],
     listed: false,
@@ -545,7 +594,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "keys.prev",
     title: "Previous key",
-    category: "General",
+    category: "App",
     keys: ["up", "k"],
     screens: ["keys"],
     listed: false,
@@ -553,7 +602,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "back",
     title: "Go back",
-    category: "General",
+    category: "App",
     keys: ["escape", "q"],
     screens: ["review", "compose", "palette", "report", "search", "keys"],
     hint: "back",
@@ -563,7 +612,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "quit",
     title: "Quit",
-    category: "General",
+    category: "App",
     keys: ["q"],
     screens: ["branches"],
     hint: "quit",
@@ -572,7 +621,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
 ]
 
-const TEXT_SCREENS: ReadonlySet<Screen> = new Set<Screen>(["compose", "palette", "report"])
+const TEXT_SCREENS: ReadonlySet<Screen> = new Set<Screen>(["compose", "keys", "palette", "report"])
 
 const PRINTABLE_KEY = /^[\S ]$/
 
@@ -626,6 +675,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenSelecting || offered.selecting)
     .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
     .filter((entry) => !entry.whenPull || offered.pull)
+    .filter((entry) => entry.panes.includes(offered.pane))
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
       key: displayKey(entry.keys[0] ?? ""),

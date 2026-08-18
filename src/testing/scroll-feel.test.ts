@@ -23,7 +23,7 @@ const firstCodeRow = (frame: string): string =>
   frame.split("\n").find((line) => /│[▎●\s]*\d+/.test(line)) ?? ""
 
 describe("how scrolling feels", () => {
-  it("moves more than one line per notch", async () => {
+  it("moves one line a notch, the way the terminal does", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -33,12 +33,12 @@ describe("how scrolling feels", () => {
     const before = firstCodeRow(await driver.screen.getFrame())
 
     // ACT
-    await driver.screen.scroll("down", 1)
+    await driver.screen.scroll("down", 2)
 
     // ASSERT
     const after = firstCodeRow(await driver.screen.getFrame())
     expect(before).toContain("   6 ")
-    expect(after).toContain("   8 ")
+    expect(after).toContain("   7 ")
   })
 })
 

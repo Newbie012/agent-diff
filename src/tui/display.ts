@@ -11,6 +11,8 @@ export type Shape = {
   readonly tallest: Effect.Effect<number>
   readonly rail: Effect.Effect<number>
   readonly at: Effect.Effect<number>
+  readonly rowAt: (visual: number) => Effect.Effect<number>
+  readonly screenRowOf: (row: number) => Effect.Effect<number | undefined>
   readonly block: (
     row: number,
     stop: number,
@@ -59,6 +61,8 @@ const shapeOf = (screen: Screen): Shape => ({
   tallest: Effect.sync(() => screen.tallestRows()),
   rail: Effect.sync(() => screen.railRows()),
   at: Effect.sync(() => screen.scrolledAt()),
+  rowAt: (visual) => Effect.sync(() => screen.rowAtScreen(visual)),
+  screenRowOf: (row) => Effect.sync(() => screen.screenRowOf(row)),
   block: (row, stop) => Effect.sync(() => screen.blockAt(row, stop)),
   columns: Effect.sync(() => screen.columns()),
   listen: listenWith(screen),

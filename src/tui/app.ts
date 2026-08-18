@@ -608,7 +608,7 @@ export class App {
   }
 
   private onCaret(key: KeyEvent): boolean {
-    if (this.state.screen === "palette") return false
+    if (this.state.screen === "palette" || this.state.screen === "keys") return false
     const moved = caretFor(this.state, key)
     if (moved === undefined) return false
     this.commit(moved)
@@ -731,11 +731,13 @@ export class App {
       const at = this.state.patches.findIndex((patch) => patch.path === entry.comment.file)
       const patch = this.state.patches[at]
       if (patch === undefined) {
+        yield* this.readAnswers(entry.comment.id)
         this.commit(withNoticeHere(this.state, `${entry.comment.file} is not on this branch`))
         return
       }
       const shown = selectedPatch({ ...this.measured(), patchIndex: at })
       if (shown !== undefined && rowShowing(shown, entry.comment.end) === undefined) {
+        yield* this.readAnswers(entry.comment.id)
         this.commit(withNoticeHere(this.state, "that comment is outside this diff"))
         return
       }
@@ -849,8 +851,20 @@ export class App {
   private stepped(delta: number): Work {
     return Effect.gen({ self: this }, function* () {
       if (this.paged(delta)) return
+      this.catchUp()
       yield* this.commitSynced(delta > 0 ? "cursor.next" : "cursor.prev")
     })
+  }
+
+  private catchUp(): void {
+    const state = this.state
+    if (state.screen !== "review" || state.focus !== "diff" || state.scroll < 0) return
+    const last = state.scroll + Math.max(1, Effect.runSync(this.display.rows)) - 1
+    const at = Effect.runSync(this.display.screenRowOf(state.cursor)) ?? last
+    if (at >= state.scroll && at <= last) return
+    const wanted = at < state.scroll ? state.scroll : last
+    const top = Effect.runSync(this.display.rowAt(state.scroll))
+    this.commit({ ...state, cursor: Effect.runSync(this.display.rowAt(wanted)), stop: 0, top })
   }
 
   private paged(delta: number): boolean {

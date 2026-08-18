@@ -57,7 +57,7 @@ const NOTE_MIN = 24
 const ANSWER_MARK = "↳"
 const OVERSCAN = 2
 const SIGN_WIDTH = 2
-const SCROLL_ROWS = 3
+const SCROLL_ROWS = 1
 const PAN_COLUMNS = 8
 
 type Wheel = {
@@ -439,6 +439,10 @@ export class DiffView {
 
   tallestRows(): number {
     return this.tallest()
+  }
+
+  screenRowOf(row: number): number | undefined {
+    return this.visualOfRow(row)
   }
 
   blockAt(row: number, stop: number): { readonly start: number; readonly rows: number } {

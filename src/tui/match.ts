@@ -1,4 +1,4 @@
-import { listableFor, type Command } from "./command.ts"
+import { glossaryFor, listableFor, type Command } from "./command.ts"
 import type { Screen } from "./model.ts"
 
 const subsequence = (haystack: string, needle: string): boolean => {
@@ -32,3 +32,6 @@ export const searchCommands = (screen: Screen, query: string): ReadonlyArray<Com
   listableFor(screen)
     .filter((entry) => matches(entry, query))
     .toSorted((left, right) => closeness(left, query) - closeness(right, query))
+
+export const searchGlossary = (screen: Screen, query: string): ReadonlyArray<Command> =>
+  glossaryFor(screen).filter((entry) => matches(entry, query))
