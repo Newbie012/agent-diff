@@ -310,6 +310,20 @@ export class ScreenTestDriver {
     return this.findPainted(marker, fgOf)
   }
 
+  async believes(): Promise<{ readonly scroll: number; readonly cursor: number }> {
+    const app = this.app
+    await app?.settled()
+    const state = app?.shown()
+    return { scroll: state?.scroll ?? -1, cursor: state?.cursor ?? -1 }
+  }
+
+  async paintedTop(): Promise<number> {
+    const setup = this.active()
+    await setup.waitForVisualIdle()
+    const found = setup.renderer.root.findDescendantById("diff-code")
+    return found instanceof CodeRenderable ? found.scrollY : -1
+  }
+
   async caretOffset(): Promise<number> {
     const setup = this.active()
     await setup.waitForVisualIdle()

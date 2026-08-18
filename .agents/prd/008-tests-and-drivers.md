@@ -36,6 +36,28 @@ says what happened, the driver knows how.
 
 ## Implementation Decisions
 
+- **A branch has shapes, and the properties are checked against all of them.** Every defect the
+  fixtures missed was a shape they never took: a folder holding more files than the tree opens, a
+  path deeper than it indents, a change further down a file than the screen reaches. The shapes are
+  named and kept in one place, and a property is written once and asked of each of them.
+
+- **The properties are the ones a reviewer would notice breaking.** Every file the branch changed is
+  reachable by walking; every file opens on a row a comment can be written against. Both were true
+  of the fixtures and false of a real branch, which is what a property is for.
+
+- **A monkey presses keys, and the oracles are what must hold whatever it presses.** Nothing crashes,
+  no row runs past the width of the terminal, the screen is still drawn. The seed and the keys are
+  printed with the failure, so a run that finds something hands back the way to see it again.
+
+- **What the review believes and what it draws are compared, not assumed.** The row the model says
+  is at the top of the diff is read back off the screen.
+
+- **A terminal that is really there is driven by hand, not in this suite.** The renderer the driver
+  uses answers events directly, where a terminal hit-tests them, reports keys by protocol, and lets
+  a multiplexer rewrite what it is told. That gap is closed by
+  [driving the built binary](../../docs/driving-a-real-terminal.md) under a pty, which is where three
+  released bugs were found, rather than by a test that would quietly skip wherever no pty exists.
+
 ### Owns
 
 The two boundaries, the driver's shape and naming, and the rules every test file follows.

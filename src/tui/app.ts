@@ -384,6 +384,10 @@ export class App {
     return this.failure
   }
 
+  shown(): TuiState {
+    return this.state
+  }
+
   private pinged(): Effect.Effect<void> {
     const done = Deferred.makeUnsafe<void>()
     Queue.offerUnsafe(this.intents, Intent.Ping({ done }))
