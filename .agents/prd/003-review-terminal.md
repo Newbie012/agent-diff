@@ -237,6 +237,11 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **A branch is resolved and diffed once for each time it is opened.** What the review wants to
+  know about a branch — its diff, what has been marked read, its layers, the comments already
+  sent — was each asking git for the same worktree and the same diff over again. They are asked
+  once and the answer is shared.
+
 - **What a branch is made of is read at once.** Its diff, what has been marked read, its layers and
   the comments already sent do not depend on each other, and reading them one after another was
   most of the wait on a branch of a hundred files.

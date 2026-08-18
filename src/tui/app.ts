@@ -23,8 +23,10 @@ import {
   fileBefore,
   listSent,
   searchBranch,
-  listLayers,
-  reviewProgress,
+  layersIn,
+  progressIn,
+  readingOf,
+  sentIn,
   saveReport,
   saveWrap,
   saveSticky,
@@ -679,16 +681,12 @@ export class App {
 
   private readBranch(name: string): Work<TuiState> {
     return Effect.gen({ self: this }, function* () {
-      const [patches, progress, layers, sent] = yield* Effect.all(
-        [
-          listPatches(this.repo, name),
-          reviewProgress(this.repo, name),
-          listLayers(this.repo, name),
-          this.loadSent(name),
-        ],
+      const reading = yield* readingOf(this.repo, name)
+      const [progress, layers, sent] = yield* Effect.all(
+        [progressIn(reading), layersIn(reading), sentIn(reading)],
         { concurrency: "unbounded" },
       )
-      const opened = withVouched(withPatches(this.state, patches), progress.vouched)
+      const opened = withVouched(withPatches(this.state, reading.patches), progress.vouched)
       return withLayers(withSent(opened, sent), layers)
     })
   }

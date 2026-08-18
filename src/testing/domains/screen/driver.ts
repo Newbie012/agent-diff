@@ -1,7 +1,7 @@
 import { CodeRenderable, Renderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
-import { GitLive } from "../../../service/git/index.ts"
+import { Git, GitLive } from "../../../service/git/index.ts"
 import { ForgeLive } from "../../../service/forge/index.ts"
 import { storeAt } from "../../../service/store/index.ts"
 import { launch } from "../../../tui/index.ts"
@@ -44,6 +44,7 @@ export class ScreenTestDriver {
   private setup: TestRendererSetup | undefined
   private scope: Scope.Closeable | undefined
   private app: App | undefined
+  private diffs = 0
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
   private keysSeen = 0
@@ -65,7 +66,7 @@ export class ScreenTestDriver {
     this.setup = setup
     this.watch()
     this.countKeys(setup)
-    const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(this.state.storeRoot))
+    const layer = Layer.mergeAll(this.countingGit(), ForgeLive, storeAt(this.state.storeRoot))
     const scope = Scope.makeUnsafe()
     this.scope = scope
     const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
@@ -95,6 +96,29 @@ export class ScreenTestDriver {
     this.watching = record
     process.on("uncaughtException", record)
     process.on("unhandledRejection", record)
+  }
+
+  private countingGit(): Layer.Layer<Git> {
+    return Layer.effect(Git)(
+      Effect.gen({ self: this }, function* () {
+        const git = yield* Git
+        return {
+          ...git,
+          diff: (worktree, context) => {
+            this.diffs += 1
+            return git.diff(worktree, context)
+          },
+        }
+      }),
+    ).pipe(Layer.provide(GitLive))
+  }
+
+  diffsRun(): number {
+    return this.diffs
+  }
+
+  forgetDiffs(): void {
+    this.diffs = 0
   }
 
   private countKeys(setup: TestRendererSetup): void {
