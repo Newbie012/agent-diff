@@ -236,20 +236,36 @@ export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: Vouc
   } satisfies VouchReport
 })
 
+export type BranchReading = {
+  readonly worktree: Worktree
+  readonly patches: ReadonlyArray<Patch>
+}
+
+export const readingOf = Effect.fn("Cli.readingOf")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
+  const worktree = yield* findBranch(repo, branch, base)
+  return { worktree, patches: yield* patchesOf(worktree) } satisfies BranchReading
+})
+
+export const progressIn = Effect.fn("Cli.progressIn")(function* (reading: BranchReading) {
+  const store = yield* Store
+  const current = yield* store.state(reading.worktree.path)
+  const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  return {
+    vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
+    total: reading.patches.length,
+  }
+})
+
 export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
   repo: string,
   branch: string,
   base?: string,
 ) {
-  const store = yield* Store
-  const worktree = yield* findBranch(repo, branch, base)
-  const patches = yield* patchesOf(worktree)
-  const current = yield* store.state(worktree.path)
-  const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
-  return {
-    vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
-    total: patches.length,
-  }
+  return yield* progressIn(yield* readingOf(repo, branch, base))
 })
 
 const bodyOf = (entry: { readonly body: string }): string => entry.body
@@ -281,16 +297,12 @@ const sentOf = (comment: PendingComment, reading: Reading) => {
   }
 }
 
-export const listSent = Effect.fn("Cli.listSent")(function* (
-  repo: string,
-  branch: string,
-  base?: string,
-) {
+export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch, base)
+  const worktree = reading.worktree
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
-  const shown = new Set((yield* patchesOf(worktree)).map((patch) => patch.path))
+  const shown = new Set(reading.patches.map((patch) => patch.path))
   return flatten(yield* store.inbox(worktree.path))
     .filter((comment) => !Object.hasOwn(current.removed, comment.id))
     .map((comment) =>
@@ -302,6 +314,14 @@ export const listSent = Effect.fn("Cli.listSent")(function* (
         read: current.read,
       }),
     )
+})
+
+export const listSent = Effect.fn("Cli.listSent")(function* (
+  repo: string,
+  branch: string,
+  base?: string,
+) {
+  return yield* sentIn(yield* readingOf(repo, branch, base))
 })
 
 export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {

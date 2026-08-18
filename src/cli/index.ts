@@ -14,7 +14,10 @@ export {
   type Basis,
   listPatches,
   listSent,
+  progressIn,
+  readingOf,
   reviewProgress,
+  sentIn,
   saveReport,
   saveWrap,
   saveSticky,
@@ -40,7 +43,7 @@ export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
 export type { Change, InitReport, SkillReport } from "./init.ts"
 export { searchBranch } from "./search.ts"
 export type { Match } from "./search.ts"
-export { listLayers, setLayers, showLayers } from "./layers.ts"
+export { layersIn, listLayers, setLayers, showLayers } from "./layers.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
 export {
   answerComment,

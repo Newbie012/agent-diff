@@ -15,7 +15,7 @@ import {
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import { basedOn, findBranch, patchesOf } from "./commands.ts"
+import { basedOn, patchesOf, readingOf, type BranchReading } from "./commands.ts"
 import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
 
 const STALE_ADVICE =
@@ -231,17 +231,20 @@ export const showLayers = Effect.fn("Cli.showLayers")(function* (worktreePath: s
   return reportOf(patches, layers, worktree.head)
 })
 
+export const layersIn = Effect.fn("Cli.layersIn")(function* (reading: BranchReading) {
+  const worktree = reading.worktree
+  const found = yield* storedLayers(worktree)
+  if (Option.isNone(found)) return { layers: [] as ReadonlyArray<ReportedLayer>, stale: false }
+  return {
+    layers: reportedLayers(reading.patches, found.value),
+    stale: found.value.head !== worktree.head,
+    rebased: found.value.base !== worktree.base,
+  }
+})
+
 export const listLayers = Effect.fn("Cli.listLayers")(function* (
   repo: string,
   branch: string,
 ) {
-  const worktree = yield* findBranch(repo, branch)
-  const found = yield* storedLayers(worktree)
-  if (Option.isNone(found)) return { layers: [] as ReadonlyArray<ReportedLayer>, stale: false }
-  const patches = yield* patchesOf(worktree)
-  return {
-    layers: reportedLayers(patches, found.value),
-    stale: found.value.head !== worktree.head,
-    rebased: found.value.base !== worktree.base,
-  }
+  return yield* layersIn(yield* readingOf(repo, branch))
 })
