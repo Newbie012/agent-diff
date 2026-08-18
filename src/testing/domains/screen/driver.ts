@@ -310,6 +310,13 @@ export class ScreenTestDriver {
     return this.findPainted(marker, fgOf)
   }
 
+  async caretOffset(): Promise<number> {
+    const setup = this.active()
+    await setup.waitForVisualIdle()
+    const found = setup.renderer.root.findDescendantById("compose-body")
+    return (found as unknown as { cursorOffset: number } | undefined)?.cursorOffset ?? -1
+  }
+
   async paintedWith(marker: string): Promise<ReadonlyArray<string>> {
     const setup = this.active()
     const wanted = marker.toLowerCase()

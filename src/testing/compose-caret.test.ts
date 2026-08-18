@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import { palette } from "../tui/index.ts"
 
 const oneFile = {
   name: "add-teammate-invitations",
@@ -35,7 +34,7 @@ describe("writing a comment", () => {
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("hello")
-    expect(await driver.screen.paintedWith(palette.ink)).toContain("l")
+    expect(await driver.screen.caretOffset()).toBe(3)
   })
 
   it("deletes behind the caret rather than at the end", async () => {
@@ -49,7 +48,7 @@ describe("writing a comment", () => {
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("abc")
-    expect(await driver.screen.paintedWith(palette.ink)).toContain("b")
+    expect(await driver.screen.caretOffset()).toBe(1)
   })
 
   it("moves a whole word at a time", async () => {
@@ -64,7 +63,7 @@ describe("writing a comment", () => {
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("first second")
-    expect(await driver.screen.paintedWith(palette.ink)).toContain("s")
+    expect(await driver.screen.caretOffset()).toBe(6)
   })
 
   it("sends what was written, not the caret", async () => {

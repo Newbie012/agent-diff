@@ -10,6 +10,11 @@ export type Shape = {
   readonly room: Effect.Effect<number>
   readonly tallest: Effect.Effect<number>
   readonly rail: Effect.Effect<number>
+  readonly onWritten: (told: (text: string) => void) => Effect.Effect<void>
+  readonly written: Effect.Effect<string>
+  readonly write: (text: string) => Effect.Effect<void>
+  readonly writeIn: (text: string) => Effect.Effect<void>
+  readonly writeOn: (on: boolean) => Effect.Effect<void>
   readonly at: Effect.Effect<number>
   readonly rowAt: (visual: number) => Effect.Effect<number>
   readonly screenRowOf: (row: number) => Effect.Effect<number | undefined>
@@ -60,6 +65,15 @@ const shapeOf = (screen: Screen): Shape => ({
   room: Effect.sync(() => screen.noteRoom()),
   tallest: Effect.sync(() => screen.tallestRows()),
   rail: Effect.sync(() => screen.railRows()),
+  onWritten: (told) =>
+    Effect.sync(() => {
+      screen.writing().onContentChange = () => told(screen.writing().plainText)
+    }),
+  written: Effect.sync(() => screen.writing().plainText),
+  write: (text) => Effect.sync(() => screen.writing().setText(text)),
+  writeIn: (text) => Effect.sync(() => screen.writing().insertText(text)),
+  writeOn: (on) =>
+    Effect.sync(() => (on ? screen.writing().focus() : screen.writing().blur())),
   at: Effect.sync(() => screen.scrolledAt()),
   rowAt: (visual) => Effect.sync(() => screen.rowAtScreen(visual)),
   screenRowOf: (row) => Effect.sync(() => screen.screenRowOf(row)),

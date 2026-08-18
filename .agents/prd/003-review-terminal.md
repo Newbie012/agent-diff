@@ -138,15 +138,20 @@ Three screens, and the keys each answers to:
 - **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
   the code and ended there reached nothing, so the copy that should have followed it never ran.
 
-- **The compose box behaves the way a text box behaves.** It carried a caret that was a character
-  spliced into the draft, so every move shifted the words around it, and the wrap it drew collapsed
-  runs of spaces the reviewer had typed. The draft is laid out as it was written, and the caret is
-  the cell it stands on rather than a character between two others.
+- **The compose box is a text box the terminal library already has.** A hand-written one carried a
+  caret spliced into the draft as a character, a wrap that collapsed spaces, and a movement key for
+  each thing a reader expects — each of them a thing to get wrong, and several were. It is
+  opentui's textarea now: the caret is the terminal's own, and undo, selection, word and line
+  movement come with it rather than being written again here.
 
 - **The arrows walk the box the way they walk any other.** Up and down move a line at a time through
   the wrap, not through a list somewhere else. `option` with left or right moves a word, `cmd` moves
   to the ends of the line, and `cmd` with up or down moves to the ends of the draft, which is what
-  the same keys do in every box on a Mac.
+  the same keys do in every box on a Mac. The keys the box does not carry by default are added to
+  it, rather than handled beside it.
+
+- **What is pasted is cleaned wherever it came from.** The box takes the paste, and anything a
+  terminal can smuggle in is taken back out of what it holds, rather than trusted at the door.
 
 - **A modifier means what the terminal says it means.** Cmd arrives as super and option as option or
   meta, and reading one for the other put the caret at the start of a line where a word was meant.

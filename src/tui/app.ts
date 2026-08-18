@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
-import { platform } from "node:os"
 import { realpath } from "node:fs/promises"
+import { platform } from "node:os"
 import { resolve } from "node:path"
 import {
   createCliRenderer,
   decodePasteBytes,
+  stripAnsiSequences,
   type CliRenderer,
   type KeyEvent,
   type PasteEvent,
@@ -70,14 +71,6 @@ import {
   atFile,
   openedAt,
   backspaced,
-  wordBackspaced,
-  lineBackspaced,
-  caretHomed,
-  caretJumped,
-  caretEnded,
-  caretMoved,
-  caretRowed,
-  deleted,
   draggedTo,
   pickedIn,
   gapOpened,
@@ -88,6 +81,7 @@ import {
   railScrolled,
   scrolled,
   panBy,
+  legible,
   pasted,
   typed,
   withNotice,
@@ -95,6 +89,7 @@ import {
   withWaiting,
   withArrived,
   withColumns,
+  withDraft,
   withContext,
   withBranches,
   withPulls,
@@ -178,42 +173,11 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
-const byLine = (key: KeyEvent): boolean => key.super === true
-
-const byWord = (key: KeyEvent): boolean => !byLine(key) && (key.option || key.meta || key.ctrl)
-
-const WORD_STEP: Readonly<Record<string, number>> = { b: -1, f: 1 }
-
-const caretSideways = (state: TuiState, key: KeyEvent): TuiState | undefined => {
-  const step = key.name === "left" ? -1 : key.name === "right" ? 1 : 0
-  if (step === 0) return undefined
-  if (byLine(key)) return caretHomed(state, step > 0 ? "end" : "start")
-  return byWord(key) ? caretJumped(state, step) : caretMoved(state, step)
-}
-
-const EDGE_KEYS: Readonly<Record<string, "start" | "end">> = { home: "start", end: "end" }
-
-const EMACS_EDGE: Readonly<Record<string, "start" | "end">> = { a: "start", e: "end" }
-
-const edgeFor = (key: KeyEvent): "start" | "end" | undefined =>
-  EDGE_KEYS[key.name] ?? (key.ctrl ? EMACS_EDGE[key.name] : undefined)
-
-const caretFor = (state: TuiState, key: KeyEvent): TuiState | undefined => {
-  const sideways = caretSideways(state, key)
-  if (sideways !== undefined) return sideways
-  const word = byWord(key) ? WORD_STEP[key.name] : undefined
-  if (word !== undefined) return caretJumped(state, word)
-  const edge = edgeFor(key)
-  if (edge !== undefined) return caretHomed(state, edge)
-  return key.name === "delete" ? deleted(state) : undefined
-}
-
-const erasedBy = (state: TuiState, key: KeyEvent): TuiState => {
-  if (byLine(key)) return lineBackspaced(state)
-  return byWord(key) ? wordBackspaced(state) : backspaced(state)
-}
-
 const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
+
+const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
+
+const writesInto = (screen: TuiState["screen"]): boolean => WRITES.has(screen)
 
 const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
 
@@ -279,6 +243,7 @@ export class App {
       }),
     )
     renderer.on("selection", () => this.copyDragged())
+    Effect.runSync(options.display.onWritten((text) => this.readBack(text)))
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
     renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
     renderer.keyInput.on("paste", (event) => this.dispatchPaste(event))
@@ -402,6 +367,7 @@ export class App {
   }
 
   private onPaste(text: string): void {
+    if (writesInto(this.state.screen)) return
     if (!takesText(this.state.screen)) return
     this.commit(pasted(this.state, text))
   }
@@ -504,6 +470,7 @@ export class App {
 
   private commit(given: TuiState): void {
     const next = given.patchIndex === this.state.patchIndex ? given : turnedOver(given)
+    this.turnWriting(next)
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
@@ -640,32 +607,34 @@ export class App {
   }
 
   private onText(key: KeyEvent): void {
-    if (!takesText(this.state.screen)) return
+    if (!listens(this.state.screen)) return
     if (key.name === "backspace") {
-      this.commit(erasedBy(this.state, key))
+      this.commit(backspaced(this.state))
       return
     }
     if (key.name === "down" || key.name === "up") {
-      this.commit(this.steppedText(key))
+      this.commit(paletteMoved(this.state, key.name === "down" ? 1 : -1))
       return
     }
-    if (this.onCaret(key)) return
     if (this.typedIn(key)) this.commit(typed(this.state, key.sequence))
   }
 
-  private steppedText(key: KeyEvent): TuiState {
-    const delta = key.name === "down" ? 1 : -1
-    if (listens(this.state.screen)) return paletteMoved(this.state, delta)
-    if (byLine(key)) return caretEnded(this.state, delta > 0 ? "end" : "start")
-    return caretRowed(this.measured(), delta)
+  private turnWriting(next: TuiState): void {
+    const was = writesInto(this.state.screen)
+    const now = writesInto(next.screen)
+    if (was === now) return
+    if (now) Effect.runSync(this.display.write(next.draft))
+    Effect.runSync(this.display.writeOn(now))
   }
 
-  private onCaret(key: KeyEvent): boolean {
-    if (this.state.screen === "palette" || this.state.screen === "keys") return false
-    const moved = caretFor(this.state, key)
-    if (moved === undefined) return false
-    this.commit(moved)
-    return true
+  private readBack(text: string): void {
+    const clean = legible(stripAnsiSequences(text))
+    if (clean !== text) {
+      Effect.runSync(this.display.write(clean))
+      return
+    }
+    if (text === this.state.draft) return
+    this.commit(withDraft(this.state, text))
   }
 
   private runChoice(): Work {

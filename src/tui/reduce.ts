@@ -29,9 +29,6 @@ import {
   panelFits,
   panelShown,
   caretAt,
-  caretByRow,
-  caretByWord,
-  caretToEdge,
   treeRows,
   treeStart,
 } from "./model.ts"
@@ -604,7 +601,7 @@ const readable = (character: string): boolean => {
   return code >= SPACE_CODE && (code < ERASED_FROM || code > ERASED_TO)
 }
 
-const legible = (text: string): string =>
+export const legible = (text: string): string =>
   Array.from(text.replace(/\r\n?/g, "\n").replace(/\t/g, " ".repeat(TAB_WIDTH)))
     .filter(readable)
     .join("")
@@ -623,49 +620,6 @@ export const backspaced = (state: TuiState): TuiState => {
   if (at === 0) return state
   return { ...state, draft: `${state.draft.slice(0, at - 1)}${state.draft.slice(at)}`, caret: at - 1 }
 }
-
-const cutBackTo = (state: TuiState, to: number): TuiState => {
-  const at = caretAt(state)
-  if (to >= at) return state
-  return { ...state, draft: `${state.draft.slice(0, to)}${state.draft.slice(at)}`, caret: to }
-}
-
-export const wordBackspaced = (state: TuiState): TuiState =>
-  asksAQuery(state) ? backspaced(state) : cutBackTo(state, caretByWord(state, -1))
-
-export const lineBackspaced = (state: TuiState): TuiState =>
-  asksAQuery(state) ? backspaced(state) : cutBackTo(state, caretToEdge(state, "start"))
-
-export const deleted = (state: TuiState): TuiState => {
-  const at = caretAt(state)
-  if (at >= state.draft.length) return state
-  return { ...state, draft: `${state.draft.slice(0, at)}${state.draft.slice(at + 1)}`, caret: at }
-}
-
-export const caretMoved = (state: TuiState, delta: number): TuiState => ({
-  ...state,
-  caret: clamp(caretAt(state) + delta, 0, state.draft.length),
-})
-
-export const caretJumped = (state: TuiState, delta: number): TuiState => ({
-  ...state,
-  caret: caretByWord(state, delta),
-})
-
-export const caretRowed = (state: TuiState, delta: number): TuiState => ({
-  ...state,
-  caret: caretByRow(state, delta),
-})
-
-export const caretEnded = (state: TuiState, edge: "start" | "end"): TuiState => ({
-  ...state,
-  caret: edge === "start" ? 0 : state.draft.length,
-})
-
-export const caretHomed = (state: TuiState, edge: "start" | "end"): TuiState => ({
-  ...state,
-  caret: caretToEdge(state, edge),
-})
 
 export const withDraft = (state: TuiState, draft: string): TuiState => ({
   ...state,
