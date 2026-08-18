@@ -351,6 +351,12 @@
   dir: ""
   intents:
     - what-the-review-found
+"@eliya-oss/agent-diff@0.1.0-alpha.78":
+  dir: ""
+  intents:
+    - a-branch-that-is-not-here
+    - a-file-opens-where-you-can-work
+    - a-list-that-arrives
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
