@@ -30,6 +30,8 @@ export type Action =
   | "pan.right"
   | "pan.left"
   | "rail.toggle"
+  | "tree.winnow"
+  | "panel.flip"
   | "review.reload"
   | "thread.settle"
   | "thread.remove"
@@ -79,6 +81,7 @@ export type Command = {
   readonly whenLayers: boolean
   readonly whenThread: boolean
   readonly whenSelecting: boolean
+  readonly whenReviewed: boolean
   readonly whenPull: boolean
   readonly rank: number
 }
@@ -88,6 +91,7 @@ export type Offered = {
   readonly layers: number
   readonly onThread: boolean
   readonly selecting: boolean
+  readonly reviewed: number
   readonly pull: boolean
 }
 
@@ -100,6 +104,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenLayers: false,
   whenThread: false,
   whenSelecting: false,
+  whenReviewed: false,
   whenPull: false,
   rank: 0,
   ...input,
@@ -392,6 +397,23 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["review"],
   }),
   command({
+    action: "panel.flip",
+    title: "Read the review oldest first, or newest first",
+    category: "Review",
+    keys: ["O"],
+    screens: ["review"],
+  }),
+  command({
+    action: "tree.winnow",
+    title: "Hide the files already reviewed",
+    category: "Files",
+    keys: ["f"],
+    screens: ["review"],
+    hint: "hide read",
+    whenReviewed: true,
+    rank: 3,
+  }),
+  command({
     action: "rail.toggle",
     title: "Switch between layers and files",
     category: "Files",
@@ -660,6 +682,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenLayers || offered.layers > 0)
     .filter((entry) => !entry.whenThread || offered.onThread)
     .filter((entry) => !entry.whenSelecting || offered.selecting)
+    .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
     .filter((entry) => !entry.whenPull || offered.pull)
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({

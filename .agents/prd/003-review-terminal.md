@@ -96,6 +96,15 @@ Three screens, and the keys each answers to:
   the key under the letter alongside it, and that is what a binding is matched against. Typing is
   unaffected: what reaches a comment is still the letter that was typed.
 
+- **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
+  is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
+  file being read is never hidden, whatever its state: marking the file you are standing on should
+  not pull it out from under you. Nothing is lost — `f` again brings them back — which is why this
+  is a filter rather than a second list of read files, since a tree with two orderings in it is
+  harder to scan than one that is shorter.
+- **The review panel reads newest first, and `O` turns it around.** A reviewer looks at the panel to
+  see what just happened, and what just happened was at the bottom.
+
 - **The footer carries the keys a reviewer reaches for, and `?` carries the rest.** A screen answers
   to more keys than fit on one row, so the footer names the few that a pass through a review is made
   of and leaves the others to the sheet. Chips give way from the left when the row is crowded, so

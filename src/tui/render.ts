@@ -29,6 +29,7 @@ import {
   selectedLineCount,
   snippetOf,
   reviewedCount,
+  reviewedCountIn,
   pullHere,
   selectedBranch,
   selectedPatch,
@@ -975,6 +976,7 @@ export class Screen {
       layers: state.layers.length,
       onThread: state.stop > 0 || threadChosen(state) !== undefined,
       selecting: state.selecting,
+      reviewed: reviewedCountIn(state),
       pull: pullHere(state).length > 0,
     })
     this.header.content = this.headerText(state)
