@@ -1155,6 +1155,9 @@ const turnedOver = (state: TuiState): TuiState => ({
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
+const missing = (branch: string | undefined, found: Option.Option<Session>): string =>
+  branch !== undefined && Option.isNone(found) ? `no worktree here is on ${branch}` : ""
+
 const openingOn = (
   branches: ReadonlyArray<BranchSummary>,
   branch: string | undefined,
@@ -1179,6 +1182,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const repo = yield* settledPath(asked)
   const branches = yield* listBranches(repo)
   const asOpened = openingOn(branches, options.branch)
+  const missed = missing(options.branch, asOpened)
   const resume = Option.isSome(asOpened)
     ? asOpened
     : sessionPath === undefined
@@ -1190,7 +1194,13 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const sticky = settings.sticky !== false
   const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
   const waiting = yield* upgradeHint
-  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap, sticky, waiting })
+  const state = yield* SubscriptionRef.make({
+    ...initialState(branches),
+    wrap,
+    sticky,
+    waiting,
+    notice: missed,
+  })
   const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )
@@ -1237,7 +1247,10 @@ export const runTui = Effect.fn("Tui.run")(function* (
   branch?: string,
 ) {
   const renderer = yield* Effect.promise(() =>
-    createCliRenderer({ exitOnCtrlC: true, useKittyKeyboard: { events: true } }),
+    createCliRenderer({
+      exitOnCtrlC: true,
+      useKittyKeyboard: { events: true, allKeysAsEscapes: true },
+    }),
   )
   yield* Effect.ensuring(
     runOn(repo, renderer, sessionPath, branch),

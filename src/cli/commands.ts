@@ -152,30 +152,40 @@ const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   }
 })
 
+const AT_ONCE = 8
+
+const summaryOf = Effect.fn("Cli.summaryOf")(function* (
+  repo: string,
+  found: Worktree,
+  base?: string,
+) {
+  const git = yield* Git
+  const based = yield* basedOn(repo, found, base)
+  const worktree = based.worktree
+  const stat = yield* git.stat(worktree)
+  const waiting = yield* waitingOn(worktree)
+  return {
+    branch: worktree.branch,
+    path: worktree.path,
+    head: worktree.head,
+    files: stat.files,
+    added: stat.added,
+    removed: stat.removed,
+    unread: waiting.unread,
+    layers: waiting.layers,
+    stale: waiting.stale,
+    own: worktree.own,
+    base: based.base,
+    basis: based.basis,
+  } satisfies BranchSummary
+})
+
 export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string, base?: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
-  const summaries: Array<BranchSummary> = []
-  for (const found of worktrees) {
-    const based = yield* basedOn(repo, found, base)
-    const worktree = based.worktree
-    const stat = yield* git.stat(worktree)
-    const waiting = yield* waitingOn(worktree)
-    summaries.push({
-      branch: worktree.branch,
-      path: worktree.path,
-      head: worktree.head,
-      files: stat.files,
-      added: stat.added,
-      removed: stat.removed,
-      unread: waiting.unread,
-      layers: waiting.layers,
-      stale: waiting.stale,
-      own: worktree.own,
-      base: based.base,
-      basis: based.basis,
-    })
-  }
+  const summaries = yield* Effect.forEach(worktrees, (found) => summaryOf(repo, found, base), {
+    concurrency: AT_ONCE,
+  })
   return summaries.filter((summary) => summary.files > 0)
 })
 

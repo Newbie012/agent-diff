@@ -31,6 +31,7 @@ const body = (frame: string): string => {
 
 type Pair = {
   readonly name: string
+  readonly from?: ReadonlyArray<string>
   readonly go: ReadonlyArray<string>
   readonly back: ReadonlyArray<string>
 }
@@ -40,7 +41,7 @@ const pairs: ReadonlyArray<Pair> = [
   { name: "end and start", go: ["G"], back: ["g"] },
   { name: "next file and previous", go: ["]"], back: ["["] },
   { name: "fold and unfold", go: ["TAB", "h"], back: ["l", "TAB"] },
-  { name: "open and close a gap", go: ["l"], back: ["h"] },
+  { name: "open and close a gap", from: ["k"], go: ["l"], back: ["h"] },
   { name: "hide and show the list", go: ["\\"], back: ["\\"] },
   { name: "focus across and back", go: ["TAB"], back: ["TAB"] },
   { name: "wider and narrower context", go: ["+"], back: ["-"] },
@@ -55,6 +56,7 @@ describe("every reversible action reverses", () => {
       await driver.branch.create(branch)
       await driver.screen.open()
       await driver.screen.pressKeys(["RETURN"])
+      if (pair.from !== undefined) await driver.screen.pressKeys([...pair.from])
       const start = body(await driver.screen.getFrame())
 
       // ACT

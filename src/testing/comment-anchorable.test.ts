@@ -21,6 +21,7 @@ describe("writing a comment where there is no line", () => {
     await driver.branch.create(branch)
     await driver.screen.open({ width: 100, height: 30 })
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -37,7 +38,6 @@ describe("writing a comment where there is no line", () => {
     await driver.branch.create(branch)
     await driver.screen.open({ width: 100, height: 30 })
     await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["j"])
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -52,6 +52,7 @@ describe("writing a comment where there is no line", () => {
     const created = await driver.branch.create(branch)
     await driver.screen.open({ width: 100, height: 30 })
     await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["k"])
 
     // ACT
     await driver.screen.pressKeys(["c"])

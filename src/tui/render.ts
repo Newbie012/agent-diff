@@ -545,8 +545,10 @@ const clipPath = (label: string, room: number): string => {
   return kept.length === 0 ? clipHead(label, room) : `…/${kept.join("/")}`
 }
 
+const INDENT_MAX = 3
+
 const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
-  const indent = " ".repeat(row.depth)
+  const indent = " ".repeat(Math.min(row.depth, INDENT_MAX))
   if (row.kind === "file") {
     const lead = `${indent}  ${marks().file} `
     return `${lead}${clipMiddle(row.name, Math.max(4, room - lead.length))}`

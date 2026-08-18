@@ -232,6 +232,16 @@ Three screens, and the keys each answers to:
   list. The same key means the same thing in both panes — put away what is done here — and which
   pane is in focus decides what "done" refers to.
 
+- **A file opens on a line, not on the row that stands for the ones it hides.** A change deep in a
+  file draws a row saying how many lines are folded above it, and the cursor landed there, so the
+  first key a reviewer presses on a file could be answered with "no line here to comment on". It
+  lands on the first row that is a line, and `g` goes to that same row.
+
+- **Walking between files is not stopped by a folder being shut.** A folder of more than a handful
+  of files starts closed, and the walk between files followed the rows the tree drew — which, in a
+  branch whose files all sit in one folder, is none of them. It follows every file the branch
+  changed, and opens the folder the file it lands on sits in.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should
@@ -302,6 +312,14 @@ Three screens, and the keys each answers to:
   leaving the list. `enter` opens the file when the branch changes it; when it does not, there is no
   diff to open and the panel says so rather than moving the reader somewhere they cannot read.
 - **The line the reviewer is standing on is not a match.** They can see it already.
+- **The file list takes a few more columns only where they are spare.** A wide terminal has room
+  for a longer name without costing the diff or the review panel the room they need; a narrow one
+  does not, and the panel disappearing to buy a wider list is a bad trade.
+
+- **The tree stops indenting after a few levels.** A path six folders deep spent its width on the
+  indent rather than on the names, and a name is what a reader is looking for. The rows still read
+  in order, so the nesting is legible without paying for it a column at a time.
+
 - **A name too long for the tree keeps both ends.** Either end can be the part that tells two
   files apart. An extension and a suffix separate `invitations.mutations.ts` from
   `invitation-defaults.utils.ts`, whose beginnings are the same word; a prefix separates
