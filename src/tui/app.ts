@@ -1,4 +1,6 @@
+import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
+import { platform } from "node:os"
 import { realpath } from "node:fs/promises"
 import { resolve } from "node:path"
 import {
@@ -145,9 +147,23 @@ const momentOf = (named: string, state: TuiState, elapsed: number): string => {
 const noticeOf = (notice: string, elapsed: number): string =>
   `${clockOf(elapsed)}  ${"said".padEnd(16)} ${notice}`
 
+const handOver = (text: string): void => {
+  if (platform() !== "darwin" || !process.stdout.isTTY) return
+  const pipe = spawn("pbcopy", { stdio: ["pipe", "ignore", "ignore"] })
+  pipe.on("error", () => undefined)
+  pipe.stdin.on("error", () => undefined)
+  pipe.stdin.end(text)
+}
+
 const copyToClipboard = (text: string): void => {
   const encoded = Buffer.from(text, "utf8").toString("base64")
   process.stdout.write(`\u001B]52;c;${encoded}\u0007`)
+  handOver(text)
+}
+
+const lineUnder = (state: TuiState): ReadonlyArray<string> => {
+  const row = selectedPatch(state)?.rows[state.cursor]
+  return row === undefined ? [] : [row.text]
 }
 
 const asKey = (name: string): KeyEvent =>
@@ -240,7 +256,7 @@ export class App {
       this.display.listen({
         onScroll: (delta) => this.onWheel(delta),
         onPan: (delta) => this.onPanWheel(delta),
-        onDrag: (from, to) => this.commit(draggedTo(this.measured(), from, to)),
+        onDrag: (from, to, done) => this.dragged(from, to, done),
         onChip: (key) => this.dispatchTask(this.onKey(asKey(key))),
         onRail: (delta) => this.dispatchTask(this.rolled(delta)),
       }),
@@ -525,7 +541,7 @@ export class App {
       "thread.settle": () => this.settleHere(),
       "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
-      "selection.copy": () => Effect.sync(() => this.copySelection()),
+      "selection.copy": () => Effect.sync(() => this.copySelection(false)),
       "search.open": () => this.findSelection(),
       "search.jump": () => this.openMatch(),
       "review.reload": () =>
@@ -645,15 +661,27 @@ export class App {
     })
   }
 
-  private copySelection(): void {
-    const lines = selectedLines(this.state)
+  private dragged(from: number, to: number, done: boolean): void {
+    this.commit(draggedTo(this.measured(), from, to))
+    if (done && from !== to) this.copySelection(true)
+  }
+
+  private copySelection(keep: boolean): void {
+    const said = keep ? withNoticeHere : withNotice
+    const thread = threadAtStop(this.state)
+    if (thread !== undefined) {
+      copyToClipboard(`${thread.body}\n`)
+      this.commit(said(this.state, "comment copied"))
+      return
+    }
+    const lines = this.state.selecting ? selectedLines(this.state) : lineUnder(this.state)
     if (lines.length === 0) {
-      this.commit(withNoticeHere(this.state, "nothing selected"))
+      this.commit(withNoticeHere(this.state, "nothing to copy"))
       return
     }
     copyToClipboard(`${lines.join("\n")}\n`)
     const many = lines.length === 1 ? "1 line copied" : `${lines.length} lines copied`
-    this.commit(withNotice(this.state, many))
+    this.commit(said(this.state, many))
   }
 
   private findSelection(): Work {

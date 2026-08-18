@@ -121,6 +121,16 @@ Three screens, and the keys each answers to:
   were counted differently — one in rows of the file, one in rows drawn — so the first notch after
   a comment scrolled past jumped the pane somewhere else entirely before scrolling at all.
 
+- **Dragging over lines copies them when the drag ends.** Selecting text in a terminal that draws
+  its own panes gives the reader nothing, and the habit is older than any key this review offers.
+  The rows stay selected afterwards, so the drag can be followed by a comment on the same lines.
+
+- **`y` copies what the cursor is on when nothing is selected.** Taking a line out of the review to
+  paste it somewhere else is the common case, and starting a selection to copy a single line is
+  ceremony. On an answer it copies the answer, which is the other thing worth taking whole. On a
+  Mac the text is handed to the pasteboard as well as offered to the terminal, because a terminal
+  that ignores the escape leaves the reader with nothing and no way to tell.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should

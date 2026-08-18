@@ -304,7 +304,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "selection.copy",
-    title: "Copy the selection",
+    title: "Copy the selection, or the line the cursor is on",
     keys: ["y"],
     screens: ["review"],
     hint: "copy",

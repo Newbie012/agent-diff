@@ -214,6 +214,7 @@ export class DiffView {
     this.numbers.onMouseDown = (event: { y: number }) => handlers.down(event.y)
     this.numbers.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)
     this.numbers.onMouseDragEnd = (event: { y: number }) => handlers.dragEnd(event.y)
+    this.numbers.onMouseUp = (event: { y: number }) => handlers.dragEnd(event.y)
   }
 
   refresh(): void {
