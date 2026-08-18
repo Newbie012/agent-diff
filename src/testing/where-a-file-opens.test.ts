@@ -30,6 +30,19 @@ describe("opening a file whose change is a long way down", () => {
     expect(carrying).toMatch(/\d+\s+const held\d+/)
   })
 
+  it("lands workably when the branch is named on the command line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const made = await driver.branch.create(deep)
+
+    // ACT
+    await driver.screen.open({ width: 120, height: 20, branch: made.name })
+
+    // ASSERT
+    await driver.screen.pressKeys(["c"])
+    expect(await driver.screen.getFrame()).toContain("Comment on src/api.ts")
+  })
+
   it("can be commented on without moving first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

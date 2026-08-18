@@ -447,6 +447,25 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
 
 export const reduce = (state: TuiState, action: Action): TuiState => transitions[action](state)
 
+export const resumedAt = (
+  state: TuiState,
+  patchIndex: number,
+  cursor: number,
+  top: number,
+): TuiState => {
+  const held = { ...state, patchIndex }
+  const rows = shownOf(held)
+  const hidden = rows === undefined ? new Set<number>() : gapRowSet(rows)
+  const row = state.patches[patchIndex]?.rows[cursor]
+  const workable = row !== undefined && carriesLine(row) && !hidden.has(cursor)
+  return {
+    ...state,
+    patchIndex,
+    top,
+    cursor: workable ? cursor : landingOn(state, patchIndex),
+  }
+}
+
 export const atFile = (state: TuiState, patchIndex: number): TuiState => ({
   ...state,
   closed: revealing(state, patchIndex),
