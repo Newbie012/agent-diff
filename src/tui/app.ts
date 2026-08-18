@@ -460,7 +460,7 @@ export class App {
   }
 
   private commit(given: TuiState): void {
-    const next = given.patchIndex === this.state.patchIndex ? given : { ...given, railScroll: -1 }
+    const next = given.patchIndex === this.state.patchIndex ? given : turnedOver(given)
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
@@ -1076,6 +1076,14 @@ export class App {
     })
   }
 }
+
+const turnedOver = (state: TuiState): TuiState => ({
+  ...state,
+  railScroll: -1,
+  scroll: -1,
+  selecting: false,
+  anchorRow: state.cursor,
+})
 
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))

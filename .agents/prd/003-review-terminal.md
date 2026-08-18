@@ -117,6 +117,10 @@ Three screens, and the keys each answers to:
   last, with everything between it readable only by wheel. While a stop is taller than the pane the
   same press moves a page down it, and the press that reaches its end is the one that leaves it.
 
+- **Turning to another file starts at the top of it.** Where the last file had been scrolled to is
+  a place in that file and means nothing in this one, so the pane, the file list and the selection
+  all begin again with the file rather than carrying a position across it.
+
 - **An arrow pressed after the wheel moves the cursor, not the view.** Scrolling leaves the cursor
   somewhere off screen, and moving it from there dragged the view back to wherever it had been
   reading before. The cursor comes to the row the reader is looking at — the top of the pane, or the
@@ -130,6 +134,9 @@ Three screens, and the keys each answers to:
 - **The wheel carries on from where the pane is, not from where the cursor last put it.** The two
   were counted differently — one in rows of the file, one in rows drawn — so the first notch after
   a comment scrolled past jumped the pane somewhere else entirely before scrolling at all.
+
+- **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
+  the code and ended there reached nothing, so the copy that should have followed it never ran.
 
 - **Dragging over lines copies them when the drag ends.** Selecting text in a terminal that draws
   its own panes gives the reader nothing, and the habit is older than any key this review offers.

@@ -103,6 +103,24 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout).not.toContain("is installed now")
   })
 
+  it("names the compressed asset, so a download is a quarter of the binary", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const registry = await served({ alpha: "9.9.9" })
+    const install = await driver.app.installedBy("binary")
+
+    // ACT
+    const result = await driver.app.run(["upgrade", "--check"], {
+      ...install,
+      ADIFF_REGISTRY: registry.url,
+    })
+    await registry.stop()
+
+    // ASSERT
+    expect(result.stdout).toContain(".tar.gz")
+    expect(result.stdout).toContain("tar -xzO")
+  })
+
   it("explains a binary it cannot rewrite while it runs, and upgrades nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

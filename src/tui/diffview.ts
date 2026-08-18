@@ -211,10 +211,12 @@ export class DiffView {
     readonly dragEnd: (y: number) => void
   }): void {
     this.numbers.onMouseScroll = (event: Wheel) => wheelTo(event, handlers)
-    this.numbers.onMouseDown = (event: { y: number }) => handlers.down(event.y)
-    this.numbers.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)
-    this.numbers.onMouseDragEnd = (event: { y: number }) => handlers.dragEnd(event.y)
-    this.numbers.onMouseUp = (event: { y: number }) => handlers.dragEnd(event.y)
+    for (const target of [this.numbers, this.code]) {
+      target.onMouseDown = (event: { y: number }) => handlers.down(event.y)
+      target.onMouseDrag = (event: { y: number }) => handlers.drag(event.y)
+      target.onMouseDragEnd = (event: { y: number }) => handlers.dragEnd(event.y)
+      target.onMouseUp = (event: { y: number }) => handlers.dragEnd(event.y)
+    }
   }
 
   refresh(): void {

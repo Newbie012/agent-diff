@@ -263,7 +263,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
           ASSET: ${{ matrix.asset }}
-        run: bun build --compile --target="$TARGET" src/main.ts --outfile "$ASSET"
+        run: bun build --compile --minify --target="$TARGET" src/main.ts --outfile "$ASSET"
 
       - name: check it answers
         env:
@@ -281,12 +281,19 @@ jobs:
           '
           echo "::notice::$ASSET reports $VERSION and answers describe with no runtime on PATH."
 
+      - name: pack it down for the wire
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          tar -czf "$ASSET.tar.gz" "$ASSET"
+          ls -l "$ASSET" "$ASSET.tar.gz"
+
       - name: attach it to the release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.release.outputs.version }}
           ASSET: ${{ matrix.asset }}
-        run: gh release upload "v$VERSION" "$ASSET" --clobber
+        run: gh release upload "v$VERSION" "$ASSET" "$ASSET.tar.gz" --clobber
 
   formula:
     needs: [release, binaries]
@@ -328,16 +335,16 @@ jobs:
             fi
           }
 
-          fetch "$BASE/adiff-darwin-arm64" "$RUNNER_TEMP/arm"
-          fetch "$BASE/adiff-darwin-x64" "$RUNNER_TEMP/intel"
+          fetch "$BASE/adiff-darwin-arm64.tar.gz" "$RUNNER_TEMP/arm"
+          fetch "$BASE/adiff-darwin-x64.tar.gz" "$RUNNER_TEMP/intel"
 
           TAP="$RUNNER_TEMP/tap"
           git clone --depth 1 "https://x-access-token:$TAP_TOKEN@github.com/Newbie012/homebrew-tap.git" "$TAP"
 
           VERSION="$VERSION" \
-          ARM_URL="$BASE/adiff-darwin-arm64" \
+          ARM_URL="$BASE/adiff-darwin-arm64.tar.gz" \
           ARM_SHA="$(sha256sum "$RUNNER_TEMP/arm" | cut -d ' ' -f 1)" \
-          INTEL_URL="$BASE/adiff-darwin-x64" \
+          INTEL_URL="$BASE/adiff-darwin-x64.tar.gz" \
           INTEL_SHA="$(sha256sum "$RUNNER_TEMP/intel" | cut -d ' ' -f 1)" \
           node scripts/formula.ts "$TAP/Formula/adiff.rb"
 

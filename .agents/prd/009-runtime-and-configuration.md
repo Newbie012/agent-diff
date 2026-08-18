@@ -78,6 +78,12 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   which Claude Code loads natively and Cursor and Codex accept for compatibility. Committing a
   skill directory into a repository other people share is a larger imposition than four lines of
   markdown, so it is a separate decision from the instructions.
+- **The published binary travels compressed.** Compiling with Bun bundles the whole runtime, so the
+  executable is around seventy megabytes and no amount of minifying the review's own code moves that
+  number. It is attached to the release as a gzipped tar as well as raw, and Homebrew and the curl
+  route both take the compressed one: a quarter of the bytes over the wire, the same binary on disk.
+  The raw asset stays because installs made before this still ask for it by name.
+
 - **TypeScript runs by type-stripping, not compilation.** There is no build layer and no bundler.
   Syntax that requires emit does not run, whatever `tsc` and vitest accept — see
   [ADR-002](../adr/ADR-002-effect-v4-and-module-boundaries.md).
