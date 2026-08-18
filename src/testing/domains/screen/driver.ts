@@ -340,6 +340,13 @@ export class ScreenTestDriver {
     await setup.waitForVisualIdle()
   }
 
+  async pressTab(): Promise<void> {
+    const setup = this.active()
+    setup.mockInput.pressTab({})
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+  }
+
   async pressShiftTab(): Promise<void> {
     const setup = this.active()
     setup.mockInput.pressTab({ shift: true })

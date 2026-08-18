@@ -139,9 +139,11 @@ export const settleThread = Effect.fn("Cli.settleThread")(function* (
   const worktree = yield* findBranch(repo, branch)
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   const current = yield* store.state(worktree.path)
+  const replies = (yield* store.answers(worktree.path)).filter((entry) => entry.comment === id)
   yield* store.saveState(worktree.path, {
     ...current,
     settled: { ...current.settled, [id]: at },
+    read: { ...current.read, [id]: replies.length },
   })
   return { settled: id }
 })
@@ -156,9 +158,11 @@ export const removeComment = Effect.fn("Cli.removeComment")(function* (
   const worktree = yield* findBranch(repo, branch)
   const current = yield* store.state(worktree.path)
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
+  const replies = (yield* store.answers(worktree.path)).filter((entry) => entry.comment === id)
   yield* store.saveState(worktree.path, {
     ...current,
     removed: { ...current.removed, [id]: at },
+    read: { ...current.read, [id]: replies.length },
   })
   return { removed: id }
 })

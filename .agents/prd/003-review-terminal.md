@@ -117,6 +117,16 @@ Three screens, and the keys each answers to:
   last, with everything between it readable only by wheel. While a stop is taller than the pane the
   same press moves a page down it, and the press that reaches its end is the one that leaves it.
 
+- **An arrow pressed after the wheel moves the cursor, not the view.** Scrolling leaves the cursor
+  somewhere off screen, and moving it from there dragged the view back to wherever it had been
+  reading before. The cursor comes to the row the reader is looking at — the top of the pane, or the
+  bottom if it was left below — and moves from there, leaving what is on screen where it is.
+
+- **A notch of the wheel is one row.** A trackpad reports many small events for one push, and
+  multiplying each of them moved the diff in jumps a reader had to re-find their place after. One
+  row a notch reads like every other pane in the terminal, and a fast push still travels fast
+  because the events keep coming.
+
 - **The wheel carries on from where the pane is, not from where the cursor last put it.** The two
   were counted differently — one in rows of the file, one in rows drawn — so the first notch after
   a comment scrolled past jumped the pane somewhere else entirely before scrolling at all.
@@ -124,6 +134,17 @@ Three screens, and the keys each answers to:
 - **Dragging over lines copies them when the drag ends.** Selecting text in a terminal that draws
   its own panes gives the reader nothing, and the habit is older than any key this review offers.
   The rows stay selected afterwards, so the drag can be followed by a comment on the same lines.
+
+- **The footer names the keys of the pane in focus.** One row for the whole screen offered `]` for
+  the next file while the reader was standing in the list of comments, and buried the keys that pane
+  does answer to. Each pane names its own: the file list carries what folds and marks files, the
+  diff what selects and comments, the review panel what settles, removes and reorders. The few that
+  work anywhere — the panel, the pull request, the sheet, the way out — stay on every one.
+
+- **The sheet of keys is filtered by typing, and grouped narrowly.** Sixty rows under four headings
+  as broad as "General" is a list to read rather than a list to look something up in. Typing filters
+  it the way the palette filters, and the headings name the thing being done — moving, files,
+  comments, selecting, reading, branches, search — so scanning one is worth doing.
 
 - **`y` copies what the cursor is on when nothing is selected.** Taking a line out of the review to
   paste it somewhere else is the common case, and starting a selection to copy a single line is

@@ -15,7 +15,7 @@ const LONG_TITLE = "Open the folder, layer, gap, or settled thread"
 const LONG_NAME = "reworking-the-invitation-scheduler-and-its-tests"
 
 const listedKeys = (frame: string): ReadonlyArray<string> =>
-  frame.split("\n").filter((line) => /\s{2}(Files|General|Review|Search)\b/.test(line))
+  frame.split("\n").filter((line) => /\s{2}(App|Branches|Comments|Files|Moving|Reading|Search|Selecting)\b/.test(line))
 
 const widest = (frame: string): number =>
   Math.max(...frame.split("\n").map((line) => line.trimEnd().length))
