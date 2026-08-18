@@ -539,6 +539,15 @@ const startsOf = (display: ReadonlyArray<Display>): Map<number, number> => {
 const bareOf = (display: ReadonlyArray<Display>): Set<number> =>
   new Set(display.flatMap((entry, index) => (entry.comment || entry.gap || entry.prose ? [index] : [])))
 
+export const noteKey = (note: Note): string =>
+  [
+    `${note.side}${note.line}:${note.folded ? "-" : "+"}${note.body}`,
+    note.settled ? "settled" : note.asks ? "asked" : "open",
+    ...(note.turns.length > 0
+      ? note.turns.map((turn) => `${turn.voice[0] ?? ""}:${turn.body}`)
+      : note.answers.map((body) => `a:${body}`)),
+  ].join("\u0001")
+
 const keyOf = (
   room: number,
   notes: ReadonlyArray<Note>,
@@ -546,7 +555,7 @@ const keyOf = (
 ): string =>
   [
     room,
-    ...notes.map((note) => `${note.side}${note.line}:${note.folded ? "-" : "+"}${note.body}`),
+    ...notes.map(noteKey),
     ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
   ].join("\u0000")
 
@@ -677,6 +686,7 @@ const headOf = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
   if (note.settled) return `${marks().sent} settled${moved}`
   if (note.asks) return `${marks().comment} asked back${moved}`
+  if (note.turns.at(-1)?.voice === "reviewer") return `${marks().comment} replied${moved}`
   if (note.answers.length > 0) return `${marks().sent} answered${moved}`
   return `${marks().sent} sent${moved}`
 }
