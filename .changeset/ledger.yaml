@@ -290,6 +290,10 @@
   dir: ""
   intents:
     - a-report-that-remembers
+"@eliya-oss/agent-diff@0.1.0-alpha.66":
+  dir: ""
+  intents:
+    - effect-on-the-rc-line
 "@eliya-oss/agent-diff@0.1.0-alpha.7":
   dir: ""
   intents:
