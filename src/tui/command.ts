@@ -256,7 +256,7 @@ export const commands: ReadonlyArray<Command> = [
     panes: ["tree", "diff"],
     title: "Next file",
     category: "Files",
-    keys: ["]"],
+    keys: ["]", "right"],
     screens: ["review"],
     hint: "file",
     rank: 1,
@@ -265,7 +265,7 @@ export const commands: ReadonlyArray<Command> = [
     action: "file.prev",
     title: "Previous file",
     category: "Files",
-    keys: ["["],
+    keys: ["[", "left"],
     screens: ["review"],
   }),
   command({

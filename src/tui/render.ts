@@ -1,6 +1,5 @@
 import {
   BoxRenderable,
-  SelectRenderable,
   RGBA,
   TextRenderable,
   type CliRenderer,
@@ -68,7 +67,7 @@ const reportActions = (full: boolean): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^t")} ${fg(palette.muted)(full ? "sending everything" : "sending the least")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
 
 const actionsText = (): StyledText =>
-  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^a")} ${fg(palette.muted)("add to review")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("comment now")}`
+  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("send it")}`
 const SNIPPET_LINES = 4
 const PALETTE_KEY = 7
 const PALETTE_TITLE = 60
@@ -289,7 +288,7 @@ type PaletteParts = {
   readonly box: BoxRenderable
   readonly title: TextRenderable
   readonly query: TextRenderable
-  readonly choices: SelectRenderable
+  readonly choices: TextRenderable
 }
 
 const makePaletteParts = (renderer: CliRenderer): PaletteParts => {
@@ -303,22 +302,41 @@ const makePaletteParts = (renderer: CliRenderer): PaletteParts => {
   return { box, title, query, choices }
 }
 
-const makeChoices = (renderer: CliRenderer): SelectRenderable =>
-  new SelectRenderable(renderer, {
+const makeChoices = (renderer: CliRenderer): TextRenderable =>
+  new TextRenderable(renderer, {
     id: "palette-choices",
+    content: "",
     flexGrow: 1,
-    options: [],
-    showDescription: false,
-    showScrollIndicator: true,
-    showSelectionIndicator: true,
-    wrapSelection: false,
-    backgroundColor: palette.panel,
-    textColor: palette.ink,
-    descriptionColor: palette.faint,
-    selectedBackgroundColor: palette.selection,
-    selectedTextColor: palette.ink,
-    selectedDescriptionColor: palette.ink,
+    fg: palette.ink,
+    selectable: true,
   })
+
+const LIST_LEAD = 2
+
+const windowed = <Row,>(
+  rows: ReadonlyArray<Row>,
+  at: number,
+  height: number,
+): { readonly rows: ReadonlyArray<Row>; readonly from: number } => {
+  if (rows.length <= height) return { rows, from: 0 }
+  const last = rows.length - height
+  const from = Math.max(0, Math.min(last, at - Math.floor(height / 2)))
+  return { rows: rows.slice(from, from + height), from }
+}
+
+const listText = (
+  rows: ReadonlyArray<string>,
+  at: number,
+  height: number,
+): StyledText => {
+  const shown = windowed(rows, at, Math.max(1, height))
+  const drawn = shown.rows.map((row, index) => {
+    const here = shown.from + index === at
+    const text = `${here ? "▶ " : "  "}${row}`.padEnd(LIST_LEAD)
+    return here ? bg(palette.selection)(fg(palette.ink)(`${text}\n`)) : fg(palette.ink)(`${text}\n`)
+  })
+  return new StyledText(drawn)
+}
 
 const stack = (parent: { add: (child: never) => void }, children: ReadonlyArray<unknown>): void => {
   for (const child of children) parent.add(child as never)
@@ -731,7 +749,7 @@ const PANEL_ORDER: ReadonlyArray<PanelSection> = ["with", "answered"]
 const PANEL_LEAD = 3
 const PANEL_EMPTY = "No comment on this branch yet."
 
-type PanelLine = { readonly text: string; readonly tone: string }
+type PanelLine = { readonly text: string; readonly tone: string; readonly here?: boolean }
 
 const panelMark = (state: TuiState, at: number): string => {
   if (at !== state.panelIndex) return " "
@@ -751,9 +769,10 @@ type Placed = { readonly entry: PanelEntry; readonly at: number }
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
   const lead = `${panelMark(state, placed.at)}${entry.fresh || entry.unread > 0 ? marks().comment : " "} `
+  const here = placed.at === state.panelIndex
   return [
-    { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink },
-    { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted },
+    { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
+    { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted, here },
   ]
 }
 
@@ -784,7 +803,12 @@ const panelText = (state: TuiState, room: number): StyledText => {
   const sections = PANEL_ORDER.flatMap((section) => panelSection(state, placed, section, room))
   const body = sections.slice(sections[0]?.text === "" ? 1 : 0)
   const lines = body.length === 0 ? [{ text: PANEL_EMPTY, tone: palette.muted }] : body
-  return new StyledText([...banner, ...lines].map((line) => fg(line.tone)(`${line.text}\n`)))
+  return new StyledText(
+    [...banner, ...lines].map((line) => {
+      const drawn = fg(line.tone)(`${line.text.padEnd(room)}\n`)
+      return line.here === true ? bg(palette.selection)(drawn) : drawn
+    }),
+  )
 }
 
 export type Mouse = {
@@ -823,15 +847,15 @@ export class Screen {
   private readonly palette: BoxRenderable
   private readonly paletteTitle: TextRenderable
   private readonly paletteQuery: TextRenderable
-  private readonly paletteChoices: SelectRenderable
+  private readonly paletteChoices: TextRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
   private readonly keysQuery: TextRenderable
-  private readonly keysChoices: SelectRenderable
+  private readonly keysChoices: TextRenderable
   private readonly found: BoxRenderable
   private readonly foundTitle: TextRenderable
   private readonly foundPeek: TextRenderable
-  private readonly foundChoices: SelectRenderable
+  private readonly foundChoices: TextRenderable
 
   private readonly renderer: CliRenderer
 
@@ -1025,7 +1049,7 @@ export class Screen {
     if (state.screen !== "palette") {
       this.paletteQuery.content = ""
       this.paletteTitle.content = ""
-      this.paletteChoices.options = []
+      this.paletteChoices.content = ""
       return
     }
     const matches = paletteMatches(state)
@@ -1033,16 +1057,16 @@ export class Screen {
     this.paletteQuery.content =
       state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
     const room = panelWidth(this.renderer.width)
-    this.paletteChoices.options = matches.map((entry) => ({
-      name: commandRow(entry, room - MODAL_ROOM),
-      description: "",
-      value: entry.action,
-    }))
-    this.paletteChoices.selectedIndex = Math.min(state.paletteIndex, Math.max(0, matches.length - 1))
-    this.palette.height = Math.min(
+    const paletteRoom = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
       matches.length + PALETTE_CHROME,
     )
+    this.paletteChoices.content = listText(
+      matches.map((entry) => commandRow(entry, room - MODAL_ROOM)),
+      Math.min(state.paletteIndex, Math.max(0, matches.length - 1)),
+      paletteRoom - PALETTE_CHROME,
+    )
+    this.palette.height = paletteRoom
     this.palette.width = room
     this.palette.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.palette.top = panelTop(this.renderer.height, PANEL_QUARTER)
@@ -1053,7 +1077,7 @@ export class Screen {
     if (state.screen !== "keys") {
       this.keysTitle.content = ""
       this.keysQuery.content = ""
-      this.keysChoices.options = []
+      this.keysChoices.content = ""
       return
     }
     const rows = keyMatches(state)
@@ -1061,16 +1085,16 @@ export class Screen {
     this.keysTitle.content =
       rows.length === 0 ? "No key matches" : `Keys here, ${rows.length} of them`
     this.keysQuery.content = state.query.length === 0 ? "Type to filter…" : `${state.query}▏`
-    this.keysChoices.options = rows.map((entry) => ({
-      name: commandRow(entry, room - MODAL_ROOM),
-      description: "",
-      value: entry.action,
-    }))
-    this.keysChoices.selectedIndex = Math.min(state.paletteIndex, Math.max(0, rows.length - 1))
-    this.keys.height = Math.min(
+    const keysRoom = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
       rows.length + PENDING_CHROME,
     )
+    this.keysChoices.content = listText(
+      rows.map((entry) => commandRow(entry, room - MODAL_ROOM)),
+      Math.min(state.paletteIndex, Math.max(0, rows.length - 1)),
+      keysRoom - PENDING_CHROME,
+    )
+    this.keys.height = keysRoom
     this.keys.width = room
     this.keys.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.keys.top = panelTop(this.renderer.height, PANEL_QUARTER)
@@ -1130,9 +1154,12 @@ export class Screen {
     const pane = this.paneRoom()
     const whole = treeWindow(state, room)
     const window = whole.more === 0 ? whole : treeWindow(state, Math.max(1, room - 1))
-    const rows = window.rows.flatMap((row) => [
-      fg(row.kind === "file" ? palette.ink : palette.muted)(`${treeLine(state, row, pane)}\n`),
-    ])
+    const rows = window.rows.flatMap((row) => {
+      const drawn = fg(row.kind === "file" ? palette.ink : palette.muted)(
+        `${treeLine(state, row, pane)}\n`,
+      )
+      return [row.fileIndex === state.patchIndex ? bg(palette.selection)(drawn) : drawn]
+    })
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
     return new StyledText([...rows, ...more])
   }
@@ -1329,21 +1356,27 @@ export class Screen {
     if (state.screen !== "search") {
       this.foundTitle.content = ""
       this.foundPeek.content = ""
-      this.foundChoices.options = []
+      this.foundChoices.content = ""
       return
     }
     const room = panelWidth(this.renderer.width)
     const here = matchHere(state)
     this.foundTitle.content = `${state.term}  ·  ${state.matches.length} elsewhere`
-    this.foundChoices.options = state.matches.map((match) => ({
-      name: clip(
-        `${match.changed ? marks().comment : " "} ${match.path}:${match.line}  ${match.text}`,
-        Math.max(1, room - MODAL_ROOM),
+    const peekHigh = here?.around.length ?? 0
+    const foundRoom = Math.min(
+      panelRows(this.renderer.height, PANEL_FIFTH),
+      state.matches.length + peekHigh + PALETTE_CHROME,
+    )
+    this.foundChoices.content = listText(
+      state.matches.map((match) =>
+        clip(
+          `${match.changed ? marks().comment : " "} ${match.path}:${match.line}  ${match.text}`,
+          Math.max(1, room - MODAL_ROOM),
+        ),
       ),
-      description: "",
-      value: match.path,
-    }))
-    this.foundChoices.selectedIndex = state.matchIndex
+      state.matchIndex,
+      Math.max(1, foundRoom - peekHigh - PALETTE_CHROME),
+    )
     this.foundPeek.content = (here?.around ?? [])
       .map((line) => clip(line, Math.max(1, room - MODAL_ROOM)))
       .join("\n")

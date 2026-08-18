@@ -76,8 +76,8 @@ describe("the box you write a comment in", () => {
     const actions = rowsOf(frame).find((row) => row.includes("cancel")) ?? ""
     expect(actions).toContain("esc")
     expect(actions).toContain("cancel")
-    expect(actions).toContain("add to review")
-    expect(actions).toContain("comment now")
+    expect(actions).toContain("send it")
+    expect(actions).not.toContain("add to review")
   })
 
   it("grows as the comment runs onto more lines", async () => {

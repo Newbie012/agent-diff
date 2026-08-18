@@ -138,6 +138,22 @@ Three screens, and the keys each answers to:
 - **The diff answers the mouse over its text as well as over its numbers.** A drag that began on
   the code and ended there reached nothing, so the copy that should have followed it never ran.
 
+- **Every character on the screen is text that can be selected.** A panel drawn by a list widget
+  paints rows the terminal cannot hand back, so a title, a path or a command in one could not be
+  copied while everything around it could. The palette, the sheet of keys and the search results are
+  drawn the way the file list and the review panel already are — text with the current row washed —
+  and what is dragged over anywhere is copied when the drag ends.
+
+- **A selection clears on the next key.** It is a thing the reader made with the mouse, and leaving
+  it painted over text that has since moved is a mess that outlives its purpose.
+
+- **The row the cursor is on is washed, not dotted.** A file in the list and a thread in the panel
+  were marked with a character a reader had to hunt for. A background reads at a glance, which is
+  what a cursor is for.
+
+- **The arrows walk between files.** `[` and `]` do it, and reaching for them is a detour on a
+  keyboard where the arrows sit under the hand. Both work everywhere on the review.
+
 - **A drag inside one line copies the characters it covered.** Selecting part of a line is what a
   reader does to take a name out of the diff, and copying the whole line instead is not the same
   thing. The covered characters are washed while the drag holds, and what lands on the clipboard is
