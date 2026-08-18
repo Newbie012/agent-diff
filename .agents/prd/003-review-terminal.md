@@ -312,6 +312,10 @@ Three screens, and the keys each answers to:
   leaving the list. `enter` opens the file when the branch changes it; when it does not, there is no
   diff to open and the panel says so rather than moving the reader somewhere they cannot read.
 - **The line the reviewer is standing on is not a match.** They can see it already.
+- **The file list takes a few more columns only where they are spare.** A wide terminal has room
+  for a longer name without costing the diff or the review panel the room they need; a narrow one
+  does not, and the panel disappearing to buy a wider list is a bad trade.
+
 - **The tree stops indenting after a few levels.** A path six folders deep spent its width on the
   indent rather than on the names, and a name is what a reader is looking for. The rows still read
   in order, so the nesting is legible without paying for it a column at a time.

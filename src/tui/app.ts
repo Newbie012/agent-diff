@@ -1179,6 +1179,10 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const repo = yield* settledPath(asked)
   const branches = yield* listBranches(repo)
   const asOpened = openingOn(branches, options.branch)
+  const missed =
+    options.branch !== undefined && Option.isNone(asOpened)
+      ? `no worktree here is on ${options.branch}`
+      : ""
   const resume = Option.isSome(asOpened)
     ? asOpened
     : sessionPath === undefined
@@ -1190,7 +1194,13 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const sticky = settings.sticky !== false
   const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
   const waiting = yield* upgradeHint
-  const state = yield* SubscriptionRef.make({ ...initialState(branches), wrap, sticky, waiting })
+  const state = yield* SubscriptionRef.make({
+    ...initialState(branches),
+    wrap,
+    sticky,
+    waiting,
+    notice: missed,
+  })
   const painting = yield* Effect.forkDetach(
     Stream.runForEach(SubscriptionRef.changes(state), display.paint),
   )

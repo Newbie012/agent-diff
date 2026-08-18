@@ -167,7 +167,8 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
 
 const FRAME_PAD = 1
 const PANE_BORDER = 2
-const TREE_MAX = 40
+const TREE_MAX = 34
+const TREE_ROOMY = 40
 const TREE_MIN = 18
 const TREE_SHARE = 0.3
 const DIFF_MIN = 26
@@ -178,7 +179,8 @@ export const bodyRoom = (columns: number): number => Math.max(0, columns - FRAME
 
 export const treeWidth = (columns: number): number => {
   const room = bodyRoom(columns)
-  const wanted = Math.min(TREE_MAX, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
+  const most = room - reviewWidth() - DIFF_ROOMY >= TREE_ROOMY ? TREE_ROOMY : TREE_MAX
+  const wanted = Math.min(most, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
   return Math.max(0, Math.min(wanted, room - DIFF_MIN))
 }
 
