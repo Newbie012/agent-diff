@@ -719,8 +719,13 @@ const newerOf = (state: TuiState, comment: StagedComment): StagedComment => {
   return answersIn(later) > answersIn(comment) ? later : comment
 }
 
-const sectionOf = (comment: StagedComment): PanelSection =>
-  answersIn(comment) > 0 || comment.settled === true ? "answered" : "with"
+const spokeLast = (comment: StagedComment): "reviewer" | "agent" | undefined =>
+  comment.turns?.at(-1)?.voice
+
+const sectionOf = (comment: StagedComment): PanelSection => {
+  if (spokeLast(comment) === "reviewer" && comment.settled !== true) return "with"
+  return answersIn(comment) > 0 || comment.settled === true ? "answered" : "with"
+}
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)

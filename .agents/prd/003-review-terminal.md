@@ -237,6 +237,16 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **A thread is drawn again when what it says changes.** The diff is redrawn only when its plan
+  changes, and a thread was described to that check by where it sits and the words the reviewer
+  opened it with — so an answer or a reply arriving left the screen exactly as it was. Writing into
+  a thread and watching nothing happen reads as the writing having failed. What a thread says is
+  part of what it is.
+
+- **A thread the reviewer wrote back to is with the agent, not answered.** It carries an answer, so
+  counting answers put it under `Answered` and titled it so, while the person waiting was the
+  agent. What the thread is waiting on is who spoke last.
+
 - **A branch is resolved and diffed once for each time it is opened.** What the review wants to
   know about a branch — its diff, what has been marked read, its layers, the comments already
   sent — was each asking git for the same worktree and the same diff over again. They are asked

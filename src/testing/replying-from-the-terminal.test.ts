@@ -54,3 +54,20 @@ describe("replying from the terminal", () => {
     expect(frame.indexOf("the imports", answer)).toBeGreaterThan(answer)
   })
 })
+
+describe("a thread the reviewer wrote back to", () => {
+  it("says it is with the agent rather than answered", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const { branch, id } = await threaded(driver)
+    await driver.app.runReply({ branch: branch.name, to: id, body: "the imports" })
+
+    // ACT
+    await driver.screen.pressKeys(["r"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("replied")
+    expect(frame).not.toContain("asked back")
+  })
+})

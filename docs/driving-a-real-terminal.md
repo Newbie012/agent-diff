@@ -36,6 +36,26 @@ proved nothing.
 | shift+down | `\033[1;2B` |
 | shift released | `\033[57441;1:3u` |
 
+## When `termctrl start` will not start
+
+The wrapper daemonises, and on this machine the spawn fails with "session daemon exited before
+becoming ready" while the daemon itself runs perfectly. Start it by hand instead:
+
+```bash
+ADIFF_ROOT=<scratch> nohup termctrl __serve --name p1 --socket /private/tmp/termctrl-501/p1.sock \
+  --cols 170 --rows 45 --cell-width 8 --cell-height 16 --max-bytes 4000000 \
+  "$(readlink -f "$(which node)")" /path/to/adiff/bin/adiff.js review open --repo <repo> --branch <b> \
+  >/tmp/p1.log 2>&1 </dev/null &
+```
+
+Two details are load-bearing. Without `</dev/null` the session starts, draws, and then ignores every
+key — it looks like a keybinding bug and is not one. And the review must be launched through
+`bin/adiff.js`, not `dist/main.js`: the wrapper passes `--experimental-ffi`, and without it OpenTUI
+answers "native FFI is not available for this runtime yet" as JSON where the screen should be.
+
+Point `ADIFF_ROOT` at a scratch directory. A probe writes comments, settles threads and marks files
+read, and a real repository's review is not the place to leave that.
+
 ## Reading the caret
 
 The cursor belongs to the terminal, not to a cell, so `--format json` reports it separately:
