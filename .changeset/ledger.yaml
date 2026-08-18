@@ -299,6 +299,13 @@
   intents:
     - hide-what-is-reviewed
     - settle-what-is-read
+"@eliya-oss/agent-diff@0.1.0-alpha.68":
+  dir: ""
+  intents:
+    - colour-what-still-matches
+    - copy-what-the-cursor-is-on
+    - one-way-to-send
+    - walking-a-tall-comment
 "@eliya-oss/agent-diff@0.1.0-alpha.7":
   dir: ""
   intents:
