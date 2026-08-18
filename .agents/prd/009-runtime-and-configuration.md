@@ -78,6 +78,15 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   which Claude Code loads natively and Cursor and Codex accept for compatibility. Committing a
   skill directory into a repository other people share is a larger imposition than four lines of
   markdown, so it is a separate decision from the instructions.
+- **Copied text is offered to the terminal and to the machine.** A terminal is told through the
+  escape that carries a clipboard, wrapped for tmux and screen, which swallow it otherwise. The
+  machine is told through whatever it has — pbcopy, wl-copy, xclip, clip — because a terminal that
+  ignores the escape would otherwise leave a reviewer with nothing and no way to know.
+
+- **The screen is handed back whatever happens.** The renderer takes the terminal into another mode
+  and owns it until it is destroyed, so it is destroyed when the review ends, including when it ends
+  by failing.
+
 - **The published binary travels compressed.** Compiling with Bun bundles the whole runtime, so the
   executable is around seventy megabytes and no amount of minifying the review's own code moves that
   number. It is attached to the release as a gzipped tar as well as raw, and Homebrew and the curl

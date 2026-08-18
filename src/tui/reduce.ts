@@ -298,17 +298,16 @@ const openCompose = (state: TuiState): TuiState => {
     ...state,
     screen: "compose",
     draft: "",
-    caret: 0,
     anchorRow: state.selecting ? state.anchorRow : state.cursor,
   }
 }
 
 const goBack = (state: TuiState): TuiState => {
   if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "" }
-  if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "", caret: 0 }
+  if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "keys") return { ...state, screen: state.returnTo, query: "" }
-  if (state.screen === "compose") return { ...state, screen: "review", draft: "", caret: 0 }
+  if (state.screen === "compose") return { ...state, screen: "review", draft: "" }
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
 }
@@ -408,7 +407,6 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
     ...state,
     screen: "report",
     draft: "",
-    caret: 0,
     returnTo: state.screen,
   }),
   "report.send": (state) => state,
@@ -589,7 +587,6 @@ export const legible = (text: string): string =>
 export const withDraft = (state: TuiState, draft: string): TuiState => ({
   ...state,
   draft,
-  caret: draft.length,
 })
 
 export const paletteMoved = (state: TuiState, delta: number): TuiState => movePalette(state, delta)
@@ -623,7 +620,6 @@ export const withNotice = (state: TuiState, notice: string): TuiState => ({
   ...state,
   screen: "review",
   draft: "",
-  caret: 0,
   selecting: false,
   notice,
 })

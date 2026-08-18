@@ -5,6 +5,7 @@ import { platform } from "node:os"
 import { resolve } from "node:path"
 import {
   createCliRenderer,
+  getTreeSitterClient,
   stripAnsiSequences,
   type CliRenderer,
   type KeyEvent,
@@ -140,20 +141,37 @@ const momentOf = (named: string, state: TuiState, elapsed: number): string => {
 const noticeOf = (notice: string, elapsed: number): string =>
   `${clockOf(elapsed)}  ${"said".padEnd(16)} ${notice}`
 
+const COPIERS: Readonly<Record<string, ReadonlyArray<string>>> = {
+  darwin: ["pbcopy"],
+  linux: ["xclip", "-selection", "clipboard"],
+  win32: ["clip"],
+}
+
+const wayland = (): ReadonlyArray<string> | undefined =>
+  process.env["WAYLAND_DISPLAY"] === undefined ? undefined : ["wl-copy"]
+
 const handOver = (text: string): void => {
-  if (platform() !== "darwin" || !process.stdout.isTTY) return
-  const pipe = spawn("pbcopy", { stdio: ["pipe", "ignore", "ignore"] })
+  if (!process.stdout.isTTY) return
+  const named = wayland() ?? COPIERS[platform()]
+  if (named === undefined) return
+  const [command, ...rest] = named
+  if (command === undefined) return
+  const pipe = spawn(command, [...rest], { stdio: ["pipe", "ignore", "ignore"] })
   pipe.on("error", () => undefined)
   pipe.stdin.on("error", () => undefined)
   pipe.stdin.end(text)
 }
 
-const copyToClipboard = (text: string): void => {
-  const encoded = Buffer.from(text, "utf8").toString("base64")
-  process.stdout.write(`\u001B]52;c;${encoded}\u0007`)
-  handOver(text)
+const throughMultiplexer = (sequence: string): string => {
+  if (process.env["TMUX"] !== undefined) return `\u001BPtmux;\u001B${sequence}\u001B\\`
+  return process.env["STY"] === undefined ? sequence : `\u001BP${sequence}\u001B\\`
 }
 
+const copyToClipboard = (text: string): void => {
+  const encoded = Buffer.from(text, "utf8").toString("base64")
+  process.stdout.write(throughMultiplexer(`\u001B]52;c;${encoded}\u0007`))
+  handOver(text)
+}
 const lineUnder = (state: TuiState): ReadonlyArray<string> => {
   const row = selectedPatch(state)?.rows[state.cursor]
   return row === undefined ? [] : [row.text]
@@ -246,6 +264,7 @@ export class App {
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
     renderer.on("destroy", () => this.stopLighting())
+    renderer.on("destroy", () => void getTreeSitterClient().destroy())
     renderer.on("destroy", () => this.stopPainting())
     renderer.on("destroy", () => this.stopConsuming())
     renderer.on("frame", () => this.syncGeometry())
@@ -1089,7 +1108,7 @@ export class App {
       const stamp = new Date().toISOString().replace(/[:.]/g, "-")
       const path = yield* (saveReport(stamp, text))
       copyToClipboard(text)
-      const closed = { ...this.state, screen: this.state.returnTo, draft: "", caret: 0 }
+      const closed = { ...this.state, screen: this.state.returnTo, draft: "" }
       this.commit(withNotice(closed, `report copied — ${path}`))
     })
   }
@@ -1113,7 +1132,7 @@ export class App {
           side: anchor.value.side,
           start: anchor.value.start,
           end: anchor.value.end,
-          body: this.state.draft,
+          body: yield* this.display.written,
           id: randomUUID(),
           at: new Date().toISOString(),
         })
@@ -1217,8 +1236,13 @@ export const runTui = Effect.fn("Tui.run")(function* (
   sessionPath?: string,
   branch?: string,
 ) {
-  const renderer = yield* Effect.promise(() => createCliRenderer({ exitOnCtrlC: true, useKittyKeyboard: { events: true } }))
-  yield* runOn(repo, renderer, sessionPath, branch)
+  const renderer = yield* Effect.promise(() =>
+    createCliRenderer({ exitOnCtrlC: true, useKittyKeyboard: { events: true } }),
+  )
+  yield* Effect.ensuring(
+    runOn(repo, renderer, sessionPath, branch),
+    Effect.sync(() => renderer.destroy()),
+  )
 })
 
 export type { Action }
