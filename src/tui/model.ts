@@ -57,7 +57,6 @@ export type TuiState = {
   readonly anchorRow: number
   readonly selecting: boolean
   readonly draft: string
-  readonly caret: number
   readonly notice: string
   readonly waiting: string
   readonly query: string
@@ -134,7 +133,6 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   anchorRow: 0,
   selecting: false,
   draft: "",
-  caret: 0,
   notice: "",
   waiting: "",
   query: "",
@@ -513,9 +511,6 @@ export const caretOn = (
   const last = held.text.endsWith(" ") ? held.text.length - 1 : held.text.length
   return held.from + Math.min(column, Math.max(0, last))
 }
-
-export const caretAt = (state: TuiState): number =>
-  Math.max(0, Math.min(state.draft.length, state.caret))
 
 const COMPOSE_BOX = 72
 const COMPOSE_MARGIN = 4
