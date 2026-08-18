@@ -23,6 +23,7 @@ import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
   composeTarget,
   commentsOn,
+  filePlace,
   hiddenLines,
   isReviewed,
   markedRows,
@@ -693,6 +694,11 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
   state: "",
 })
 
+const placeLabel = (state: TuiState): string => {
+  const place = filePlace(state)
+  return `${place.at}/${place.of}`
+}
+
 const headerParts = (
   state: TuiState,
   branch: string,
@@ -701,7 +707,7 @@ const headerParts = (
 ): ReadonlyArray<string> => [
   branch,
   path,
-  state.patches.length === 0 ? "nothing to read" : `${state.patchIndex + 1}/${state.patches.length}`,
+  state.patches.length === 0 ? "nothing to read" : placeLabel(state),
   pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
   state.vouched.length === 0 ? "" : reviewedCount(state),
   contextLabel(state.context),

@@ -237,6 +237,17 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **The count in the header counts the order the reviewer moves in.** It counted the file's place
+  in the diff git handed over, while `[` and `]` walk the tree, so on a branch whose folders do not
+  match git's ordering the number jumped — 127, then 1, then 131 — and said nothing about how far
+  through the branch anyone was. It counts what can be walked to, so the next press is the next
+  number.
+
+- **A branch named on the command line opens where the branch opens.** Naming a branch stood in for
+  a remembered place, and a remembered place carries a file: the first one in the diff, which on a
+  branch with folders is somewhere in the middle of the tree. The reviewer began 126 files along
+  with no sign of it. Naming a branch says which branch, not which file.
+
 - **A thread is drawn again when what it says changes.** The diff is redrawn only when its plan
   changes, and a thread was described to that check by where it sits and the words the reviewer
   opened it with — so an answer or a reply arriving left the screen exactly as it was. Writing into

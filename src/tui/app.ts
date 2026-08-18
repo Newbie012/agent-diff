@@ -122,6 +122,7 @@ export type AppOptions = {
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
   readonly resume?: Session | undefined
+  readonly opensOn?: number | undefined
   readonly partial?: boolean | undefined
   readonly wrap?: boolean | undefined
   readonly sticky?: boolean | undefined
@@ -276,8 +277,10 @@ export class App {
     renderer.on("frame", () => this.syncGeometry())
     renderer.setFrameCallback(() => Effect.runPromise(this.applying()))
     const resume = options.resume
+    const opensOn = options.opensOn
     this.dispatchTask(this.loadPulls())
-    if (resume !== undefined) this.dispatchTask(this.resume(resume))
+    if (opensOn !== undefined) this.dispatchTask(this.openedOn(opensOn))
+    else if (resume !== undefined) this.dispatchTask(this.resume(resume))
     if (options.partial === true) this.dispatchTask(this.fillBranches())
   }
 
@@ -332,6 +335,15 @@ export class App {
       Key: ({ key }) => this.onKey(key),
       Task: ({ run }) => run,
       Ping: ({ done }) => Effect.asVoid(Deferred.succeed(done, undefined)),
+    })
+  }
+
+  private openedOn(branchIndex: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      if (branchIndex >= this.state.branches.length) return
+      this.write({ ...this.state, branchIndex })
+      yield* this.openBranch()
+      yield* this.loadSource()
     })
   }
 
@@ -1227,16 +1239,16 @@ const firstBranches = Effect.fn("Tui.firstBranches")(function* (
   return only === undefined ? yield* listBranches(repo) : [only]
 })
 
-const missing = (branch: string | undefined, found: Option.Option<Session>): string =>
+const missing = (branch: string | undefined, found: Option.Option<number>): string =>
   branch !== undefined && Option.isNone(found) ? `no worktree here is on ${branch}` : ""
 
 const openingOn = (
   branches: ReadonlyArray<BranchSummary>,
   branch: string | undefined,
-): Option.Option<Session> => {
+): Option.Option<number> => {
   if (branch === undefined) return Option.none()
   const at = branches.findIndex((candidate) => candidate.branch === branch)
-  return at === -1 ? Option.none() : Option.some({ branchIndex: at, patchIndex: 0, cursor: 0, top: 0 })
+  return at === -1 ? Option.none() : Option.some(at)
 }
 
 export type LaunchOptions = {
@@ -1256,7 +1268,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const asOpened = openingOn(branches, options.branch)
   const missed = missing(options.branch, asOpened)
   const resume = Option.isSome(asOpened)
-    ? asOpened
+    ? Option.none<Session>()
     : sessionPath === undefined
       ? Option.none<Session>()
       : yield* readSession(sessionPath)
@@ -1284,6 +1296,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
     noticeMs,
     sessionPath,
     resume: Option.getOrUndefined(resume),
+    opensOn: Option.getOrUndefined(asOpened),
     wrap: kept.wrap,
     sticky: kept.sticky,
     partial,
