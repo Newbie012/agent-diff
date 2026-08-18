@@ -574,7 +574,7 @@ export class App {
 
   private onKey(key: KeyEvent, forced?: Action): Work {
     return Effect.gen({ self: this }, function* () {
-      const action = forced ?? actionFor(this.state.screen, keyName(key))
+      const action = forced ?? actionFor(this.state.screen, keyName(key), this.state.focus)
       this.remember(action, key)
       if (action === undefined) {
         this.onText(key)

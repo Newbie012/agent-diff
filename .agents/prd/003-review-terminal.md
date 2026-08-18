@@ -159,6 +159,11 @@ Three screens, and the keys each answers to:
   Mac the text is handed to the pasteboard as well as offered to the terminal, because a terminal
   that ignores the escape leaves the reader with nothing and no way to tell.
 
+- **`f` on the review panel hides the threads already settled.** A long pass leaves a column of
+  closed conversations above the ones still open, and folding each in the diff does nothing to the
+  list. The same key means the same thing in both panes — put away what is done here — and which
+  pane is in focus decides what "done" refers to.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should
