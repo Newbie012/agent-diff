@@ -7,8 +7,10 @@ const body = [
   "}",
 ]
 
-const pinned = (frame: string): boolean =>
-  frame.split("\n").some((line) => line.includes("export class Mapper") && !/\d\s+[+-]?\s/.test(line))
+const firstDiffRow = (frame: string): string =>
+  frame.split("\n").slice(2).map((line) => line.slice(34, 74)).find((line) => line.trim().length > 2) ?? ""
+
+const pinned = (frame: string): boolean => !/\d+\s[+-]/.test(firstDiffRow(frame))
 
 describe("the scope pinned above the diff", () => {
   it("goes away on S, comes back on S, and is remembered", async () => {
@@ -17,7 +19,7 @@ describe("the scope pinned above the diff", () => {
     await driver.branch.create({ files: [{ path: "src/mapper.ts", before: [], after: body }] })
     await driver.screen.open({ width: 120, height: 20 })
     await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.scroll("down", 20)
+    await driver.screen.pressKeys(["G"])
     expect(pinned(await driver.screen.getFrame())).toBe(true)
 
     // ACT
@@ -27,7 +29,7 @@ describe("the scope pinned above the diff", () => {
     expect(pinned(await driver.screen.getFrame())).toBe(false)
     await driver.screen.restart({ width: 120, height: 20 })
     await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.scroll("down", 20)
+    await driver.screen.pressKeys(["G"])
     expect(pinned(await driver.screen.getFrame())).toBe(false)
   })
 })
