@@ -16,10 +16,10 @@ const spread = {
   ],
 }
 
-const stage = async (driver: TestDriver, body: string): Promise<void> => {
+const say = async (driver: TestDriver, body: string): Promise<void> => {
   await driver.screen.pressKeys(["c"])
   await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("a")
+  await driver.screen.pressCtrl("s")
 }
 
 const rowWith = (frame: string, text: string): string =>
@@ -33,7 +33,7 @@ describe("walking between comments", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["j", "j", "j", "j", "j"])
-    await stage(driver, "look at this")
+    await say(driver, "look at this")
     await driver.screen.pressKeys(["g"])
 
     // ACT
@@ -50,7 +50,7 @@ describe("walking between comments", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["j", "j"])
-    await stage(driver, "the early one")
+    await say(driver, "the early one")
     await driver.screen.pressKeys(["G"])
 
     // ACT
@@ -68,7 +68,7 @@ describe("walking between comments", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["]"])
     await driver.screen.pressKeys(["j"])
-    await stage(driver, "over here")
+    await say(driver, "over here")
     await driver.screen.pressKeys(["["])
 
     // ACT

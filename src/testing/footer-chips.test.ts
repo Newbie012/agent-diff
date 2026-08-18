@@ -45,21 +45,4 @@ describe("what the footer is for", () => {
     // ASSERT
     expect(footerOf(await driver.screen.getFrame())).toContain("? keys")
   })
-
-  it("offers to send the review only once something is staged", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
-    expect(footerOf(await driver.screen.getFrame())).not.toContain("S send")
-
-    // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("hold this")
-    await driver.screen.pressCtrl("a")
-
-    // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("S send 1")
-  })
 })

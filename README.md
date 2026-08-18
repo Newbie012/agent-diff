@@ -98,7 +98,7 @@ record the commit they were written for, and adiff marks them stale once the bra
 you are standing in. Enter opens one.
 
 `j` and `k` move down the diff, `[` and `]` between files, `v` starts a selection and `c` writes a
-comment. `ctrl+s` sends it on its own, `ctrl+a` adds it to a review you send in one go with `S`. `m`
+comment, which `ctrl+s` sends. `y` copies the line you are on, and dragging over lines copies them. `m`
 marks a file reviewed, `d` settles the thread you are on, `s` swaps the sidebar between layers and
 files, `w` wraps long lines, `/` searches for what you selected, `r` reads the branch again, and
 `ctrl+p` finds any command by name. The footer lists the keys for wherever you are.

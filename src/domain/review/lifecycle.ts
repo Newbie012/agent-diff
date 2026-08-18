@@ -35,11 +35,3 @@ export const advance = (
 
 export const needsAttention = (comments: ReadonlyArray<Comment>): ReadonlyArray<Comment> =>
   comments.filter((comment) => comment.state === "question")
-
-export const stage = (staged: ReadonlyArray<Comment>, comment: Comment): ReadonlyArray<Comment> => [
-  ...staged,
-  comment,
-]
-
-export const submitAll = (staged: ReadonlyArray<Comment>): ReadonlyArray<Comment> =>
-  staged.map((comment) => ({ ...comment, state: "submitted" as const }))

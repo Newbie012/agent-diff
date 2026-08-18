@@ -27,7 +27,7 @@ describe("what still holds when the diff wraps", () => {
     await driver.screen.pressKeys(["j", "j"])
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("name the team first")
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ACT
     await driver.screen.pressKeys(["w"])

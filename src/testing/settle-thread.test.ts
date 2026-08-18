@@ -17,8 +17,7 @@ const rowWith = (frame: string, text: string): string =>
 
 const openOnThread = async (driver: TestDriver, body = "why this one"): Promise<void> => {
   const branch = await driver.branch.create(oneFile)
-  await driver.app.runStage({ branch: branch.name, file: "src/api.ts", start: 2, end: 2, body })
-  await driver.app.runSubmit(branch.name)
+  await driver.app.runComment({ branch: branch.name, file: "src/api.ts", start: 2, end: 2, body })
   await driver.screen.open()
   await driver.screen.pressKeys(["RETURN"])
 }

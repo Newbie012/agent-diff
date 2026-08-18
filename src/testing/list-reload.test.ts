@@ -58,12 +58,12 @@ describe("reading the worktree list again", () => {
     expect(before).toContain("resend-expired-invites")
   })
 
-  it("shows the comments staged on another branch since opening", async () => {
+  it("shows the comments sent on another branch since opening", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })
     await driver.screen.open()
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -75,6 +75,6 @@ describe("reading the worktree list again", () => {
     await driver.screen.pressKeys(["r"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("1 staged")
+    expect(await driver.screen.getFrame()).toContain("1 unanswe")
   })
 })

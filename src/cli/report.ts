@@ -33,11 +33,6 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "The error lists the files this branch changed. Use one of those paths.",
     retriable: false,
   },
-  EmptyReview: {
-    exit: USAGE,
-    suggestion: "Stage a comment with `adiff comment stage` before submitting the review.",
-    retriable: false,
-  },
   UnknownWorktree: {
     exit: NOT_FOUND,
     suggestion:

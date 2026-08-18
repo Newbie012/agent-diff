@@ -1,6 +1,5 @@
 import type { Effect } from "effect"
 import type {
-  EmptyReview,
   MalformedLayers,
   MissingOption,
   NoLayers,
@@ -18,7 +17,6 @@ import type { Store, StoreUnreadable, StoreUnwritable } from "../service/store/i
 export type Needs = Git | Store | Forge
 
 export type Fault =
-  | EmptyReview
   | MalformedLayers
   | MissingOption
   | NoLayers

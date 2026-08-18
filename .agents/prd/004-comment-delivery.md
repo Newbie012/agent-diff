@@ -36,8 +36,8 @@ without a comment going missing between two takes.
    from broken.
 5. As a `reviewer`, I want everything to still be there after a restart, so that the store is the
    contract rather than the process.
-6. As a `reviewer`, I want to reword or withdraw a comment I have staged, so that a typo does not
-   have to be sent to be fixed.
+6. As a `reviewer`, I want a comment to go the moment I finish writing it, so that there is no
+   second step between having a point and the agent having it.
 
 ## Implementation Decisions
 
@@ -126,10 +126,11 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **A thread is stale when its comment was written against an older HEAD**, the same rule
   [layers](006-narrative-review.md) use. The code under discussion has moved; the answer may no
   longer describe it.
-- **A staged comment can be reworded or withdrawn until the review is sent.** Rewording replaces
-  the body and keeps the id and the [anchor](CONTEXT.md#anchor), so the comment stays the same
-  comment. Withdrawing removes it. Both name a comment by id and fail with `UnknownComment` when
-  no staged comment carries it, which is what makes them safe to script.
+- **A comment goes out the moment it is written.** Review carried two ways of sending — one comment
+  now, or several held back and sent together — and a reviewer using it for a while has no use for
+  the second. Holding a point back does not make it better, and the agent it is written for is
+  reading the store, not sitting in the room. One way to send is one thing to explain, one screen
+  fewer, and no half-written review to lose.
 - **Nothing that has been sent can be reworded or withdrawn.** A submission is append-only and the
   agent may already have acted on it. Rewording a point that has gone is a new comment, or an
   answer.

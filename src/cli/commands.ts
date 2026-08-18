@@ -2,19 +2,16 @@ import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import { anchorFor, lineOn, parsePatches, type Patch, type Side } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
-import { commentOn, isVouched, stage, submitAll, vouch } from "../domain/review/index.ts"
+import { isVouched, vouch } from "../domain/review/index.ts"
 import {
   Store,
   type Batch,
-  type StoredComment,
   type StoreUnreadable,
   type StoreUnwritable,
 } from "../service/store/index.ts"
 import {
-  EmptyReview,
   UnknownBase,
   UnknownBranch,
-  UnknownComment,
   UnknownFile,
   UnselectableRange,
 } from "./error.ts"
@@ -30,7 +27,6 @@ export type BranchSummary = {
   readonly files: number
   readonly added: number
   readonly removed: number
-  readonly staged: number
   readonly unread: number
   readonly layers: number
   readonly stale: boolean
@@ -147,11 +143,9 @@ const rowsCovering = (
 
 const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
-  const state = yield* store.state(worktree.path)
   const owed = yield* store.take(worktree.path)
   const told = yield* store.layers(worktree.path)
   return {
-    staged: state.pending.length,
     unread: owed.reduce((total, batch) => total + batch.comments.length, 0),
     layers: Option.match(told, { onNone: () => 0, onSome: (layers) => layers.layers.length }),
     stale: Option.match(told, { onNone: () => false, onSome: (layers) => layers.head !== worktree.head }),
@@ -174,7 +168,6 @@ export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: strin
       files: stat.files,
       added: stat.added,
       removed: stat.removed,
-      staged: waiting.staged,
       unread: waiting.unread,
       layers: waiting.layers,
       stale: waiting.stale,
@@ -197,7 +190,7 @@ export type VouchReport = {
   readonly total: number
 }
 
-export type ProgressReport = VouchReport & { readonly pending: number }
+export type ProgressReport = VouchReport
 
 const blobOf = (patches: ReadonlyArray<Patch>, file: string): Option.Option<string> =>
   Option.map(findPatch(patches, file), (patch) => patch.blob)
@@ -237,84 +230,7 @@ export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
   return {
     vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
     total: patches.length,
-    pending: current.pending.length,
   }
-})
-
-const anchorRequest = Effect.fn("Cli.anchorRequest")(function* (request: CommentRequest) {
-  const worktree = yield* findBranch(request.repo, request.branch)
-  const patches = yield* patchesOf(worktree, WHOLE_FILE)
-  const resolved = yield* Option.match(findPatch(patches, request.file), {
-    onNone: () =>
-      new UnknownFile({ file: request.file, known: patches.map((candidate) => candidate.path) }),
-    onSome: Effect.succeed,
-  })
-  const rows = rowsCovering(resolved, request.side, request.start, request.end)
-  const first = rows[0]
-  const last = rows.at(-1)
-  const found =
-    first === undefined || last === undefined ? Option.none() : anchorFor(resolved, first, last)
-  const anchor = yield* Option.match(found, {
-    onNone: () =>
-      new UnselectableRange({ file: request.file, start: request.start, end: request.end }),
-    onSome: Effect.succeed,
-  })
-  return { worktree, anchor }
-})
-
-export const stageComment = Effect.fn("Cli.stageComment")(function* (request: CommentRequest) {
-  const store = yield* Store
-  const { worktree, anchor } = yield* anchorRequest(request)
-  const staged = stage([], commentOn(request.id, anchor, request.body))
-  const first = staged[0]
-  const entry: StoredComment = {
-    id: request.id,
-    anchor,
-    body: first === undefined ? request.body : first.body,
-  }
-  const pending = yield* store.stage(worktree.path, entry)
-  return { pending: pending.length }
-})
-
-export const editStaged = Effect.fn("Cli.editStaged")(function* (request: {
-  readonly repo: string
-  readonly branch: string
-  readonly id: string
-  readonly body: string
-}) {
-  const store = yield* Store
-  const worktree = yield* findBranch(request.repo, request.branch)
-  const current = yield* store.state(worktree.path)
-  const found = current.pending.find((entry) => entry.id === request.id)
-  if (found === undefined) return yield* new UnknownComment({ id: request.id })
-  const pending = yield* store.restage(worktree.path, { ...found, body: request.body })
-  return { pending: Option.getOrElse(pending, () => current.pending).length }
-})
-
-export const dropStaged = Effect.fn("Cli.dropStaged")(function* (
-  repo: string,
-  branch: string,
-  id: string,
-) {
-  const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
-  const pending = yield* store.unstage(worktree.path, id)
-  if (Option.isNone(pending)) return yield* new UnknownComment({ id })
-  return { pending: pending.value.length }
-})
-
-export const listPending = Effect.fn("Cli.listPending")(function* (repo: string, branch: string) {
-  const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
-  const current = yield* store.state(worktree.path)
-  return current.pending.map((entry) => ({
-    id: entry.id,
-    file: entry.anchor.path,
-    side: entry.anchor.side,
-    start: entry.anchor.start,
-    end: entry.anchor.end,
-    body: entry.body,
-  })) satisfies ReadonlyArray<Omit<PendingComment, "at" | "head" | "snippet">>
 })
 
 const bodyOf = (entry: { readonly body: string }): string => entry.body
@@ -367,25 +283,6 @@ export const listSent = Effect.fn("Cli.listSent")(function* (
         read: current.read,
       }),
     )
-})
-
-export const submitReview = Effect.fn("Cli.submitReview")(function* (
-  repo: string,
-  branch: string,
-  id: string,
-  at: string,
-) {
-  const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
-  const current = yield* store.state(worktree.path)
-  if (current.pending.length === 0) return yield* new EmptyReview({ branch })
-  const comments = submitAll(
-    current.pending.map((entry) => commentOn(entry.id, entry.anchor, entry.body)),
-  ).map((comment) => ({ id: comment.id, anchor: comment.anchor, body: comment.body }))
-  const batch: Batch = { id, at, head: worktree.head, comments }
-  yield* store.submit(worktree.path, batch)
-  yield* store.saveState(worktree.path, { ...current, pending: [] })
-  return { submitted: comments.length }
 })
 
 export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {

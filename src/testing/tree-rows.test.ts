@@ -58,7 +58,7 @@ describe("reading the file tree", () => {
     await driver.screen.typeText("about this")
 
     // ACT
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     expect(pane(await driver.screen.getFrame()).some((line) => line.includes("1•"))).toBe(true)

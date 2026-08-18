@@ -19,7 +19,7 @@ const gutter = (frame: string): string =>
     .join("")
 
 describe("seeing where the comments are", () => {
-  it("marks the line a staged comment is attached to", async () => {
+  it("marks the line a comment is attached to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -28,7 +28,7 @@ describe("seeing where the comments are", () => {
     await driver.screen.typeText("about the first")
 
     // ACT
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     expect(gutter(await driver.screen.getFrame())).toContain("○")

@@ -138,8 +138,7 @@ which is the repository the worktree belongs to:
 > Open it with `adiff review open --repo <repo> --branch <branch>`, which lands on this branch's
 > diff. The sidebar lists the files; `j` and `k` move down the diff, `]` and `[` walk between
 > files, `}` and `{` jump to the next and previous change, `G` goes to the end. Select lines with
-> `v`, write a comment with `c`, stage it with `ctrl+a`, and send the whole review with `S`. Press
-> `?` for the rest.
+> `v`, write a comment with `c`, and send it with `ctrl+s`. Press `?` for the rest.
 
 Fill the repository path and the branch in yourself, so nobody has to compose the command or find
 the branch in a list. `--branch` takes the name `branch list` reports; without it the review opens

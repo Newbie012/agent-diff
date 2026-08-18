@@ -302,13 +302,6 @@ const makePaletteParts = (renderer: CliRenderer): PaletteParts => {
   return { box, title, query, choices }
 }
 
-const makePendingParts = (renderer: CliRenderer): PaletteParts => {
-  const parts = makePaletteParts(renderer)
-  parts.box.id = "pending"
-  parts.query.height = 0
-  return parts
-}
-
 const makeChoices = (renderer: CliRenderer): SelectRenderable =>
   new SelectRenderable(renderer, {
     id: "palette-choices",
@@ -348,7 +341,6 @@ const makeHome = (renderer: CliRenderer) => ({
 
 const makeModals = (renderer: CliRenderer) => ({
   palette: makePaletteParts(renderer),
-  staged: makePendingParts(renderer),
   found: makeFoundParts(renderer),
   keys: makeKeysParts(renderer),
 })
@@ -487,10 +479,8 @@ const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
   return `${lead}${clipPath(row.name, Math.max(4, room - lead.length))}`
 }
 
-const waitingLabel = (branch: TuiState["branches"][number]): string => {
-  if (branch.staged > 0) return `${branch.staged} staged`
-  return branch.unread > 0 ? `${branch.unread} unanswered` : ""
-}
+const waitingLabel = (branch: TuiState["branches"][number]): string =>
+  branch.unread > 0 ? `${branch.unread} unanswered` : ""
 
 const inRange = (state: TuiState, row: number, from: number, to: number): boolean =>
   state.selecting && row >= from && row <= to
@@ -516,10 +506,8 @@ const notesOf = (
       answers: entry.answers ?? [],
     }))
 
-const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
-  ...notesOf(state.sent, path, true, state.opened),
-  ...notesOf(state.pending, path, false),
-]
+const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> =>
+  notesOf(state.sent, path, true, state.opened)
 
 const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<TextChunk>> => {
   const chips: Array<ReadonlyArray<TextChunk>> = []
@@ -636,7 +624,6 @@ const headerParts = (
   state.patches.length === 0 ? "nothing to read" : `${state.patchIndex + 1}/${state.patches.length}`,
   pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
   state.vouched.length === 0 ? "" : reviewedCount(state),
-  state.staged === 0 ? "" : `${state.staged} staged`,
   contextLabel(state.context),
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} lines hidden`,
   pan === 0 ? "" : `→ ${pan} columns`,
@@ -736,12 +723,11 @@ const layerPaint = (state: TuiState, row: LayerRow): string => {
 }
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
-  staged: "Staged",
   with: "With the agent",
   answered: "Answered",
 }
 
-const PANEL_ORDER: ReadonlyArray<PanelSection> = ["staged", "with", "answered"]
+const PANEL_ORDER: ReadonlyArray<PanelSection> = ["with", "answered"]
 const PANEL_LEAD = 3
 const PANEL_EMPTY = "No comment on this branch yet."
 
@@ -838,12 +824,9 @@ export class Screen {
   private readonly paletteTitle: TextRenderable
   private readonly paletteQuery: TextRenderable
   private readonly paletteChoices: SelectRenderable
-  private readonly pending: BoxRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
   private readonly keysChoices: SelectRenderable
-  private readonly pendingTitle: TextRenderable
-  private readonly pendingChoices: SelectRenderable
   private readonly found: BoxRenderable
   private readonly foundTitle: TextRenderable
   private readonly foundPeek: TextRenderable
@@ -895,9 +878,6 @@ export class Screen {
     this.keys = modals.keys.box
     this.keysTitle = modals.keys.title
     this.keysChoices = modals.keys.choices
-    this.pending = modals.staged.box
-    this.pendingTitle = modals.staged.title
-    this.pendingChoices = modals.staged.choices
     this.found = modals.found.box
     this.foundTitle = modals.found.title
     this.foundPeek = modals.found.query
@@ -995,7 +975,7 @@ export class Screen {
   update(state: TuiState): void {
     this.shown = state
     this.chips = hintsFor(state.screen, {
-      staged: state.staged,
+      comments: state.sent.length,
       layers: state.layers.length,
       onThread: state.stop > 0 || threadChosen(state) !== undefined,
       selecting: state.selecting,
@@ -1017,7 +997,6 @@ export class Screen {
     this.paintCompose(state)
     this.paintPalette(state)
     this.paintKeys(state)
-    this.paintPending(state)
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
@@ -1176,34 +1155,6 @@ export class Screen {
     this.paintGutter(state, top, height)
   }
 
-  private paintPending(state: TuiState): void {
-    this.pending.visible = state.screen === "pending"
-    if (state.screen !== "pending") {
-      this.pendingTitle.content = ""
-      this.pendingChoices.options = []
-      return
-    }
-    const count = state.pending.length
-    const room = panelWidth(this.renderer.width)
-    this.pendingTitle.content = `Send ${count} comment${count === 1 ? "" : "s"} as one review, waking the agent once`
-    this.pendingChoices.options = state.pending.map((entry) => ({
-      name: clip(
-        `${entry.file}:${entry.start}-${entry.end}  ${entry.body.split("\n")[0] ?? ""}`,
-        Math.max(1, room - MODAL_ROOM),
-      ),
-      description: "",
-      value: entry.file,
-    }))
-    this.pendingChoices.selectedIndex = state.pendingIndex
-    this.pending.height = Math.min(
-      panelRows(this.renderer.height, PANEL_QUARTER),
-      state.pending.length + PENDING_CHROME,
-    )
-    this.pending.width = room
-    this.pending.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.pending.top = panelTop(this.renderer.height, PANEL_QUARTER)
-  }
-
   private assemble(renderer: CliRenderer): void {
     this.diffScroll.add(this.view.node())
     this.diffPane.add(this.view.pinNode())
@@ -1223,7 +1174,6 @@ export class Screen {
       this.scrim,
       this.compose,
       this.palette,
-      this.pending,
       this.found,
       this.keys,
     ])

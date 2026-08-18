@@ -39,8 +39,8 @@ is listed in the footer, so nothing has to be memorised or discovered.
    everywhere, so that reading three lines above one hunk costs three lines and not a whole file.
 7. As a `reviewer`, I want to pick up the agent's newest work without leaving the review, so that
    the diff I am reading is the code that exists.
-8. As a `reviewer`, I want to fix or withdraw a comment I have staged, so that reading back what I
-   wrote is worth doing.
+8. As a `reviewer`, I want a comment to be sent when I finish writing it, so that reviewing is one
+   move and not two.
 9. As a `reviewer`, I want the footer to carry the few keys I reach for and one key that lists the
    rest, so that the row I read constantly stays short enough to read.
 10. As a `reviewer`, I want every command I find to name the key that runs it, so that finding it
@@ -157,11 +157,12 @@ Three screens, and the keys each answers to:
 - **Every row that names a command names its key.** The palette and the sheet render the same row,
   so a command found by typing and a command found by scanning teach the same thing.
 
-- **Rewording a staged comment reopens the compose panel on its text**, and staging again replaces
-  that comment rather than adding one. The comment keeps its id and its
-  [anchor](CONTEXT.md#anchor), so it stays the comment the reviewer wrote, wherever the cursor has
-  since moved.
-- **Withdrawing is one deliberate keystroke and no confirmation.** `X` takes a shift, so it is not
+- **The compose panel has one way out: the comment goes.** It used to have two, one that sent and
+  one that held the comment back for a review sent later, and the second was never the one reached
+  for. A point written while reading is a point worth making now, and the screen that listed what
+  was held back, the keys that reworded and withdrew from it, and the count in the footer all go
+  with it.
+- **Withdrawing a comment that has gone is one deliberate keystroke and no confirmation.** `X` takes a shift, so it is not
   reached by accident while scanning the list, and a prompt for every withdrawal would cost more
   than retyping the occasional comment. The notice names what went.
 - **`w` wraps the diff, so a long line is readable to its end.** Wrapped or not, a line keeps one
@@ -226,8 +227,8 @@ Three screens, and the keys each answers to:
 - **The command palette opens wherever a reader is moving around**, over the diff and over the
   review list. It stays shut where a reader is typing, since a draft is not a place to run a
   command from, and on the worktree list, whose three actions are already on screen.
-- **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key,
-  the staged review and the search results are measured against the width and the height of the
+- **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key
+  and the search results are measured against the width and the height of the
   screen rather than against one fixed size. On a wide terminal a command keeps its whole title and
   a match keeps its whole line, instead of being cut short beside empty columns; on a tall terminal
   the list runs down to the room the screen has, instead of stopping at a count fixed for a short

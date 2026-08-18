@@ -49,19 +49,19 @@ describe("writing a comment", () => {
     expect(lines.some((line) => line.includes("second line"))).toBe(true)
   })
 
-  it("stages a comment for later instead of waking the agent now", async () => {
+  it("sends the comment as soon as it is written", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN", "c"])
-    await driver.screen.typeText("hold this back")
+    await driver.screen.typeText("this one goes now")
 
     // ACT
-    await driver.screen.pressCtrl("a")
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
-    expect(await driver.agent.listBatches(branch.worktree)).toHaveLength(0)
-    expect(await driver.screen.getFrame()).toContain("1 staged")
+    expect(await driver.agent.listBatches(branch.worktree)).toHaveLength(1)
+    expect(await driver.screen.getFrame()).toContain("sent to the agent")
   })
 })

@@ -38,7 +38,7 @@ const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => 
   `- branch \`${selectedBranch(state)?.branch ?? "none"}\``,
   `- file \`${selectedPatch(state)?.path ?? "none"}\`, row ${state.cursor + 1}`,
   `- screen \`${state.screen}\`, focus \`${state.focus}\`, selecting ${String(state.selecting)}`,
-  `- ${state.staged} staged, ${state.vouched.length} of ${state.patches.length} reviewed`,
+  `- ${state.vouched.length} of ${state.patches.length} reviewed`,
 ]
 
 const fenced = (title: string, lines: ReadonlyArray<string>): ReadonlyArray<string> => [

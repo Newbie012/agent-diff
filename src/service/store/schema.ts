@@ -35,7 +35,6 @@ export const Batch = Schema.Struct({
 export const BranchState = Schema.Struct({
   vouches: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   consumed: Schema.optionalKey(Schema.Int),
-  pending: Schema.optionalKey(Schema.Array(StoredComment)),
   settled: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   removed: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   base: Schema.optionalKey(Schema.String),

@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect"
+import { Effect } from "effect"
 import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
 import { findBranch, patchesOf } from "./commands.ts"
 import { worktreeAt } from "./layers.ts"
@@ -87,24 +87,6 @@ const isKnown = Effect.fn("Cli.isKnown")(function* (worktreePath: string, id: st
   return idsIn(yield* store.inbox(worktreePath)).includes(id)
 })
 
-const stagedOf = (entry: {
-  readonly id: string
-  readonly body: string
-  readonly anchor: { readonly path: string; readonly side: string; readonly start: number; readonly end: number }
-}): Thread => ({
-  id: entry.id,
-  file: entry.anchor.path,
-  side: entry.anchor.side,
-  start: entry.anchor.start,
-  end: entry.anchor.end,
-  body: entry.body,
-  state: "staged",
-  stale: false,
-  outside: false,
-  unread: 0,
-  answers: [],
-})
-
 export const listThreads = Effect.fn("Cli.listThreads")(function* (
   repo: string,
   branch: string,
@@ -121,7 +103,7 @@ export const listThreads = Effect.fn("Cli.listThreads")(function* (
     shown: new Set((yield* patchesOf(worktree)).map((patch: { path: string }) => patch.path)),
     read: current.read,
   })
-  return [...sent, ...current.pending.map(stagedOf)]
+  return sent
 })
 
 export const answerComment = Effect.fn("Cli.answerComment")(function* (request: {
@@ -173,17 +155,12 @@ export const removeComment = Effect.fn("Cli.removeComment")(function* (
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
   const current = yield* store.state(worktree.path)
-  if (current.pending.some((entry) => entry.id === id)) {
-    const pending = yield* store.unstage(worktree.path, id)
-    if (Option.isNone(pending)) return yield* new UnknownComment({ id })
-    return { removed: id, staged: true }
-  }
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   yield* store.saveState(worktree.path, {
     ...current,
     removed: { ...current.removed, [id]: at },
   })
-  return { removed: id, staged: false }
+  return { removed: id }
 })
 
 const without = (

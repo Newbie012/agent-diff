@@ -623,10 +623,9 @@ const wrap = (text: string, room: number): ReadonlyArray<string> => {
 const headOf = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
   if (note.settled) return `${marks().sent} settled${moved}`
-  if (note.asks) return `${marks().staged} asked back${moved}`
+  if (note.asks) return `${marks().comment} asked back${moved}`
   if (note.answers.length > 0) return `${marks().sent} answered${moved}`
-  if (note.sent) return `${marks().sent} sent${moved}`
-  return `${marks().staged} staged`
+  return `${marks().sent} sent${moved}`
 }
 
 const spokenLines = (body: string, room: number): ReadonlyArray<string> => {

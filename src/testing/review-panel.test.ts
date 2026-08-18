@@ -25,11 +25,11 @@ const openWide = async (driver: TestDriver): Promise<void> => {
 }
 
 describe("the review panel", () => {
-  it("lists what is staged when the terminal is wide enough", async () => {
+  it("lists the comments on the branch when the terminal is wide enough", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -42,7 +42,7 @@ describe("the review panel", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("Staged")
+    expect(frame).toContain("With the agent")
     expect(frame).toContain("src/api.ts:2")
     expect(frame).toContain("why this one")
   })
@@ -51,7 +51,7 @@ describe("the review panel", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -64,14 +64,14 @@ describe("the review panel", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("Staged")
+    expect(await driver.screen.getFrame()).not.toContain("With the agent")
   })
 
   it("gives the columns back when the reviewer hides it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
@@ -84,22 +84,21 @@ describe("the review panel", () => {
     await driver.screen.pressKeys(["a"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("Staged")
+    expect(await driver.screen.getFrame()).not.toContain("With the agent")
   })
 
-  it("separates what is staged from what the agent already has", async () => {
+  it("lists every comment the agent is holding", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
       start: 2,
       end: 2,
       body: "already handed over",
     })
-    await driver.app.runSubmit(branch.name)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/web.ts",
       start: 2,
@@ -112,7 +111,6 @@ describe("the review panel", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("Staged")
     expect(frame).toContain("With the agent")
     expect(frame).toContain("still mine")
     expect(frame).toContain("already handed over")
@@ -122,7 +120,7 @@ describe("the review panel", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.app.runStage({
+    await driver.app.runComment({
       branch: branch.name,
       file: "src/web.ts",
       start: 3,

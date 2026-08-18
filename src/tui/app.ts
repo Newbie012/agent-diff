@@ -20,17 +20,12 @@ import {
   listPatches,
   fileSource,
   fileBefore,
-  listPending,
   listSent,
   searchBranch,
   listLayers,
   reviewProgress,
   saveReport,
   saveWrap,
-  stageComment,
-  editStaged,
-  dropStaged,
-  submitReview,
   submitComment,
   toggleVouch,
   removeComment,
@@ -100,12 +95,10 @@ import {
   withPatches,
   restoredTo,
   withMatches,
-  withPending,
   withSent,
   withSource,
   withLayers,
   withVouched,
-  withDraft,
 } from "./reduce.ts"
 import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import type { Needs, Work } from "./needs.ts"
@@ -527,7 +520,6 @@ export class App {
       "branch.pull": () => this.showPull(),
       "compose.open": () => this.compose(),
       "compose.submit": () => this.send(),
-      "compose.stage": () => this.stage(),
       "palette.run": () => this.runChoice(),
       "comment.next": () => this.walkComments(1),
       "comment.prev": () => this.walkComments(-1),
@@ -546,10 +538,6 @@ export class App {
       "search.jump": () => this.openMatch(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
-      "pending.open": () => this.openPending(),
-      "pending.edit": () => Effect.sync(() => this.editStagedComment()),
-      "pending.drop": () => this.dropStagedComment(),
-      "pending.submit": () => this.sendReview(),
       "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
       back: () => this.goBack(),
       "report.send": () => this.sendReport(),
@@ -644,11 +632,10 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const patches = yield* (listPatches(this.repo, name))
       const progress = yield* (reviewProgress(this.repo, name))
-      const pending = yield* (listPending(this.repo, name))
       const layers = yield* (listLayers(this.repo, name))
       const sent = yield* this.loadSent(name)
       const opened = withVouched(withPatches(this.state, patches), progress.vouched)
-      return withLayers(withSent(withPending(opened, pending, "review"), sent), layers)
+      return withLayers(withSent(opened, sent), layers)
     })
   }
 
@@ -921,64 +908,6 @@ export class App {
     })
   }
 
-  private request(): Parameters<typeof submitComment>[0] | undefined {
-    const patch = selectedPatch(this.state)
-    const branch = selectedBranch(this.state)
-    const [from, to] = selectionRange(this.state)
-    if (patch === undefined || branch === undefined || this.state.draft.length === 0) return undefined
-    const anchor = anchorFor(patch, from, to)
-    if (Option.isNone(anchor)) return undefined
-    return {
-      repo: this.repo,
-      branch: branch.branch,
-      file: patch.path,
-      side: anchor.value.side,
-      start: anchor.value.start,
-      end: anchor.value.end,
-      body: this.state.draft,
-      id: randomUUID(),
-      at: new Date().toISOString(),
-    }
-  }
-
-  private stage(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const editing = this.state.editing
-      if (editing !== undefined) {
-        yield* this.restage(editing)
-        return
-      }
-      const request = this.request()
-      if (request === undefined) {
-        this.commit(withNotice(this.state, "nothing to stage"))
-        return
-      }
-      yield* (stageComment(request))
-      const branch = selectedBranch(this.state)
-      const pending =
-        branch === undefined ? [] : yield* (listPending(this.repo, branch.branch))
-      const next = withPending(this.state, pending, "review")
-      this.commit(withNotice(next, `${pending.length} staged, press S to send`))
-    })
-  }
-
-  private restage(id: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      yield* (
-        editStaged({ repo: this.repo, branch: branch.branch, id, body: this.state.draft })
-      )
-      const pending = yield* (listPending(this.repo, branch.branch))
-      const next = withPending(
-        { ...this.state, editing: undefined, draft: "", caret: 0 },
-        pending,
-        "pending",
-      )
-      this.commit(withNoticeHere(next, "reworded"))
-    })
-  }
-
   private loadSent(branch: string): Work<TuiState["sent"]> {
     return listSent(this.repo, branch)
   }
@@ -1070,54 +999,6 @@ export class App {
       const patch = selectedPatch(widened)
       const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)
       this.commit(withContext(this.state, next, patches, cursor))
-    })
-  }
-
-  private openPending(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const pending = yield* (listPending(this.repo, branch.branch))
-      if (pending.length === 0) {
-        this.commit(withNotice(this.state, "nothing staged"))
-        return
-      }
-      this.commit(withPending(this.state, pending, "pending"))
-    })
-  }
-
-  private editStagedComment(): void {
-    const entry = this.state.pending[this.state.pendingIndex]
-    if (entry?.id === undefined) return
-    this.commit(withDraft({ ...this.state, screen: "compose", editing: entry.id }, entry.body))
-  }
-
-  private dropStagedComment(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      const entry = this.state.pending[this.state.pendingIndex]
-      if (branch === undefined || entry?.id === undefined) return
-      yield* (dropStaged(this.repo, branch.branch, entry.id))
-      const pending = yield* (listPending(this.repo, branch.branch))
-      const kept = withPending(this.state, pending, pending.length === 0 ? "review" : "pending")
-      const at = Math.min(this.state.pendingIndex, Math.max(0, pending.length - 1))
-      const said = pending.length === 0 ? "nothing staged" : `withdrawn — ${pending.length} left`
-      this.commit(withNoticeHere({ ...kept, pendingIndex: at }, said))
-    })
-  }
-
-  private sendReview(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const report = yield* (
-        submitReview(this.repo, branch.branch, randomUUID(), new Date().toISOString())
-      )
-      const cleared = withSent(
-        withPending(this.state, [], "review"),
-        yield* this.loadSent(branch.branch),
-      )
-      this.commit(withNotice(cleared, `review sent — ${report.submitted} comment${report.submitted === 1 ? "" : "s"}, one wake-up`))
     })
   }
 

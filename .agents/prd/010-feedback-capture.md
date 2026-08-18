@@ -68,8 +68,8 @@ The keys themselves ([PRD 003](003-review-terminal.md)); the store's root
 - **A report is markdown**, in this order: the reviewer's description first, because that is the
   part a human reads; then the facts.
 - **The facts are** the adiff version, the Node version and platform, the terminal size, the repo,
-  the branch, the file and cursor position, the screen the reviewer was on, the counts of staged
-  and reviewed files, the last internal failure if one occurred, the last keys pressed, and the
+  the branch, the file and cursor position, the screen the reviewer was on, the count of files
+  reviewed, the last internal failure if one occurred, the last keys pressed, and the
   screen as rendered.
 - **The last 40 keys are recorded** as their binding names where one exists and their raw name
   otherwise, oldest first. Text typed into a description is not recorded — a report should not
