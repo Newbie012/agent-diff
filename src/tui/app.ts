@@ -121,6 +121,8 @@ export type AppOptions = {
 }
 
 const KEY_HISTORY = 40
+const DRAIN_PASSES = 8
+
 const TRAIL_HISTORY = 20
 
 const clockOf = (elapsed: number): string => {
@@ -363,11 +365,24 @@ export class App {
     return this.failure
   }
 
-  settled(): Promise<void> {
-    if (this.consuming === undefined) return Promise.resolve()
+  private pinged(): Effect.Effect<void> {
     const done = Deferred.makeUnsafe<void>()
     Queue.offerUnsafe(this.intents, Intent.Ping({ done }))
-    return Effect.runPromise(Effect.andThen(Deferred.await(done), this.stillLighting()))
+    return Deferred.await(done)
+  }
+
+  private drained(): Effect.Effect<void> {
+    return Effect.gen({ self: this }, function* () {
+      for (let pass = 0; pass < DRAIN_PASSES; pass += 1) {
+        yield* this.pinged()
+        if (Queue.sizeUnsafe(this.intents) === 0) return
+      }
+    })
+  }
+
+  settled(): Promise<void> {
+    if (this.consuming === undefined) return Promise.resolve()
+    return Effect.runPromise(Effect.andThen(this.drained(), this.stillLighting()))
   }
 
   private stillLighting(): Effect.Effect<void> {
