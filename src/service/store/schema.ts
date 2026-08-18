@@ -43,6 +43,7 @@ export const BranchState = Schema.Struct({
 
 export const Settings = Schema.Struct({
   wrap: Schema.optionalKey(Schema.Boolean),
+  sticky: Schema.optionalKey(Schema.Boolean),
 })
 
 export const UpgradeCheck = Schema.Struct({

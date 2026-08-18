@@ -26,6 +26,14 @@ export type LayerRow = {
   readonly lead: boolean
 }
 
+export type Spot = { readonly row: number; readonly column: number }
+
+export type Picked = {
+  readonly row: number
+  readonly from: number
+  readonly to: number
+}
+
 export type Screen =
   | "branches"
   | "review"
@@ -68,6 +76,7 @@ export type TuiState = {
   readonly focus: "tree" | "diff" | "review"
   readonly navOpen: boolean
   readonly wrap: boolean
+  readonly sticky: boolean
   readonly pan: number
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
@@ -87,6 +96,7 @@ export type TuiState = {
   readonly reportFull: boolean
   readonly hideReviewed: boolean
   readonly hideSettled: boolean
+  readonly picked: Picked | undefined
   readonly newestFirst: boolean
   readonly tallest: number
   readonly scroll: number
@@ -103,6 +113,7 @@ const nothingReviewed = {
   reportFull: true,
   hideReviewed: false,
   hideSettled: false,
+  picked: undefined,
   newestFirst: true,
   tallest: 0,
   scroll: -1,
@@ -142,6 +153,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   focus: "diff",
   navOpen: true,
   wrap: false,
+  sticky: true,
   pan: 0,
   layers: [],
   layersStale: false,
@@ -506,6 +518,16 @@ export const composeTarget = (state: TuiState): string => {
   return span === "" ? `Comment on ${patch.path}` : `Comment on ${patch.path}:${span}`
 }
 
+export const pickedText = (state: TuiState): string | undefined => {
+  const picked = state.picked
+  const patch = selectedPatch(state)
+  if (picked === undefined || patch === undefined) return undefined
+  const text = patch.rows[picked.row]?.text
+  if (text === undefined) return undefined
+  const taken = text.slice(picked.from, picked.to)
+  return taken.length === 0 ? undefined : taken
+}
+
 export const selectedLines = (state: TuiState): ReadonlyArray<string> => {
   const patch = selectedPatch(state)
   if (patch === undefined) return []
@@ -692,6 +714,12 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
     return state.newestFirst ? found.toReversed() : found
   }
   return [...ordered("with"), ...ordered("answered")]
+}
+
+export const panelIndexOf = (state: TuiState, id: string | undefined): number => {
+  if (id === undefined) return state.panelIndex
+  const at = panelEntries(state).findIndex((entry) => entry.comment.id === id)
+  return at === -1 ? state.panelIndex : at
 }
 
 export const panelEntry = (state: TuiState): PanelEntry | undefined =>

@@ -422,6 +422,12 @@ export const saveWrap = Effect.fn("Cli.saveWrap")(function* (wrap: boolean) {
   yield* store.saveSettings({ ...current, wrap })
 })
 
+export const saveSticky = Effect.fn("Cli.saveSticky")(function* (sticky: boolean) {
+  const store = yield* Store
+  const current = yield* store.settings
+  yield* store.saveSettings({ ...current, sticky })
+})
+
 export const setBase = Effect.fn("Cli.setBase")(function* (
   repo: string,
   branch: string,

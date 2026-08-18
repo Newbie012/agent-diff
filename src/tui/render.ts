@@ -6,7 +6,7 @@ import {
   type CliRenderer,
 } from "@opentui/core"
 import { ASCIIFontRenderable, bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
-import { displayKey, hintsFor, type Command } from "./command.ts"
+import { displayKey, hintsFor, takesText, type Command } from "./command.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
@@ -47,6 +47,7 @@ import {
   reviewWidth,
   type PanelEntry,
   type PanelSection,
+  type Spot,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import { marks } from "./marks.ts"
@@ -789,7 +790,7 @@ const panelText = (state: TuiState, room: number): StyledText => {
 export type Mouse = {
   readonly onScroll: (delta: number) => void
   readonly onPan: (delta: number) => void
-  readonly onDrag: (from: number, to: number, done: boolean) => void
+  readonly onDrag: (from: Spot, to: Spot, done: boolean) => void
   readonly onChip: (key: string) => void
   readonly onRail: (delta: number) => void
 }
@@ -835,7 +836,7 @@ export class Screen {
   private readonly renderer: CliRenderer
 
   private mouse: Mouse | undefined
-  private dragFrom: number | undefined
+  private dragFrom: Spot | undefined
   private lastTop = 0
 
   constructor(renderer: CliRenderer, repo = "") {
@@ -910,19 +911,22 @@ export class Screen {
     this.wheelOnRail(this.listPane)
     this.wheelOnRail(this.list)
     this.view.listenTo({
-      scroll: (delta) => this.mouse?.onScroll(delta),
+      scroll: (delta) => {
+        this.dragFrom = undefined
+        this.mouse?.onScroll(delta)
+      },
       pan: (delta) => this.mouse?.onPan(delta),
-      down: (y) => {
-        this.dragFrom = this.rowAtY(y)
+      down: (y, x) => {
+        this.dragFrom = this.spotAt(y, x)
         this.mouse?.onDrag(this.dragFrom, this.dragFrom, false)
       },
-      drag: (y) => {
+      drag: (y, x) => {
         if (this.dragFrom === undefined) return
-        this.mouse?.onDrag(this.dragFrom, this.rowAtY(y), false)
+        this.mouse?.onDrag(this.dragFrom, this.spotAt(y, x), false)
       },
-      dragEnd: (y) => {
+      dragEnd: (y, x) => {
         if (this.dragFrom === undefined) return
-        this.mouse?.onDrag(this.dragFrom, this.rowAtY(y), true)
+        this.mouse?.onDrag(this.dragFrom, this.spotAt(y, x), true)
         this.dragFrom = undefined
       },
     })
@@ -930,6 +934,10 @@ export class Screen {
 
   private rowAtY(y: number): number {
     return this.view.rowAt(Math.max(0, y - this.view.screenTop() + this.lastTop))
+  }
+
+  private spotAt(y: number, x: number): Spot {
+    return { row: this.rowAtY(y), column: this.view.columnAt(x) }
   }
 
   viewportRows(): number {
@@ -1159,13 +1167,16 @@ export class Screen {
     this.view.setWrap(state.wrap)
     this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
-    this.view.fit(this.diffRows())
-    const height = this.view.rows()
-    const top = this.view.scrollTo(state.top, state.cursor, state.scroll)
-    this.lastTop = top
-    this.paintSticky(state, this.view.rowAt(top))
-    this.view.paint(this.linePaint(state), top, height)
-    this.paintGutter(state, top, height)
+    this.view.pick(state.picked)
+    if (!takesText(state.screen)) {
+      this.view.fit(this.diffRows())
+      this.lastTop = this.view.scrollTo(state.top, state.cursor, state.scroll)
+      if (state.sticky) this.paintSticky(state, this.view.rowAt(this.lastTop))
+      else this.view.pin([])
+    }
+    const top = this.lastTop
+    this.view.paint(this.linePaint(state), top, this.view.rows())
+    this.paintGutter(state, top, this.view.rows())
   }
 
   private assemble(renderer: CliRenderer): void {

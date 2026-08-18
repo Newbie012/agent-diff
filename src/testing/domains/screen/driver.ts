@@ -250,6 +250,14 @@ export class ScreenTestDriver {
     this.guard()
   }
 
+  async dragAcrossDiff(y: number, fromX: number, toX: number): Promise<void> {
+    const setup = this.active()
+    await setup.mockMouse.drag(fromX, y, toX, y)
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    this.guard()
+  }
+
   async pressEscape(): Promise<void> {
     const setup = this.active()
     const before = this.keysSeen

@@ -16,6 +16,7 @@ export {
   reviewProgress,
   saveReport,
   saveWrap,
+  saveSticky,
   submitComment,
   takeComments,
   toggleVouch,
