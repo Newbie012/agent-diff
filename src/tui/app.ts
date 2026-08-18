@@ -76,6 +76,8 @@ import {
   paletteClosed,
   paletteMoved,
   reduce,
+  restoredTo,
+  resumedAt,
   railScrolled,
   scrolled,
   panBy,
@@ -92,7 +94,6 @@ import {
   withSilentForge,
   withFull,
   withPatches,
-  restoredTo,
   withMatches,
   withSent,
   withSource,
@@ -335,7 +336,7 @@ export class App {
       this.write({ ...this.state, branchIndex: session.branchIndex })
       yield* this.openBranch()
       const patchIndex = Math.min(session.patchIndex, Math.max(0, this.state.patches.length - 1))
-      this.commit({ ...this.state, patchIndex, cursor: session.cursor, top: session.top })
+      this.commit(resumedAt(this.state, patchIndex, session.cursor, session.top))
       yield* this.loadSource()
     })
   }

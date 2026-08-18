@@ -232,6 +232,12 @@ Three screens, and the keys each answers to:
   list. The same key means the same thing in both panes — put away what is done here — and which
   pane is in focus decides what "done" refers to.
 
+- **Coming back to a place that is no longer a place to work lands beside it.** A review reopened
+  from a session, or opened on a branch named on the command line, was put back on the row it was
+  left on, which may be a row standing for lines it hides — and the first key pressed there is
+  answered with nothing to comment on. A row that cannot be worked with is replaced by the nearest
+  one that can.
+
 - **A file opens on a line, not on the row that stands for the ones it hides.** A change deep in a
   file draws a row saying how many lines are folded above it, and the cursor landed there, so the
   first key a reviewer presses on a file could be answered with "no line here to comment on". It
