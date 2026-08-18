@@ -337,6 +337,12 @@
   dir: ""
   intents:
     - a-box-that-behaves
+"@eliya-oss/agent-diff@0.1.0-alpha.75":
+  dir: ""
+  intents:
+    - a-shorter-wait
+    - keys-the-way-a-mac-sends-them
+    - the-box-opentui-already-had
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
