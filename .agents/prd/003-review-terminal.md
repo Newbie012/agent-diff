@@ -312,6 +312,10 @@ Three screens, and the keys each answers to:
   leaving the list. `enter` opens the file when the branch changes it; when it does not, there is no
   diff to open and the panel says so rather than moving the reader somewhere they cannot read.
 - **The line the reviewer is standing on is not a match.** They can see it already.
+- **The tree stops indenting after a few levels.** A path six folders deep spent its width on the
+  indent rather than on the names, and a name is what a reader is looking for. The rows still read
+  in order, so the nesting is legible without paying for it a column at a time.
+
 - **A name too long for the tree keeps both ends.** Either end can be the part that tells two
   files apart. An extension and a suffix separate `invitations.mutations.ts` from
   `invitation-defaults.utils.ts`, whose beginnings are the same word; a prefix separates

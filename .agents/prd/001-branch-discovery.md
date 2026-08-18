@@ -40,6 +40,10 @@ reads as the checkout it is rather than as a worktree someone prepared.
 
 ## Implementation Decisions
 
+- **The worktrees are read at once, not one after another.** Each one costs a diff, a stat and a
+  read of what it is based on, and a machine with a dozen of them spent that cost thirteen times in
+  a row before the list could be drawn. They are read together, which is what the list waits on.
+
 ### Owns
 
 Enumerating the worktrees of a repo, resolving each one's merge base, and reporting its diff size.

@@ -167,7 +167,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
 
 const FRAME_PAD = 1
 const PANE_BORDER = 2
-const TREE_MAX = 34
+const TREE_MAX = 40
 const TREE_MIN = 18
 const TREE_SHARE = 0.3
 const DIFF_MIN = 26
