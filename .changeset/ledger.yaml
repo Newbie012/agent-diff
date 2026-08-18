@@ -357,6 +357,10 @@
     - a-branch-that-is-not-here
     - a-file-opens-where-you-can-work
     - a-list-that-arrives
+"@eliya-oss/agent-diff@0.1.0-alpha.79":
+  dir: ""
+  intents:
+    - coming-back-to-a-line
 "@eliya-oss/agent-diff@0.1.0-alpha.8":
   dir: ""
   intents:
