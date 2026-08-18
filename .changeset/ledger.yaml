@@ -374,6 +374,10 @@
   dir: ""
   intents:
     - one-diff-for-one-branch
+"@eliya-oss/agent-diff@0.1.0-alpha.82":
+  dir: ""
+  intents:
+    - writing-back-to-an-answer
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
