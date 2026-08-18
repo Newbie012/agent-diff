@@ -382,6 +382,10 @@
   dir: ""
   intents:
     - a-thread-that-gained-a-word
+"@eliya-oss/agent-diff@0.1.0-alpha.84":
+  dir: ""
+  intents:
+    - the-count-follows-the-walk
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
