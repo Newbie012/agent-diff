@@ -7,10 +7,16 @@ const body = [
   "}",
 ]
 
-const firstDiffRow = (frame: string): string =>
-  frame.split("\n").slice(2).map((line) => line.slice(34, 74)).find((line) => line.trim().length > 2) ?? ""
+const SCOPE = "export class Mapper"
 
-const pinned = (frame: string): boolean => !/\d+\s[+-]/.test(firstDiffRow(frame))
+const firstDiffRow = (frame: string): string =>
+  frame
+    .split("\n")
+    .slice(2)
+    .map((line) => line.slice(34, 74))
+    .find((line) => line.trim().length > 2) ?? ""
+
+const pinned = (frame: string): boolean => firstDiffRow(frame).includes(SCOPE)
 
 describe("the scope pinned above the diff", () => {
   it("goes away on S, comes back on S, and is remembered", async () => {
