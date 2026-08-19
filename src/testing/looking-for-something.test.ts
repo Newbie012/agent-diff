@@ -63,3 +63,34 @@ describe("looking for something", () => {
     expect(await driver.screen.getFrame()).toMatch(/\d+ places? elsewhere/)
   })
 })
+
+describe("what a search counts as a match", () => {
+  it("finds a name however it was capitalised", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await opened(driver)
+    await driver.screen.pressKeys(["/"])
+
+    // ACT
+    await driver.screen.typeText("USEPROCESSFOLD")
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toMatch(/\d+ places? elsewhere/)
+  })
+
+  it("reads the branch once, and only asks git to search", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await opened(driver)
+    await driver.screen.pressKeys(["/"])
+    driver.screen.forgetDiffs()
+
+    // ACT
+    await driver.screen.typeText("useProcessFold")
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(driver.screen.diffsRun()).toBe(0)
+  })
+})

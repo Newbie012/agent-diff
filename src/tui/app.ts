@@ -24,6 +24,7 @@ import {
   fileBefore,
   listSent,
   searchBranch,
+  searchIn,
   layersIn,
   progressIn,
   readingOf,
@@ -121,7 +122,7 @@ import { readSession, sessionOf, writeSession, type Session } from "./session.ts
 import { upgradeHint } from "./upgrade.ts"
 
 export const LEAVING_MS = 3000
-const LOOK_MS = 220
+const LOOK_MS = 110
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTICE_MS = 2200
 
@@ -861,7 +862,11 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
-      const found = yield* searchBranch(this.repo, branch.branch, wanted)
+      const reading = this.reading
+      const found =
+        reading === undefined || reading.worktree.branch !== branch.branch
+          ? yield* searchBranch(this.repo, branch.branch, wanted)
+          : yield* searchIn(reading, wanted)
       const elsewhere = found.filter((match) => !this.isHere(match))
       this.commit(withMatches(this.state, elsewhere, wanted))
       if (elsewhere.length === 0) {
