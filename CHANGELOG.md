@@ -450,6 +450,10 @@
 
 - r reads the branch again, so the agent's newest work appears without leaving the review.
 
+## 0.1.0-alpha.102
+
+- `?` opens the key sheet again, along with every other binding that is a shifted character: `{`, `}`, `<`, `>`, `+` and `_`.
+
 ## 0.1.0-alpha.101
 
 - Ctrl+C on the review says what a second press will do rather than leaving at once, and `adiff config set` refuses a value that is not on or off instead of reading it as off.

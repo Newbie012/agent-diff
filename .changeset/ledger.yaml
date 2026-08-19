@@ -42,6 +42,10 @@
   dir: ""
   intents:
     - asking-before-leaving
+"@eliya-oss/agent-diff@0.1.0-alpha.102":
+  dir: ""
+  intents:
+    - keys-a-terminal-shifts
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:
