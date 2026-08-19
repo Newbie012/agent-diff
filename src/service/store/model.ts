@@ -18,6 +18,14 @@ export type StoredComment = {
   readonly replyTo?: string
 }
 
+export type StoredDraft = {
+  readonly id: string
+  readonly anchor: Anchor
+  readonly body: string
+  readonly at: string
+  readonly wroteBy: "reviewer" | "agent"
+}
+
 export type StoredAnswer = {
   readonly comment: string
   readonly body: string

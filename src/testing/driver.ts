@@ -1,6 +1,7 @@
 import { AgentTestDriver } from "./domains/agent/index.ts"
 import { AppTestDriver } from "./domains/app/index.ts"
 import { BranchTestDriver } from "./domains/branch/index.ts"
+import { ForgeTestDriver } from "./domains/forge/index.ts"
 import { ScreenTestDriver } from "./domains/screen/index.ts"
 import { createDriverState, type DriverOptions, type DriverState } from "./state.ts"
 
@@ -11,6 +12,7 @@ export class TestDriver implements AsyncDisposable {
   readonly branch: BranchTestDriver
   readonly app: AppTestDriver
   readonly agent: AgentTestDriver
+  readonly forge: ForgeTestDriver
   readonly screen: ScreenTestDriver
 
   private readonly state: DriverState
@@ -23,6 +25,7 @@ export class TestDriver implements AsyncDisposable {
     this.branch = new BranchTestDriver(state)
     this.app = new AppTestDriver(state)
     this.agent = new AgentTestDriver(state)
+    this.forge = new ForgeTestDriver(state)
     this.screen = new ScreenTestDriver(state)
   }
 

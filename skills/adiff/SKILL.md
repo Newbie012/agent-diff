@@ -235,6 +235,35 @@ the files, each layer shows the files it covers with the ones already reviewed t
 and `[` walk those files in the order you put them in — from the last file of one layer into the
 first of the next.
 
+## Helping draft a review of somebody else's pull request
+
+Sometimes the reviewer is not reading your work — they are reading a stranger's pull request and
+want you to think it through with them before they say anything on it. There, a comment is not an
+instruction to you. It is a draft of what the reviewer will say, in the reviewer's name.
+
+Comments on a pull request are **held**. Nothing reaches the forge until the reviewer sends them.
+
+```bash
+adiff draft list --repo . --branch their-change
+adiff draft add --repo . --branch their-change --file src/api.ts --start 40 --end 52 --body "…"
+adiff draft edit --repo . --branch their-change --id d1 --body "…"
+adiff draft drop --repo . --branch their-change --id d1
+```
+
+`draft add` anchors the same way `comment send` does, so `--side old` is the version being replaced.
+
+Rules for drafting on somebody else's behalf:
+
+- **You never send.** There is no command that dispatches, on purpose. The reviewer signs the
+  review, so the reviewer sends it.
+- **Write what the reviewer meant, not what you would say.** They told you the point; your job is
+  the wording. If you are not sure what the point is, ask rather than inventing one.
+- **One draft per point.** A held comment that covers three things cannot be dropped in part.
+- **Say what you drafted.** List the drafts back after you write them, so the reviewer can read
+  them over rather than discovering them at the moment of sending.
+- **A draft is not a review of the reviewer.** Do not soften a point they meant sharply, or sharpen
+  one they meant gently.
+
 ## Discovering the rest
 
 ```bash

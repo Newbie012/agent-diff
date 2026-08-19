@@ -67,6 +67,24 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "No comment carries that id. `adiff comment take` reports the ids an agent can answer, and `adiff comment list` reports every id on a review.",
     retriable: false,
   },
+  UnknownDraft: {
+    exit: NOT_FOUND,
+    suggestion:
+      "No held comment carries that id. `adiff draft list` reports the drafts waiting on a review.",
+    retriable: false,
+  },
+  NothingDrafted: {
+    exit: NOT_FOUND,
+    suggestion:
+      "Nothing is being held for this review. Write a comment on the pull request first; `adiff draft list` reports what is waiting.",
+    retriable: false,
+  },
+  PullMoved: {
+    exit: FAILED,
+    suggestion:
+      "The pull request has moved since these comments were written, so they name lines that may no longer be there. Nothing was sent and nothing was lost. Read the diff again and check each draft still says what you mean.",
+    retriable: false,
+  },
   InitUnwritable: {
     exit: FAILED,
     suggestion:

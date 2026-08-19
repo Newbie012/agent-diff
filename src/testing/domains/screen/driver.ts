@@ -42,6 +42,8 @@ const watchedForge = (note: () => void): Layer.Layer<Forge> =>
         return []
       }),
     openPull: () => Effect.void,
+    head: () => Effect.succeed(""),
+    review: () => Effect.succeed({ landed: [], url: "" }),
   })
 
 const hex = (value: number): string => value.toString(16).padStart(2, "0")
