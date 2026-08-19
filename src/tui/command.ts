@@ -97,6 +97,7 @@ export type Offered = {
   readonly reviewed: number
   readonly pull: boolean
   readonly pane: Pane
+  readonly onLayers: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -506,7 +507,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "rail.toggle",
-    panes: ["tree"],
+    panes: ["tree", "diff"],
     title: "Switch between layers and files",
     category: "Files",
     keys: ["s"],
@@ -714,6 +715,11 @@ export const displayKey = (key: string): string => {
   return GLYPHS[key] ?? key
 }
 
+const hintOf = (entry: Command, offered: Offered): string => {
+  if (entry.action === "rail.toggle") return offered.onLayers ? "file tree" : "layers"
+  return entry.counted ? `${entry.hint} ${offered.comments}` : entry.hint
+}
+
 export const hintsFor = (
   screen: Screen,
   offered: Offered,
@@ -730,6 +736,6 @@ export const hintsFor = (
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
       key: displayKey(entry.keys[0] ?? ""),
-      hint: entry.counted ? `${entry.hint} ${offered.comments}` : entry.hint,
+      hint: hintOf(entry, offered),
       press: entry.keys[0] ?? "",
     }))

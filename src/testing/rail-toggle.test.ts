@@ -13,7 +13,7 @@ const footerOf = (frame: string): string => {
 }
 
 describe("moving between layers and files", () => {
-  it("offers the switch on the file list once a branch has layers", async () => {
+  it("offers the switch once a branch has layers, naming where it would go", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -26,6 +26,12 @@ describe("moving between layers and files", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressShiftTab()
+
+    // ASSERT
+    expect(footerOf(await driver.screen.getFrame())).toContain("s file tree")
+
+    // ACT
+    await driver.screen.pressKeys(["s"])
 
     // ASSERT
     expect(footerOf(await driver.screen.getFrame())).toContain("s layers")
