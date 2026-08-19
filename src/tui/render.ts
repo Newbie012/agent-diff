@@ -764,10 +764,8 @@ const fallbackScope = (state: TuiState, top: number): ReadonlyArray<string> => {
 }
 
 const treeMarks = (state: TuiState, row: TreeRow): string => {
-  const current = row.fileIndex === state.patchIndex
-  const here = current ? (state.focus === "tree" ? "▸" : "·") : " "
   const seen = row.fileIndex !== undefined && isReviewed(state, row.fileIndex) ? marks().reviewed : " "
-  return `${here}${seen}`
+  return ` ${seen}`
 }
 
 const treeTail = (state: TuiState, row: TreeRow): string => {
@@ -844,10 +842,8 @@ const PANEL_EMPTY = "No comment on this branch yet."
 
 type PanelLine = { readonly text: string; readonly tone: string; readonly here?: boolean }
 
-const panelMark = (state: TuiState, at: number): string => {
-  if (at !== state.panelIndex) return " "
-  return state.focus === "review" ? "▸" : "·"
-}
+const restingOrHere = (focused: boolean): string =>
+  focused ? palette.selection : palette.resting
 
 const panelWhere = (entry: PanelEntry, room: number): string => {
   const where = `:${entry.comment.end}`
@@ -861,7 +857,7 @@ type Placed = { readonly entry: PanelEntry; readonly at: number }
 
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
-  const lead = `${panelMark(state, placed.at)}${entry.fresh || entry.unread > 0 ? marks().comment : " "} `
+  const lead = ` ${entry.fresh || entry.unread > 0 ? marks().comment : " "} `
   const here = placed.at === state.panelIndex
   return [
     { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
@@ -899,7 +895,7 @@ const panelText = (state: TuiState, room: number): StyledText => {
   return new StyledText(
     [...banner, ...lines].map((line) => {
       const drawn = fg(line.tone)(`${line.text.padEnd(room)}\n`)
-      return line.here === true ? bg(palette.selection)(drawn) : drawn
+      return line.here === true ? bg(restingOrHere(state.focus === "review"))(drawn) : drawn
     }),
   )
 }
@@ -1257,7 +1253,7 @@ export class Screen {
       const drawn = fg(row.kind === "file" ? palette.ink : palette.muted)(
         `${treeLine(state, row, pane)}\n`,
       )
-      return [row.fileIndex === state.patchIndex ? bg(palette.selection)(drawn) : drawn]
+      return [row.fileIndex === state.patchIndex ? bg(restingOrHere(state.focus === "tree"))(drawn) : drawn]
     })
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
     return new StyledText([...rows, ...more])
