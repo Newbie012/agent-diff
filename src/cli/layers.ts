@@ -2,6 +2,7 @@ import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import {
   codeBlocks,
+  coverage,
   noteOf,
   proseAnchors,
   statusOf,
@@ -27,6 +28,9 @@ export type ReportedLayer = {
   readonly files: ReadonlyArray<string>
   readonly spans: ReadonlyArray<Span>
   readonly prose: ReadonlyArray<ProseAnchor>
+  readonly covered: number
+  readonly partial: number
+  readonly vanished: ReadonlyArray<string>
 }
 
 export type LayersReport = {
@@ -58,44 +62,74 @@ const unique = (paths: ReadonlyArray<string>): ReadonlyArray<string> => [...new 
 const spansOfLayer = (layer: Layer): ReadonlyArray<Span> =>
   codeBlocks(layer).map(({ path, start, end }) => ({ path, start, end }))
 
-const isSpan = (value: unknown): value is Span => {
+const tidyPath = (path: string): string => path.replace(/^\.\/+/, "").replace(/^\/+/, "")
+
+const spanFault = (value: unknown): string | undefined => {
   const span = value as Partial<Span> | undefined
-  return (
-    typeof span?.path === "string" &&
-    typeof span.start === "number" &&
-    typeof span.end === "number"
-  )
+  if (typeof span?.path !== "string" || span.path.trim().length === 0) {
+    return "a span needs a path"
+  }
+  if (!Number.isInteger(span.start) || !Number.isInteger(span.end)) {
+    return `the span on ${span.path} needs whole numbers for start and end`
+  }
+  const start = span.start as number
+  const end = span.end as number
+  if (start < 1) return `the span on ${span.path} starts at ${start}, and lines count from 1`
+  if (end < start) return `the span on ${span.path} ends at ${end}, before it starts at ${start}`
+  return undefined
 }
 
-const isBlock = (value: unknown): value is LayerBlock => {
+const blockFault = (value: unknown): string | undefined => {
   const block = value as { kind?: unknown; markdown?: unknown } | undefined
-  if (block?.kind === "prose") return typeof block.markdown === "string"
-  return block?.kind === "code" && isSpan(value)
+  if (block?.kind === "prose") {
+    return typeof block.markdown === "string" ? undefined : "a prose block needs markdown"
+  }
+  if (block?.kind !== "code") return `a block needs a kind of prose or code, not ${String(block?.kind)}`
+  return spanFault(value)
 }
 
 const codeBlockOf = (span: Span): LayerBlock => ({
   kind: "code",
-  path: span.path,
+  path: tidyPath(span.path),
   start: span.start,
   end: span.end,
 })
+
+const tidyBlock = (block: LayerBlock): LayerBlock =>
+  block.kind === "code" ? { ...block, path: tidyPath(block.path) } : block
 
 const blocksOf = (layer: LayerInput): ReadonlyArray<LayerBlock> => {
   const note =
     typeof layer.note === "string" && layer.note.trim().length > 0
       ? [{ kind: "prose" as const, markdown: layer.note }]
       : []
-  if (Array.isArray(layer.blocks)) return [...note, ...layer.blocks.filter(isBlock)]
-  const spans = Array.isArray(layer.spans) ? layer.spans.filter(isSpan) : []
-  return [...note, ...spans.map(codeBlockOf)]
+  const given = Array.isArray(layer.blocks) ? layer.blocks.map(tidyBlock) : []
+  const spans = Array.isArray(layer.spans) ? (layer.spans as ReadonlyArray<Span>) : []
+  return [...note, ...given, ...spans.map(codeBlockOf)]
 }
 
-const layerOf = (value: unknown): Option.Option<Layer> => {
-  const layer = value as LayerInput | undefined
-  const title = typeof layer?.title === "string" ? layer.title.trim() : ""
-  if (layer === undefined || title.length === 0) return Option.none()
-  const blocks = blocksOf(layer)
-  return blocks.length === 0 ? Option.none() : Option.some({ title, blocks })
+const layerFault = (layer: LayerInput, at: number): string | undefined => {
+  const named = `layer ${at + 1}`
+  if (typeof layer.title !== "string" || layer.title.trim().length === 0) {
+    return `${named} needs a title`
+  }
+  const said = `${named}, "${layer.title.trim()}",`
+  const blocks = Array.isArray(layer.blocks) ? layer.blocks : []
+  const spans = Array.isArray(layer.spans) ? layer.spans : []
+  const fault = [...blocks.map(blockFault), ...spans.map(spanFault)].find(
+    (one) => one !== undefined,
+  )
+  if (fault !== undefined) return `${said} ${fault}`
+  if (blocks.length === 0 && spans.length === 0) {
+    return `${said} needs at least one span or block`
+  }
+  return undefined
+}
+
+const layerOf = (value: unknown, at: number): Option.Option<Layer> => {
+  const layer = (value ?? {}) as LayerInput
+  if (layerFault(layer, at) !== undefined) return Option.none()
+  return Option.some({ title: String(layer.title).trim(), blocks: blocksOf(layer) })
 }
 
 const parsed = (text: string): Option.Option<Record<string, unknown>> => {
@@ -115,14 +149,19 @@ export const readLayers = Effect.fn("Cli.readLayers")(function* (text: string) {
     onSome: Effect.succeed,
   })
   const raw = document["layers"]
-  const layers = (Array.isArray(raw) ? raw : []).flatMap((entry) =>
-    Option.match(layerOf(entry), { onNone: (): ReadonlyArray<Layer> => [], onSome: (layer) => [layer] }),
-  )
-  if (layers.length === 0) {
-    return yield* new MalformedLayers({
-      reason: "every layer needs a title and at least one span or block",
-    })
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return yield* new MalformedLayers({ reason: "the document needs a layers array" })
   }
+  const fault = raw
+    .map((entry, at) => layerFault(((entry ?? {}) as LayerInput), at))
+    .find((said) => said !== undefined)
+  if (fault !== undefined) return yield* new MalformedLayers({ reason: fault })
+  const layers = raw.flatMap((entry, at) =>
+    Option.match(layerOf(entry, at), {
+      onNone: (): ReadonlyArray<Layer> => [],
+      onSome: (layer) => [layer],
+    }),
+  )
   const summary = document["summary"]
   return { summary: typeof summary === "string" ? summary : "", layers }
 })
@@ -139,13 +178,20 @@ const toStored = (layers: Layers): StoredLayers => ({
 
 const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): ReadonlyArray<ReportedLayer> => {
   const present = new Set(patches.map((patch) => patch.path))
-  return withFullCoverage(patches, layers).layers.map((layer) => ({
-    title: layer.title,
-    note: noteOf(layer),
-    files: unique(spansOfLayer(layer).map((span) => span.path)).filter((path) => present.has(path)),
-    spans: spansOfLayer(layer),
-    prose: proseAnchors(layer).filter((anchor) => present.has(anchor.path)),
-  }))
+  return withFullCoverage(patches, layers).layers.map((layer) => {
+    const named = unique(spansOfLayer(layer).map((span) => span.path))
+    const gap = coverage(patches, [layer])
+    return {
+      title: layer.title,
+      note: noteOf(layer),
+      files: named.filter((path) => present.has(path)),
+      spans: spansOfLayer(layer),
+      prose: proseAnchors(layer).filter((anchor) => present.has(anchor.path)),
+      covered: gap.covered,
+      partial: gap.partial,
+      vanished: named.filter((path) => !present.has(path)),
+    }
+  })
 }
 
 const reportOf = (
