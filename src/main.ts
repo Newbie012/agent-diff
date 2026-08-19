@@ -43,6 +43,7 @@ import {
   showLayers,
   readPreference,
   readPreferences,
+  preferenceValue,
   savePreference,
   submitComment,
   submitReply,
@@ -245,9 +246,9 @@ const configGet = Effect.fn("Main.configGet")(function* (options: Options) {
 })
 
 const configSet = Effect.fn("Main.configSet")(function* (options: Options) {
-  const wanted = yield* required(options, "value")
-  const preference = yield* savePreference(yield* required(options, "name"), wanted === "on")
-  yield* answer(options, { preference })
+  const name = yield* required(options, "name")
+  const wanted = yield* preferenceValue(name, yield* required(options, "value"))
+  yield* answer(options, { preference: yield* savePreference(name, wanted) })
 })
 
 const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {

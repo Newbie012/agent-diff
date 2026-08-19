@@ -21,6 +21,7 @@ import {
   UnknownComment,
   UnknownFile,
   UnknownPreference,
+  UnknownPreferenceValue,
   UnselectableRange,
 } from "./error.ts"
 
@@ -607,6 +608,19 @@ export const readPreference = Effect.fn("Cli.readPreference")(function* (name: s
   const store = yield* Store
   const kept = yield* store.settings
   return { name, about: known.about, value: heldValue(kept, name), byDefault: known.byDefault }
+})
+
+const ON = "on"
+const OFF = "off"
+
+export const preferenceValue = Effect.fn("Cli.preferenceValue")(function* (
+  name: string,
+  said: string,
+) {
+  const wanted = said.trim().toLowerCase()
+  if (wanted === ON) return true
+  if (wanted === OFF) return false
+  return yield* new UnknownPreferenceValue({ name, value: said, known: [ON, OFF] })
 })
 
 export const savePreference = Effect.fn("Cli.savePreference")(function* (

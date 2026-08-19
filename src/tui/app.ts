@@ -120,7 +120,9 @@ import { Intent } from "./intent.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
 import { upgradeHint } from "./upgrade.ts"
 
-export const NOTICE_MS = 2200
+export const LEAVING_MS = 3000
+const LEAVING_SAID = "press ctrl+c again to leave"
+const NOTICE_MS = 2200
 
 export type AppOptions = {
   readonly renderer: CliRenderer
@@ -246,6 +248,7 @@ export class App {
   private remembered = ""
   private readonly chosen: Record<string, boolean> = {}
   private selectingNow = false
+  private leaving: number | undefined
   private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
@@ -644,6 +647,7 @@ export class App {
         yield* this.askedToLeave()
         return
       }
+      this.forgetLeaving()
       const action = forced ?? actionFor(this.state.screen, keyName(key), this.state.focus)
       this.grewWithShift = action === "select.grow" || action === "select.shrink"
       this.remember(action, key)
@@ -1061,10 +1065,25 @@ export class App {
     })
   }
 
+  private forgetLeaving(): void {
+    if (this.leaving === undefined) return
+    this.leaving = undefined
+    if (this.state.notice === LEAVING_SAID) this.commit(withNoticeHere(this.state, ""))
+  }
+
   private askedToLeave(): Work {
     return Effect.sync(() => {
-      if (overReview(this.state.screen)) this.commit(reduce(this.measured(), "back"))
-      else this.renderer.destroy()
+      if (overReview(this.state.screen)) {
+        this.leaving = undefined
+        this.commit(reduce(this.measured(), "back"))
+        return
+      }
+      if (this.leaving !== undefined && Date.now() - this.leaving < LEAVING_MS) {
+        this.renderer.destroy()
+        return
+      }
+      this.leaving = Date.now()
+      this.commit(withNotice(this.state, LEAVING_SAID))
     })
   }
 

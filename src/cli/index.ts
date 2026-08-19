@@ -25,6 +25,7 @@ export {
   commentIn,
   readPreference,
   readPreferences,
+  preferenceValue,
   savePreference,
   submitComment,
   submitReply,

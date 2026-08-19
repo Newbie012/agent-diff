@@ -26,6 +26,12 @@ export class UnknownPreference extends Data.TaggedError("UnknownPreference")<{
   readonly known: ReadonlyArray<string>
 }> {}
 
+export class UnknownPreferenceValue extends Data.TaggedError("UnknownPreferenceValue")<{
+  readonly name: string
+  readonly value: string
+  readonly known: ReadonlyArray<string>
+}> {}
+
 export class UnselectableRange extends Data.TaggedError("UnselectableRange")<{
   readonly file: string
   readonly start: number

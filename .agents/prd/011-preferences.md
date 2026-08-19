@@ -92,6 +92,10 @@ store's location and the `ADIFF_ROOT` override belong to
   keeps it, and pressing it changes the same preference the screen shows. Two ways to reach one
   answer, not two answers.
 
+- **A preference is set to on or off, and anything else is refused.** `--value maybe` was read as
+  "not on", so a typo turned a preference off and said it had worked. What a value is not allowed
+  to do is quietly mean its opposite.
+
 - **`adiff config list` says every preference, its value and its default.** `config get <name>` and
   `config set <name> <on|off>` read and write one. An unknown name is refused with the list of
   names, in the same shape as every other refusal.

@@ -39,6 +39,11 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "The error lists the preferences adiff knows. Run `adiff config list` to see them with their values.",
     retriable: false,
   },
+  UnknownPreferenceValue: {
+    exit: NOT_FOUND,
+    suggestion: "A preference is on or off. Pass --value on or --value off.",
+    retriable: false,
+  },
   UnknownWorktree: {
     exit: NOT_FOUND,
     suggestion:
