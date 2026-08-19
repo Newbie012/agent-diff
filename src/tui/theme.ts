@@ -33,6 +33,13 @@ export const palette = {
   addedGutter: "#1d4a2b",
   removedGutter: "#4a1f26",
 
+  pickedOn: "#2b3854",
+  pickedOnAdded: "#22432f",
+  pickedOnRemoved: "#4a2733",
+  pickedGutter: "#38496b",
+  pickedGutterAdded: "#2d5c3f",
+  pickedGutterRemoved: "#63323f",
+
   cursorOn: "#243a4f",
   cursorOnAdded: "#1a3d26",
   cursorOnRemoved: "#40202a",

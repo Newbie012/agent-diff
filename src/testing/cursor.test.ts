@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import { palette } from "../tui/index.ts"
 
 const numbered = {
   files: [
@@ -40,7 +39,7 @@ describe("knowing which line you are on", () => {
     await driver.screen.pressKeys(["j", "v", "j", "j"])
 
     // ASSERT
-    const selected = await driver.screen.findHighlighted(palette.selection)
+    const selected = await driver.screen.findPicked()
     expect(selected.map((line) => line.trim())).toEqual(
       expect.arrayContaining([expect.stringContaining("const one = 1")]),
     )

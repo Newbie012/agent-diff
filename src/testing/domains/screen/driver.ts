@@ -576,6 +576,15 @@ export class ScreenTestDriver {
     return this.findPainted(marker, bgOf)
   }
 
+  async findPicked(): Promise<ReadonlyArray<string>> {
+    const found = await Promise.all(
+      [palette.pickedOn, palette.pickedOnAdded, palette.pickedOnRemoved].map((one) =>
+        this.findPainted(one, bgOf),
+      ),
+    )
+    return found.flat()
+  }
+
   async findUnderCursor(): Promise<ReadonlyArray<string>> {
     const found = await Promise.all(
       [palette.cursorOn, palette.cursorOnAdded, palette.cursorOnRemoved].map((one) =>

@@ -142,7 +142,7 @@ export class DiffView {
     this.numbers = new LineNumberRenderable(renderer, {
       id: "diff-lines",
       target: this.code,
-      fg: palette.faint,
+      fg: palette.muted,
       minWidth: 4,
       paddingRight: 1,
       flexGrow: 1,
