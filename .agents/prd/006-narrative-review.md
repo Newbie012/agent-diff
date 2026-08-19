@@ -73,6 +73,12 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   that changed in it; unchanged context inside a span counts for nothing, and a span reaching past
   the diff adds nothing. `uncovered` names contiguous runs of changed lines, so it reads as the
   line numbers a reviewer would otherwise have to find alone.
+- **The summary is the first thing the reviewer reads.** An agent is asked for a summary and the
+  terminal never showed it: it reached the store, it came back out of `layers show` as JSON, and
+  the person the layers were written for never saw a word of it. It sits above the numbered layers,
+  wrapped to the rail, and a long one is cut to three lines and marked, because the layers
+  underneath are what the reviewer moves through.
+
 - **A branch with a layers reads by layer.** The review terminal replaces the file tree with the
   layers's numbered layers and their file counts; moving to a layer scopes the diff to that layer's
   files, and one key switches back to the file tree. The hunks no layer claims appear as a final

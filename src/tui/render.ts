@@ -642,6 +642,18 @@ const elide = (path: string, room: number): string => {
   return shorter.find((option) => option.length <= room) ?? clipMiddle(name, room)
 }
 
+const SUMMARY_LINES = 3
+
+const summaryLines = (summary: string, room: number): ReadonlyArray<string> => {
+  const said = summary.trim()
+  if (said.length === 0) return []
+  const lines = wrapped(said, Math.max(1, room))
+  const kept = lines.slice(0, SUMMARY_LINES)
+  const last = kept.at(-1) ?? ""
+  const shortened = lines.length > SUMMARY_LINES ? [...kept.slice(0, -1), clip(`${last}…`, room)] : kept
+  return [...shortened.map((line) => ` ${line}`), ""]
+}
+
 const contextLabel = (context: number): string => {
   if (context === 3) return ""
   return context >= WHOLE_FILE ? "whole file" : `±${context}`
@@ -1257,9 +1269,10 @@ export class Screen {
   }
 
   private layerRail(state: TuiState): StyledText {
-    const banner = state.layersStale ? 1 : 0
-    const height = Math.max(1, this.listRoom() - banner)
     const room = layerRoom(state, this.paneRoom())
+    const said = summaryLines(state.summary, room.note)
+    const banner = (state.layersStale ? 1 : 0) + said.length
+    const height = Math.max(1, this.listRoom() - banner)
     const all = layerRows(state, room.title, room.note)
     const whole = railWindow(all, height, state.layerIndex)
     const window =
@@ -1271,7 +1284,8 @@ export class Screen {
     const warn = state.layersStale
       ? [fg(palette.attention)(`${staleBanner(room.note)}\n`)]
       : []
-    return new StyledText([...warn, ...rows, ...more])
+    const told = said.map((line) => fg(palette.muted)(`${line}\n`))
+    return new StyledText([...told, ...warn, ...rows, ...more])
   }
 
   private paintDiff(state: TuiState): void {
