@@ -6,7 +6,7 @@ const files = [
   { path: "src/page.ts", before: ["const b = 1"], after: ["const b = 1", "const page = 2"] },
 ]
 
-const SUMMARY = "Replaces the old table with a DataGrid, then moves each page onto it."
+const SUMMARY = "Replaces the old list with a grid, then moves each page onto it."
 
 const LONG = `${SUMMARY} ${"It goes on at some length about the reasoning. ".repeat(8)}`
 
