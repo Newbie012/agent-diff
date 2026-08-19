@@ -54,6 +54,10 @@
   dir: ""
   intents:
     - looking-while-typing
+"@eliya-oss/agent-diff@0.1.0-alpha.105":
+  dir: ""
+  intents:
+    - a-faster-search
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:

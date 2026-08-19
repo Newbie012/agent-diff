@@ -450,6 +450,10 @@
 
 - r reads the branch again, so the agent's newest work appears without leaving the review.
 
+## 0.1.0-alpha.105
+
+- Looking for something no longer re-reads the whole branch on every search, and finds a name however it was capitalised.
+
 ## 0.1.0-alpha.104
 
 - Looking for something shows the places as the words are typed, keeps a readable panel before there is anything to show, and never reads the clipboard.
