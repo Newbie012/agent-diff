@@ -279,11 +279,13 @@ const proseRow = (layerIndex: number, text: string): LayerRow => ({
 const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
   const blocks = state.layers[layerIndex]?.prose ?? []
   const rows: Array<LayerRow> = []
+  const said = new Set<string>()
   for (const [at, block] of blocks.entries()) {
     if (at > 0) rows.push(proseRow(layerIndex, ""))
     for (const text of wrapped(block.markdown, room)) rows.push(proseRow(layerIndex, text))
     const found = state.patches.findIndex((patch) => patch.path === block.path)
-    if (found !== -1) {
+    if (found !== -1 && !said.has(block.path)) {
+      said.add(block.path)
       rows.push({
         index: layerIndex,
         kind: "file",

@@ -31,6 +31,38 @@ const layered = async (driver: TestDriver): Promise<void> => {
 
 const fileIn = (frame: string): string => (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
+describe("a layer that says two things about one file", () => {
+  it("lists that file once", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ files })
+    await driver.app.runLayersSet(branch.worktree, {
+      summary: "Two paragraphs, one file.",
+      layers: [
+        {
+          title: "The client",
+          blocks: [
+            { kind: "prose", markdown: "The first thing to say about it." },
+            { kind: "code", path: "src/one.ts", start: 1, end: 1 },
+            { kind: "prose", markdown: "The second thing to say about it." },
+            { kind: "code", path: "src/one.ts", start: 2, end: 2 },
+          ],
+        },
+      ],
+    })
+
+    // ACT
+    await driver.screen.open({ width: 120, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    const rail = (await driver.screen.getFrame())
+      .split("\n")
+      .filter((row) => row.trimStart().startsWith("│") && row.slice(0, 40).includes("one.ts"))
+    expect(rail).toHaveLength(1)
+  })
+})
+
 describe("reading a layer a file at a time", () => {
   it("lists the files of a layer as rows of the rail", async () => {
     // ARRANGE
