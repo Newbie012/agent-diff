@@ -331,6 +331,15 @@ export class ScreenTestDriver {
     this.guard()
   }
 
+  async clickOnDiff(y: number): Promise<void> {
+    const setup = this.active()
+    const x = Math.floor(WIDTH / 2) + 10
+    await setup.mockMouse.drag(x, y, x, y)
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    this.guard()
+  }
+
   async dragAcrossDiff(y: number, fromX: number, toX: number): Promise<void> {
     const setup = this.active()
     await setup.mockMouse.drag(fromX, y, toX, y)
