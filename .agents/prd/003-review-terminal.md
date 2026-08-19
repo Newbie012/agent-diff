@@ -237,6 +237,12 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **The code comes before the pull request.** Opening a review asked the forge which branches have
+  a pull request before it read the branch, and the work a review does runs one thing at a time, so
+  a reviewer waited on a network call to see their own diff — over a second here, and as long as
+  the forge is allowed to take on a slow line. Which branches have a pull request is worth knowing
+  and worth nobody waiting for.
+
 - **Opening the lines a diff is hiding reads the file being opened.** The rows behind a gap come
   from a second reading at whole-file context, and that reading was taken of every file on the
   branch to fill one gap in one of them. Only the file on the screen is ever asked for, and each

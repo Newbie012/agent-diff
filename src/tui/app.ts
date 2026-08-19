@@ -288,9 +288,9 @@ export class App {
     renderer.setFrameCallback(() => Effect.runPromise(this.applying()))
     const resume = options.resume
     const opensOn = options.opensOn
-    this.dispatchTask(this.loadPulls())
     if (opensOn !== undefined) this.dispatchTask(this.openedOn(opensOn))
     else if (resume !== undefined) this.dispatchTask(this.resume(resume))
+    this.dispatchTask(this.loadPulls())
     if (options.partial === true) this.dispatchTask(this.fillBranches())
   }
 

@@ -2,7 +2,7 @@ import { CodeRenderable, Renderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { Git, GitLive } from "../../../service/git/index.ts"
-import { ForgeLive } from "../../../service/forge/index.ts"
+import { Forge, ForgeLive } from "../../../service/forge/index.ts"
 import { storeAt } from "../../../service/store/index.ts"
 import { launch } from "../../../tui/index.ts"
 import type { App } from "../../../tui/index.ts"
@@ -25,6 +25,16 @@ const NAMED: Readonly<Record<string, string>> = {
 }
 
 const sendable = (key: string): string => NAMED[key] ?? key
+
+const watchedForge = (note: () => void): Layer.Layer<Forge> =>
+  Layer.succeed(Forge)({
+    pulls: () =>
+      Effect.sync(() => {
+        note()
+        return []
+      }),
+    openPull: () => Effect.void,
+  })
 
 const hex = (value: number): string => value.toString(16).padStart(2, "0")
 
@@ -56,6 +66,7 @@ export type OpenOptions = {
   readonly repo?: string
   readonly upgrades?: boolean
   readonly branch?: string
+  readonly forgeWatched?: boolean
 }
 
 export class ScreenTestDriver {
@@ -64,6 +75,7 @@ export class ScreenTestDriver {
   private app: App | undefined
   private diffs = 0
   private asked: Array<{ readonly context: number; readonly only: string | undefined }> = []
+  private readonly order: Array<string> = []
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
   private keysSeen = 0
@@ -85,7 +97,9 @@ export class ScreenTestDriver {
     this.setup = setup
     this.watch()
     this.countKeys(setup)
-    const layer = Layer.mergeAll(this.countingGit(), ForgeLive, storeAt(this.state.storeRoot))
+    const forge =
+      options.forgeWatched === true ? watchedForge(() => this.order.push("forge")) : ForgeLive
+    const layer = Layer.mergeAll(this.countingGit(), forge, storeAt(this.state.storeRoot))
     const scope = Scope.makeUnsafe()
     this.scope = scope
     const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
@@ -125,6 +139,7 @@ export class ScreenTestDriver {
           ...git,
           diff: (worktree, context, only) => {
             this.diffs += 1
+            this.order.push("diff")
             this.asked.push({ context, only })
             return git.diff(worktree, context, only)
           },
@@ -139,6 +154,10 @@ export class ScreenTestDriver {
 
   diffsAsked(): ReadonlyArray<{ readonly context: number; readonly only: string | undefined }> {
     return this.asked
+  }
+
+  askedInOrder(): ReadonlyArray<string> {
+    return this.order
   }
 
   forgetDiffs(): void {
