@@ -86,6 +86,11 @@ export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<La
   }
 }
 
+const missingSaid = (count: number): string =>
+  count === 1
+    ? "One run of changed lines the layers do not account for."
+    : `${count} runs of changed lines the layers do not account for.`
+
 export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers): Layers => {
   const gap = coverage(patches, layers.layers)
   if (gap.missing.length === 0) return layers
@@ -94,7 +99,7 @@ export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers):
     blocks: [
       {
         kind: "prose",
-        markdown: `${gap.missing.length} runs of changed lines the agent did not account for.`,
+        markdown: missingSaid(gap.missing.length),
       },
       ...gap.missing.map((span) => codeBlockOf(span)),
     ],

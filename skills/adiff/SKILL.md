@@ -231,8 +231,9 @@ was written for, and adiff reports it as `stale` once the branch moves past that
 reviewer has a reading order, keep it true: write it again after you address their comments.
 
 When you have published one, tell them the sidebar now holds it: `s` swaps between the layers and
-the files, `j` and `k` move between layers with the diff following, and `]` and `[` walk the files
-inside a layer.
+the files, each layer shows the files it covers with the ones already reviewed ticked off, and `]`
+and `[` walk those files in the order you put them in — from the last file of one layer into the
+first of the next.
 
 ## Discovering the rest
 

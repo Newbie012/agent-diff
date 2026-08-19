@@ -53,16 +53,16 @@ describe("the rail on a stale layer set", () => {
     expect(railText(frame)).toContain("stale, the branch moved on")
   })
 
-  it("keeps a title's words whole at eighty columns", async () => {
+  it("keeps a title's words whole where the rail is narrow", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
     // ACT
-    const frame = await staleRail(driver, 80)
+    const frame = await staleRail(driver, 56)
 
     // ASSERT
     const rail = railText(frame)
-    expect(rail).toMatch(/invitati\w*\u2026/)
+    expect(rail).toContain("Name the")
     expect(rail).not.toMatch(/invitatio ns/)
   })
 
@@ -71,7 +71,7 @@ describe("the rail on a stale layer set", () => {
     await using driver = await TestDriver.create()
 
     // ACT
-    const frame = await staleRail(driver, 80)
+    const frame = await staleRail(driver, 56)
 
     // ASSERT
     const rail = railText(frame)

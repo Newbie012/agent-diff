@@ -15,7 +15,10 @@ import {
   selectedPatch,
   shownMatches,
   selectionRange,
+  layerAfter,
   layerFile,
+  placeIn,
+  readingOrder,
   layerFiles,
   layerHolding,
   type TuiState,
@@ -159,10 +162,23 @@ const panned = (state: TuiState, delta: number): TuiState => {
 }
 
 const moveLayer = (state: TuiState, delta: number): TuiState => {
-  const layerIndex = clamp(state.layerIndex + delta, 0, Math.max(0, state.layers.length - 1))
-  const landed = { ...state, layerIndex }
-  const patchIndex = layerFiles(landed, layerIndex)[0] ?? landed.patchIndex
-  return { ...landed, patchIndex, top: 0, cursor: 0, anchorRow: 0, selecting: false }
+  const order = readingOrder(state)
+  if (order.length === 0) return state
+  const at = placeIn(state)
+  const landed = order[clamp((at === -1 ? 0 : at) + delta, 0, order.length - 1)]
+  if (landed === undefined) return state
+  return {
+    ...state,
+    layerIndex: landed.layer,
+    openLayers: state.openLayers.includes(landed.layer)
+      ? state.openLayers
+      : [...state.openLayers, landed.layer],
+    patchIndex: landed.file,
+    top: 0,
+    cursor: landingOn(state, landed.file),
+    anchorRow: 0,
+    selecting: false,
+  }
 }
 
 const inRail = (state: TuiState, delta: number): TuiState =>
@@ -275,14 +291,25 @@ const revealing = (state: TuiState, patchIndex: number): ReadonlyArray<string> =
   return state.closed.filter((path) => !wanted.includes(path))
 }
 
+const atTheEnd = (state: TuiState, delta: number): boolean => {
+  const at = placeIn(state)
+  const wanted = at + delta
+  return at !== -1 && (wanted < 0 || wanted >= readingOrder(state).length)
+}
+
 const moveFile = (state: TuiState, delta: number): TuiState => {
-  const next = layerFile(state, delta)
-  if (next === state.patchIndex) {
+  if (atTheEnd(state, delta)) {
     return withNoticeHere(state, delta > 0 ? "last file" : "first file")
   }
+  const next = layerFile(state, delta)
+  const layer = onLayers(state) ? layerAfter(state, delta) : state.layerIndex
   return {
     ...state,
     notice: "",
+    layerIndex: layer,
+    openLayers: state.openLayers.includes(layer)
+      ? state.openLayers
+      : [...state.openLayers, layer],
     closed: revealing(state, next),
     patchIndex: next,
     top: 0,
@@ -552,21 +579,30 @@ export const withArrived = (state: TuiState, arrived: TuiState["arrived"]): TuiS
 
 export const withColumns = (state: TuiState, columns: number): TuiState => ({ ...state, columns })
 
+const laidOver = (
+  state: TuiState,
+  told: { layers: TuiState["layers"]; stale: boolean; summary?: string },
+  anew: boolean,
+): TuiState => ({
+  ...state,
+  layers: told.layers,
+  layersStale: told.stale,
+  summary: told.summary ?? "",
+  layerIndex: anew ? 0 : Math.min(state.layerIndex, Math.max(0, told.layers.length - 1)),
+  openLayers: anew
+    ? told.layers.map((_, at) => at)
+    : state.openLayers.filter((at) => at < told.layers.length),
+  rail: told.layers.length === 0 ? "tree" : anew ? "layers" : state.rail,
+})
+
 export const withLayers = (
   state: TuiState,
   told: { layers: TuiState["layers"]; stale: boolean; summary?: string },
 ): TuiState => {
   const layers = told.layers
-  const opened: TuiState = {
-    ...state,
-    layers,
-    layersStale: told.stale,
-    summary: told.summary ?? "",
-    layerIndex: 0,
-    openLayers: [],
-    rail: layers.length === 0 ? "tree" : "layers",
-  }
-  if (layers.length === 0) return opened
+  const anew = state.layers.length === 0
+  const opened = laidOver(state, told, anew)
+  if (layers.length === 0 || !anew) return opened
   return { ...opened, patchIndex: layerFiles(opened, 0)[0] ?? opened.patchIndex, cursor: 0, top: 0 }
 }
 

@@ -16,6 +16,7 @@ import {
   type TextChunk,
 } from "@opentui/core"
 import { displayKey, hintsFor, takesText, type Command } from "./command.ts"
+import { REMAINDER_TITLE } from "../domain/layers/index.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
@@ -31,8 +32,10 @@ import {
   onLayers,
   railWindow,
   selectionReadout,
-  layerOpen,
-  layerRows,
+  layerDone,
+  layerFitted,
+  type LayerRoom,
+  type RailWindow,
   type LayerRow,
   wrapped,
   selectedLineCount,
@@ -645,15 +648,20 @@ const elide = (path: string, room: number): string => {
   return shorter.find((option) => option.length <= room) ?? clipMiddle(name, room)
 }
 
-const SUMMARY_LINES = 3
+const SUMMARY_LINES = 5
 
-const summaryLines = (summary: string, room: number): ReadonlyArray<string> => {
+const summaryLines = (
+  summary: string,
+  room: number,
+  rail: number = Number.MAX_SAFE_INTEGER,
+): ReadonlyArray<string> => {
   const said = summary.trim()
   if (said.length === 0) return []
+  const most = Math.max(2, Math.min(SUMMARY_LINES, Math.floor(rail / 6)))
   const lines = wrapped(said, Math.max(1, room))
-  const kept = lines.slice(0, SUMMARY_LINES)
+  const kept = lines.slice(0, most)
   const last = kept.at(-1) ?? ""
-  const shortened = lines.length > SUMMARY_LINES ? [...kept.slice(0, -1), clip(`${last}…`, room)] : kept
+  const shortened = lines.length > most ? [...kept.slice(0, -1), clip(`${last}…`, room)] : kept
   return [...shortened.map((line) => ` ${line}`), ""]
 }
 
@@ -783,55 +791,73 @@ const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
   return `${treeMarks(state, row)}${clip(treeLabel(state, row, room), room).padEnd(room)}${tail}`
 }
 
-const STEP_NUMBER = 3
-const STEP_LEAD = 8
-const NOTE_LEAD = 10
-const STEP_GAP = 1
+const GUTTER = 3
+const DIR_LEAD = GUTTER
+const TITLE_LEAD = GUTTER + 1
+const FILE_LEAD = TITLE_LEAD + 2
 const STALE_ROOM = 13
-
-type LayerRoom = { readonly title: number; readonly note: number; readonly tally: number }
 
 const STALE_LONG = "stale, the branch moved on"
 const STALE_SHORT = "stale"
 
 const staleBanner = (room: number): string =>
   wrapped(room >= STALE_ROOM ? STALE_LONG : STALE_SHORT, room)
-    .map((line) => `  ${line}`)
+    .map((line) => ` ${line}`)
     .join("\n")
 
-const layerRoom = (state: TuiState, pane: number): LayerRoom => {
-  const tally = Math.max(1, ...state.layers.map((layer) => `${layer.files.length}`.length))
+const layerRoom = (pane: number): LayerRoom => {
+  const whole = Math.max(8, pane - PANE_CHROME)
   return {
-    title: Math.max(4, pane - PANE_CHROME - STEP_LEAD - STEP_GAP - tally),
-    note: Math.max(4, pane - PANE_CHROME - NOTE_LEAD),
-    tally,
+    title: Math.max(4, whole - TITLE_LEAD),
+    dir: Math.max(4, whole - DIR_LEAD),
+    file: Math.max(4, whole - FILE_LEAD),
   }
 }
 
-const layerFold = (state: TuiState, index: number): string => {
-  if (layerOpen(state, index)) return "▾"
-  return (state.layers[index]?.note ?? "").length === 0 ? " " : "▸"
+const layerMark = (state: TuiState, row: LayerRow): string => {
+  if (row.kind === "file") return row.reviewed === true ? marks().reviewed : " "
+  if (row.kind !== "title" || !row.lead) return " "
+  if (layerDone(state, row.index)) return marks().reviewed
+  if (leftOver(state, row.index)) return "·"
+  return `${row.index + 1}`
 }
 
-const layerHead = (state: TuiState, row: LayerRow): string => {
-  if (!row.lead) return " ".repeat(STEP_LEAD)
-  const here = row.index === state.layerIndex
-  const mark = here ? (state.focus === "tree" ? "▸" : "·") : " "
-  return `${mark} ${layerFold(state, row.index)} ${`${row.index + 1}.`.padStart(STEP_NUMBER)} `
+const layerLead = (row: LayerRow): number => {
+  if (row.kind === "file") return FILE_LEAD
+  if (row.kind === "dir") return DIR_LEAD
+  return TITLE_LEAD
+}
+
+const layerGutter = (state: TuiState, row: LayerRow): string => {
+  const here = row.here === true ? "▎" : " "
+  return `${here}${layerMark(state, row).padStart(GUTTER - 1)}`
 }
 
 const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
-  if (row.kind === "file") return `${" ".repeat(NOTE_LEAD)}${marks().file} ${row.text}`
-  if (row.kind === "note") return `${" ".repeat(NOTE_LEAD)}${row.text}`
-  const count = row.lead ? `${state.layers[row.index]?.files.length ?? 0}` : ""
-  const tail = count.padStart(room.tally + STEP_GAP)
-  return `${layerHead(state, row)}${row.text.padEnd(room.title)}${tail}`
+  if (row.kind === "gap") return ""
+  const lead = layerLead(row) - GUTTER
+  return `${layerGutter(state, row)}${" ".repeat(lead)}${row.text}`.padEnd(
+    room.title + TITLE_LEAD,
+  )
+}
+
+const litRow = (row: LayerRow, state: TuiState, drawn: TextChunk): TextChunk =>
+  row.here === true ? bg(restingOrHere(state.focus === "tree"))(drawn) : drawn
+
+const leftOver = (state: TuiState, layerIndex: number): boolean =>
+  state.layers[layerIndex]?.title === REMAINDER_TITLE
+
+const titlePaint = (state: TuiState, layerIndex: number): string => {
+  const here = layerIndex === state.layerIndex
+  if (leftOver(state, layerIndex)) return here ? palette.attention : palette.faint
+  if (layerDone(state, layerIndex)) return palette.faint
+  return here ? palette.ink : palette.muted
 }
 
 const layerPaint = (state: TuiState, row: LayerRow): string => {
-  if (row.kind === "file") return palette.ink
-  if (row.kind === "note") return palette.faint
-  return row.index === state.layerIndex ? palette.ink : palette.muted
+  if (row.kind === "file") return row.reviewed === true ? palette.added : palette.ink
+  if (row.kind === "dir" || row.kind === "count") return palette.faint
+  return titlePaint(state, row.index)
 }
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
@@ -1346,23 +1372,42 @@ export class Screen {
   }
 
   private layerRail(state: TuiState): StyledText {
-    const room = layerRoom(state, this.paneRoom())
-    const said = summaryLines(state.summary, room.note)
+    const room = layerRoom(this.paneRoom())
+    const said = summaryLines(state.summary, room.title, this.listRoom())
     const banner = (state.layersStale ? 1 : 0) + said.length
     const height = Math.max(1, this.listRoom() - banner)
-    const all = layerRows(state, room.title, room.note)
-    const whole = railWindow(all, height, state.layerIndex)
-    const window =
-      whole.more === 0 ? whole : railWindow(all, Math.max(1, height - 1), state.layerIndex)
-    const rows = window.rows.map((row) =>
-      fg(layerPaint(state, row))(`${layerText(state, row, room)}\n`),
-    )
-    const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
-    const warn = state.layersStale
-      ? [fg(palette.attention)(`${staleBanner(room.note)}\n`)]
-      : []
+    const all = layerFitted(state, room, height)
+    const window = this.railFitted(state, all, height)
+    const rows = window.rows.flatMap((row) => this.layerLine(state, row, room))
+    const above =
+      window.above > 0 ? [fg(palette.faint)(` ▲ ${window.above} more\n`)] : []
+    const more = window.more > 0 ? [fg(palette.faint)(` ▼ ${window.more} more`)] : []
+    const warn = state.layersStale ? [fg(palette.attention)(`${staleBanner(room.title)}\n`)] : []
     const told = said.map((line) => fg(palette.muted)(`${line}\n`))
-    return new StyledText([...told, ...warn, ...rows, ...more])
+    return new StyledText([...told, ...warn, ...above, ...rows, ...more])
+  }
+
+  private layerLine(
+    state: TuiState,
+    row: LayerRow,
+    room: LayerRoom,
+  ): ReadonlyArray<TextChunk> {
+    const drawn = layerText(state, row, room)
+    const body = fg(layerPaint(state, row))(`${drawn.slice(1)}\n`)
+    const mark = fg(row.here === true ? palette.marker : palette.faint)(drawn.slice(0, 1))
+    return [mark, litRow(row, state, body)]
+  }
+
+  private railFitted(
+    state: TuiState,
+    all: ReadonlyArray<LayerRow>,
+    height: number,
+  ): RailWindow {
+    const whole = railWindow(all, height, state.layerIndex)
+    if (whole.more === 0 && whole.above === 0) return whole
+    const once = railWindow(all, Math.max(1, height - 1), state.layerIndex)
+    if (once.above === 0 || once.more === 0) return once
+    return railWindow(all, Math.max(1, height - 2), state.layerIndex)
   }
 
   private paintDiff(state: TuiState): void {

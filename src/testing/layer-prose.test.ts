@@ -87,7 +87,8 @@ describe("reading a layer's argument beside the code it describes", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    const row = rowsOf(frame).find((line) => line.includes("dropped the team id")) ?? ""
+    const whole = rowsOf(frame).find((line) => line.includes("dropped the team id")) ?? ""
+    const row = whole.slice(whole.indexOf("││"))
     expect(row).not.toMatch(/│[▎●\s]*\d/)
   })
 

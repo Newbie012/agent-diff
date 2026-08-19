@@ -22,9 +22,12 @@ import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
   readonly index: number
-  readonly kind: "title" | "note" | "file"
+  readonly kind: "title" | "dir" | "file" | "gap" | "count"
   readonly text: string
   readonly lead: boolean
+  readonly fileIndex?: number
+  readonly reviewed?: boolean
+  readonly here?: boolean
 }
 
 export type Spot = { readonly row: number; readonly column: number }
@@ -175,6 +178,7 @@ const FRAME_PAD = 1
 const PANE_BORDER = 2
 const TREE_MAX = 34
 const TREE_ROOMY = 40
+const TREE_WIDE = 52
 const TREE_MIN = 18
 const TREE_SHARE = 0.3
 const DIFF_MIN = 26
@@ -185,7 +189,8 @@ export const bodyRoom = (columns: number): number => Math.max(0, columns - FRAME
 
 export const treeWidth = (columns: number): number => {
   const room = bodyRoom(columns)
-  const most = room - reviewWidth() - DIFF_ROOMY >= TREE_ROOMY ? TREE_ROOMY : TREE_MAX
+  const spare = room - reviewWidth() - DIFF_ROOMY
+  const most = spare >= TREE_WIDE ? TREE_WIDE : spare >= TREE_ROOMY ? TREE_ROOMY : TREE_MAX
   const wanted = Math.min(most, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
   return Math.max(0, Math.min(wanted, room - DIFF_MIN))
 }
@@ -258,95 +263,170 @@ export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
     .reduce<ReadonlyArray<string>>((lines, word) => packed(lines, word, width), [])
 }
 
-export const NO_NOTE = "no note"
+const clip = (label: string, room: number): string =>
+  label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
-const noteRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
-  const lines = wrapped(state.layers[layerIndex]?.note ?? "", room)
-  const shown = lines.length === 0 ? [NO_NOTE] : lines
-  return shown.map((text) => ({ index: layerIndex, kind: "note" as const, text, lead: false }))
-}
+const TITLE_ROWS = 2
 
-const proseRow = (layerIndex: number, text: string): LayerRow => ({
-  index: layerIndex,
-  kind: "note",
-  text,
-  lead: false,
-})
-
-const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
-  const blocks = state.layers[layerIndex]?.prose ?? []
-  const rows: Array<LayerRow> = []
-  for (const [at, block] of blocks.entries()) {
-    if (at > 0) rows.push(proseRow(layerIndex, ""))
-    for (const text of wrapped(block.markdown, room)) rows.push(proseRow(layerIndex, text))
-    rows.push({
-      index: layerIndex,
-      kind: "file",
-      text: clipEnd(block.path, Math.max(1, room - FILE_LEAD)),
-      lead: false,
-    })
-  }
-  return rows
-}
-
-const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
-  wordWrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
+const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
+  const lines = wordWrapped(state.layers[layerIndex]?.title ?? "", room)
+  const kept = lines.slice(0, TITLE_ROWS)
+  const last = kept.at(-1) ?? ""
+  const said =
+    lines.length > TITLE_ROWS ? [...kept.slice(0, -1), clip(`${last} …`, room)] : kept
+  return said.map((text, at) => ({
     index: layerIndex,
     kind: "title" as const,
     text,
     lead: at === 0,
   }))
-
-const clipEnd = (text: string, room: number): string => {
-  if (text.length <= room) return text
-  const parts = text.split("/")
-  const kept: Array<string> = []
-  for (const part of parts.toReversed()) {
-    const wanted = [part, ...kept].join("/")
-    if (wanted.length + 2 > room) break
-    kept.unshift(part)
-  }
-  const tail = kept.length === 0 ? (parts.at(-1) ?? text) : kept.join("/")
-  return `…/${tail}`
 }
 
-const FILE_LEAD = 2
+export const shortDir = (dir: string, room: number): string => {
+  const whole = `${dir}/`
+  if (whole.length <= room) return whole
+  const parts = dir.split("/")
+  if (parts.length < 3) return `${clip(dir, Math.max(1, room - 1))}/`
+  const first = parts[0] ?? ""
+  const last = parts.at(-1) ?? ""
+  return `${first}/…/${last}/`
+}
 
-const fileRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
-  (state.layers[layerIndex]?.files ?? []).map((path) => ({
+const fileRow = (state: TuiState, layerIndex: number, at: number, room: number): LayerRow => {
+  const path = state.patches[at]?.path ?? ""
+  const name = path.split("/").at(-1) ?? path
+  return {
     index: layerIndex,
-    kind: "file" as const,
-    text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
+    kind: "file",
+    text: clip(name, room),
     lead: false,
-  }))
+    fileIndex: at,
+    reviewed: isReviewed(state, at),
+    here: at === state.patchIndex,
+  }
+}
+
+const shownFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> =>
+  layerFiles(state, layerIndex).filter(
+    (at) => !(state.hideReviewed && isReviewed(state, at) && at !== state.patchIndex),
+  )
+
+const dirOf = (state: TuiState, at: number): string => {
+  const parts = (state.patches[at]?.path ?? "").split("/")
+  return parts.slice(0, -1).join("/")
+}
+
+const fileRows = (
+  state: TuiState,
+  layerIndex: number,
+  room: { readonly dir: number; readonly file: number },
+): ReadonlyArray<LayerRow> => {
+  const rows: Array<LayerRow> = []
+  let held: string | undefined
+  for (const at of shownFiles(state, layerIndex)) {
+    const dir = dirOf(state, at)
+    if (dir !== held && dir.length > 0) {
+      rows.push({ index: layerIndex, kind: "dir", text: shortDir(dir, room.dir), lead: false })
+    }
+    held = dir
+    rows.push(fileRow(state, layerIndex, at, room.file))
+  }
+  return rows
+}
+
+export const layerRead = (state: TuiState, layerIndex: number): { done: number; all: number } => {
+  const files = layerFiles(state, layerIndex)
+  return { done: files.filter((at) => isReviewed(state, at)).length, all: files.length }
+}
+
+export const layerDone = (state: TuiState, layerIndex: number): boolean => {
+  const read = layerRead(state, layerIndex)
+  return read.all > 0 && read.done === read.all
+}
+
+export type LayerRoom = {
+  readonly title: number
+  readonly dir: number
+  readonly file: number
+}
+
+const countRow = (state: TuiState, index: number, room: number): ReadonlyArray<LayerRow> => {
+  const read = layerRead(state, index)
+  if (read.all === 0) return []
+  const one = read.all === 1 ? "file" : "files"
+  const said = `${read.done} of ${read.all} ${one} read`
+  return [{ index, kind: "count", text: clip(said, room), lead: false }]
+}
+
+const layerBody = (
+  state: TuiState,
+  index: number,
+  room: LayerRoom,
+  shown: ReadonlySet<number>,
+): ReadonlyArray<LayerRow> =>
+  layerOpen(state, index) && shown.has(index)
+    ? fileRows(state, index, room)
+    : countRow(state, index, room.file)
 
 export const layerRows = (
   state: TuiState,
-  titleRoom: number,
-  noteRoom: number,
+  room: LayerRoom,
+  shown: ReadonlySet<number>,
 ): ReadonlyArray<LayerRow> =>
-  state.layers.flatMap((_, index) =>
-    layerOpen(state, index)
-      ? [
-          ...titleRows(state, index, titleRoom),
-          ...((state.layers[index]?.prose ?? []).length > 0
-            ? proseRows(state, index, noteRoom)
-            : [...noteRows(state, index, noteRoom), ...fileRows(state, index, noteRoom)]),
-        ]
-      : titleRows(state, index, titleRoom),
-  )
+  state.layers.flatMap((_, index) => [
+    ...(index > 0 ? [{ index, kind: "gap" as const, text: "", lead: false }] : []),
+    ...titleRows(state, index, room.title),
+    ...layerBody(state, index, room, shown),
+  ])
+
+const nearFirst = (state: TuiState): ReadonlyArray<number> =>
+  state.layers
+    .map((_, at) => at)
+    .filter((at) => layerOpen(state, at))
+    .toSorted((one, two) => Math.abs(one - state.layerIndex) - Math.abs(two - state.layerIndex))
+
+export const layerFitted = (
+  state: TuiState,
+  room: LayerRoom,
+  height: number,
+): ReadonlyArray<LayerRow> => {
+  const every = new Set(state.layers.map((_, at) => at))
+  const whole = layerRows(state, room, every)
+  if (whole.length <= height) return whole
+  const shown = new Set<number>([state.layerIndex])
+  for (const at of nearFirst(state)) {
+    shown.add(at)
+    if (layerRows(state, room, shown).length > height) shown.delete(at)
+  }
+  shown.add(state.layerIndex)
+  return layerRows(state, room, shown)
+}
+
+export type RailWindow = {
+  readonly rows: ReadonlyArray<LayerRow>
+  readonly more: number
+  readonly above: number
+}
 
 export const railWindow = (
   rows: ReadonlyArray<LayerRow>,
   height: number,
   layerIndex: number,
-): { readonly rows: ReadonlyArray<LayerRow>; readonly more: number } => {
-  if (rows.length <= height) return { rows, more: 0 }
+): RailWindow => {
+  if (rows.length <= height) return { rows, more: 0, above: 0 }
   const first = Math.max(0, rows.findIndex((row) => row.index === layerIndex))
   const block = rows.findLastIndex((row) => row.index === layerIndex) - first + 1
   const wanted = block >= height ? first : first - Math.floor((height - block) / 2)
   const start = Math.max(0, Math.min(rows.length - height, wanted))
-  return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
+  const shown = rows.slice(start, start + height)
+  const here = new Set(shown.map((row) => row.index))
+  const seen = (from: ReadonlyArray<LayerRow>): number =>
+    new Set(from.filter((row) => !here.has(row.index)).map((row) => row.index)).size
+  return {
+    rows: shown,
+    more: seen(rows.slice(start + height)),
+    above: seen(rows.slice(0, start)),
+  }
 }
 
 export const selectedBranch = (state: TuiState): BranchSummary | undefined =>
@@ -815,24 +895,49 @@ export const countsOf = (state: TuiState, fileIndex: number): string => {
 
 export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
   onLayers(state)
-    ? layerFiles(state, state.layerIndex)
+    ? state.layers.flatMap((_, at) => layerFiles(state, at))
     : flattenTree(treeOf(state), []).flatMap((row) =>
         row.fileIndex === undefined ? [] : [row.fileIndex],
       )
 
 export const filePlace = (state: TuiState): { readonly at: number; readonly of: number } => {
-  const order = fileOrder(state)
+  const order = [...new Set(fileOrder(state))]
   const at = order.indexOf(state.patchIndex)
   if (at === -1) return { at: state.patchIndex + 1, of: state.patches.length }
   return { at: at + 1, of: order.length }
 }
 
+export const readingOrder = (
+  state: TuiState,
+): ReadonlyArray<{ readonly layer: number; readonly file: number }> =>
+  onLayers(state)
+    ? state.layers.flatMap((_, layer) =>
+        layerFiles(state, layer).map((file) => ({ layer, file })),
+      )
+    : fileOrder(state).map((file) => ({ layer: state.layerIndex, file }))
+
+export const placeIn = (state: TuiState): number => {
+  const order = readingOrder(state)
+  const at = order.findIndex(
+    (one) => one.file === state.patchIndex && (!onLayers(state) || one.layer === state.layerIndex),
+  )
+  return at === -1 ? order.findIndex((one) => one.file === state.patchIndex) : at
+}
+
 export const layerFile = (state: TuiState, delta: number): number => {
-  const order = fileOrder(state)
-  const position = order.indexOf(state.patchIndex)
-  if (position === -1) return order[0] ?? state.patchIndex
-  const next = Math.max(0, Math.min(order.length - 1, position + delta))
-  return order[next] ?? state.patchIndex
+  const order = readingOrder(state)
+  const at = placeIn(state)
+  if (at === -1) return order[0]?.file ?? state.patchIndex
+  const next = Math.max(0, Math.min(order.length - 1, at + delta))
+  return order[next]?.file ?? state.patchIndex
+}
+
+export const layerAfter = (state: TuiState, delta: number): number => {
+  const order = readingOrder(state)
+  const at = placeIn(state)
+  if (at === -1) return order[0]?.layer ?? state.layerIndex
+  const next = Math.max(0, Math.min(order.length - 1, at + delta))
+  return order[next]?.layer ?? state.layerIndex
 }
 
 export const selectionRange = (state: TuiState): readonly [number, number] =>
