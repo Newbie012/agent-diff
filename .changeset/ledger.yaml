@@ -38,6 +38,10 @@
   dir: ""
   intents:
     - a-line-not-worth-hiding
+"@eliya-oss/agent-diff@0.1.0-alpha.101":
+  dir: ""
+  intents:
+    - asking-before-leaving
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:
