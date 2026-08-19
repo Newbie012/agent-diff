@@ -398,6 +398,10 @@
   dir: ""
   intents:
     - marking-a-file-reviewed
+"@eliya-oss/agent-diff@0.1.0-alpha.88":
+  dir: ""
+  intents:
+    - keys-that-were-waiting-on-git
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
