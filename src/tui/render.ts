@@ -98,6 +98,8 @@ const PANEL_FIFTH = 5
 const PANE_CHROME = 3
 const PANE_EDGES = 2
 const PANE_INSET = 1
+const DIFF_FLOOR = 24
+const DIFF_CHROME_MOST = 16
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
 const BRANCH_FIXED = 36
@@ -1060,6 +1062,7 @@ export class Screen {
   private readonly landingKeys: TextRenderable
   private hovered = -1
   private lead = 0
+  private chrome = 0
   private shown: TuiState | undefined
   private chips: ReadonlyArray<{ key: string; hint: string; press: string }> = []
   private readonly composeTitle: TextRenderable
@@ -1270,9 +1273,9 @@ export class Screen {
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
     this.landingKeys.content = this.homeKeys(state)
     this.diffPane.visible = state.screen !== "branches" && !atHome(state)
-    if (this.diffPane.visible) this.paintDiff(state)
     this.paintPanel(state)
     this.paintPane(state)
+    if (this.diffPane.visible) this.paintDiff(state)
     this.paintCompose(state)
     this.paintPalette(state)
     this.paintKeys(state)
@@ -1366,6 +1369,20 @@ export class Screen {
     return treeWidth(this.renderer.width)
   }
 
+  private railsRoom(): number {
+    return (
+      (this.listPane.visible ? this.listPane.width : 0) +
+      (this.panelPane.visible ? this.panelPane.width : 0)
+    )
+  }
+
+  private diffRoom(): number {
+    const measured = this.view.paneWidth()
+    const settled = this.renderer.width - this.railsRoom() - measured
+    if (settled >= 0 && settled < DIFF_CHROME_MOST) this.chrome = settled
+    return Math.max(DIFF_FLOOR, this.renderer.width - this.railsRoom() - this.chrome)
+  }
+
   columns(): number {
     return this.renderer.width
   }
@@ -1444,7 +1461,7 @@ export class Screen {
     const shown = shownOf(state)
     if (shown === undefined) return
     const patch = shown.patch
-    this.view.setWrap(state.wrap)
+    this.view.setWrap(state.wrap, this.diffRoom())
     this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
     this.view.pick(state.picked)
