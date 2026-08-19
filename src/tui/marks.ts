@@ -10,18 +10,22 @@ export type MarkSet = {
   readonly file: string
 }
 
+const ring: MarkSet = {
+  comment: "○",
+  sent: "✓",
+  rule: "│",
+  cursor: "▎",
+  tally: "•",
+  reviewed: "✓",
+  folder: "",
+  folderOpen: "",
+  file: "",
+}
+
+const plain: MarkSet = { ...ring, folder: "▸", folderOpen: "▾", file: "·" }
+
 const sets: Readonly<Record<string, MarkSet>> = {
-  ring: {
-    comment: "○",
-    sent: "✓",
-    rule: "│",
-    cursor: "▎",
-    tally: "•",
-    reviewed: "✓",
-    folder: "",
-    folderOpen: "",
-    file: "",
-  },
+  ring,
   bubble: {
     comment: "◗",
     sent: "◖",
@@ -66,28 +70,15 @@ const sets: Readonly<Record<string, MarkSet>> = {
     folderOpen: "",
     file: "",
   },
+  plain,
 }
 
 export const markSetNames: ReadonlyArray<string> = Object.keys(sets)
 
-const ring: MarkSet = {
-  folder: "",
-  folderOpen: "",
-  file: "",
-  comment: "○",
-  sent: "✓",
-  rule: "│",
-  cursor: "▎",
-  tally: "•",
-  reviewed: "✓",
-}
-
-const plain: MarkSet = { ...ring, folder: "▸", folderOpen: "▾", file: "·" }
-
 let chosen: MarkSet = ring
 
 export const useMarks = (name: string): void => {
-  chosen = name === "plain" ? plain : (sets[name] ?? ring)
+  chosen = sets[name] ?? ring
 }
 
 export const marks = (): MarkSet => chosen

@@ -1,4 +1,5 @@
 import { Option } from "effect"
+import { WHOLE_FILE } from "../domain/patch/index.ts"
 
 export type StagedComment = {
   readonly id?: string
@@ -176,7 +177,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   rail: "tree",
 })
 
-const FRAME_PAD = 1
+export const FRAME_PAD = 1
 const PANE_BORDER = 2
 const TREE_MAX = 34
 const TREE_ROOMY = 40
@@ -214,7 +215,7 @@ export const panelShown = (state: TuiState): boolean =>
 export const onLayers = (state: TuiState): boolean =>
   state.rail === "layers" && state.layers.length > 0
 
-export const selectedLayer = (state: TuiState): ReportedLayer | undefined => state.layers[state.layerIndex]
+const selectedLayer = (state: TuiState): ReportedLayer | undefined => state.layers[state.layerIndex]
 
 export const proseFor = (state: TuiState, path: string): ReadonlyArray<ProseAnchor> => {
   if (!onLayers(state)) return []
@@ -253,7 +254,7 @@ const packed = (lines: ReadonlyArray<string>, word: string, room: number): Reado
 const shortened = (word: string, room: number): string =>
   word.length <= room ? word : `${word.slice(0, Math.max(1, room - 1))}\u2026`
 
-export const wordWrapped = (text: string, room: number): ReadonlyArray<string> => {
+const wordWrapped = (text: string, room: number): ReadonlyArray<string> => {
   const width = Math.max(1, room)
   return text
     .split(/\s+/)
@@ -271,7 +272,7 @@ export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
     .reduce<ReadonlyArray<string>>((lines, word) => packed(lines, word, width), [])
 }
 
-const clip = (label: string, room: number): string =>
+export const clip = (label: string, room: number): string =>
   label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
 const TITLE_ROWS = 2
@@ -290,7 +291,7 @@ const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
   }))
 }
 
-export const shortDir = (dir: string, room: number): string => {
+const shortDir = (dir: string, room: number): string => {
   const whole = `${dir}/`
   if (whole.length <= room) return whole
   const parts = dir.split("/")
@@ -457,7 +458,7 @@ export const treeOf = (state: TuiState): Tree =>
 export const reviewedCountIn = (state: TuiState): number =>
   state.patches.filter((_, at) => isReviewed(state, at)).length
 
-export const CROWDED = 8
+const CROWDED = 8
 
 export const treeRows = (state: TuiState): ReadonlyArray<TreeRow> => {
   const tree = treeOf(state)
@@ -466,13 +467,6 @@ export const treeRows = (state: TuiState): ReadonlyArray<TreeRow> => {
 
 export const crowdedOf = (patches: TuiState["patches"]): ReadonlyArray<string> =>
   crowdedDirectories(buildTree(patches.map((patch) => patch.path)), CROWDED)
-
-export const directoryOfFile = (state: TuiState, fileIndex: number): string | undefined => {
-  const patch = state.patches[fileIndex]
-  if (patch === undefined) return undefined
-  const segments = patch.path.split("/")
-  return segments.length < 2 ? undefined : segments.slice(0, -1).join("/")
-}
 
 export const foldersOfFile = (state: TuiState, fileIndex: number): ReadonlyArray<string> => {
   const patch = state.patches[fileIndex]
@@ -676,11 +670,11 @@ export const selectionReadout = (state: TuiState): string => {
   return `${patch.path}  ${lines} ${lines === 1 ? "line" : "lines"}`
 }
 
-export const WHOLE_FILE = 100_000
+export { WHOLE_FILE }
 
 export const CONTEXT_STEPS: ReadonlyArray<number> = [3, 10, 25, 60, WHOLE_FILE]
 
-export const wholeFileOff = (state: TuiState): boolean => state.context < WHOLE_FILE
+const wholeFileOff = (state: TuiState): boolean => state.context < WHOLE_FILE
 
 export const contextToggled = (state: TuiState): number =>
   wholeFileOff(state) ? WHOLE_FILE : state.contextWas
@@ -829,12 +823,6 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   return [...ordered("with"), ...ordered("answered")]
 }
 
-export const panelIndexOf = (state: TuiState, id: string | undefined): number => {
-  if (id === undefined) return state.panelIndex
-  const at = panelEntries(state).findIndex((entry) => entry.comment.id === id)
-  return at === -1 ? state.panelIndex : at
-}
-
 export const panelEntry = (state: TuiState): PanelEntry | undefined =>
   panelEntries(state)[state.panelIndex]
 
@@ -843,12 +831,6 @@ export const threadChosen = (state: TuiState): StagedComment | undefined => {
   const entry = panelEntry(state)
   return entry?.comment
 }
-
-export const freshAnswers = (state: TuiState): number =>
-  panelEntries(state).filter((entry) => entry.fresh).length
-
-export const unreadAnswers = (state: TuiState): number =>
-  panelEntries(state).filter((entry) => entry.unread > 0).length
 
 export const spokenSince = (
   seen: ReadonlyArray<StagedComment>,
@@ -896,13 +878,6 @@ export const nextUnreviewed = (state: TuiState, from: number): number | undefine
 
 export const reviewedCount = (state: TuiState): string =>
   `${state.vouched.length} reviewed`
-
-export const countsOf = (state: TuiState, fileIndex: number): string => {
-  const patch = state.patches[fileIndex]
-  if (patch === undefined) return ""
-  const total = patch.added + patch.removed
-  return total === 0 ? "" : String(total)
-}
 
 export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
   onLayers(state)

@@ -142,6 +142,3 @@ export const crowdedDirectories = (tree: Tree, limit: number): ReadonlyArray<str
   tree.nodes
     .filter((node) => node.kind === "directory" && directFiles(tree, node.id) > limit)
     .map((node) => node.path)
-
-export const rowOfFile = (rows: ReadonlyArray<TreeRow>, fileIndex: number): number =>
-  rows.findIndex((row) => row.fileIndex === fileIndex)

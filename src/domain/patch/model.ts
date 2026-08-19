@@ -1,11 +1,6 @@
-import { Schema } from "effect"
 import type { Option } from "effect"
 
-export const Blob = Schema.String.pipe(Schema.brand("@adiff/Blob"))
-export type Blob = typeof Blob.Type
-
-export const FilePath = Schema.String.pipe(Schema.brand("@adiff/FilePath"))
-export type FilePath = typeof FilePath.Type
+export const WHOLE_FILE = 100_000
 
 export type Side = "old" | "new"
 

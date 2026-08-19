@@ -122,7 +122,7 @@ import { Intent } from "./intent.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
 import { upgradeHint } from "./upgrade.ts"
 
-export const LEAVING_MS = 3000
+const LEAVING_MS = 3000
 const LOOK_MS = 110
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
@@ -1233,7 +1233,7 @@ export class App {
         this.commit(withNoticeHere(this.state, "no pull request for this branch"))
         return
       }
-      const forge = yield* (Effect.map(Forge, (service) => service))
+      const forge = yield* Forge
       const asked = forge.openPull(this.repo, branch.branch)
       const opened = yield* (
         asked.pipe(
@@ -1247,7 +1247,7 @@ export class App {
 
   private loadPulls(): Work {
     return Effect.gen({ self: this }, function* () {
-      const forge = yield* (Effect.map(Forge, (service) => service))
+      const forge = yield* Forge
       const answered = yield* (
         forge.pulls(this.repo).pipe(
           Effect.map(Option.some),

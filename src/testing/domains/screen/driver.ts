@@ -623,20 +623,6 @@ export class ScreenTestDriver {
     return found.flat()
   }
 
-  async debugSpans(): Promise<ReadonlyArray<string>> {
-    const setup = this.active()
-    await setup.waitForVisualIdle()
-    return setup
-      .captureSpans()
-      .lines.map((line) =>
-        line.spans.map((span) => `${bgOf(span)}:${span.text.trimEnd()}`).filter((s) => s.length > 8).join(" | "),
-      )
-  }
-
-  async lastFailure(): Promise<string> {
-    return this.app?.lastFailure() ?? ""
-  }
-
   async waitForFrame(wanted: string): Promise<string> {
     const setup = this.active()
     await this.pump(() => setup.captureCharFrame().includes(wanted))

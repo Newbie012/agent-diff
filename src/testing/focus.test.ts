@@ -25,7 +25,7 @@ describe("moving between the file list and the diff", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("│")
+    expect(rules(await driver.screen.getFrame())).toBe(WITH_LIST)
   })
 
   it("moves between files when the list has focus", async () => {

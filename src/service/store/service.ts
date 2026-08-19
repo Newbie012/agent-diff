@@ -16,7 +16,6 @@ import {
 import * as Wire from "./schema.ts"
 import {
   branchDir,
-  defaultRoot,
   inboxPath,
   outboxPath,
   reportPath,
@@ -249,10 +248,12 @@ const repoOf = (worktreePath: string): Promise<string> =>
   )
 
 const keyOf = (worktreePath: string): Effect.Effect<string> =>
-  Effect.promise(() =>
-    Promise.all([repoOf(worktreePath), headOf(worktreePath)]).then(
-      ([repo, head]) => `${repo}#${head}`,
+  Effect.map(
+    Effect.all(
+      [Effect.promise(() => repoOf(worktreePath)), Effect.promise(() => headOf(worktreePath))],
+      { concurrency: 2 },
     ),
+    ([repo, head]) => `${repo}#${head}`,
   )
 
 const wasKeyOf = (worktreePath: string): Effect.Effect<string> =>
@@ -491,5 +492,3 @@ const makeStore = (root: string): Shape => {
 }
 
 export const storeAt = (root: string): Layer.Layer<Store> => Layer.succeed(Store)(makeStore(root))
-
-export const StoreLive = storeAt(defaultRoot())

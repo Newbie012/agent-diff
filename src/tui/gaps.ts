@@ -36,7 +36,7 @@ type Made = {
   readonly gaps: Array<Gap>
 }
 
-export const sourceLength = (source: ReadonlyArray<string>): number =>
+const sourceLength = (source: ReadonlyArray<string>): number =>
   source.at(-1)?.trim() === "" ? source.length - 1 : source.length
 
 const markerText = (hidden: number): string =>

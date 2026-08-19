@@ -532,7 +532,7 @@ export const verbsUnder = (noun: string): ReadonlyArray<string> =>
 
 export const groups: ReadonlyArray<string> = [...new Set(catalog.map((command) => command.group))]
 
-const NEAR = 3
+const MIN_EDITS = 3
 
 const distance = (left: string, right: string): number => {
   const previous = Array.from({ length: right.length + 1 }, (_, at) => at)
@@ -549,13 +549,13 @@ const distance = (left: string, right: string): number => {
   return previous[right.length] ?? 0
 }
 
-const NEAR_ENOUGH = 3
+const CHARS_PER_EDIT = 3
 
 export const nearestCommand = (name: string): string | undefined => {
   const noun = name.split(" ")[0] ?? ""
   const under = verbsUnder(noun)
   const candidates = under.length === 0 ? commandNames : under
-  const room = Math.max(NEAR, Math.floor(name.length / NEAR_ENOUGH))
+  const room = Math.max(MIN_EDITS, Math.floor(name.length / CHARS_PER_EDIT))
   const scored = candidates
     .map((known) => ({ known, gap: distance(name, known) }))
     .toSorted((left, right) => left.gap - right.gap)[0]

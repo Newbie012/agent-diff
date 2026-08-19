@@ -1,7 +1,14 @@
 import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
-import { anchorFor, lineOn, parsePatches, type Patch, type Side } from "../domain/patch/index.ts"
-import { Git, type Worktree } from "../service/git/index.ts"
+import {
+  anchorFor,
+  parsePatches,
+  rowsForRange,
+  WHOLE_FILE,
+  type Patch,
+  type Side,
+} from "../domain/patch/index.ts"
+import { AT_ONCE, Git, type Worktree } from "../service/git/index.ts"
 import { isVouched, vouch } from "../domain/review/index.ts"
 import {
   Store,
@@ -26,7 +33,6 @@ import {
 } from "./error.ts"
 
 const CONTEXT = 3
-const WHOLE_FILE = 100_000
 const POLL = "500 millis"
 
 export type BranchSummary = {
@@ -136,21 +142,6 @@ export const patchesOf = Effect.fn("Cli.patchesOf")(function* (
 const findPatch = (patches: ReadonlyArray<Patch>, file: string): Option.Option<Patch> =>
   Option.fromNullishOr(patches.find((patch) => patch.path === file))
 
-const rowsCovering = (
-  patch: Patch,
-  side: Side,
-  start: number,
-  end: number,
-): ReadonlyArray<number> =>
-  patch.rows
-    .filter((row) =>
-      Option.match(lineOn(row, side), {
-        onNone: () => false,
-        onSome: (line) => line >= start && line <= end,
-      }),
-    )
-    .map((row) => row.index)
-
 const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
   const owed = yield* store.take(worktree.path)
@@ -161,8 +152,6 @@ const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
     stale: Option.match(told, { onNone: () => false, onSome: (layers) => layers.head !== worktree.head }),
   }
 })
-
-const AT_ONCE = 8
 
 const summaryOf = Effect.fn("Cli.summaryOf")(function* (
   repo: string,
@@ -407,13 +396,9 @@ export const anchorIn = Effect.fn("Cli.anchorIn")(function* (
     onSome: Effect.succeed,
   })
 
-  const rows = rowsCovering(resolved, request.side, request.start, request.end)
-  const first = rows[0]
-  const last = rows.at(-1)
-  const anchor =
-    first === undefined || last === undefined
-      ? Option.none()
-      : anchorFor(resolved, first, last, request.side)
+  const anchor = Option.flatMap(rowsForRange(resolved, request), ([first, last]) =>
+    anchorFor(resolved, first, last, request.side),
+  )
 
   return yield* Option.match(anchor, {
     onNone: () => new UnselectableRange({ file: request.file, start: request.start, end: request.end }),
@@ -655,18 +640,6 @@ export const savePreference = Effect.fn("Cli.savePreference")(function* (
   const current = yield* store.settings
   yield* store.saveSettings({ ...current, [name]: value })
   return { name, about: known.about, value, byDefault: known.byDefault }
-})
-
-export const saveWrap = Effect.fn("Cli.saveWrap")(function* (wrap: boolean) {
-  const store = yield* Store
-  const current = yield* store.settings
-  yield* store.saveSettings({ ...current, wrap })
-})
-
-export const saveSticky = Effect.fn("Cli.saveSticky")(function* (sticky: boolean) {
-  const store = yield* Store
-  const current = yield* store.settings
-  yield* store.saveSettings({ ...current, sticky })
 })
 
 export const setBase = Effect.fn("Cli.setBase")(function* (

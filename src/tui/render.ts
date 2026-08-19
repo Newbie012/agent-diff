@@ -52,6 +52,8 @@ import {
   treeWidth,
   type TuiState,
   WHOLE_FILE,
+  clip,
+  FRAME_PAD,
   type StagedComment,
   proseFor,
   composeBox,
@@ -73,7 +75,6 @@ const ROW_HEIGHT = 1
 const COMPOSE_WIDTH = 72
 const GUTTER_X = 2
 const CHIP_GAP = 4
-const FRAME_PAD = 1
 const MODAL_ROOM = 8
 const COMPOSE_CHROME = 3
 const COMPOSE_ACTION_ROWS = 2
@@ -589,9 +590,6 @@ const makeCompose = (renderer: CliRenderer): BoxRenderable =>
     paddingBottom: 1,
     flexDirection: "column",
   })
-
-const clip = (label: string, room: number): string =>
-  label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
 const clipHead = (label: string, room: number): string =>
   label.length > room ? `…${label.slice(label.length - Math.max(0, room - 1))}` : label
