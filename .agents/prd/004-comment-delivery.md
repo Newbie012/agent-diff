@@ -130,11 +130,13 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **A thread is stale when its comment was written against an older HEAD**, the same rule
   [layers](006-narrative-review.md) use. The code under discussion has moved; the answer may no
   longer describe it.
-- **A comment goes out the moment it is written.** Review carried two ways of sending — one comment
-  now, or several held back and sent together — and a reviewer using it for a while has no use for
-  the second. Holding a point back does not make it better, and the agent it is written for is
-  reading the store, not sitting in the room. One way to send is one thing to explain, one screen
-  fewer, and no half-written review to lose.
+- **A comment goes out the moment it is written, unless the reviewer says otherwise.** Review
+  carried two ways of sending with nothing to choose between them, and a reviewer using it for a
+  while has no use for the second by default. It is a preference now, off unless asked for, and
+  what it changes is when the submission is made rather than what a submission is
+  ([PRD 011](011-preferences.md)). What the default protects is the reviewer who never asked: the
+  agent is reading the store rather than sitting in the room, so a point held back is a point not
+  yet made, and a half-written review is one that can be walked away from.
 - **Nothing that has been sent can be reworded or withdrawn.** A submission is append-only and the
   agent may already have acted on it. Rewording a point that has gone is a new comment, or an
   answer.

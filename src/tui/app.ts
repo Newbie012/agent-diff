@@ -29,9 +29,8 @@ import {
   readingOf,
   sentIn,
   saveReport,
-  saveWrap,
-  saveSticky,
   commentIn,
+  savePreference,
   submitComment,
   submitReply,
   toggleVouch,
@@ -45,6 +44,7 @@ import {
   settleThread,
   settleRead,
 } from "../cli/index.ts"
+import { heldValues } from "../domain/preferences/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
@@ -133,8 +133,7 @@ export type AppOptions = {
   readonly resume?: Session | undefined
   readonly opensOn?: number | undefined
   readonly partial?: boolean | undefined
-  readonly wrap?: boolean | undefined
-  readonly sticky?: boolean | undefined
+  readonly chosen?: Partial<TuiState> | undefined
 }
 
 const KEY_HISTORY = 40
@@ -240,8 +239,7 @@ export class App {
   private roomed = 0
   private readonly sessionPath: string | undefined
   private remembered = ""
-  private wrapKept = false
-  private stickyKept = true
+  private readonly chosen: Record<string, boolean> = {}
   private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
@@ -257,8 +255,7 @@ export class App {
     this.repo = options.repo
     this.noticeMs = options.noticeMs ?? NOTICE_MS
     this.sessionPath = options.sessionPath
-    this.wrapKept = options.wrap === true
-    this.stickyKept = options.sticky !== false
+    Object.assign(this.chosen, chosenIn({ ...initialState([]), ...options.chosen }))
     this.held = options.state
     this.display = options.display
     this.painting = options.painting
@@ -369,16 +366,12 @@ export class App {
     })
   }
 
-  private rememberWrap(next: TuiState): void {
-    if (next.wrap === this.wrapKept) return
-    this.wrapKept = next.wrap
-    this.dispatchTask(Effect.asVoid(saveWrap(next.wrap)))
-  }
-
-  private rememberSticky(next: TuiState): void {
-    if (next.sticky === this.stickyKept) return
-    this.stickyKept = next.sticky
-    this.dispatchTask(Effect.asVoid(saveSticky(next.sticky)))
+  private rememberChosen(next: TuiState): void {
+    for (const [name, value] of Object.entries(chosenIn(next))) {
+      if (this.chosen[name] === value) continue
+      this.chosen[name] = value
+      this.dispatchTask(savePreference(name, value).pipe(Effect.asVoid, Effect.orElseSucceed(() => undefined)))
+    }
   }
 
   private rememberPlace(next: TuiState): void {
@@ -524,8 +517,7 @@ export class App {
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     if (appeared) this.recordNotice(next.notice)
     this.rememberPlace(next)
-    this.rememberWrap(next)
-    this.rememberSticky(next)
+    this.rememberChosen(next)
     this.write(next)
     if (appeared) this.fade()
   }
@@ -1277,10 +1269,29 @@ const turnedOver = (state: TuiState): TuiState => ({
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
+const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
+  wrap: state.wrap,
+  sticky: state.sticky,
+  panel: state.panelOpen,
+  hideReviewed: state.hideReviewed,
+  hideSettled: state.hideSettled,
+  newestFirst: state.newestFirst,
+  hold: state.hold,
+})
+
 const settingsHeld = Effect.gen(function* () {
   const store = yield* Store
-  const settings = yield* store.settings
-  return { wrap: settings.wrap === true, sticky: settings.sticky !== false }
+  const kept = heldValues(yield* store.settings)
+  return {
+    wrap: kept["wrap"] === true,
+    sticky: kept["sticky"] === true,
+    panelOpen: kept["panel"] === true,
+    panelWas: kept["panel"] === true,
+    hideReviewed: kept["hideReviewed"] === true,
+    hideSettled: kept["hideSettled"] === true,
+    newestFirst: kept["newestFirst"] === true,
+    hold: kept["hold"] === true,
+  }
 })
 
 const firstBranches = Effect.fn("Tui.firstBranches")(function* (
@@ -1350,8 +1361,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
     sessionPath,
     resume: Option.getOrUndefined(resume),
     opensOn: Option.getOrUndefined(asOpened),
-    wrap: kept.wrap,
-    sticky: kept.sticky,
+    chosen: kept,
     partial,
     intents,
   })

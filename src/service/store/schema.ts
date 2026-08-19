@@ -45,6 +45,11 @@ export const BranchState = Schema.Struct({
 export const Settings = Schema.Struct({
   wrap: Schema.optionalKey(Schema.Boolean),
   sticky: Schema.optionalKey(Schema.Boolean),
+  panel: Schema.optionalKey(Schema.Boolean),
+  hideReviewed: Schema.optionalKey(Schema.Boolean),
+  hideSettled: Schema.optionalKey(Schema.Boolean),
+  newestFirst: Schema.optionalKey(Schema.Boolean),
+  hold: Schema.optionalKey(Schema.Boolean),
 })
 
 export const UpgradeCheck = Schema.Struct({
