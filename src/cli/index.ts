@@ -13,6 +13,7 @@ export {
   baseFor,
   type Basis,
   listPatches,
+  patchIn,
   listSent,
   progressIn,
   readingOf,

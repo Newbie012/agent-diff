@@ -237,6 +237,11 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **Opening the lines a diff is hiding reads the file being opened.** The rows behind a gap come
+  from a second reading at whole-file context, and that reading was taken of every file on the
+  branch to fill one gap in one of them. Only the file on the screen is ever asked for, and each
+  file is read once and kept.
+
 - **Turning past the last file says so.** `]` on the last file and `[` on the first did nothing at
   all, which is the same thing the review does when a key is not bound, or not delivered, or the
   process is wedged. A reviewer cannot tell those apart by looking. It says which end it is.
