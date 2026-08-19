@@ -46,6 +46,10 @@
   dir: ""
   intents:
     - keys-a-terminal-shifts
+"@eliya-oss/agent-diff@0.1.0-alpha.103":
+  dir: ""
+  intents:
+    - looking-for-something
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:
