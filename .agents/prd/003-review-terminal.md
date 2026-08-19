@@ -237,6 +237,12 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **Ctrl+C closes what is open over the review before it closes the review.** It killed adiff
+  outright, so a reviewer who reached for the usual way out of a box they were typing in lost the
+  session and everything they had not sent. It dismisses whatever is over the review — the box, the
+  key sheet, the palette, the search — and only leaves when there is nothing left to dismiss, which
+  is what pressing it twice does.
+
 - **The code comes before the pull request.** Opening a review asked the forge which branches have
   a pull request before it read the branch, and the work a review does runs one thing at a time, so
   a reviewer waited on a network call to see their own diff — over a second here, and as long as

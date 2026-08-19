@@ -101,6 +101,7 @@ export class ScreenTestDriver {
     const setup = await createTestRenderer({
       width: options.width ?? WIDTH,
       height: options.height ?? HEIGHT,
+      exitOnCtrlC: false,
     })
     this.setup = setup
     this.watch()
