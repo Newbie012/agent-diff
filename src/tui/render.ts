@@ -48,6 +48,7 @@ import {
   selectionRange,
   threadChosen,
   treeWindow,
+  tooSmall,
   treeWidth,
   type TuiState,
   WHOLE_FILE,
@@ -99,6 +100,8 @@ const PANE_CHROME = 3
 const PANE_EDGES = 2
 const PANE_INSET = 1
 const DIFF_FLOOR = 24
+const CRAMPED = "adiff needs more room than this"
+const CRAMPED_ROWS = 4
 const DIFF_CHROME_MOST = 16
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
@@ -206,6 +209,21 @@ const UNDER_CURSOR: Partial<Record<RowKind, LinePaint>> = {
 const GAP_PAINT: LinePaint = {
   gutter: RGBA.fromHex(palette.overlay),
   content: RGBA.fromHex(palette.overlay),
+}
+
+const frameRoot = (renderer: CliRenderer): void => {
+  renderer.root.flexDirection = "column"
+  renderer.root.paddingLeft = FRAME_PAD
+  renderer.root.paddingRight = FRAME_PAD
+  renderer.root.paddingTop = 0
+  renderer.root.paddingBottom = 0
+}
+
+const crampedBar = (renderer: CliRenderer): TextRenderable => {
+  const made = bar(renderer, "cramped", palette.muted)
+  made.wrapMode = "word"
+  made.height = CRAMPED_ROWS
+  return made
 }
 
 const bar = (renderer: CliRenderer, id: string, color: string): TextRenderable =>
@@ -1070,6 +1088,7 @@ export class Screen {
   private readonly composeBody: TextareaRenderable
   private readonly composeActions: TextRenderable
   private readonly footer: TextRenderable
+  private readonly cramped: TextRenderable
   private readonly palette: BoxRenderable
   private readonly paletteTitle: TextRenderable
   private readonly paletteQuery: TextareaRenderable
@@ -1093,14 +1112,10 @@ export class Screen {
   constructor(renderer: CliRenderer, repo = "") {
     this.renderer = renderer
     this.repo = repo
-    renderer.root.flexDirection = "column"
-    renderer.root.paddingLeft = FRAME_PAD
-    renderer.root.paddingRight = FRAME_PAD
-    renderer.root.paddingTop = 0
-    renderer.root.paddingBottom = 0
-
+    frameRoot(renderer)
     this.header = bar(renderer, "header", palette.ink)
     this.footer = bar(renderer, "footer", palette.faint)
+    this.cramped = crampedBar(renderer)
     this.body = makeBody(renderer)
     const list = makeListParts(renderer)
     this.listPane = list.pane
@@ -1282,6 +1297,16 @@ export class Screen {
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
+    this.paintCramped()
+  }
+
+  private paintCramped(): void {
+    const cramped = tooSmall(this.renderer.width, this.renderer.height)
+    this.cramped.visible = cramped
+    this.body.visible = !cramped
+    this.header.visible = !cramped
+    this.footer.visible = !cramped
+    if (cramped) this.cramped.content = wrapped(CRAMPED, this.renderer.width - 1).join("\n")
   }
 
   private paintPalette(state: TuiState): void {
@@ -1489,6 +1514,7 @@ export class Screen {
     this.body.add(this.panelPane)
     stack(this.compose, [this.composeTitle, this.composeQuoted, this.composeBody, this.composeActions])
     stack(renderer.root, [
+      this.cramped,
       this.header,
       this.body,
       this.footer,

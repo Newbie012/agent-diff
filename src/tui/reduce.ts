@@ -350,15 +350,23 @@ const startSelection = (state: TuiState): TuiState => ({
   anchorRow: state.cursor,
 })
 
+const draftMark = (state: TuiState): string => {
+  const [from, to] = selectionRange(state)
+  return `${selectedPatch(state)?.path ?? ""}:${from}-${to}`
+}
+
 const openCompose = (state: TuiState): TuiState => {
   const patch = selectedPatch(state)
   const [from, to] = selectionRange(state)
   const anchored = patch !== undefined && Option.isSome(anchorFor(patch, from, to))
   if (!anchored) return withNoticeHere(state, "no line here to comment on")
+  const mark = draftMark(state)
+  const kept = state.draftAt === mark ? state.draft : ""
   return {
     ...state,
     screen: "compose",
-    draft: "",
+    draft: kept,
+    draftAt: mark,
     replyTo: undefined,
     anchorRow: state.selecting ? state.anchorRow : state.cursor,
   }
@@ -369,7 +377,7 @@ const goBack = (state: TuiState): TuiState => {
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "keys") return { ...state, screen: state.returnTo, query: "" }
-  if (state.screen === "compose") return { ...state, screen: "review", draft: "", replyTo: undefined }
+  if (state.screen === "compose") return { ...state, screen: "review", replyTo: undefined }
   if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
   return { ...state, screen: "branches", selecting: false }
 }

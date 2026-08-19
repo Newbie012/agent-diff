@@ -50,6 +50,38 @@ describe("a terminal that changed size", () => {
     expect(frame).toContain("src/")
   })
 
+  it("comes back from a terminal too narrow to draw anything in", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 140, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ACT
+    await driver.screen.resize(10, 20)
+    await driver.screen.resize(140, 30)
+    await driver.screen.pressKeys(["j"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(drawn(frame)).toBeGreaterThan(3)
+    expect(frame).toContain("src/")
+  })
+
+  it("says the terminal is too narrow rather than drawing nothing", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 140, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ACT
+    await driver.screen.resize(16, 20)
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("more room")
+  })
+
   it("keeps drawing after it is made larger", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
