@@ -410,3 +410,7 @@
   dir: ""
   intents:
     - strong-socks-act
+"@eliya-oss/agent-diff@0.1.0-alpha.90":
+  dir: ""
+  intents:
+    - what-the-layers-say-it-is
