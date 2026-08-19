@@ -265,15 +265,22 @@ const revealing = (state: TuiState, patchIndex: number): ReadonlyArray<string> =
   return state.closed.filter((path) => !wanted.includes(path))
 }
 
-const moveFile = (state: TuiState, delta: number): TuiState => ({
-  ...state,
-  closed: revealing(state, layerFile(state, delta)),
-  patchIndex: layerFile(state, delta),
-  top: 0,
-  cursor: landingOn(state, layerFile(state, delta)),
-  anchorRow: 0,
-  selecting: false,
-})
+const moveFile = (state: TuiState, delta: number): TuiState => {
+  const next = layerFile(state, delta)
+  if (next === state.patchIndex) {
+    return withNoticeHere(state, delta > 0 ? "last file" : "first file")
+  }
+  return {
+    ...state,
+    notice: "",
+    closed: revealing(state, next),
+    patchIndex: next,
+    top: 0,
+    cursor: landingOn(state, next),
+    anchorRow: 0,
+    selecting: false,
+  }
+}
 
 const selectHunk = (state: TuiState): TuiState => {
   const found = changeAround(state)

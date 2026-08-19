@@ -237,6 +237,10 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **Turning past the last file says so.** `]` on the last file and `[` on the first did nothing at
+  all, which is the same thing the review does when a key is not bound, or not delivered, or the
+  process is wedged. A reviewer cannot tell those apart by looking. It says which end it is.
+
 - **The keys a terminal sends without being taught also move the review.** Paging and jumping were
   bound to `ctrl+d`, `ctrl+u`, `g` and `G`, which are the right keys for anyone who already knows
   them and no keys at all for anyone who does not. Page Up, Page Down, Home and End arrive from
