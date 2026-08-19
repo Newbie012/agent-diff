@@ -19,6 +19,7 @@ import {
   markRead,
   type BranchSummary,
   listPatches,
+  patchIn,
   fileSource,
   fileBefore,
   listSent,
@@ -627,9 +628,15 @@ export class App {
   private loadFull(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      if (branch === undefined || this.state.full.length > 0) return
-      const full = yield* (listPatches(this.repo, branch.branch, WHOLE_FILE))
-      this.commit(withFull(this.state, full))
+      const patch = selectedPatch(this.state)
+      if (branch === undefined || patch === undefined) return
+      if (this.state.full.some((one) => one.path === patch.path)) return
+      const worktree = this.worktreeFor(branch.branch)
+      const full =
+        worktree === undefined
+          ? yield* listPatches(this.repo, branch.branch, WHOLE_FILE, patch.path)
+          : yield* patchIn(worktree, WHOLE_FILE, patch.path)
+      this.commit(withFull(this.state, [...this.state.full, ...full]))
     })
   }
 
@@ -1166,7 +1173,11 @@ export class App {
       const branch = selectedBranch(this.state)
       if (branch === undefined || next === this.state.context) return
       const line = sourceLineAt(this.state, this.state.cursor)
-      const patches = yield* (listPatches(this.repo, branch.branch, next))
+      const worktree = this.worktreeFor(branch.branch)
+      const patches =
+        worktree === undefined
+          ? yield* listPatches(this.repo, branch.branch, next)
+          : yield* patchIn(worktree, next)
       const widened = withContext(this.state, next, patches, 0)
       const patch = selectedPatch(widened)
       const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)

@@ -63,6 +63,7 @@ export class ScreenTestDriver {
   private scope: Scope.Closeable | undefined
   private app: App | undefined
   private diffs = 0
+  private asked: Array<{ readonly context: number; readonly only: string | undefined }> = []
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
   private keysSeen = 0
@@ -122,9 +123,10 @@ export class ScreenTestDriver {
         const git = yield* Git
         return {
           ...git,
-          diff: (worktree, context) => {
+          diff: (worktree, context, only) => {
             this.diffs += 1
-            return git.diff(worktree, context)
+            this.asked.push({ context, only })
+            return git.diff(worktree, context, only)
           },
         }
       }),
@@ -135,8 +137,13 @@ export class ScreenTestDriver {
     return this.diffs
   }
 
+  diffsAsked(): ReadonlyArray<{ readonly context: number; readonly only: string | undefined }> {
+    return this.asked
+  }
+
   forgetDiffs(): void {
     this.diffs = 0
+    this.asked = []
   }
 
   private countKeys(setup: TestRendererSetup): void {
