@@ -539,13 +539,14 @@ export const withColumns = (state: TuiState, columns: number): TuiState => ({ ..
 
 export const withLayers = (
   state: TuiState,
-  told: { layers: TuiState["layers"]; stale: boolean },
+  told: { layers: TuiState["layers"]; stale: boolean; summary?: string },
 ): TuiState => {
   const layers = told.layers
   const opened: TuiState = {
     ...state,
     layers,
     layersStale: told.stale,
+    summary: told.summary ?? "",
     layerIndex: 0,
     openLayers: [],
     rail: layers.length === 0 ? "tree" : "layers",
