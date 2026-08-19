@@ -673,13 +673,22 @@ export const withWaiting = (state: TuiState, waiting: string): TuiState => ({
   waiting,
 })
 
+export const withFinder = (state: TuiState, seed: string): TuiState => ({
+  ...state,
+  screen: "search",
+  matches: [],
+  matchIndex: 0,
+  term: "",
+  query: seed,
+  selecting: false,
+})
+
 export const withMatches = (state: TuiState, matches: TuiState["matches"], term: string): TuiState => ({
   ...state,
   screen: "search",
   matches,
   matchIndex: 0,
   term,
-  query: "",
   selecting: false,
 })
 

@@ -18,8 +18,9 @@ const searching = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create({ files })
   await driver.screen.open({ width: 150, height: 30 })
   await driver.screen.pressKeys(["RETURN", "]"])
-  await driver.screen.pressKeys(["ARROW_DOWN"])
-  await driver.screen.pressKeys(["v", "/"])
+  await driver.screen.pressKeys(["/"])
+  await driver.screen.typeText("useProcessFold")
+  await driver.screen.pressKeys(["RETURN"])
 }
 
 describe("narrowing what was found", () => {
@@ -30,7 +31,7 @@ describe("narrowing what was found", () => {
     expect(await driver.screen.getFrame()).toContain("elsewhere")
 
     // ACT
-    await driver.screen.typeText("hooks")
+    await driver.screen.typeText("(nodeId)")
 
     // ASSERT
     const frame = await driver.screen.getFrame()

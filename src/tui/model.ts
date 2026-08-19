@@ -567,32 +567,6 @@ export const selectedLines = (state: TuiState): ReadonlyArray<string> => {
   return patch.rows.slice(from, to + 1).map((row) => row.text)
 }
 
-const KEYWORDS = new Set([
-  "const", "let", "var", "function", "return", "export", "import", "from", "type", "interface",
-  "class", "extends", "implements", "async", "await", "new", "this", "if", "else", "for", "while",
-  "switch", "case", "default", "break", "continue", "throw", "try", "catch", "finally", "typeof",
-  "readonly", "public", "private", "static", "true", "false", "null", "undefined", "void", "string",
-  "number", "boolean", "any", "unknown", "never",
-])
-
-const NAME = /[A-Za-z_$][\w$]*/g
-
-const longestName = (line: string): string | undefined =>
-  [...line.matchAll(NAME)]
-    .map((found) => found[0])
-    .filter((name) => !KEYWORDS.has(name))
-    .toSorted((left, right) => right.length - left.length)[0]
-
-export const searchTerm = (state: TuiState): string => {
-  const taken = pickedText(state)?.trim()
-  if (taken !== undefined && taken.length > 0) return taken
-  const line = selectedLines(state)
-    .map((text) => text.trim())
-    .find((text) => text.length > 0)
-  if (line === undefined) return ""
-  return longestName(line) ?? line
-}
-
 export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
   const wanted = state.query.trim().toLowerCase()
   if (wanted.length === 0) return state.matches

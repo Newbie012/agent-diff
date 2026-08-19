@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
+const TERM = "seatsLeft"
+
 const caller = ["import { seatsLeft } from './seats'", "export const invite = () => seatsLeft(1)"]
 
 const changed = {
@@ -64,6 +66,8 @@ describe("searching the branch for what is selected", () => {
 
     // ACT
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -82,11 +86,15 @@ describe("searching the branch for what is selected", () => {
 
     // ACT
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const lines = (await driver.screen.getFrame()).split("\n")
-    const inDiff = lines.findIndex((line) => line.includes("src/seats.ts:"))
-    const outside = lines.findIndex((line) => line.includes("src/invite.ts:"))
+    const whole = (await driver.screen.getFrame()).split("\n")
+    const from = whole.findIndex((line) => line.includes("elsewhere"))
+    const lines = whole.slice(from)
+    const inDiff = lines.findIndex((line) => line.includes("src/seats.ts"))
+    const outside = lines.findIndex((line) => line.includes("src/invite.ts"))
     expect(inDiff).toBeGreaterThan(0)
     expect(outside).toBeGreaterThan(inDiff)
   })
@@ -99,6 +107,8 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
 
     // ACT
     await driver.screen.pressKeys(["ARROW_DOWN"])
@@ -116,6 +126,8 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["]"])
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
@@ -132,6 +144,8 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["ARROW_DOWN"])
 
     // ACT
@@ -149,6 +163,8 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
 
     // ACT
     await driver.screen.pressEscape()
@@ -171,6 +187,8 @@ describe("searching the branch for what is selected", () => {
 
     // ACT
     await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText(TERM)
+    await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("no other place")
