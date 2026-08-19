@@ -260,3 +260,46 @@ describe("sending the held comments to the pull request", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("Nothing is being held")
   })
 })
+
+describe("what a sent review carries", () => {
+  it("posts a range as a range, not as its last line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const created = await driver.branch.create({
+      files: [
+        {
+          path: "src/wide.ts",
+          before: ["a", "b", "c", "d"],
+          after: ["a", "one", "two", "three", "d"],
+        },
+      ],
+    })
+    await driver.app.run([
+      "draft",
+      "add",
+      "--repo",
+      driver.repoPath,
+      "--branch",
+      created.name,
+      "--file",
+      "src/wide.ts",
+      "--start",
+      "2",
+      "--end",
+      "4",
+      "--body",
+      "these three lines",
+    ])
+    const head = await driver.branch.getHead(created)
+    await driver.forge.holds([{ branch: created.name, head }])
+
+    // ACT
+    await driver.app.run(["draft", "send", "--repo", driver.repoPath, "--branch", created.name])
+
+    // ASSERT
+    const posted = await driver.forge.posted()
+    const one = posted?.comments[0] as { line: number; start_line?: number } | undefined
+    expect(one?.line).toBe(4)
+    expect(one?.start_line).toBe(2)
+  })
+})

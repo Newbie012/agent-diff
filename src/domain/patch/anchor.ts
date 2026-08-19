@@ -7,13 +7,19 @@ const sideOf = (rows: ReadonlyArray<Row>): Side =>
 const linesOn = (rows: ReadonlyArray<Row>, side: Side): ReadonlyArray<number> =>
   rows.flatMap((row) => Option.match(lineOn(row, side), { onNone: () => [], onSome: (n) => [n] }))
 
-export const anchorFor = (patch: Patch, from: number, to: number): Option.Option<Anchor> => {
+export const anchorFor = (
+  patch: Patch,
+  from: number,
+  to: number,
+  wanted?: Side,
+): Option.Option<Anchor> => {
   const [low, high] = from <= to ? [from, to] : [to, from]
   const rows = patch.rows.slice(low, high + 1)
   if (rows.length === 0) return Option.none()
 
-  const side = sideOf(rows)
-  const lines = linesOn(rows, side)
+  const side = wanted ?? sideOf(rows)
+  const onSide = rows.filter((row) => Option.isSome(lineOn(row, side)))
+  const lines = linesOn(onSide, side)
   if (lines.length === 0) return Option.none()
 
   return Option.some({
@@ -22,7 +28,7 @@ export const anchorFor = (patch: Patch, from: number, to: number): Option.Option
     side,
     start: Math.min(...lines),
     end: Math.max(...lines),
-    snippet: rows.map((row) => row.text).join("\n"),
+    snippet: onSide.map((row) => row.text).join("\n"),
   })
 }
 

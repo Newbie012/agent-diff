@@ -169,6 +169,9 @@ export const commands: ReadonlyArray<Command> = [
     title: "Next line",
     keys: ["down", "j"],
     screens: ["review"],
+    panes: ["tree", "diff", "review"],
+    hint: "move",
+    rank: 0,
   }),
   command({
     action: "cursor.prev",
@@ -563,7 +566,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["v"],
     screens: ["review"],
     hint: "select",
-    rank: 3,
+    rank: 4,
   }),
   command({
     action: "compose.open",
@@ -573,7 +576,7 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["c", "return"],
     screens: ["review"],
     hint: "comment",
-    rank: 4,
+    rank: 3,
   }),
   command({
     action: "report.open",

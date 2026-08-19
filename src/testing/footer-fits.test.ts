@@ -12,7 +12,7 @@ const oneFile = {
 }
 
 const footerOf = (frame: string): string =>
-  frame.split("\n").findLast((row) => row.includes("comment") || row.includes("select")) ?? ""
+  frame.split("\n").findLast((row) => row.includes("esc back") || row.includes("move")) ?? ""
 
 describe("the footer on a narrow terminal", () => {
   it("keeps the way out visible", async () => {

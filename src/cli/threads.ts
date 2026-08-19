@@ -170,13 +170,12 @@ export const settleIn = Effect.fn("Cli.settleIn")(function* (
 ) {
   const store = yield* Store
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
-  const current = yield* store.state(worktree.path)
   const replies = (yield* store.answers(worktree.path)).filter((entry) => entry.comment === id)
-  yield* store.saveState(worktree.path, {
-    ...current,
-    settled: { ...current.settled, [id]: at },
-    read: { ...current.read, [id]: replies.length },
-  })
+  yield* store.changeState(worktree.path, (was) => ({
+    ...was,
+    settled: { ...was.settled, [id]: at },
+    read: { ...was.read, [id]: replies.length },
+  }))
   return { settled: id }
 })
 
@@ -195,14 +194,13 @@ export const removeIn = Effect.fn("Cli.removeIn")(function* (
   at: string,
 ) {
   const store = yield* Store
-  const current = yield* store.state(worktree.path)
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   const replies = (yield* store.answers(worktree.path)).filter((entry) => entry.comment === id)
-  yield* store.saveState(worktree.path, {
-    ...current,
-    removed: { ...current.removed, [id]: at },
-    read: { ...current.read, [id]: replies.length },
-  })
+  yield* store.changeState(worktree.path, (was) => ({
+    ...was,
+    removed: { ...was.removed, [id]: at },
+    read: { ...was.read, [id]: replies.length },
+  }))
   return { removed: id }
 })
 
@@ -229,8 +227,10 @@ export const restoreComment = Effect.fn("Cli.restoreComment")(function* (
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
-  const current = yield* store.state(worktree.path)
-  yield* store.saveState(worktree.path, { ...current, removed: without(current.removed, id) })
+  yield* store.changeState(worktree.path, (was) => ({
+    ...was,
+    removed: without(was.removed, id),
+  }))
   return { restored: id }
 })
 
@@ -254,9 +254,10 @@ export const settleRead = Effect.fn("Cli.settleRead")(function* (
     )
   })
   if (ripe.length === 0) return { settled: 0 }
-  yield* store.saveState(worktree.path, {
-    ...current,
-    settled: { ...current.settled, ...Object.fromEntries(ripe.map((id) => [id, at])) },
-  })
+  const now = Object.fromEntries(ripe.map((id) => [id, at]))
+  yield* store.changeState(worktree.path, (was) => ({
+    ...was,
+    settled: { ...was.settled, ...now },
+  }))
   return { settled: ripe.length }
 })
