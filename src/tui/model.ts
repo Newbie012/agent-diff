@@ -584,6 +584,8 @@ const longestName = (line: string): string | undefined =>
     .toSorted((left, right) => right.length - left.length)[0]
 
 export const searchTerm = (state: TuiState): string => {
+  const taken = pickedText(state)?.trim()
+  if (taken !== undefined && taken.length > 0) return taken
   const line = selectedLines(state)
     .map((text) => text.trim())
     .find((text) => text.length > 0)
