@@ -101,7 +101,7 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["/"])
 
     // ACT
-    await driver.screen.pressKeys(["j"])
+    await driver.screen.pressKeys(["ARROW_DOWN"])
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("export const invite")
@@ -132,7 +132,7 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
-    await driver.screen.pressKeys(["j"])
+    await driver.screen.pressKeys(["ARROW_DOWN"])
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
