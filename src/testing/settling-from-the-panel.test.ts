@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
+import { palette } from "../tui/index.ts"
 
 const files = {
   name: "add-teammate-invitations",
@@ -9,8 +10,8 @@ const files = {
   ],
 }
 
-const chosen = (frame: string): string =>
-  frame.split("\n").find((line) => line.includes("▸")) ?? ""
+const chosen = async (driver: TestDriver): Promise<string> =>
+  (await driver.screen.paintedWith(palette.selection)).join(" ")
 
 describe("settling from the review panel", () => {
   it("stays on the comment that was settled", async () => {
@@ -35,12 +36,12 @@ describe("settling from the review panel", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressTab()
     await driver.screen.pressKeys(["j"])
-    expect(chosen(await driver.screen.getFrame())).toContain("src/api.ts")
+    expect(await chosen(driver)).toContain("src/api.ts")
 
     // ACT
     await driver.screen.pressKeys(["d"])
 
     // ASSERT
-    expect(chosen(await driver.screen.getFrame())).toContain("src/api.ts")
+    expect(await chosen(driver)).toContain("src/api.ts")
   })
 })

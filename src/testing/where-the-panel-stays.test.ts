@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
+import { palette } from "../tui/index.ts"
 
 const files = [
   {
@@ -32,11 +33,8 @@ const threads = async (driver: TestDriver): Promise<string> => {
   return branch.name
 }
 
-const focusedThread = (frame: string): string => {
-  const rows = frame.split("\n")
-  const at = rows.findIndex((row) => /[▸·]/.test(row.slice(95)))
-  return at === -1 ? "" : (rows[at + 1] ?? "").slice(95).trim()
-}
+const focusedThread = async (driver: TestDriver): Promise<string> =>
+  (await driver.screen.paintedWith(palette.selection)).join(" ")
 
 const panelFocused = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["TAB"])
@@ -51,7 +49,7 @@ describe("where the review panel leaves the cursor", () => {
     await driver.screen.open({ width: 140, height: 26, branch: name })
     await panelFocused(driver)
     await driver.screen.pressKeys(["ARROW_DOWN"])
-    expect(focusedThread(await driver.screen.getFrame())).toContain("the second point")
+    expect(await focusedThread(driver)).toContain("the second point")
 
     // ACT
     await driver.screen.pressKeys(["d"])
@@ -59,7 +57,7 @@ describe("where the review panel leaves the cursor", () => {
     // ASSERT
     const after = await driver.screen.getFrame()
     expect(after).not.toContain("the second point")
-    expect(focusedThread(after)).toContain("the first point")
+    expect(await focusedThread(driver)).toContain("the first point")
   })
 
   it("keeps the settled thread under the cursor when settled threads are shown", async () => {
@@ -74,6 +72,6 @@ describe("where the review panel leaves the cursor", () => {
     await driver.screen.pressKeys(["d"])
 
     // ASSERT
-    expect(focusedThread(await driver.screen.getFrame())).toContain("the second point")
+    expect(await focusedThread(driver)).toContain("the second point")
   })
 })

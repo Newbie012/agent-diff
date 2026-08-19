@@ -25,6 +25,7 @@ export const palette = {
   note: "#9aa7c7",
   cursor: "#232936",
   selection: "#2b3854",
+  resting: "#1b2233",
   marker: blue,
 
   addedBg: "#0f2a19",

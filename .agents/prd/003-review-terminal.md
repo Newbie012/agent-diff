@@ -237,6 +237,13 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **The pane the keys reach is said by how brightly its row is lit.** Every pane keeps a cursor, so
+  three rows are marked at once and only one of them answers to the keys. That was said with a
+  glyph in front of the row — a triangle when the pane was focused and a dot when it was not —
+  beside a row already lit to say the cursor was there. Two marks for one fact, and the smaller one
+  carrying the part that mattered. The lit row is brighter in the focused pane and dimmer in the
+  others, and the glyph is gone.
+
 - **Putting the cursor somewhere with the mouse is not the start of a selection.** Pressing the
   button was read as a drag that had not moved yet, so a click left a line selected, and the arrows
   after it grew that selection instead of moving. A press that goes down and up in one place puts
