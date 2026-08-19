@@ -178,6 +178,7 @@ const FRAME_PAD = 1
 const PANE_BORDER = 2
 const TREE_MAX = 34
 const TREE_ROOMY = 40
+const TREE_WIDE = 52
 const TREE_MIN = 18
 const TREE_SHARE = 0.3
 const DIFF_MIN = 26
@@ -188,7 +189,8 @@ export const bodyRoom = (columns: number): number => Math.max(0, columns - FRAME
 
 export const treeWidth = (columns: number): number => {
   const room = bodyRoom(columns)
-  const most = room - reviewWidth() - DIFF_ROOMY >= TREE_ROOMY ? TREE_ROOMY : TREE_MAX
+  const spare = room - reviewWidth() - DIFF_ROOMY
+  const most = spare >= TREE_WIDE ? TREE_WIDE : spare >= TREE_ROOMY ? TREE_ROOMY : TREE_MAX
   const wanted = Math.min(most, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
   return Math.max(0, Math.min(wanted, room - DIFF_MIN))
 }
@@ -264,13 +266,21 @@ export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
 const clip = (label: string, room: number): string =>
   label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
-const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
-  wordWrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
+const TITLE_ROWS = 2
+
+const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
+  const lines = wordWrapped(state.layers[layerIndex]?.title ?? "", room)
+  const kept = lines.slice(0, TITLE_ROWS)
+  const last = kept.at(-1) ?? ""
+  const said =
+    lines.length > TITLE_ROWS ? [...kept.slice(0, -1), clip(`${last} …`, room)] : kept
+  return said.map((text, at) => ({
     index: layerIndex,
     kind: "title" as const,
     text,
     lead: at === 0,
   }))
+}
 
 export const shortDir = (dir: string, room: number): string => {
   const whole = `${dir}/`
@@ -340,34 +350,57 @@ export type LayerRoom = {
   readonly file: number
 }
 
-const countRow = (state: TuiState, index: number): ReadonlyArray<LayerRow> => {
+const countRow = (state: TuiState, index: number, room: number): ReadonlyArray<LayerRow> => {
   const read = layerRead(state, index)
   if (read.all === 0) return []
   const one = read.all === 1 ? "file" : "files"
-  return [{ index, kind: "count", text: `${read.done}/${read.all} ${one}`, lead: false }]
+  const said = `${read.done} of ${read.all} ${one} read`
+  return [{ index, kind: "count", text: clip(said, room), lead: false }]
 }
 
 const layerBody = (
   state: TuiState,
   index: number,
   room: LayerRoom,
-  spine: boolean,
-): ReadonlyArray<LayerRow> => {
-  if (!layerOpen(state, index)) return []
-  if (spine && index !== state.layerIndex) return countRow(state, index)
-  return fileRows(state, index, room)
-}
+  shown: ReadonlySet<number>,
+): ReadonlyArray<LayerRow> =>
+  layerOpen(state, index) && shown.has(index)
+    ? fileRows(state, index, room)
+    : countRow(state, index, room.file)
 
 export const layerRows = (
   state: TuiState,
   room: LayerRoom,
-  spine = false,
+  shown: ReadonlySet<number>,
 ): ReadonlyArray<LayerRow> =>
   state.layers.flatMap((_, index) => [
     ...(index > 0 ? [{ index, kind: "gap" as const, text: "", lead: false }] : []),
     ...titleRows(state, index, room.title),
-    ...layerBody(state, index, room, spine),
+    ...layerBody(state, index, room, shown),
   ])
+
+const nearFirst = (state: TuiState): ReadonlyArray<number> =>
+  state.layers
+    .map((_, at) => at)
+    .filter((at) => layerOpen(state, at))
+    .toSorted((one, two) => Math.abs(one - state.layerIndex) - Math.abs(two - state.layerIndex))
+
+export const layerFitted = (
+  state: TuiState,
+  room: LayerRoom,
+  height: number,
+): ReadonlyArray<LayerRow> => {
+  const every = new Set(state.layers.map((_, at) => at))
+  const whole = layerRows(state, room, every)
+  if (whole.length <= height) return whole
+  const shown = new Set<number>([state.layerIndex])
+  for (const at of nearFirst(state)) {
+    shown.add(at)
+    if (layerRows(state, room, shown).length > height) shown.delete(at)
+  }
+  shown.add(state.layerIndex)
+  return layerRows(state, room, shown)
+}
 
 export type RailWindow = {
   readonly rows: ReadonlyArray<LayerRow>

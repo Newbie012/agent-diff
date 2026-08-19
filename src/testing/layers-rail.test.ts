@@ -66,8 +66,8 @@ describe("walking a review by the argument instead of the filesystem", () => {
 
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
-    expect(pane).toContain("1  Add the invitation")
-    expect(pane).toContain("2  Add the invitation")
+    expect(pane).toContain("1 Add the invitation")
+    expect(pane).toContain("2 Add the invitation")
     expect(pane.indexOf("Panel.tsx")).toBeGreaterThan(pane.indexOf("not in any layer"))
   })
 
@@ -118,7 +118,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
     expect(pane).toContain("Panel.tsx")
-    expect(pane).not.toContain("1  Add the invitation")
+    expect(pane).not.toContain("1 Add the invitation")
   })
 
   it("wraps a title too long for the rail instead of cutting it off", async () => {

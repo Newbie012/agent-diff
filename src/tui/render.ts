@@ -33,7 +33,7 @@ import {
   railWindow,
   selectionReadout,
   layerDone,
-  layerRows,
+  layerFitted,
   type LayerRoom,
   type RailWindow,
   type LayerRow,
@@ -791,7 +791,8 @@ const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
   return `${treeMarks(state, row)}${clip(treeLabel(state, row, room), room).padEnd(room)}${tail}`
 }
 
-const GUTTER = 2
+const GUTTER = 3
+const DIR_LEAD = GUTTER
 const TITLE_LEAD = GUTTER + 1
 const FILE_LEAD = TITLE_LEAD + 2
 const STALE_ROOM = 13
@@ -808,23 +809,33 @@ const layerRoom = (pane: number): LayerRoom => {
   const whole = Math.max(8, pane - PANE_CHROME)
   return {
     title: Math.max(4, whole - TITLE_LEAD),
-    dir: Math.max(4, whole - TITLE_LEAD),
+    dir: Math.max(4, whole - DIR_LEAD),
     file: Math.max(4, whole - FILE_LEAD),
   }
 }
 
+const layerMark = (state: TuiState, row: LayerRow): string => {
+  if (row.kind === "file") return row.reviewed === true ? marks().reviewed : " "
+  if (row.kind !== "title" || !row.lead) return " "
+  if (layerDone(state, row.index)) return marks().reviewed
+  if (leftOver(state, row.index)) return "·"
+  return `${row.index + 1}`
+}
+
+const layerLead = (row: LayerRow): number => {
+  if (row.kind === "file") return FILE_LEAD
+  if (row.kind === "dir") return DIR_LEAD
+  return TITLE_LEAD
+}
+
 const layerGutter = (state: TuiState, row: LayerRow): string => {
-  if (row.kind === "file") return row.reviewed === true ? `${marks().reviewed} ` : "  "
-  if (row.kind !== "title" || !row.lead) return "  "
-  if (layerDone(state, row.index)) return `${marks().reviewed} `
-  if (leftOver(state, row.index)) return "· "
-  return `${row.index + 1}`.padEnd(GUTTER)
+  const here = row.here === true ? "▎" : " "
+  return `${here}${layerMark(state, row).padStart(GUTTER - 1)}`
 }
 
 const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
   if (row.kind === "gap") return ""
-  const lead =
-    row.kind === "file" || row.kind === "count" ? FILE_LEAD - GUTTER : TITLE_LEAD - GUTTER
+  const lead = layerLead(row) - GUTTER
   return `${layerGutter(state, row)}${" ".repeat(lead)}${row.text}`.padEnd(
     room.title + TITLE_LEAD,
   )
@@ -833,18 +844,20 @@ const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
 const litRow = (row: LayerRow, state: TuiState, drawn: TextChunk): TextChunk =>
   row.here === true ? bg(restingOrHere(state.focus === "tree"))(drawn) : drawn
 
-const manyLayers = (count: number): string =>
-  count === 1 ? "1 more layer" : `${count} more layers`
-
 const leftOver = (state: TuiState, layerIndex: number): boolean =>
   state.layers[layerIndex]?.title === REMAINDER_TITLE
+
+const titlePaint = (state: TuiState, layerIndex: number): string => {
+  const here = layerIndex === state.layerIndex
+  if (leftOver(state, layerIndex)) return here ? palette.attention : palette.faint
+  if (layerDone(state, layerIndex)) return palette.faint
+  return here ? palette.ink : palette.muted
+}
 
 const layerPaint = (state: TuiState, row: LayerRow): string => {
   if (row.kind === "file") return row.reviewed === true ? palette.added : palette.ink
   if (row.kind === "dir" || row.kind === "count") return palette.faint
-  if (layerDone(state, row.index)) return palette.faint
-  if (leftOver(state, row.index)) return palette.attention
-  return row.index === state.layerIndex ? palette.ink : palette.muted
+  return titlePaint(state, row.index)
 }
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
@@ -1363,18 +1376,26 @@ export class Screen {
     const said = summaryLines(state.summary, room.title, this.listRoom())
     const banner = (state.layersStale ? 1 : 0) + said.length
     const height = Math.max(1, this.listRoom() - banner)
-    const whole = layerRows(state, room)
-    const all = whole.length <= height ? whole : layerRows(state, room, true)
+    const all = layerFitted(state, room, height)
     const window = this.railFitted(state, all, height)
-    const rows = window.rows.map((row) =>
-      litRow(row, state, fg(layerPaint(state, row))(`${layerText(state, row, room)}\n`)),
-    )
+    const rows = window.rows.flatMap((row) => this.layerLine(state, row, room))
     const above =
-      window.above > 0 ? [fg(palette.faint)(` ▲ ${manyLayers(window.above)} above\n`)] : []
-    const more = window.more > 0 ? [fg(palette.faint)(` ▼ ${manyLayers(window.more)} below`)] : []
+      window.above > 0 ? [fg(palette.faint)(` ▲ ${window.above} more\n`)] : []
+    const more = window.more > 0 ? [fg(palette.faint)(` ▼ ${window.more} more`)] : []
     const warn = state.layersStale ? [fg(palette.attention)(`${staleBanner(room.title)}\n`)] : []
     const told = said.map((line) => fg(palette.muted)(`${line}\n`))
     return new StyledText([...told, ...warn, ...above, ...rows, ...more])
+  }
+
+  private layerLine(
+    state: TuiState,
+    row: LayerRow,
+    room: LayerRoom,
+  ): ReadonlyArray<TextChunk> {
+    const drawn = layerText(state, row, room)
+    const body = fg(layerPaint(state, row))(`${drawn.slice(1)}\n`)
+    const mark = fg(row.here === true ? palette.marker : palette.faint)(drawn.slice(0, 1))
+    return [mark, litRow(row, state, body)]
   }
 
   private railFitted(
