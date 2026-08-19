@@ -159,6 +159,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **What is unread is what the agent said.** A reviewer does not need telling about their own
   replies, so the count that draws the eye to a thread still counts answers.
 
+- **Sending, settling and removing use the branch the review already read.** Each of them resolved
+  the worktree again, and sending diffed every file in the branch at full context to anchor one
+  comment in one of them. On a branch of a hundred and thirty-one files that was a fifth of a
+  second between pressing the key and seeing anything. The terminal keeps what it opened the branch
+  with; the command line, which holds nothing, still resolves for itself.
+
 - **A sent comment can be removed from the review, which is not the same as unsending it.** A point
   made by mistake, or overtaken by the code moving on, sits in the diff with no way to be rid of
   it. Removing takes it out of the reviewer's view and leaves the delivery record whole: the batch

@@ -1,5 +1,6 @@
 import { Effect } from "effect"
 import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
+import type { Worktree } from "../service/git/index.ts"
 import { findBranch, patchesOf } from "./commands.ts"
 import { worktreeAt } from "./layers.ts"
 import { UnknownComment } from "./error.ts"
@@ -162,14 +163,12 @@ export const answerComment = Effect.fn("Cli.answerComment")(function* (request: 
   return { answered: answers.filter((entry) => entry.comment === request.id).length }
 })
 
-export const settleThread = Effect.fn("Cli.settleThread")(function* (
-  repo: string,
-  branch: string,
+export const settleIn = Effect.fn("Cli.settleIn")(function* (
+  worktree: Worktree,
   id: string,
   at: string,
 ) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   const current = yield* store.state(worktree.path)
   const replies = (yield* store.answers(worktree.path)).filter((entry) => entry.comment === id)
@@ -181,14 +180,21 @@ export const settleThread = Effect.fn("Cli.settleThread")(function* (
   return { settled: id }
 })
 
-export const removeComment = Effect.fn("Cli.removeComment")(function* (
+export const settleThread = Effect.fn("Cli.settleThread")(function* (
   repo: string,
   branch: string,
   id: string,
   at: string,
 ) {
+  return yield* settleIn(yield* findBranch(repo, branch), id, at)
+})
+
+export const removeIn = Effect.fn("Cli.removeIn")(function* (
+  worktree: Worktree,
+  id: string,
+  at: string,
+) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
   const current = yield* store.state(worktree.path)
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   const replies = (yield* store.answers(worktree.path)).filter((entry) => entry.comment === id)
@@ -198,6 +204,15 @@ export const removeComment = Effect.fn("Cli.removeComment")(function* (
     read: { ...current.read, [id]: replies.length },
   })
   return { removed: id }
+})
+
+export const removeComment = Effect.fn("Cli.removeComment")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+  at: string,
+) {
+  return yield* removeIn(yield* findBranch(repo, branch), id, at)
 })
 
 const without = (

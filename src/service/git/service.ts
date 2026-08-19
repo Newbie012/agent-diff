@@ -14,7 +14,7 @@ const STAT = /(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) delet
 type Shape = {
   readonly worktrees: (repo: string) => Effect.Effect<ReadonlyArray<Worktree>>
   readonly repoOf: (worktree: string) => Effect.Effect<string>
-  readonly diff: (worktree: Worktree, context: number) => Effect.Effect<string>
+  readonly diff: (worktree: Worktree, context: number, only?: string) => Effect.Effect<string>
   readonly stat: (worktree: Worktree) => Effect.Effect<DiffStat>
   readonly source: (
     worktree: Worktree,
@@ -167,9 +167,14 @@ const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
   return found
 })
 
-const readDiff = Effect.fn("Git.diff")(function* (worktree: Worktree, context: number) {
+const readDiff = Effect.fn("Git.diff")(function* (
+  worktree: Worktree,
+  context: number,
+  only?: string,
+) {
   const target = worktree.base.length > 0 ? worktree.base : "HEAD"
-  return yield* gitOrEmpty(worktree.path, ["diff", `-U${context}`, target])
+  const scope = only === undefined ? [] : ["--", only]
+  return yield* gitOrEmpty(worktree.path, ["diff", `-U${context}`, target, ...scope])
 })
 
 const readStat = Effect.fn("Git.stat")(function* (worktree: Worktree) {

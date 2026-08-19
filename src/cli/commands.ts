@@ -118,9 +118,10 @@ export const baseFor = Effect.fn("Cli.baseFor")(function* (
 export const patchesOf = Effect.fn("Cli.patchesOf")(function* (
   worktree: Worktree,
   context = CONTEXT,
+  only?: string,
 ) {
   const git = yield* Git
-  const raw = yield* git.diff(worktree, context)
+  const raw = yield* git.diff(worktree, context, only)
   return parsePatches(raw)
 })
 
@@ -374,10 +375,13 @@ export const listSent = Effect.fn("Cli.listSent")(function* (
   return yield* sentIn(yield* readingOf(repo, branch, base))
 })
 
-export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {
+export const commentIn = Effect.fn("Cli.commentIn")(function* (
+  worktree: Worktree,
+  request: CommentRequest,
+) {
   const store = yield* Store
-  const worktree = yield* findBranch(request.repo, request.branch)
-  const patches = yield* patchesOf(worktree, WHOLE_FILE)
+  const only = yield* patchesOf(worktree, WHOLE_FILE, request.file)
+  const patches = only.length > 0 ? only : yield* patchesOf(worktree, WHOLE_FILE)
   const patch = findPatch(patches, request.file)
 
   const resolved = yield* Option.match(patch, {
@@ -405,6 +409,10 @@ export const submitComment = Effect.fn("Cli.submitComment")(function* (request: 
   }
   yield* store.submit(worktree.path, batch)
   return batch
+})
+
+export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {
+  return yield* commentIn(yield* findBranch(request.repo, request.branch), request)
 })
 
 export type ReplyRequest = {

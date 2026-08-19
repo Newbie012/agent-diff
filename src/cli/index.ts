@@ -21,6 +21,7 @@ export {
   saveReport,
   saveWrap,
   saveSticky,
+  commentIn,
   submitComment,
   submitReply,
   takeComments,
@@ -53,6 +54,8 @@ export {
   removeComment,
   restoreComment,
   settleRead,
+  settleIn,
+  removeIn,
   settleThread,
 } from "./threads.ts"
 export type { Thread, ThreadAnswer } from "./threads.ts"
