@@ -56,6 +56,36 @@ answers "native FFI is not available for this runtime yet" as JSON where the scr
 Point `ADIFF_ROOT` at a scratch directory. A probe writes comments, settles threads and marks files
 read, and a real repository's review is not the place to leave that.
 
+## Do not time the first paint through the harness
+
+`termctrl show` polls a daemon that is itself starting up, and at startup that lag is seconds. A
+review measured that way looked like it took 2.6s to draw its first frame; the same review on a
+plain pty drew it in 0.38s. Every "nothing happened" reading taken in the first few seconds of a
+session is suspect for the same reason.
+
+Time the start of anything with a pty of your own:
+
+```python
+import os, pty, time, select
+pid, fd = pty.fork()
+if pid == 0:
+    os.execve(node, [node, "<repo>/bin/adiff.js", "review", "open", "--repo", "<repo>"], env)
+began, first, drawn, held = time.time(), None, None, b""
+while time.time() - began < 12:
+    if not select.select([fd], [], [], 0.05)[0]: continue
+    chunk = os.read(fd, 65536)
+    if first is None: first = time.time() - began
+    held += chunk
+    if b"WORKTREE" in held:
+        drawn = time.time() - began
+        break
+print(first, drawn)
+```
+
+The harness is still the right tool for anything about *behaviour* — keys, mouse, selection,
+layout — and for before-and-after comparisons, where its lag falls out of the difference. It is the
+wrong tool for absolute timings.
+
 ## Reading the caret
 
 The cursor belongs to the terminal, not to a cell, so `--format json` reports it separately:
