@@ -426,3 +426,7 @@
   dir: ""
   intents:
     - waiting-on-github
+"@eliya-oss/agent-diff@0.1.0-alpha.94":
+  dir: ""
+  intents:
+    - reading-the-worktrees-together
