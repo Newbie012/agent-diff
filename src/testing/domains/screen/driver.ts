@@ -5,7 +5,7 @@ import { Git, GitLive } from "../../../service/git/index.ts"
 import { Forge, ForgeLive } from "../../../service/forge/index.ts"
 import { storeAt } from "../../../service/store/index.ts"
 import { launch } from "../../../tui/index.ts"
-import type { App } from "../../../tui/index.ts"
+import type { App, TuiState } from "../../../tui/index.ts"
 import { series, type DriverState } from "../../state.ts"
 
 const NAMED: Readonly<Record<string, string>> = {
@@ -25,6 +25,14 @@ const NAMED: Readonly<Record<string, string>> = {
 }
 
 const sendable = (key: string): string => NAMED[key] ?? key
+
+const believedIn = (state: TuiState | undefined) => ({
+  scroll: state?.scroll ?? -1,
+  cursor: state?.cursor ?? -1,
+  wrap: state?.wrap === true,
+  sticky: state?.sticky === true,
+  hold: state?.hold === true,
+})
 
 const watchedForge = (note: () => void): Layer.Layer<Forge> =>
   Layer.succeed(Forge)({
@@ -391,14 +399,7 @@ export class ScreenTestDriver {
   }> {
     const app = this.app
     await app?.settled()
-    const state = app?.shown()
-    return {
-      scroll: state?.scroll ?? -1,
-      cursor: state?.cursor ?? -1,
-      wrap: state?.wrap ?? false,
-      sticky: state?.sticky ?? false,
-      hold: state?.hold ?? false,
-    }
+    return believedIn(app?.shown())
   }
 
   async paintedTop(): Promise<number> {
