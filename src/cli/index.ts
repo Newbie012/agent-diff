@@ -74,10 +74,37 @@ export {
   settleThread,
 } from "./threads.ts"
 export type { Thread, ThreadAnswer } from "./threads.ts"
-export { numeric, optionsFrom, required } from "./parse.ts"
-export { addressing, catalog, commandNames, findCommand, nearestCommand, verbsUnder } from "./catalog.ts"
-export { failure, fieldsOf, narrow } from "./report.ts"
+export { numeric, oneOf, onlyKnown, optionsFrom, required } from "./parse.ts"
+export {
+  addressing,
+  catalog,
+  commandNames,
+  findCommand,
+  knownIn,
+  nearestCommand,
+  valuedIn,
+  verbsUnder,
+} from "./catalog.ts"
+export { failure, fieldsOf, narrow, strangeField } from "./report.ts"
 export type { CommandSpec, OptionSpec } from "./catalog.ts"
-export { InitUnwritable, MalformedLayers, MissingOption, NoLayers, UnknownBase, UnknownBranch, UnknownComment, UnknownCommand, UnknownFile, UnknownWorktree, UnselectableRange } from "./error.ts"
+export {
+  BadOption,
+  InitUnwritable,
+  MalformedLayers,
+  MissingOption,
+  NoLayers,
+  NothingDrafted,
+  PullMoved,
+  UnknownBase,
+  UnknownBranch,
+  UnknownComment,
+  UnknownCommand,
+  UnknownDraft,
+  UnknownField,
+  UnknownFile,
+  UnknownOption,
+  UnknownWorktree,
+  UnselectableRange,
+} from "./error.ts"
 export type { BranchReading, BranchSummary, PendingComment, ProgressReport, CommentRequest, VouchReport, VouchRequest } from "./commands.ts"
 export type { Options } from "./parse.ts"

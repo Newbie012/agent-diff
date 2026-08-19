@@ -67,6 +67,60 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "No comment carries that id. `adiff comment take` reports the ids an agent can answer, and `adiff comment list` reports every id on a review.",
     retriable: false,
   },
+  UnknownField: {
+    exit: USAGE,
+    suggestion: "That is not a field this answer carries. The ones it does are named above.",
+    retriable: false,
+  },
+  UnknownOption: {
+    exit: USAGE,
+    suggestion:
+      "That option is not one this command takes. `adiff <command> --help` lists the options it does.",
+    retriable: false,
+  },
+  BadOption: {
+    exit: USAGE,
+    suggestion: "That value is not one the option allows. The allowed ones are named above.",
+    retriable: false,
+  },
+  ForgeUnavailable: {
+    exit: FAILED,
+    suggestion:
+      "The forge could not be reached. Check that `gh` is installed and authenticated, and that this repository has a remote on it. Nothing was sent.",
+    retriable: false,
+  },
+  NotARepository: {
+    exit: NOT_FOUND,
+    suggestion: "That path is not a git repository. Point --repo at one.",
+    retriable: false,
+  },
+  GitCommandFailed: {
+    exit: FAILED,
+    suggestion: "git refused the command adiff ran. The reason it gave is above.",
+    retriable: false,
+  },
+  FileUnreadable: {
+    exit: FAILED,
+    suggestion: "That file could not be read. Check it is still there and that you can read it.",
+    retriable: false,
+  },
+  StoreUnreadable: {
+    exit: FAILED,
+    suggestion:
+      "A file adiff keeps this review in could not be read. The path is above; move it aside to start the review's history again, or repair the line that is malformed.",
+    retriable: false,
+  },
+  StoreUnwritable: {
+    exit: FAILED,
+    suggestion:
+      "A file adiff keeps this review in could not be written. Check the path above is a directory you can write to.",
+    retriable: false,
+  },
+  WatchUnavailable: {
+    exit: FAILED,
+    suggestion: "adiff could not watch that path for changes. The reason it gave is above.",
+    retriable: false,
+  },
   UnknownDraft: {
     exit: NOT_FOUND,
     suggestion:
@@ -123,6 +177,23 @@ export const fieldsOf = (options: Options): ReadonlyArray<string> => {
 
 export const narrow = (value: unknown, fields: ReadonlyArray<string>): unknown =>
   fields.length === 0 ? value : project(value, fields)
+
+const keysIn = (value: unknown): ReadonlyArray<string> => {
+  if (Array.isArray(value)) return value.flatMap((one) => keysIn(one))
+  if (typeof value !== "object" || value === null) return []
+  return Object.keys(value)
+}
+
+export const strangeField = (
+  body: Record<string, unknown>,
+  fields: ReadonlyArray<string>,
+): { readonly field: string; readonly known: ReadonlyArray<string> } | undefined => {
+  if (fields.length === 0) return undefined
+  const known = [...new Set(Object.values(body).flatMap((value) => keysIn(value)))]
+  if (known.length === 0) return undefined
+  const field = fields.find((one) => !known.includes(one))
+  return field === undefined ? undefined : { field, known: known.toSorted() }
+}
 
 const sharpen = (
   tag: string,

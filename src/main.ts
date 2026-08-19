@@ -14,6 +14,8 @@ import {
   awaitComments,
   branchAt,
   catalog,
+  knownIn,
+  valuedIn,
   failure,
   fieldsOf,
   findCommand,
@@ -30,8 +32,11 @@ import {
   MalformedLayers,
   MissingOption,
   narrow,
+  strangeField,
   nearestCommand,
   numeric,
+  oneOf,
+  onlyKnown,
   optionsFrom,
   required,
   verbsUnder,
@@ -56,6 +61,7 @@ import {
   toggleVouch,
   worktreeOf,
   UnknownCommand,
+  UnknownField,
   upgradeReport,
   willUpgrade,
   type Options,
@@ -67,14 +73,20 @@ import { storeAt, defaultRoot } from "./service/store/index.ts"
 
 const WAIT_UNIT = 1000
 
-const answer = (options: Options, body: Record<string, unknown>): Effect.Effect<void> =>
-  Effect.sync(() => {
-    const fields = fieldsOf(options)
+const answer = (
+  options: Options,
+  body: Record<string, unknown>,
+): Effect.Effect<void, UnknownField> => {
+  const fields = fieldsOf(options)
+  const strange = strangeField(body, fields)
+  if (strange !== undefined) return Effect.fail(new UnknownField(strange))
+  return Effect.sync(() => {
     const narrowed = Object.fromEntries(
       Object.entries(body).map(([key, value]) => [key, narrow(value, fields)]),
     )
     process.stdout.write(`${JSON.stringify({ ok: true, ...narrowed })}\n`)
   })
+}
 
 const branchList = Effect.fn("Main.branchList")(function* (options: Options) {
   const branches = yield* listBranches(yield* required(options, "repo"), options["base"])
@@ -106,7 +118,7 @@ const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
     start: yield* numeric(options, "start"),
     end: yield* numeric(options, "end"),
     body: yield* required(options, "body"),
-    side: options["side"] === "old" ? "old" : "new",
+    side: yield* oneOf(options, "side", ["old", "new"] as const, "new"),
     id: options["id"] ?? randomUUID(),
     at: options["at"] ?? new Date().toISOString(),
   })
@@ -129,7 +141,7 @@ const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
     start: yield* numeric(options, "start"),
     end: yield* numeric(options, "end"),
     body: yield* required(options, "body"),
-    side: options["side"] === "old" ? "old" : "new",
+    side: yield* oneOf(options, "side", ["old", "new"] as const, "new"),
     id: options["id"] ?? randomUUID(),
     at: options["at"] ?? new Date().toISOString(),
     wroteBy: "agent",
@@ -442,7 +454,10 @@ const wanting = (name: string) => (error: MissingOption) => {
 }
 
 const run = (name: string, options: Options) =>
-  dispatch(name, options).pipe(Effect.catchTag("MissingOption", wanting(name)))
+  onlyKnown(options, knownIn(name)).pipe(
+    Effect.flatMap(() => dispatch(name, options)),
+    Effect.catchTag("MissingOption", wanting(name)),
+  )
 
 const leading = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
   const stop = argv.findIndex((token) => token.startsWith("-"))
@@ -501,7 +516,10 @@ const reportFailure = (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
   })
 
 Effect.runFork(
-  run(opening ? "review open" : nameOf(argv), opening ? { repo: "." } : optionsFrom(argv)).pipe(
+  run(
+    opening ? "review open" : nameOf(argv),
+    opening ? { repo: "." } : optionsFrom(argv, valuedIn(nameOf(argv))),
+  ).pipe(
     Effect.provide(layer),
     Effect.catchCause(reportFailure),
   ),

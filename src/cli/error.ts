@@ -59,6 +59,22 @@ export class MalformedLayers extends Data.TaggedError("MalformedLayers")<{
   readonly reason: string
 }> {}
 
+export class UnknownField extends Data.TaggedError("UnknownField")<{
+  readonly field: string
+  readonly known: ReadonlyArray<string>
+}> {}
+
+export class UnknownOption extends Data.TaggedError("UnknownOption")<{
+  readonly option: string
+  readonly known: ReadonlyArray<string>
+}> {}
+
+export class BadOption extends Data.TaggedError("BadOption")<{
+  readonly option: string
+  readonly given: string
+  readonly allowed: ReadonlyArray<string>
+}> {}
+
 export class UnknownDraft extends Data.TaggedError("UnknownDraft")<{
   readonly id: string
 }> {}
