@@ -30,7 +30,6 @@ import {
   newLineAt,
   onLayers,
   railWindow,
-  matchHere,
   selectionReadout,
   layerOpen,
   layerRows,
@@ -856,19 +855,65 @@ const foundTitle = (state: TuiState): string => {
   return `${state.term}  ·  ${said}`
 }
 
-const MATCH_SHARE = 0.45
+type Block = { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> }
 
-const matchRow = (
-  match: { readonly changed: boolean; readonly path: string; readonly line: number; readonly text: string },
-  room: number,
-): string => {
+type Found = {
+  readonly changed: boolean
+  readonly path: string
+  readonly line: number
+  readonly text: string
+  readonly around: ReadonlyArray<string>
+}
+
+const fileRow = (match: Found, room: number): Block => {
   const lead = match.changed ? marks().comment : " "
-  const where = `:${match.line}`
-  const said = match.text.trim()
-  const forPath = Math.max(8, Math.floor(room * MATCH_SHARE) - where.length)
-  const path = clipHead(match.path, forPath)
-  const left = `${lead} ${path}${where}`
-  return `${left}  ${clip(said, Math.max(1, room - left.length - 2))}`
+  const said = ` ${lead} ${clipHead(match.path, Math.max(8, room - 3))}`
+  return {
+    rows: 1,
+    chunks: [fg(palette.accent)(said.padEnd(room)), fg(palette.faint)("\n")],
+  }
+}
+
+const blockOf = (match: Found, room: number, here: boolean): Block => {
+  const rows = here
+    ? match.around.map((line) => aroundRow(line, match.line, room))
+    : [
+        fg(palette.muted)(
+          `   ${String(match.line).padStart(5)}  ${clip(match.text.trim(), Math.max(1, room - 11))}`.padEnd(
+            room,
+          ),
+        ),
+      ]
+  const lit = rows.map((chunk) => (here ? bg(palette.selection)(chunk) : chunk))
+  return {
+    rows: lit.length,
+    chunks: lit.flatMap((chunk) => [chunk, fg(palette.faint)("\n")]),
+  }
+}
+
+const aroundRow = (line: string, at: number, room: number): TextChunk => {
+  const numbered = /^\s*(\d+) ?(.*)$/.exec(line)
+  const number = Number(numbered?.[1] ?? 0)
+  const text = numbered?.[2] ?? line
+  const mark = number === at ? "▸" : " "
+  const said = `  ${mark} ${String(number).padStart(5)}  ${text}`
+  return fg(number === at ? palette.ink : palette.faint)(clip(said, room).padEnd(room))
+}
+
+const windowedBlocks = (
+  blocks: ReadonlyArray<Block>,
+  at: number,
+  room: number,
+): { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> } => {
+  const kept: Array<Block> = []
+  let rows = 0
+  for (const [index, block] of blocks.entries()) {
+    if (index < at && rows + block.rows > room) continue
+    if (rows + block.rows > room && index > at) break
+    kept.push(block)
+    rows += block.rows
+  }
+  return { rows, chunks: kept.flatMap((block) => block.chunks) }
 }
 
 const panelWhere = (entry: PanelEntry, room: number): string => {
@@ -1487,29 +1532,22 @@ export class Screen {
       return
     }
     const room = panelWidth(this.renderer.width)
-    const here = matchHere(state)
-    this.foundTitle.content = foundTitle(state)
-    const peekHigh = here?.around.length ?? 0
-    const foundRoom = Math.min(
-      panelRows(this.renderer.height, PANEL_FIFTH),
-      shownMatches(state).length + peekHigh + PALETTE_CHROME,
-    )
     const wide = Math.max(1, room - MODAL_ROOM)
+    this.foundTitle.content = foundTitle(state)
     const shown = shownMatches(state)
-    this.foundChoices.content = listText(
-      shown.map((match) => matchRow(match, wide)),
-      state.matchIndex,
-      Math.max(1, foundRoom - peekHigh - PALETTE_CHROME),
-    )
-    this.foundPeek.content = (here?.around ?? [])
-      .map((line) => clip(line, Math.max(1, room - MODAL_ROOM)))
-      .join("\n")
-    const peekRows = here?.around.length ?? 0
-    this.foundPeek.height = peekRows
-    this.found.height = Math.min(
-      panelRows(this.renderer.height, PANEL_FIFTH),
-      shownMatches(state).length + peekRows + PALETTE_CHROME,
-    )
+    const most = panelRows(this.renderer.height, PANEL_FIFTH)
+    const blocks: Array<Block> = []
+    let chosen = 0
+    for (const [at, match] of shown.entries()) {
+      if (shown[at - 1]?.path !== match.path) blocks.push(fileRow(match, wide))
+      if (at === state.matchIndex) chosen = blocks.length
+      blocks.push(blockOf(match, wide, at === state.matchIndex))
+    }
+    const window = windowedBlocks(blocks, chosen, Math.max(3, most - PALETTE_CHROME))
+    this.foundChoices.content = new StyledText([...window.chunks])
+    this.foundPeek.content = ""
+    this.foundPeek.height = 0
+    this.found.height = Math.min(most, window.rows + PALETTE_CHROME)
     this.found.width = room
     this.found.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.found.top = panelTop(this.renderer.height, PANEL_FIFTH)

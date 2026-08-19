@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { realpath } from "node:fs/promises"
 import { platform } from "node:os"
@@ -66,7 +66,6 @@ import {
   pickedText,
   selectedLines,
   type Spot,
-  searchTerm,
   matchHere,
   selectionRange,
   spokenSince,
@@ -108,6 +107,7 @@ import {
   withSilentForge,
   withFull,
   withPatches,
+  withFinder,
   withMatches,
   withSent,
   withSource,
@@ -167,6 +167,30 @@ const COPIERS: Readonly<Record<string, ReadonlyArray<string>>> = {
 
 const wayland = (): ReadonlyArray<string> | undefined =>
   process.env["WAYLAND_DISPLAY"] === undefined ? undefined : ["wl-copy"]
+
+const PASTERS: Readonly<Record<string, ReadonlyArray<string>>> = {
+  darwin: ["pbpaste"],
+  linux: ["xclip", "-selection", "clipboard", "-o"],
+}
+
+const PASTE_MS = 300
+const SEED_MOST = 120
+
+const clipped = (): string => {
+  if (!process.stdout.isTTY) return ""
+  const named = process.env["WAYLAND_DISPLAY"] === undefined ? PASTERS[platform()] : ["wl-paste"]
+  const [command, ...rest] = named ?? []
+  if (command === undefined) return ""
+  const read = spawnSync(command, [...rest], { encoding: "utf8", timeout: PASTE_MS })
+  return read.status === 0 ? (read.stdout ?? "") : ""
+}
+
+const seedFor = (picked: string | undefined): string => {
+  if (picked !== undefined && picked.trim().length > 0) return picked.trim()
+  const held = clipped().trim()
+  const one = held.split("\n")[0] ?? ""
+  return one.length > 0 && one.length <= SEED_MOST && one === held ? one : ""
+}
 
 const handOver = (text: string): void => {
   if (!process.stdout.isTTY) return
@@ -625,7 +649,7 @@ export class App {
       "thread.reply": () => this.replyHere(),
       "selection.copy": () => Effect.sync(() => this.copySelection(false)),
       "search.open": () => this.findSelection(),
-      "search.jump": () => this.openMatch(),
+      "search.jump": () => this.runFinder(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
       "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
@@ -812,20 +836,34 @@ export class App {
   }
 
   private findSelection(): Work {
+    return Effect.sync(() => {
+      const seed = seedFor(pickedText(this.state))
+      this.commit(withFinder(this.state, seed))
+      Effect.runSync(this.display.askWith(seed))
+    })
+  }
+
+  private runFinder(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const wanted = this.state.query.trim()
+      if (wanted.length > 0 && wanted !== this.state.term) {
+        yield* this.lookFor(wanted)
+        return
+      }
+      yield* this.openMatch()
+    })
+  }
+
+  private lookFor(wanted: string): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const term = searchTerm(this.state)
-      if (branch === undefined || term.length === 0) {
-        this.commit(withNoticeHere(this.state, "nothing selected"))
-        return
-      }
-      const found = yield* (searchBranch(this.repo, branch.branch, term))
+      if (branch === undefined) return
+      const found = yield* searchBranch(this.repo, branch.branch, wanted)
       const elsewhere = found.filter((match) => !this.isHere(match))
+      this.commit(withMatches(this.state, elsewhere, wanted))
       if (elsewhere.length === 0) {
-        this.commit(withNotice(this.state, `no other place uses ${term}`))
-        return
+        this.commit(withNoticeHere(this.state, `no other place uses ${wanted}`))
       }
-      this.commit(withMatches(this.state, elsewhere, term))
     })
   }
 
