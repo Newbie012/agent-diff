@@ -30,6 +30,7 @@ const body = (frame: string): string => {
 }
 
 type Pair = {
+  readonly keys?: boolean
   readonly name: string
   readonly from?: ReadonlyArray<string>
   readonly go: ReadonlyArray<string>
@@ -43,7 +44,7 @@ const pairs: ReadonlyArray<Pair> = [
   { name: "fold and unfold", go: ["TAB", "h"], back: ["l", "TAB"] },
   { name: "open and close a gap", from: ["k"], go: ["l"], back: ["h"] },
   { name: "hide and show the list", go: ["\\"], back: ["\\"] },
-  { name: "focus across and back", go: ["TAB"], back: ["TAB"] },
+  { name: "focus across and back", go: ["TAB"], back: ["TAB"], keys: true },
   { name: "wider and narrower context", go: ["+"], back: ["-"] },
   { name: "mark and unmark", go: ["m"], back: ["m"] },
 ]
@@ -57,16 +58,17 @@ describe("every reversible action reverses", () => {
       await driver.screen.open()
       await driver.screen.pressKeys(["RETURN"])
       if (pair.from !== undefined) await driver.screen.pressKeys([...pair.from])
-      const start = body(await driver.screen.getFrame())
+      const seen = pair.keys === true ? (frame: string): string => frame : body
+      const start = seen(await driver.screen.getFrame())
 
       // ACT
       await driver.screen.pressKeys([...pair.go])
-      const moved = body(await driver.screen.getFrame())
+      const moved = seen(await driver.screen.getFrame())
       await driver.screen.pressKeys([...pair.back])
 
       // ASSERT
       expect(moved).not.toBe(start)
-      expect(body(await driver.screen.getFrame())).toBe(start)
+      expect(seen(await driver.screen.getFrame())).toBe(start)
       expect(driver.screen.renderCrashes()).toEqual([])
     })
   }
