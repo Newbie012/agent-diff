@@ -206,6 +206,10 @@ const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
 
 const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
 
+const OVER: ReadonlySet<string> = new Set(["compose", "report", "keys", "palette", "search"])
+
+export const overReview = (screen: TuiState["screen"]): boolean => OVER.has(screen)
+
 const writesInto = (screen: TuiState["screen"]): boolean => WRITES.has(screen)
 
 const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
@@ -634,6 +638,10 @@ export class App {
 
   private onKey(key: KeyEvent, forced?: Action): Work {
     return Effect.gen({ self: this }, function* () {
+      if (forced === undefined && keyName(key) === "ctrl+c") {
+        yield* this.askedToLeave()
+        return
+      }
       const action = forced ?? actionFor(this.state.screen, keyName(key), this.state.focus)
       this.grewWithShift = action === "select.grow" || action === "select.shrink"
       this.remember(action, key)
@@ -1043,6 +1051,13 @@ export class App {
     })
   }
 
+  private askedToLeave(): Work {
+    return Effect.sync(() => {
+      if (overReview(this.state.screen)) this.commit(reduce(this.measured(), "back"))
+      else this.renderer.destroy()
+    })
+  }
+
   private worktreeFor(branch: string): Worktree | undefined {
     const reading = this.reading
     return reading === undefined || reading.worktree.branch !== branch ? undefined : reading.worktree
@@ -1395,7 +1410,7 @@ export const runTui = Effect.fn("Tui.run")(function* (
 ) {
   const renderer = yield* Effect.promise(() =>
     createCliRenderer({
-      exitOnCtrlC: true,
+      exitOnCtrlC: false,
       useKittyKeyboard: { events: true, allKeysAsEscapes: true },
     }),
   )
