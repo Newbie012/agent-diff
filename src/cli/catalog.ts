@@ -324,6 +324,41 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     example: "adiff comment restore --repo . --branch cdr-1 --id c1",
   },
   {
+    name: "config list",
+    about: "Every preference adiff keeps, with its value and what it does",
+    group: SET_UP,
+    addresses: "none",
+    safety: "read",
+    options: [],
+    dataKey: "preferences",
+    example: "adiff config list",
+  },
+  {
+    name: "config get",
+    about: "What one preference is set to",
+    group: SET_UP,
+    addresses: "none",
+    safety: "read",
+    options: [
+      { name: "name", required: true, value: "name", about: "The preference, as `config list` names it" },
+    ],
+    dataKey: "preference",
+    example: "adiff config get --name sticky",
+  },
+  {
+    name: "config set",
+    about: "Turn one preference on or off, for every repository on this machine",
+    group: SET_UP,
+    addresses: "none",
+    safety: "write",
+    options: [
+      { name: "name", required: true, value: "name", about: "The preference, as `config list` names it" },
+      { name: "value", required: true, value: "on|off", about: "What to set it to" },
+    ],
+    dataKey: "preference",
+    example: "adiff config set --name hold --value on",
+  },
+  {
     name: "init",
     about:
       "Write the review loop into this repository's agent instructions, so an agent finds it unprompted",

@@ -41,6 +41,9 @@ import {
   settleThread,
   setLayers,
   showLayers,
+  readPreference,
+  readPreferences,
+  savePreference,
   submitComment,
   submitReply,
   takeComments,
@@ -232,6 +235,21 @@ const skillRefresh = Effect.fn("Main.skillRefresh")(function* (options: Options)
   yield* answer(options, { changes: report.changes })
 })
 
+const configList = Effect.fn("Main.configList")(function* (options: Options) {
+  yield* answer(options, { preferences: yield* readPreferences() })
+})
+
+const configGet = Effect.fn("Main.configGet")(function* (options: Options) {
+  const preference = yield* readPreference(yield* required(options, "name"))
+  yield* answer(options, { preference })
+})
+
+const configSet = Effect.fn("Main.configSet")(function* (options: Options) {
+  const wanted = yield* required(options, "value")
+  const preference = yield* savePreference(yield* required(options, "name"), wanted === "on")
+  yield* answer(options, { preference })
+})
+
 const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
   const report = yield* openPane(yield* required(options, "repo"), options["branch"])
   yield* answer(options, { opened: report.opened, pane: report.pane, command: report.command })
@@ -294,6 +312,9 @@ const routes = {
   "comment resolve": commentResolve,
   "comment remove": commentRemove,
   "comment restore": commentRestore,
+  "config list": configList,
+  "config get": configGet,
+  "config set": configSet,
   "review pane": reviewPane,
   "review progress": reviewStatus,
   "layers set": layersSet,

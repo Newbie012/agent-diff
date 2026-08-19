@@ -100,6 +100,7 @@ export type TuiState = {
   readonly hideSettled: boolean
   readonly picked: Picked | undefined
   readonly newestFirst: boolean
+  readonly hold: boolean
   readonly tallest: number
   readonly scroll: number
   readonly railRows: number
@@ -117,6 +118,7 @@ const nothingReviewed = {
   hideSettled: false,
   picked: undefined,
   newestFirst: true,
+  hold: false,
   tallest: 0,
   scroll: -1,
   railRows: 12,

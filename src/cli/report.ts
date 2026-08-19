@@ -33,6 +33,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "The error lists the files this branch changed. Use one of those paths.",
     retriable: false,
   },
+  UnknownPreference: {
+    exit: NOT_FOUND,
+    suggestion:
+      "The error lists the preferences adiff knows. Run `adiff config list` to see them with their values.",
+    retriable: false,
+  },
   UnknownWorktree: {
     exit: NOT_FOUND,
     suggestion:
