@@ -4,6 +4,11 @@ import { homedir } from "node:os"
 import { text as readStream } from "node:stream/consumers"
 import { Cause, Effect, Layer } from "effect"
 import {
+  addDraft,
+  dispatchDrafts,
+  dropDraft,
+  editDraft,
+  listDrafts,
   answerComment,
   addressing,
   awaitComments,
@@ -106,6 +111,57 @@ const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
     at: options["at"] ?? new Date().toISOString(),
   })
   yield* answer(options, { batch })
+})
+
+const draftList = Effect.fn("Main.draftList")(function* (options: Options) {
+  const drafts = yield* listDrafts(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+  )
+  yield* answer(options, { drafts })
+})
+
+const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
+  const draft = yield* addDraft({
+    repo: yield* required(options, "repo"),
+    branch: yield* required(options, "branch"),
+    file: yield* required(options, "file"),
+    start: yield* numeric(options, "start"),
+    end: yield* numeric(options, "end"),
+    body: yield* required(options, "body"),
+    side: options["side"] === "old" ? "old" : "new",
+    id: options["id"] ?? randomUUID(),
+    at: options["at"] ?? new Date().toISOString(),
+    wroteBy: "agent",
+  })
+  yield* answer(options, { draft })
+})
+
+const draftEdit = Effect.fn("Main.draftEdit")(function* (options: Options) {
+  const draft = yield* editDraft(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+    yield* required(options, "body"),
+  )
+  yield* answer(options, { draft })
+})
+
+const draftDrop = Effect.fn("Main.draftDrop")(function* (options: Options) {
+  const dropped = yield* dropDraft(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+  )
+  yield* answer(options, { dropped })
+})
+
+const draftSend = Effect.fn("Main.draftSend")(function* (options: Options) {
+  const dispatched = yield* dispatchDrafts(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+  )
+  yield* answer(options, { dispatched })
 })
 
 const commentReply = Effect.fn("Main.commentReply")(function* (options: Options) {
@@ -310,6 +366,11 @@ const routes = {
   "comment take": commentTake,
   "comment answer": commentAnswer,
   "comment list": commentList,
+  "draft list": draftList,
+  "draft add": draftAdd,
+  "draft edit": draftEdit,
+  "draft drop": draftDrop,
+  "draft send": draftSend,
   "comment resolve": commentResolve,
   "comment remove": commentRemove,
   "comment restore": commentRestore,

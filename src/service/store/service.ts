@@ -9,6 +9,7 @@ import {
   type StoredAnswer,
   type StoredComment,
   type Settings,
+  type StoredDraft,
   type StoredLayers,
   type UpgradeCheck,
 } from "./model.ts"
@@ -22,6 +23,7 @@ import {
   reportsDir,
   settingsPath,
   statePath,
+  draftsPath,
   layersPath,
   upgradePath,
 } from "./paths.ts"
@@ -47,6 +49,13 @@ type Shape = {
   readonly saveLayers: (
     worktreePath: string,
     layers: StoredLayers,
+  ) => Effect.Effect<void, StoreUnwritable>
+  readonly drafts: (
+    worktreePath: string,
+  ) => Effect.Effect<ReadonlyArray<StoredDraft>, StoreUnreadable>
+  readonly saveDrafts: (
+    worktreePath: string,
+    drafts: ReadonlyArray<StoredDraft>,
   ) => Effect.Effect<void, StoreUnwritable>
   readonly take: (
     worktreePath: string,
@@ -96,6 +105,7 @@ const asBatch = decoded(Wire.Batch)
 const asAnswer = decoded(Wire.StoredAnswer)
 const asState = decoded(Wire.BranchState)
 const asLayers = decoded(Wire.StoredLayers)
+const asDrafts = decoded(Wire.Drafts)
 
 const linesOf = (raw: string): ReadonlyArray<string> =>
   raw.split("\n").filter((line) => line.trim().length > 0)
@@ -298,6 +308,34 @@ const answerOps = (root: string) => {
   return { answer, answers }
 }
 
+const draftsOps = (root: string) => {
+  const drafts = Effect.fn("Store.drafts")(function* (worktreePath: string) {
+    const key = yield* keyIn(root, worktreePath)
+    const path = draftsPath(root, key)
+    const raw = yield* readOptional(path)
+    if (Option.isNone(raw)) return [] as ReadonlyArray<StoredDraft>
+    const value = yield* jsonOf(path, raw.value)
+    const held = yield* asDrafts(path, value)
+    return held.drafts
+  })
+
+  const saveDrafts = Effect.fn("Store.saveDrafts")(function* (
+    worktreePath: string,
+    next: ReadonlyArray<StoredDraft>,
+  ) {
+    const key = yield* keyIn(root, worktreePath)
+    const path = draftsPath(root, key)
+    yield* ensureDir(branchDir(root, key))
+    const body = JSON.stringify({ version: 1, drafts: next }, undefined, 2)
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, body, "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+  })
+
+  return { drafts, saveDrafts }
+}
+
 const layersOps = (root: string) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
     const key = yield* keyIn(root, worktreePath)
@@ -391,6 +429,7 @@ const makeStore = (root: string): Shape => {
     ...upgradeOps(root),
     ...talk,
     ...layersOps(root),
+    ...draftsOps(root),
     ...cursors,
   }
 }

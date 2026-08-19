@@ -18,6 +18,19 @@ export const StoredComment = Schema.Struct({
   replyTo: Schema.optionalKey(Schema.String),
 })
 
+export const StoredDraft = Schema.Struct({
+  id: Schema.String,
+  anchor: Anchor,
+  body: Schema.String,
+  at: Schema.String,
+  wroteBy: Schema.Literals(["reviewer", "agent"]),
+})
+
+export const Drafts = Schema.Struct({
+  version: Schema.Int,
+  drafts: Schema.Array(StoredDraft),
+})
+
 export const StoredAnswer = Schema.Struct({
   comment: Schema.String,
   body: Schema.String,

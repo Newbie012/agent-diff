@@ -59,6 +59,20 @@ export class MalformedLayers extends Data.TaggedError("MalformedLayers")<{
   readonly reason: string
 }> {}
 
+export class UnknownDraft extends Data.TaggedError("UnknownDraft")<{
+  readonly id: string
+}> {}
+
+export class NothingDrafted extends Data.TaggedError("NothingDrafted")<{
+  readonly branch: string
+}> {}
+
+export class PullMoved extends Data.TaggedError("PullMoved")<{
+  readonly branch: string
+  readonly was: string
+  readonly now: string
+}> {}
+
 export class NoLayers extends Data.TaggedError("NoLayers")<{
   readonly worktree: string
 }> {}

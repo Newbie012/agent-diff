@@ -383,11 +383,17 @@ export const listSent = Effect.fn("Cli.listSent")(function* (
   return yield* sentIn(yield* readingOf(repo, branch, base))
 })
 
-export const commentIn = Effect.fn("Cli.commentIn")(function* (
+export type Ranged = {
+  readonly file: string
+  readonly start: number
+  readonly end: number
+  readonly side: Side
+}
+
+export const anchorIn = Effect.fn("Cli.anchorIn")(function* (
   worktree: Worktree,
-  request: CommentRequest,
+  request: Ranged,
 ) {
-  const store = yield* Store
   const only = yield* patchesOf(worktree, WHOLE_FILE, request.file)
   const patches = only.length > 0 ? only : yield* patchesOf(worktree, WHOLE_FILE)
   const patch = findPatch(patches, request.file)
@@ -404,10 +410,18 @@ export const commentIn = Effect.fn("Cli.commentIn")(function* (
   const anchor =
     first === undefined || last === undefined ? Option.none() : anchorFor(resolved, first, last)
 
-  const chosen = yield* Option.match(anchor, {
+  return yield* Option.match(anchor, {
     onNone: () => new UnselectableRange({ file: request.file, start: request.start, end: request.end }),
     onSome: Effect.succeed,
   })
+})
+
+export const commentIn = Effect.fn("Cli.commentIn")(function* (
+  worktree: Worktree,
+  request: CommentRequest,
+) {
+  const store = yield* Store
+  const chosen = yield* anchorIn(worktree, request)
 
   const batch: Batch = {
     id: request.id,

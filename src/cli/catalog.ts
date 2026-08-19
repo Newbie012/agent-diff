@@ -89,6 +89,7 @@ const READ_A_BRANCH = "Read a branch"
 const WRITE_COMMENTS = "Write comments"
 const ANSWER_COMMENTS = "Answer comments, in the worktree"
 const FOLLOW_UP = "Follow up"
+const DRAFTS = "Draft a review of somebody else's pull request"
 const SET_UP = "Set up"
 
 export const catalog: ReadonlyArray<CommandSpec> = [
@@ -273,6 +274,64 @@ export const catalog: ReadonlyArray<CommandSpec> = [
     options: [...based],
     dataKey: "layers",
     example: "adiff layers show --worktree . --fields layers,uncovered",
+  },
+  {
+    name: "draft list",
+    about: "The comments held for this pull request, in the order they were written",
+    group: DRAFTS,
+    addresses: "review",
+    safety: "read",
+    options: [...addressing],
+    dataKey: "drafts",
+    example: "adiff draft list --repo . --branch their-change",
+  },
+  {
+    name: "draft add",
+    about: "Hold one comment against a line range, to be sent with the rest",
+    group: DRAFTS,
+    addresses: "review",
+    safety: "write",
+    options: [...addressing, ...range],
+    dataKey: "draft",
+    example:
+      'adiff draft add --repo . --branch their-change --file src/api.ts --start 4 --end 5 --body "why"',
+  },
+  {
+    name: "draft edit",
+    about: "Rewrite a held comment before it is sent",
+    group: DRAFTS,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      { name: "id", required: true, value: "id", about: "The draft, as `draft list` reports it" },
+      { name: "body", required: true, value: "text", about: "What it should say instead" },
+    ],
+    dataKey: "draft",
+    example: 'adiff draft edit --repo . --branch their-change --id d1 --body "softer"',
+  },
+  {
+    name: "draft drop",
+    about: "Throw away a held comment rather than sending it",
+    group: DRAFTS,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      { name: "id", required: true, value: "id", about: "The draft, as `draft list` reports it" },
+    ],
+    dataKey: "dropped",
+    example: "adiff draft drop --repo . --branch their-change --id d1",
+  },
+  {
+    name: "draft send",
+    about: "Send every held comment to the pull request, as one review",
+    group: DRAFTS,
+    addresses: "review",
+    safety: "write",
+    options: [...addressing],
+    dataKey: "dispatched",
+    example: "adiff draft send --repo . --branch their-change",
   },
   {
     name: "comment list",
