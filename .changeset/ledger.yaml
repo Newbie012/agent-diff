@@ -418,3 +418,7 @@
   dir: ""
   intents:
     - prose-on-a-line-that-went
+"@eliya-oss/agent-diff@0.1.0-alpha.92":
+  dir: ""
+  intents:
+    - opening-a-gap
