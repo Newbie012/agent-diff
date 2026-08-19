@@ -237,6 +237,11 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **Finding the selection elsewhere looks for what was selected.** A reviewer who picks part of a
+  line has said exactly what they mean, and the search took the longest name on that line instead —
+  so picking a short name looked for a longer one nearby and found the wrong places. Picking
+  nothing still means the line's longest name, which is the only guess worth making.
+
 - **The pane the keys reach is said by how brightly its row is lit.** Every pane keeps a cursor, so
   three rows are marked at once and only one of them answers to the keys. That was said with a
   glyph in front of the row — a triangle when the pane was focused and a dot when it was not —
