@@ -237,6 +237,11 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **A single hidden line is shown rather than hidden.** The row that stands in for what is folded
+  away costs a line of the screen and a keystroke to open, so hiding one line behind it saves
+  nothing and asks for something — and when the line was blank, it hid nothing at all. A gap of one
+  is opened as the file is read.
+
 - **What was found can be narrowed, and shows the part that differs.** Every match of a name used
   across one directory drew the same long path over and over, cut at the right edge — so the rows
   differed only where the reader could not see, and the line the match was on was the first thing

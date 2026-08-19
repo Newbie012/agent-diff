@@ -50,7 +50,7 @@ import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
 import { Forge } from "../service/forge/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
-import { gapAtRow, GAP_CHUNK } from "./gaps.ts"
+import { gapAtRow, shownOf, GAP_CHUNK } from "./gaps.ts"
 import {
   initialState,
   nextUnreviewed,
@@ -85,6 +85,7 @@ import {
   restingOn,
   pickedIn,
   gapOpened,
+  gapShown,
   paletteChoice,
   paletteClosed,
   paletteMoved,
@@ -1166,6 +1167,17 @@ export class App {
       if (selectedPatch(this.state)?.path !== asked) return
       this.stopLighting()
       this.lighting = yield* Effect.forkDetach(this.lightUp(asked, source, before))
+      yield* this.openTinyGaps()
+    })
+  }
+
+  private openTinyGaps(): Work {
+    return Effect.gen({ self: this }, function* () {
+      if (lonelyGaps(this.state).length === 0) return
+      yield* this.loadFull()
+      const alone = lonelyGaps(this.state)
+      if (alone.length === 0) return
+      this.commit(alone.reduce((held, gap) => gapShown(held, gap.index, gap.hidden), this.state))
     })
   }
 
@@ -1295,6 +1307,9 @@ const settledPath = (path: string): Effect.Effect<string> =>
 
 const restsWhereItLanded = (from: Spot, to: Spot): boolean =>
   from.row === to.row && from.column === to.column
+
+const lonelyGaps = (state: TuiState): ReadonlyArray<{ index: number; hidden: number }> =>
+  (shownOf(state)?.gaps ?? []).filter((gap) => gap.hidden === 1)
 
 const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
   wrap: state.wrap,
