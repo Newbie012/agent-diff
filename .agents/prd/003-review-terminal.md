@@ -266,6 +266,12 @@ Three screens, and the keys each answers to:
   after it grew that selection instead of moving. A press that goes down and up in one place puts
   the cursor there; a press that moves selects what it moved over.
 
+- **Ctrl+C asks before it leaves.** With nothing open over the review it left at once, and a review
+  is a place a person is working: comments not yet written, a file half read, a place in a hundred
+  and thirty-one of them. The key that everything else in a terminal uses to stop the current thing
+  should not be the key that throws that away without a word. It says what a second press will do,
+  and forgets it the moment any other key is pressed.
+
 - **Ctrl+C closes what is open over the review before it closes the review.** It killed adiff
   outright, so a reviewer who reached for the usual way out of a box they were typing in lost the
   session and everything they had not sent. It dismisses whatever is over the review — the box, the
