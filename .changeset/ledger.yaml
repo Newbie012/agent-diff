@@ -66,6 +66,10 @@
     - naming-the-layer-that-is-wrong
     - reading-a-layer-file-by-file
     - walking-a-layered-review
+"@eliya-oss/agent-diff@0.1.0-alpha.107":
+  dir: ""
+  intents:
+    - saying-where-the-key-goes
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:

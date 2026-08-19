@@ -450,6 +450,10 @@
 
 - r reads the branch again, so the agent's newest work appears without leaving the review.
 
+## 0.1.0-alpha.107
+
+- The key that swaps the rail says where it would take you — `s file tree` while you are reading layers, `s layers` while you are reading files — and it is offered from the diff as well as from the rail. A layer set that has gone stale says so in the header, so you can see it from the file tree and not only from the layers rail.
+
 ## 0.1.0-alpha.106
 
 - Layers read as chapters. The rail no longer repeats each layer's note word for word — the diff already shows it above the code it describes — and prints the reading order instead: a numbered title, the directories the layer touches, and the file names under them, with a tick against the ones you have read. It expands as many layers as fit rather than collapsing all but one, marks the current file in the accent colour, and says how many layers sit above and below.
