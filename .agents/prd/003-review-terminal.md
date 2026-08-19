@@ -237,6 +237,11 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **Putting the cursor somewhere with the mouse is not the start of a selection.** Pressing the
+  button was read as a drag that had not moved yet, so a click left a line selected, and the arrows
+  after it grew that selection instead of moving. A press that goes down and up in one place puts
+  the cursor there; a press that moves selects what it moved over.
+
 - **Ctrl+C closes what is open over the review before it closes the review.** It killed adiff
   outright, so a reviewer who reached for the usual way out of a box they were typing in lost the
   session and everything they had not sent. It dismisses whatever is over the review — the box, the

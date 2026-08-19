@@ -72,6 +72,15 @@ export const scrolled = (state: TuiState, delta: number): TuiState => {
   return { ...state, scroll: clamp(from + delta, 0, highest) }
 }
 
+export const restingOn = (state: TuiState, row: number): TuiState => ({
+  ...state,
+  picked: undefined,
+  selecting: false,
+  stop: 0,
+  anchorRow: clamp(row, 0, lastRow(selectedPatch(state))),
+  cursor: clamp(row, 0, lastRow(selectedPatch(state))),
+})
+
 export const draggedTo = (state: TuiState, from: number, to: number): TuiState => ({
   ...state,
   picked: undefined,

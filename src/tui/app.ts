@@ -83,6 +83,7 @@ import {
   atFile,
   openedAt,
   draggedTo,
+  restingOn,
   pickedIn,
   gapOpened,
   paletteChoice,
@@ -244,6 +245,7 @@ export class App {
   private readonly sessionPath: string | undefined
   private remembered = ""
   private readonly chosen: Record<string, boolean> = {}
+  private selectingNow = false
   private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
@@ -732,12 +734,17 @@ export class App {
   }
 
   private dragged(from: Spot, to: Spot, done: boolean): void {
-    const along = from.row === to.row && from.column !== to.column
     const held = this.measured()
+    if (restsWhereItLanded(from, to) && !this.selectingNow) {
+      this.commit(restingOn(held, from.row))
+      return
+    }
+    const along = from.row === to.row
+    this.selectingNow = !done
     this.commit(
       along ? pickedIn(held, from.row, from.column, to.column) : draggedTo(held, from.row, to.row),
     )
-    if (done && (along || from.row !== to.row)) this.copySelection(true)
+    if (done) this.copySelection(true)
   }
 
   private copyDragged(): void {
@@ -1283,6 +1290,9 @@ const turnedOver = (state: TuiState): TuiState => ({
 
 const settledPath = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
+
+const restsWhereItLanded = (from: Spot, to: Spot): boolean =>
+  from.row === to.row && from.column === to.column
 
 const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
   wrap: state.wrap,
