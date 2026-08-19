@@ -450,6 +450,10 @@
 
 - r reads the branch again, so the agent's newest work appears without leaving the review.
 
+## 0.1.0-alpha.100
+
+- A gap hiding a single line is opened as the file is read, rather than spending a row of the screen to say one line is hidden.
+
 ## 0.1.0-alpha.10
 
 - The rail shows a layer's prose block by block, each above the file it introduces.

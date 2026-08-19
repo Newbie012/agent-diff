@@ -34,6 +34,10 @@
   intents:
     - itchy-knives-end
     - warm-falcons-melt
+"@eliya-oss/agent-diff@0.1.0-alpha.100":
+  dir: ""
+  intents:
+    - a-line-not-worth-hiding
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:
