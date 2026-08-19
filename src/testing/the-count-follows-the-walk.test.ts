@@ -5,7 +5,10 @@ import { shapes } from "./shapes.ts"
 const spread = shapes.find((shape) => shape.name.includes("several folders"))
 
 const place = (frame: string): string =>
-  (frame.split("\n")[0] ?? "").split(/\s{2,}/).find((part) => /^\d+\/\d+$/.test(part.trim())) ?? ""
+  (frame.split("\n")[0] ?? "")
+    .split(/\s{2,}/)
+    .find((part) => /^file \d+ of \d+$/.test(part.trim()))
+    ?.trim() ?? ""
 
 describe("the count in the header", () => {
   it("steps by one every time the reviewer turns to the next file", async () => {
@@ -25,7 +28,7 @@ describe("the count in the header", () => {
 
     // ASSERT
     const many = spread?.files.length ?? 0
-    expect(walked).toEqual(Array.from({ length: many }, (_, at) => `${at + 1}/${many}`))
+    expect(walked).toEqual(Array.from({ length: many }, (_, at) => `file ${at + 1} of ${many}`))
   })
 
   it("counts what can be walked to, not what is folded away", async () => {
@@ -57,6 +60,6 @@ describe("where a branch named on the command line opens", () => {
 
     // ASSERT
     const many = spread?.files.length ?? 0
-    expect(place(await driver.screen.getFrame())).toBe(`1/${many}`)
+    expect(place(await driver.screen.getFrame())).toBe(`file 1 of ${many}`)
   })
 })

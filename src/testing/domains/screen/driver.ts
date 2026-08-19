@@ -4,7 +4,7 @@ import { Effect, Exit, Layer, Scope } from "effect"
 import { Git, GitLive } from "../../../service/git/index.ts"
 import { Forge, ForgeLive } from "../../../service/forge/index.ts"
 import { storeAt } from "../../../service/store/index.ts"
-import { launch } from "../../../tui/index.ts"
+import { launch, palette } from "../../../tui/index.ts"
 import type { App, TuiState } from "../../../tui/index.ts"
 import { series, type DriverState } from "../../state.ts"
 
@@ -45,6 +45,8 @@ const watchedForge = (note: () => void): Layer.Layer<Forge> =>
     head: () => Effect.succeed(""),
     review: () => Effect.succeed({ landed: [], url: "" }),
   })
+
+const CLIP = /\u005d52;c;([A-Za-z0-9+/=]*)/g
 
 const hex = (value: number): string => value.toString(16).padStart(2, "0")
 
@@ -90,6 +92,8 @@ export class ScreenTestDriver {
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
   private keysSeen = 0
+  private written: Array<string> = []
+  private wrote: typeof process.stdout.write | undefined
   private counting: (() => void) | undefined
 
   private readonly state: DriverState
@@ -99,6 +103,7 @@ export class ScreenTestDriver {
   }
 
   async open(options: OpenOptions = {}): Promise<void> {
+    this.watchClipboard()
     if (options.upgrades === true) delete process.env["ADIFF_NO_UPGRADE_CHECK"]
     else process.env["ADIFF_NO_UPGRADE_CHECK"] = "1"
     const setup = await createTestRenderer({
@@ -576,6 +581,48 @@ export class ScreenTestDriver {
     return this.findPainted(marker, bgOf)
   }
 
+  watchClipboard(): void {
+    if (this.wrote !== undefined) return
+    const original = process.stdout.write.bind(process.stdout)
+    this.wrote = original
+    const spy = (chunk: unknown, ...rest: ReadonlyArray<unknown>): boolean => {
+      this.written.push(String(chunk))
+      return (original as (...args: ReadonlyArray<unknown>) => boolean)(chunk, ...rest)
+    }
+    process.stdout.write = spy
+  }
+
+  async copied(): Promise<string> {
+    await this.settleLayout()
+    const found = [...this.written.join("").matchAll(CLIP)].at(-1)?.[1] ?? ""
+    return Buffer.from(found, "base64").toString("utf8")
+  }
+
+  private stopWatchingClipboard(): void {
+    if (this.wrote === undefined) return
+    process.stdout.write = this.wrote
+    this.wrote = undefined
+    this.written = []
+  }
+
+  async findPicked(): Promise<ReadonlyArray<string>> {
+    const found = await Promise.all(
+      [palette.pickedOn, palette.pickedOnAdded, palette.pickedOnRemoved].map((one) =>
+        this.findPainted(one, bgOf),
+      ),
+    )
+    return found.flat()
+  }
+
+  async findUnderCursor(): Promise<ReadonlyArray<string>> {
+    const found = await Promise.all(
+      [palette.cursorOn, palette.cursorOnAdded, palette.cursorOnRemoved].map((one) =>
+        this.findPainted(one, bgOf),
+      ),
+    )
+    return found.flat()
+  }
+
   async debugSpans(): Promise<ReadonlyArray<string>> {
     const setup = this.active()
     await setup.waitForVisualIdle()
@@ -623,6 +670,7 @@ export class ScreenTestDriver {
 
   async close(): Promise<void> {
     this.stopWatching()
+    this.stopWatchingClipboard()
     this.stopCounting()
     await this.restCode()
     this.setup?.renderer.destroy()

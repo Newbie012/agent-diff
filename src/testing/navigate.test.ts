@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import { palette } from "../tui/index.ts"
 
 const filler = (count: number, mark: string): ReadonlyArray<string> =>
   Array.from({ length: count }, (_, index) => `  const ${mark}${index} = ${index}`)
@@ -23,7 +22,7 @@ const twoHunks = {
 }
 
 const cursorOn = async (driver: TestDriver): Promise<string> => {
-  const rows = await driver.screen.findHighlighted(palette.cursor)
+  const rows = await driver.screen.findUnderCursor()
   return rows[0] ?? ""
 }
 

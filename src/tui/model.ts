@@ -62,6 +62,7 @@ export type TuiState = {
   readonly anchorRow: number
   readonly selecting: boolean
   readonly draft: string
+  readonly draftAt: string
   readonly notice: string
   readonly waiting: string
   readonly query: string
@@ -141,6 +142,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   anchorRow: 0,
   selecting: false,
   draft: "",
+  draftAt: "",
   notice: "",
   waiting: "",
   query: "",
@@ -194,6 +196,12 @@ export const treeWidth = (columns: number): number => {
   const wanted = Math.min(most, Math.max(TREE_MIN, Math.floor(room * TREE_SHARE)))
   return Math.max(0, Math.min(wanted, room - DIFF_MIN))
 }
+
+export const LEAST_COLUMNS = 24
+export const LEAST_ROWS = 6
+
+export const tooSmall = (columns: number, rows: number): boolean =>
+  columns < LEAST_COLUMNS || rows < LEAST_ROWS
 
 export const reviewWidth = (): number => PANEL_WIDTH + PANE_BORDER
 
@@ -644,7 +652,10 @@ export const selectedLines = (state: TuiState): ReadonlyArray<string> => {
   const patch = selectedPatch(state)
   if (patch === undefined) return []
   const [from, to] = selectionRange(state)
-  return patch.rows.slice(from, to + 1).map((row) => row.text)
+  const rows = patch.rows.slice(from, to + 1)
+  const onlyGone = rows.every((row) => row.kind === "removed")
+  const taken = onlyGone ? rows : rows.filter((row) => row.kind !== "removed")
+  return taken.map((row) => row.text)
 }
 
 export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
@@ -884,7 +895,7 @@ export const nextUnreviewed = (state: TuiState, from: number): number | undefine
 }
 
 export const reviewedCount = (state: TuiState): string =>
-  `${state.vouched.length}/${state.patches.length} reviewed`
+  `${state.vouched.length} reviewed`
 
 export const countsOf = (state: TuiState, fileIndex: number): string => {
   const patch = state.patches[fileIndex]

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import { palette } from "../tui/index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
   Array.from({ length: count }, (_, index) => `  const layer${index} = ${mark}(${index})`)
@@ -81,7 +80,7 @@ describe("using the mouse", () => {
     await driver.screen.dragOverDiff(3, 7)
 
     // ASSERT
-    const selected = await driver.screen.findHighlighted(palette.selection)
+    const selected = await driver.screen.findPicked()
     expect(selected.length).toBeGreaterThan(2)
   })
 })

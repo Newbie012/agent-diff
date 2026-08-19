@@ -48,6 +48,7 @@ import {
   selectionRange,
   threadChosen,
   treeWindow,
+  tooSmall,
   treeWidth,
   type TuiState,
   WHOLE_FILE,
@@ -98,6 +99,10 @@ const PANEL_FIFTH = 5
 const PANE_CHROME = 3
 const PANE_EDGES = 2
 const PANE_INSET = 1
+const DIFF_FLOOR = 24
+const CRAMPED = "adiff needs more room than this"
+const CRAMPED_ROWS = 4
+const DIFF_CHROME_MOST = 16
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
 const BRANCH_FIXED = 36
@@ -164,18 +169,61 @@ type PaintFlags = {
 }
 
 const pickPaint = (view: DiffView, kind: RowKind, flags: PaintFlags): LinePaint | undefined => {
-  if (flags.cursor) return { gutter: ACCENT, content: CURSOR }
-  if (flags.selected) return { gutter: SELECTION, content: SELECTION }
+  if (flags.cursor) return UNDER_CURSOR[kind] ?? PLAIN_CURSOR
+  if (flags.selected) return PICKED[kind] ?? PLAIN_PICKED
   if (flags.gap) return GAP_PAINT
   return view.washOf(kind)
 }
 
-const SELECTION = RGBA.fromHex(palette.selection)
-const CURSOR = RGBA.fromHex(palette.cursor)
-const ACCENT = RGBA.fromHex(palette.accent)
+const PLAIN_PICKED: LinePaint = {
+  gutter: RGBA.fromHex(palette.pickedGutter),
+  content: RGBA.fromHex(palette.pickedOn),
+}
+
+const PICKED: Partial<Record<RowKind, LinePaint>> = {
+  added: {
+    gutter: RGBA.fromHex(palette.pickedGutterAdded),
+    content: RGBA.fromHex(palette.pickedOnAdded),
+  },
+  removed: {
+    gutter: RGBA.fromHex(palette.pickedGutterRemoved),
+    content: RGBA.fromHex(palette.pickedOnRemoved),
+  },
+}
+
+const PLAIN_CURSOR: LinePaint = {
+  gutter: RGBA.fromHex(palette.cursorGutter),
+  content: RGBA.fromHex(palette.cursorOn),
+}
+
+const UNDER_CURSOR: Partial<Record<RowKind, LinePaint>> = {
+  added: {
+    gutter: RGBA.fromHex(palette.cursorGutterAdded),
+    content: RGBA.fromHex(palette.cursorOnAdded),
+  },
+  removed: {
+    gutter: RGBA.fromHex(palette.cursorGutterRemoved),
+    content: RGBA.fromHex(palette.cursorOnRemoved),
+  },
+}
 const GAP_PAINT: LinePaint = {
   gutter: RGBA.fromHex(palette.overlay),
   content: RGBA.fromHex(palette.overlay),
+}
+
+const frameRoot = (renderer: CliRenderer): void => {
+  renderer.root.flexDirection = "column"
+  renderer.root.paddingLeft = FRAME_PAD
+  renderer.root.paddingRight = FRAME_PAD
+  renderer.root.paddingTop = 0
+  renderer.root.paddingBottom = 0
+}
+
+const crampedBar = (renderer: CliRenderer): TextRenderable => {
+  const made = bar(renderer, "cramped", palette.muted)
+  made.wrapMode = "word"
+  made.height = CRAMPED_ROWS
+  return made
 }
 
 const bar = (renderer: CliRenderer, id: string, color: string): TextRenderable =>
@@ -732,7 +780,7 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
 
 const placeLabel = (state: TuiState): string => {
   const place = filePlace(state)
-  return `${place.at}/${place.of}`
+  return `file ${place.at} of ${place.of}`
 }
 
 const headerParts = (
@@ -1032,6 +1080,7 @@ export class Screen {
   private readonly landingKeys: TextRenderable
   private hovered = -1
   private lead = 0
+  private chrome = 0
   private shown: TuiState | undefined
   private chips: ReadonlyArray<{ key: string; hint: string; press: string }> = []
   private readonly composeTitle: TextRenderable
@@ -1039,6 +1088,7 @@ export class Screen {
   private readonly composeBody: TextareaRenderable
   private readonly composeActions: TextRenderable
   private readonly footer: TextRenderable
+  private readonly cramped: TextRenderable
   private readonly palette: BoxRenderable
   private readonly paletteTitle: TextRenderable
   private readonly paletteQuery: TextareaRenderable
@@ -1062,14 +1112,10 @@ export class Screen {
   constructor(renderer: CliRenderer, repo = "") {
     this.renderer = renderer
     this.repo = repo
-    renderer.root.flexDirection = "column"
-    renderer.root.paddingLeft = FRAME_PAD
-    renderer.root.paddingRight = FRAME_PAD
-    renderer.root.paddingTop = 0
-    renderer.root.paddingBottom = 0
-
+    frameRoot(renderer)
     this.header = bar(renderer, "header", palette.ink)
     this.footer = bar(renderer, "footer", palette.faint)
+    this.cramped = crampedBar(renderer)
     this.body = makeBody(renderer)
     const list = makeListParts(renderer)
     this.listPane = list.pane
@@ -1242,15 +1288,25 @@ export class Screen {
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
     this.landingKeys.content = this.homeKeys(state)
     this.diffPane.visible = state.screen !== "branches" && !atHome(state)
-    if (this.diffPane.visible) this.paintDiff(state)
     this.paintPanel(state)
     this.paintPane(state)
+    if (this.diffPane.visible) this.paintDiff(state)
     this.paintCompose(state)
     this.paintPalette(state)
     this.paintKeys(state)
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
+    this.paintCramped()
+  }
+
+  private paintCramped(): void {
+    const cramped = tooSmall(this.renderer.width, this.renderer.height)
+    this.cramped.visible = cramped
+    this.body.visible = !cramped
+    this.header.visible = !cramped
+    this.footer.visible = !cramped
+    if (cramped) this.cramped.content = wrapped(CRAMPED, this.renderer.width - 1).join("\n")
   }
 
   private paintPalette(state: TuiState): void {
@@ -1338,6 +1394,20 @@ export class Screen {
     return treeWidth(this.renderer.width)
   }
 
+  private railsRoom(): number {
+    return (
+      (this.listPane.visible ? this.listPane.width : 0) +
+      (this.panelPane.visible ? this.panelPane.width : 0)
+    )
+  }
+
+  private diffRoom(): number {
+    const measured = this.view.paneWidth()
+    const settled = this.renderer.width - this.railsRoom() - measured
+    if (settled >= 0 && settled < DIFF_CHROME_MOST) this.chrome = settled
+    return Math.max(DIFF_FLOOR, this.renderer.width - this.railsRoom() - this.chrome)
+  }
+
   columns(): number {
     return this.renderer.width
   }
@@ -1416,7 +1486,7 @@ export class Screen {
     const shown = shownOf(state)
     if (shown === undefined) return
     const patch = shown.patch
-    this.view.setWrap(state.wrap)
+    this.view.setWrap(state.wrap, this.diffRoom())
     this.view.setPan(state.pan)
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
     this.view.pick(state.picked)
@@ -1444,6 +1514,7 @@ export class Screen {
     this.body.add(this.panelPane)
     stack(this.compose, [this.composeTitle, this.composeQuoted, this.composeBody, this.composeActions])
     stack(renderer.root, [
+      this.cramped,
       this.header,
       this.body,
       this.footer,

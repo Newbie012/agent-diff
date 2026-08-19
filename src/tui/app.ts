@@ -125,6 +125,7 @@ import { upgradeHint } from "./upgrade.ts"
 export const LEAVING_MS = 3000
 const LOOK_MS = 110
 const LEAVING_SAID = "press ctrl+c again to leave"
+const NOTHING_WRITTEN = "nothing written yet"
 
 const layersAsk = (state: TuiState): string => {
   if (state.layers.length === 0) {
@@ -736,7 +737,12 @@ export class App {
     }
     const was = writesInto(this.state.screen)
     const now = writesInto(next.screen)
-    if (was === now) return
+    if (was === now) {
+      if (now && next.draftAt !== this.state.draftAt) {
+        Effect.runSync(this.display.write(next.draft))
+      }
+      return
+    }
     if (now) Effect.runSync(this.display.write(next.draft))
     Effect.runSync(this.display.writeOn(now))
   }
@@ -1362,7 +1368,11 @@ export class App {
   private sendReply(to: string): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      if (branch === undefined || this.state.draft.length === 0) return
+      if (branch === undefined) return
+      if (this.state.draft.trim().length === 0) {
+        this.commit(withNotice(this.state, NOTHING_WRITTEN))
+        return
+      }
       yield* submitReply({
         repo: this.repo,
         branch: branch.branch,
@@ -1372,7 +1382,7 @@ export class App {
         at: new Date().toISOString(),
       })
       const sent = yield* this.loadSent(branch.branch)
-      this.commit(withNotice(withSent({ ...this.state, replyTo: undefined }, sent), "sent to the agent"))
+      this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
     })
   }
 
@@ -1402,7 +1412,11 @@ export class App {
       const patch = selectedPatch(this.state)
       const branch = selectedBranch(this.state)
       const [from, to] = selectionRange(this.state)
-      if (patch === undefined || branch === undefined || this.state.draft.length === 0) return
+      if (patch === undefined || branch === undefined) return
+      if (this.state.draft.trim().length === 0) {
+        this.commit(withNotice(this.state, NOTHING_WRITTEN))
+        return
+      }
       const anchor = anchorFor(patch, from, to)
       if (Option.isNone(anchor)) {
         this.commit(withNotice(this.state, "nothing selected"))
@@ -1420,10 +1434,18 @@ export class App {
         at: new Date().toISOString(),
       })
       const sent = yield* this.loadSent(branch.branch)
-      this.commit(withNotice(withSent(this.state, sent), "sent to the agent"))
+      this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
     })
   }
 }
+
+const sentAway = (state: TuiState): TuiState => ({
+  ...state,
+  screen: "review",
+  draft: "",
+  draftAt: "",
+  replyTo: undefined,
+})
 
 const turnedOver = (state: TuiState): TuiState => ({
   ...state,

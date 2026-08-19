@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import { palette } from "../tui/index.ts"
 
 const twoFiles = {
   files: [
@@ -54,7 +53,7 @@ describe("moving between the file list and the diff", () => {
     await driver.screen.pressKeys(["j"])
 
     // ASSERT
-    const cursor = await driver.screen.findHighlighted(palette.cursor)
+    const cursor = await driver.screen.findUnderCursor()
     expect(cursor.join(" ")).toContain("const b = 2")
   })
 
