@@ -394,6 +394,10 @@
   dir: ""
   intents:
     - the-end-of-the-files
+"@eliya-oss/agent-diff@0.1.0-alpha.87":
+  dir: ""
+  intents:
+    - marking-a-file-reviewed
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
