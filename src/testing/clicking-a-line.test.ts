@@ -57,7 +57,7 @@ describe("putting the cursor on a line with the mouse", () => {
     const before = await driver.screen.paintedTop()
 
     // ACT
-    await driver.screen.pressKeys([...Array.from({ length: 40 }, () => "ARROW_DOWN")])
+    await driver.screen.pressKeys(Array.from({ length: 40 }, () => "ARROW_DOWN"))
 
     // ASSERT
     expect(await driver.screen.paintedTop()).toBeGreaterThan(before)

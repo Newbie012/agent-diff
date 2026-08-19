@@ -33,6 +33,13 @@ installed with one symlink.
 
 ## Implementation Decisions
 
+- **Every release says what changed, and the saying is kept.** The notes for a release were written
+  once and thrown away by the next one, and nothing gathered them, so the only record of what a
+  version did was the release note nobody had kept and the commit log. `CHANGELOG.md` is written
+  from the ledger at every release and holds every version, newest first, and the same entry is
+  what the release on GitHub says above the install line.
+
+
 ### Owns
 
 The runtime requirement and how it is satisfied, the store root, and the agent skill's
