@@ -30,8 +30,6 @@ export {
   reviewProgress,
   sentIn,
   saveReport,
-  saveWrap,
-  saveSticky,
   commentIn,
   readPreference,
   readPreferences,
@@ -61,7 +59,7 @@ export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
 export type { Change, InitReport, SkillReport } from "./init.ts"
 export { searchBranch, searchIn } from "./search.ts"
 export type { Match } from "./search.ts"
-export { layersIn, listLayers, setLayers, showLayers } from "./layers.ts"
+export { layersIn, setLayers, showLayers } from "./layers.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
 export {
   answerComment,

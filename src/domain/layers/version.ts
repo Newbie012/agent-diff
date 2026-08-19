@@ -1,7 +1,6 @@
-import { Option } from "effect"
 import type { Patch } from "../patch/index.ts"
-import { codeBlocks, coverage, spansOf, withFullCoverage } from "./coverage.ts"
-import type { Layer, Layers, LayersStatus } from "./model.ts"
+import { coverage, spansOf } from "./coverage.ts"
+import type { Layers, LayersStatus } from "./model.ts"
 
 export const statusOf = (
   patches: ReadonlyArray<Patch>,
@@ -23,28 +22,4 @@ export const statusOf = (
     partial: gap.partial,
     total: gap.total,
   }
-}
-
-export const reviseFor = (
-  previous: Layers,
-  branchHead: string,
-  patches: ReadonlyArray<Patch>,
-  written: string,
-): Layers => {
-  const present = new Set(patches.map((patch) => patch.path))
-  const kept: ReadonlyArray<Layer> = previous.layers
-    .map((layer) => ({
-      ...layer,
-      blocks: layer.blocks.filter((block) => block.kind === "prose" || present.has(block.path)),
-    }))
-    .filter((layer) => codeBlocks(layer).length > 0)
-
-  return withFullCoverage(patches, {
-    ...previous,
-    version: previous.version + 1,
-    parent: Option.some(previous.version),
-    head: branchHead,
-    written,
-    layers: kept,
-  })
 }

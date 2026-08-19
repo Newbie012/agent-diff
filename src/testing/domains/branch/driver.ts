@@ -51,10 +51,6 @@ export class BranchTestDriver {
     return found.trim()
   }
 
-  async switchTo(branch: CreatedBranch, name: string): Promise<void> {
-    await this.state.git(branch.worktree, ["checkout", "-q", "-b", name])
-  }
-
   async commitAll(branch: CreatedBranch, message: string): Promise<void> {
     await this.state.git(branch.worktree, ["add", "-A"])
     await this.state.git(branch.worktree, ["commit", "-q", "-m", message])
@@ -66,11 +62,6 @@ export class BranchTestDriver {
 
   async setOwnFile(path: string, lines: ReadonlyArray<string>): Promise<void> {
     await this.write(this.state.repo, path, lines)
-  }
-
-  async commitOwn(message: string): Promise<void> {
-    await this.state.git(this.state.repo, ["add", "-A"])
-    await this.state.git(this.state.repo, ["commit", "-q", "-m", message])
   }
 
   ownPath(): Promise<string> {

@@ -331,7 +331,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "select.shrink",
     panes: ["diff"],
-    title: "Take the line above into the selection",
+    title: "Drop the last line from the selection",
     category: "Selecting",
     keys: ["shift+up"],
     screens: ["review"],
@@ -706,9 +706,6 @@ export const actionFor = (screen: Screen, key: string, pane?: Pane): Action | un
   const here = pane === undefined ? undefined : found.find((entry) => entry.panes.includes(pane))
   return (here ?? found[0])?.action
 }
-
-export const keyFor = (screen: Screen, action: Action): string =>
-  commandsFor(screen).find((entry) => entry.action === action)?.keys[0] ?? ""
 
 const GLYPHS: Readonly<Record<string, string>> = {
   up: "↑",

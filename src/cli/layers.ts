@@ -16,7 +16,7 @@ import {
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import { basedOn, patchesOf, readingOf, type BranchReading } from "./commands.ts"
+import { basedOn, patchesOf, type BranchReading } from "./commands.ts"
 import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
 
 const STALE_ADVICE =
@@ -143,7 +143,7 @@ const parsed = (text: string): Option.Option<Record<string, unknown>> => {
   }
 }
 
-export const readLayers = Effect.fn("Cli.readLayers")(function* (text: string) {
+const readLayers = Effect.fn("Cli.readLayers")(function* (text: string) {
   const document = yield* Option.match(parsed(text), {
     onNone: () => new MalformedLayers({ reason: "the layers is not a JSON object" }),
     onSome: Effect.succeed,
@@ -292,11 +292,4 @@ export const layersIn = Effect.fn("Cli.layersIn")(function* (reading: BranchRead
     rebased: found.value.base !== worktree.base,
     summary: found.value.summary,
   }
-})
-
-export const listLayers = Effect.fn("Cli.listLayers")(function* (
-  repo: string,
-  branch: string,
-) {
-  return yield* layersIn(yield* readingOf(repo, branch))
 })

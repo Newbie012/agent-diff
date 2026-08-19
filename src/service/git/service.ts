@@ -6,7 +6,7 @@ import type { DiffStat, Worktree } from "./model.ts"
 import { gitOrEmpty } from "./run.ts"
 
 const GREP_CONTEXT = 2
-const AT_ONCE = 8
+export const AT_ONCE = 8
 
 const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "main"]
 

@@ -1,4 +1,4 @@
-import type { VouchedFile, Vouches } from "./model.ts"
+import type { Vouches } from "./model.ts"
 
 export const isVouched = (vouches: Vouches, path: string, blob: string): boolean =>
   vouches[path] === blob
@@ -10,6 +10,3 @@ export const vouch = (vouches: Vouches, path: string, blob: string): Vouches => 
   }
   return { ...vouches, [path]: blob }
 }
-
-export const vouchedCount = (vouches: Vouches, files: ReadonlyArray<VouchedFile>): number =>
-  files.filter((file) => isVouched(vouches, file.path, file.blob)).length
