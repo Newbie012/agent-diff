@@ -235,7 +235,10 @@ export const vouchIn = Effect.fn("Cli.vouchIn")(function* (reading: BranchReadin
 
   const current = yield* store.state(reading.worktree.path)
   const next = vouch(current.vouches, file, blob)
-  yield* store.saveState(reading.worktree.path, { ...current, vouches: next })
+  yield* store.changeState(reading.worktree.path, (was) => ({
+    ...was,
+    vouches: vouch(was.vouches, file, blob),
+  }))
 
   const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
   return {
@@ -408,7 +411,9 @@ export const anchorIn = Effect.fn("Cli.anchorIn")(function* (
   const first = rows[0]
   const last = rows.at(-1)
   const anchor =
-    first === undefined || last === undefined ? Option.none() : anchorFor(resolved, first, last)
+    first === undefined || last === undefined
+      ? Option.none()
+      : anchorFor(resolved, first, last, request.side)
 
   return yield* Option.match(anchor, {
     onNone: () => new UnselectableRange({ file: request.file, start: request.start, end: request.end }),
@@ -468,7 +473,10 @@ export const submitReply = Effect.fn("Cli.submitReply")(function* (request: Repl
   yield* store.submit(worktree.path, batch)
   const current = yield* store.state(worktree.path)
   if (Object.hasOwn(current.settled, root)) {
-    yield* store.saveState(worktree.path, { ...current, settled: without(current.settled, root) })
+    yield* store.changeState(worktree.path, (was) => ({
+      ...was,
+      settled: without(was.settled, root),
+    }))
   }
   return batch
 })
@@ -668,16 +676,14 @@ export const setBase = Effect.fn("Cli.setBase")(function* (
 ) {
   const store = yield* Store
   const based = yield* baseFor(repo, branch, base)
-  const current = yield* store.state(based.worktree.path)
-  yield* store.saveState(based.worktree.path, { ...current, base })
+  yield* store.changeState(based.worktree.path, (was) => ({ ...was, base }))
   return { branch, base: based.base, basis: based.basis }
 })
 
 export const clearBase = Effect.fn("Cli.clearBase")(function* (repo: string, branch: string) {
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
-  const current = yield* store.state(worktree.path)
-  yield* store.saveState(worktree.path, { ...current, base: "" })
+  yield* store.changeState(worktree.path, (was) => ({ ...was, base: "" }))
   const based = yield* baseFor(repo, branch)
   return { branch, base: based.base, basis: based.basis }
 })
@@ -698,6 +704,6 @@ export const markRead = Effect.fn("Cli.markRead")(function* (
   if (owed.length === 0) return { id, unread: 0 }
   const read = { ...current.read }
   for (const one of owed) read[one.id] = one.seen
-  yield* store.saveState(worktree.path, { ...current, read })
+  yield* store.changeState(worktree.path, (was) => ({ ...was, read }))
   return { id, unread: 0 }
 })

@@ -109,6 +109,7 @@ const sameCommit = (one: string, two: string): boolean => {
 
 const commentOf = (draft: StoredDraft): ForgeComment => ({
   path: draft.anchor.path,
+  start: draft.anchor.start,
   line: draft.anchor.end,
   side: draft.anchor.side,
   body: draft.body,
@@ -128,6 +129,9 @@ export const dispatchDrafts = Effect.fn("Cli.dispatchDrafts")(function* (
     return yield* new PullMoved({ branch, was: worktree.head, now: head })
   }
   const sent = yield* forge.review(repo, branch, held.map(commentOf))
-  yield* store.saveDrafts(worktree.path, [])
-  return { sent: sent.landed.length, url: sent.url, held: 0 } satisfies Dispatched
+  const gone = new Set(held.map((one) => one.id))
+  const now = yield* store.drafts(worktree.path)
+  const waiting = now.filter((one) => !gone.has(one.id))
+  yield* store.saveDrafts(worktree.path, waiting)
+  return { sent: sent.landed.length, url: sent.url, held: waiting.length } satisfies Dispatched
 })

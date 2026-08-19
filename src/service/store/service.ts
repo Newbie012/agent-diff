@@ -1,6 +1,6 @@
-import { mkdir, readFile, appendFile, rename, stat, writeFile } from "node:fs/promises"
+import { mkdir, readFile, appendFile, rename, rm, stat, writeFile } from "node:fs/promises"
 import { join, resolve } from "node:path"
-import { Context, Effect, Layer, Option, Schema } from "effect"
+import { Context, Effect, Layer, Option, Schedule, Schema } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
 import {
   emptyBranchState,
@@ -38,6 +38,10 @@ type Shape = {
     worktreePath: string,
     state: BranchState,
   ) => Effect.Effect<void, StoreUnwritable>
+  readonly changeState: (
+    worktreePath: string,
+    change: (was: BranchState) => BranchState,
+  ) => Effect.Effect<void, StoreUnreadable | StoreUnwritable>
   readonly saveReport: (stamp: string, text: string) => Effect.Effect<string, StoreUnwritable>
   readonly settings: Effect.Effect<Settings, StoreUnreadable>
   readonly saveSettings: (next: Settings) => Effect.Effect<void, StoreUnwritable>
@@ -385,6 +389,40 @@ const inboxOps = (root: string) => {
   return { submit, inbox }
 }
 
+const LOCK_TRIES = 60
+const LOCK_WAIT_MS = 25
+const LOCK_STALE_MS = 5000
+
+const held = (path: string): Effect.Effect<void, StoreUnwritable> =>
+  Effect.tryPromise({
+    try: () => writeFile(path, `${process.pid}`, { flag: "wx" }),
+    catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+  })
+
+const stale = (path: string): Effect.Effect<boolean> =>
+  Effect.promise(() =>
+    stat(path).then(
+      (found) => Date.now() - found.mtimeMs > LOCK_STALE_MS,
+      () => false,
+    ),
+  )
+
+const stolen = (path: string, cause: StoreUnwritable): Effect.Effect<void, StoreUnwritable> =>
+  Effect.flatMap(stale(path), (old) =>
+    old
+      ? Effect.flatMap(Effect.promise(() => rm(path, { force: true })), () => held(path))
+      : Effect.fail(cause),
+  )
+
+const taken = (path: string): Effect.Effect<void, StoreUnwritable> =>
+  Effect.retry(
+    held(path).pipe(Effect.catchTag("StoreUnwritable", (cause) => stolen(path, cause))),
+    { times: LOCK_TRIES, schedule: Schedule.spaced(LOCK_WAIT_MS) },
+  )
+
+const freed = (path: string): Effect.Effect<void> =>
+  Effect.promise(() => rm(path, { force: true }))
+
 const stateOps = (root: string) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
     const key = yield* keyIn(root, worktreePath)
@@ -409,12 +447,29 @@ const stateOps = (root: string) => {
     })
   })
 
-  return { state, saveState }
+  const changeState = Effect.fn("Store.changeState")(function* (
+    worktreePath: string,
+    change: (was: BranchState) => BranchState,
+  ) {
+    const key = yield* keyIn(root, worktreePath)
+    yield* ensureDir(branchDir(root, key))
+    const lock = `${statePath(root, key)}.lock`
+    yield* Effect.acquireUseRelease(taken(lock), () => under(worktreePath, change), () => freed(lock))
+  })
+
+  const under = Effect.fn("Store.under")(function* (
+    worktreePath: string,
+    change: (was: BranchState) => BranchState,
+  ) {
+    yield* saveState(worktreePath, change(yield* state(worktreePath)))
+  })
+
+  return { state, saveState, changeState }
 }
 
 const makeStore = (root: string): Shape => {
   const { submit, inbox } = inboxOps(root)
-  const { state, saveState } = stateOps(root)
+  const { state, saveState, changeState } = stateOps(root)
   const talk = answerOps(root)
   const cursors = cursorOps(state, inbox, talk.answers)
   return {
@@ -424,6 +479,7 @@ const makeStore = (root: string): Shape => {
     inbox,
     state,
     saveState,
+    changeState,
     saveReport: reportOps(root),
     ...settingsOps(root),
     ...upgradeOps(root),

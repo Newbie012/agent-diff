@@ -84,7 +84,7 @@ const reportActions = (full: boolean): StyledText =>
 const actionsText = (): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("send it")}`
 const SNIPPET_LINES = 4
-const PALETTE_KEY = 7
+const PALETTE_KEY = 11
 const PALETTE_TITLE = 60
 const PALETTE_GAP = 2
 const PALETTE_CHROME = 4
@@ -131,8 +131,11 @@ const longestName = (state: TuiState): number =>
 const longestState = (state: TuiState): number =>
   Math.max(0, ...state.branches.map((branch) => stateCell(state, branch).length))
 
+const keysOf = (entry: Command): string =>
+  entry.keys.map((one) => displayKey(one)).join(" ")
+
 const commandRow = (entry: Command, room: number): string => {
-  const key = clip(displayKey(entry.keys[0] ?? ""), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
+  const key = clip(keysOf(entry), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
   const left = Math.max(1, Math.min(PALETTE_TITLE, room - PALETTE_KEY - entry.category.length - PALETTE_GAP))
   return `${key}${clip(entry.title, left - PALETTE_GAP).padEnd(left)}${entry.category}`
 }
@@ -662,16 +665,24 @@ const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<T
   return chips
 }
 
+const chipWidth = (chip: ReadonlyArray<TextChunk>): number =>
+  chip.reduce((total, chunk) => total + chunk.text.length, 0)
+
+const WAYS_OUT = 2
+
 const keptWithin = (chunks: ReadonlyArray<TextChunk>, room: number): ReadonlyArray<TextChunk> => {
+  const chips = paired(chunks)
+  if (chips.length <= WAYS_OUT) return chips.flat()
+  const ways = chips.slice(-WAYS_OUT)
   const kept: Array<ReadonlyArray<TextChunk>> = []
-  let used = 0
-  for (const chip of paired(chunks).toReversed()) {
-    const width = chip.reduce((total, chunk) => total + chunk.text.length, 0)
+  let used = ways.reduce((total, chip) => total + chipWidth(chip), 0)
+  for (const chip of chips.slice(0, -WAYS_OUT)) {
+    const width = chipWidth(chip)
     if (used + width > room) break
-    kept.unshift(chip)
+    kept.push(chip)
     used += width
   }
-  return kept.flat()
+  return [...kept, ...ways].flat()
 }
 
 const CHIP_CHUNKS = 3

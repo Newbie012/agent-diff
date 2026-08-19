@@ -11,6 +11,7 @@ export type Pull = {
 
 export type ForgeComment = {
   readonly path: string
+  readonly start: number
   readonly line: number
   readonly side: "old" | "new"
   readonly body: string
@@ -149,16 +150,41 @@ const head = Effect.fn("Forge.head")(function* (repo: string, branch: string) {
   return (yield* named(repo, branch)).headRefOid
 })
 
+const sideName = (side: ForgeComment["side"]): string => (side === "old" ? "LEFT" : "RIGHT")
+
+const commentBody = (one: ForgeComment): Record<string, unknown> => ({
+  path: one.path,
+  line: one.line,
+  side: sideName(one.side),
+  body: one.body,
+  ...(one.start < one.line ? { start_line: one.start, start_side: sideName(one.side) } : {}),
+})
+
 const bodyFor = (comments: ReadonlyArray<ForgeComment>): string =>
-  JSON.stringify({
-    event: "COMMENT",
-    comments: comments.map((one) => ({
-      path: one.path,
-      line: one.line,
-      side: one.side === "old" ? "LEFT" : "RIGHT",
-      body: one.body,
-    })),
-  })
+  JSON.stringify({ event: "COMMENT", comments: comments.map(commentBody) })
+
+const Landed = Schema.Struct({
+  comments: Schema.optionalKey(
+    Schema.Array(Schema.Struct({ path: Schema.String, line: Schema.optionalKey(Schema.Int) })),
+  ),
+})
+
+const readLanded = Schema.decodeUnknownEffect(Landed)
+
+const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArray<string> => {
+  const parsed = Effect.runSync(
+    Effect.orElseSucceed(
+      Effect.flatMap(
+        Effect.try(() => JSON.parse(said) as unknown),
+        (value) => Effect.orElseSucceed(readLanded(value), () => ({ comments: undefined })),
+      ),
+      () => ({ comments: undefined }),
+    ),
+  )
+  const back = parsed.comments
+  if (back === undefined) return asked.map((one) => `${one.path}:${one.line}`)
+  return back.map((one) => `${one.path}:${one.line ?? 0}`)
+}
 
 const review = Effect.fn("Forge.review")(function* (
   repo: string,
@@ -168,8 +194,8 @@ const review = Effect.fn("Forge.review")(function* (
   const pull = yield* named(repo, branch)
   const owner = yield* gh(repo, ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"])
   const route = `repos/${owner.trim()}/pulls/${pull.number}/reviews`
-  yield* gh(repo, ["api", "--method", "POST", route, "--input", "-"], bodyFor(comments))
-  return { landed: comments.map((one) => `${one.path}:${one.line}`), url: pull.url }
+  const said = yield* gh(repo, ["api", "--method", "POST", route, "--input", "-"], bodyFor(comments))
+  return { landed: landedIn(said, comments), url: pull.url }
 })
 
 export const ForgeLive: Layer.Layer<Forge> = Layer.succeed(Forge)({
