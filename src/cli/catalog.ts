@@ -39,6 +39,13 @@ const branchOf: OptionSpec = {
   about: "Branch to act on, as `branch list` reports it. Give this with --repo, or give --worktree",
 }
 
+export const fieldsOption: OptionSpec = {
+  name: "fields",
+  required: false,
+  value: "names",
+  about: "Keep only these fields of the answer, comma separated. An unknown name is refused",
+}
+
 export const addressing: ReadonlyArray<OptionSpec> = [worktreeOf, repoOf, branchOf]
 
 const baseOf: OptionSpec = {
@@ -92,7 +99,12 @@ const FOLLOW_UP = "Follow up"
 const DRAFTS = "Draft a review of somebody else's pull request"
 const SET_UP = "Set up"
 
-export const catalog: ReadonlyArray<CommandSpec> = [
+const withFields = (command: CommandSpec): CommandSpec =>
+  command.dataKey.length === 0
+    ? command
+    : { ...command, options: [...command.options, fieldsOption] }
+
+const commands: ReadonlyArray<CommandSpec> = [
   {
     name: "branch list",
     about: "Branches with changes against their merge base, and how large each is",
@@ -493,10 +505,27 @@ export const catalog: ReadonlyArray<CommandSpec> = [
   },
 ]
 
+export const catalog: ReadonlyArray<CommandSpec> = commands.map(withFields)
+
 export const commandNames: ReadonlyArray<string> = catalog.map((command) => command.name)
 
 export const findCommand = (name: string): CommandSpec | undefined =>
   catalog.find((command) => command.name === name)
+
+const VALUED_ANYWHERE: ReadonlyArray<string> = ["fields", "id", "at"]
+
+const KNOWN_ANYWHERE: ReadonlyArray<string> = [...VALUED_ANYWHERE, "help", "json", "run", "quiet"]
+
+export const valuedIn = (name: string): ReadonlySet<string> =>
+  new Set([
+    ...VALUED_ANYWHERE,
+    ...(findCommand(name)?.options ?? [])
+      .filter((option) => option.value !== "flag")
+      .map((option) => option.name),
+  ])
+
+export const knownIn = (name: string): ReadonlySet<string> =>
+  new Set([...KNOWN_ANYWHERE, ...(findCommand(name)?.options ?? []).map((option) => option.name)])
 
 export const verbsUnder = (noun: string): ReadonlyArray<string> =>
   commandNames.filter((name) => name.startsWith(`${noun} `))
