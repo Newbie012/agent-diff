@@ -36,6 +36,13 @@ says what happened, the driver knows how.
 
 ## Implementation Decisions
 
+- **A file the branch deletes is deleted, not emptied.** The driver could only write files, so a
+  test that meant to delete one wrote an empty line instead — which git reads as a change, and a
+  change has a side the deletion does not. Three attempts at reproducing a bug about deleted files
+  passed against the broken code before this was noticed. `gone` removes the file, and the shapes
+  every property runs over include a branch that deletes one.
+
+
 - **The driver presses the keys the review is bound to.** The mock behind it knows a fixed set of
   names and sends anything else as text, so `pressKeys(["ctrl+s"])` typed six letters and a test
   that meant to submit a comment passed without submitting one. The driver translates what the

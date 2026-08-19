@@ -61,6 +61,19 @@ const removals: Shape = {
   ],
 }
 
+const deleted: Shape = {
+  name: "a file the branch deletes outright",
+  files: [
+    {
+      path: "src/old-table.ts",
+      before: ["export const one = 1", ...body(8, "old"), "export const two = 2"],
+      after: [],
+      gone: true,
+    },
+    changed("src/new-table.ts", 4),
+  ],
+}
+
 const single: Shape = {
   name: "one file with one changed line",
   files: [changed("src/one.ts", 3)],
@@ -85,4 +98,5 @@ export const shapes: ReadonlyArray<Shape> = [
   buried,
   wide,
   removals,
+  deleted,
 ]
