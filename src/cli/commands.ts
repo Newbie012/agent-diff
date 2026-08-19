@@ -455,10 +455,20 @@ export const listPatches = Effect.fn("Cli.listPatches")(function* (
   repo: string,
   branch: string,
   context = CONTEXT,
+  only?: string,
 ) {
   const worktree = yield* findBranch(repo, branch)
   const git = yield* Git
-  return parsePatches(yield* git.diff(worktree, context))
+  return parsePatches(yield* git.diff(worktree, context, only))
+})
+
+export const patchIn = Effect.fn("Cli.patchIn")(function* (
+  worktree: Worktree,
+  context: number,
+  only?: string,
+) {
+  const git = yield* Git
+  return parsePatches(yield* git.diff(worktree, context, only))
 })
 
 export type PendingComment = {
