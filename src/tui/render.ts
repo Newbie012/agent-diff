@@ -740,7 +740,7 @@ const headerParts = (
   pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
   state.vouched.length === 0 ? "" : reviewedCount(state),
   contextLabel(state.context),
-  hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} lines hidden`,
+  hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} ${hiddenLines(state) === 1 ? "line" : "lines"} hidden`,
   pan === 0 ? "" : `→ ${pan} columns`,
 ]
 

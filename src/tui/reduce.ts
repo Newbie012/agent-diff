@@ -521,6 +521,11 @@ const revealsAfter = (state: TuiState, gap: number, lines: number): TuiState["re
   return lines <= 0 ? others : [...others, { file: path, gap, lines }]
 }
 
+export const gapShown = (state: TuiState, gap: number, lines: number): TuiState => ({
+  ...state,
+  revealed: revealsAfter(state, gap, lines),
+})
+
 export const gapOpened = (state: TuiState, gap: number, delta: number): TuiState => {
   const path = state.patches[state.patchIndex]?.path ?? ""
   const now = state.revealed.find((entry) => entry.file === path && entry.gap === gap)?.lines ?? 0
