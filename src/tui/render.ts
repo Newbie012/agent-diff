@@ -320,7 +320,7 @@ type FoundParts = {
   readonly choices: TextRenderable
 }
 
-const asking = (renderer: CliRenderer, id: string): TextareaRenderable =>
+const asking = (renderer: CliRenderer, id: string, placeholder = "Type to filter…"): TextareaRenderable =>
   new TextareaRenderable(renderer, {
     id,
     height: ROW_HEIGHT,
@@ -328,7 +328,7 @@ const asking = (renderer: CliRenderer, id: string): TextareaRenderable =>
     flexShrink: 0,
     marginLeft: GUTTER_X,
     marginRight: GUTTER_X,
-    placeholder: "Type to filter…",
+    placeholder,
     placeholderColor: palette.faint,
     backgroundColor: palette.panel,
     focusedBackgroundColor: palette.panel,
@@ -419,7 +419,7 @@ const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
 const makeFoundParts = (renderer: CliRenderer): FoundParts => {
   const box = makePalette(renderer)
   const title = bar(renderer, "found-title", palette.faint)
-  const query = asking(renderer, "found-query")
+  const query = asking(renderer, "found-query", "Type what to look for…")
   const peek = bar(renderer, "found-peek", palette.muted)
   const choices = makeChoices(renderer)
   box.id = "found"
@@ -848,11 +848,18 @@ type PanelLine = { readonly text: string; readonly tone: string; readonly here?:
 const restingOrHere = (focused: boolean): string =>
   focused ? palette.selection : palette.resting
 
+const FOUND_LEAST = 6
+
+const nothingYet = (state: TuiState, room: number): string => {
+  const wanted = state.query.trim()
+  if (wanted.length === 0 || state.term.length === 0) return "".padEnd(room)
+  return clip(` nothing else uses ${wanted}`, room).padEnd(room)
+}
+
 const foundTitle = (state: TuiState): string => {
-  const shown = shownMatches(state).length
   const all = state.matches.length
-  const said = shown === all ? `${all} elsewhere` : `${shown} of ${all} elsewhere`
-  return `${state.term}  ·  ${said}`
+  if (state.term.length === 0) return "Look for something"
+  return `${state.term}  ·  ${all === 1 ? "1 place" : `${all} places`} elsewhere`
 }
 
 type Block = { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> }
@@ -1543,11 +1550,15 @@ export class Screen {
       if (at === state.matchIndex) chosen = blocks.length
       blocks.push(blockOf(match, wide, at === state.matchIndex))
     }
-    const window = windowedBlocks(blocks, chosen, Math.max(3, most - PALETTE_CHROME))
-    this.foundChoices.content = new StyledText([...window.chunks])
+    const tall = Math.max(FOUND_LEAST, most - PALETTE_CHROME)
+    const window = windowedBlocks(blocks, chosen, tall)
+    this.foundChoices.content =
+      blocks.length === 0
+        ? new StyledText([fg(palette.faint)(nothingYet(state, wide))])
+        : new StyledText([...window.chunks])
     this.foundPeek.content = ""
     this.foundPeek.height = 0
-    this.found.height = Math.min(most, window.rows + PALETTE_CHROME)
+    this.found.height = Math.min(most, Math.max(FOUND_LEAST, window.rows) + PALETTE_CHROME)
     this.found.width = room
     this.found.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.found.top = panelTop(this.renderer.height, PANEL_FIFTH)

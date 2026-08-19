@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "node:child_process"
+import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { realpath } from "node:fs/promises"
 import { platform } from "node:os"
@@ -121,6 +121,7 @@ import { readSession, sessionOf, writeSession, type Session } from "./session.ts
 import { upgradeHint } from "./upgrade.ts"
 
 export const LEAVING_MS = 3000
+const LOOK_MS = 220
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTICE_MS = 2200
 
@@ -168,29 +169,7 @@ const COPIERS: Readonly<Record<string, ReadonlyArray<string>>> = {
 const wayland = (): ReadonlyArray<string> | undefined =>
   process.env["WAYLAND_DISPLAY"] === undefined ? undefined : ["wl-copy"]
 
-const PASTERS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  darwin: ["pbpaste"],
-  linux: ["xclip", "-selection", "clipboard", "-o"],
-}
-
-const PASTE_MS = 300
-const SEED_MOST = 120
-
-const clipped = (): string => {
-  if (!process.stdout.isTTY) return ""
-  const named = process.env["WAYLAND_DISPLAY"] === undefined ? PASTERS[platform()] : ["wl-paste"]
-  const [command, ...rest] = named ?? []
-  if (command === undefined) return ""
-  const read = spawnSync(command, [...rest], { encoding: "utf8", timeout: PASTE_MS })
-  return read.status === 0 ? (read.stdout ?? "") : ""
-}
-
-const seedFor = (picked: string | undefined): string => {
-  if (picked !== undefined && picked.trim().length > 0) return picked.trim()
-  const held = clipped().trim()
-  const one = held.split("\n")[0] ?? ""
-  return one.length > 0 && one.length <= SEED_MOST && one === held ? one : ""
-}
+const seedFor = (picked: string | undefined): string => picked?.trim() ?? ""
 
 const handOver = (text: string): void => {
   if (!process.stdout.isTTY) return
@@ -300,6 +279,7 @@ export class App {
   private readonly chosen: Record<string, boolean> = {}
   private selectingNow = false
   private leaving: number | undefined
+  private looking: ReturnType<typeof setTimeout> | undefined
   private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
@@ -337,6 +317,7 @@ export class App {
     renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
+    renderer.on("destroy", () => this.stopLooking())
     renderer.on("destroy", () => this.stopLighting())
     renderer.on("destroy", () => void getTreeSitterClient().destroy())
     renderer.on("destroy", () => this.stopPainting())
@@ -741,6 +722,7 @@ export class App {
     }
     if (!listens(this.state.screen) || clean === this.state.query) return
     this.commit({ ...this.state, query: clean, paletteIndex: 0 })
+    if (this.state.screen === "search") this.lookSoon(clean)
   }
 
   private readBack(text: string): void {
@@ -843,10 +825,31 @@ export class App {
     })
   }
 
+  private lookSoon(wanted: string): void {
+    this.stopLooking()
+    this.looking = setTimeout(() => {
+      this.looking = undefined
+      const asked = wanted.trim()
+      if (this.state.screen !== "search" || this.state.query.trim() !== asked) return
+      this.dispatchTask(asked.length === 0 ? this.forgetMatches() : this.lookFor(asked))
+    }, LOOK_MS)
+  }
+
+  private stopLooking(): void {
+    if (this.looking === undefined) return
+    clearTimeout(this.looking)
+    this.looking = undefined
+  }
+
+  private forgetMatches(): Work {
+    return Effect.sync(() => this.commit(withMatches(this.state, [], "")))
+  }
+
   private runFinder(): Work {
     return Effect.gen({ self: this }, function* () {
       const wanted = this.state.query.trim()
       if (wanted.length > 0 && wanted !== this.state.term) {
+        this.stopLooking()
         yield* this.lookFor(wanted)
         return
       }
