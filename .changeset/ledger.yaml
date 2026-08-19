@@ -430,3 +430,7 @@
   dir: ""
   intents:
     - reading-the-worktrees-together
+"@eliya-oss/agent-diff@0.1.0-alpha.95":
+  dir: ""
+  intents:
+    - preferences-that-stay
