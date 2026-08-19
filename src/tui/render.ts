@@ -97,21 +97,31 @@ const PANE_EDGES = 2
 const PANE_INSET = 1
 const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
-const BRANCH_TAIL = 45
+const BRANCH_FIXED = 36
+const STATE_MIN = 11
 const EMPTY_LIST = "  nothing to review. No worktree differs from the branch it started from."
 const MODAL_MARGIN = 4
 
 const shareOf = (width: number, least: number): number =>
   Math.max(least, Math.min(PANEL_MAX, Math.floor(width * PANEL_SHARE)))
 
-const homeWidth = (width: number, longest: number): number =>
+const homeWidth = (width: number, longest: number, said = STATE_MIN): number =>
   Math.max(
     0,
-    Math.min(width - FRAME_PAD * 2, Math.min(PANEL_MAX, Math.max(BRANCH_WIDTH, longest + BRANCH_TAIL))),
+    Math.min(
+      width - FRAME_PAD * 2,
+      Math.min(
+        PANEL_MAX,
+        Math.max(BRANCH_WIDTH, longest + BRANCH_FIXED + Math.max(STATE_MIN, said)),
+      ),
+    ),
   )
 
 const longestName = (state: TuiState): number =>
   Math.max(0, ...state.branches.map((branch) => branch.branch.length))
+
+const longestState = (state: TuiState): number =>
+  Math.max(0, ...state.branches.map((branch) => stateCell(state, branch).length))
 
 const commandRow = (entry: Command, room: number): string => {
   const key = clip(displayKey(entry.keys[0] ?? ""), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
@@ -646,7 +656,10 @@ type Cells = {
   readonly state: string
 }
 
-const nameRoom = (pane: number): number => Math.max(BRANCH_NAME_MIN, pane - BRANCH_TAIL)
+const nameRoom = (pane: number, longest = pane): number =>
+  Math.max(BRANCH_NAME_MIN, Math.min(longest, pane - BRANCH_FIXED - STATE_MIN))
+
+const stateRoom = (pane: number, name: number): number => Math.max(0, pane - name - BRANCH_FIXED)
 
 const columns = (cells: Cells, room: number): string =>
   `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.layers.padStart(8)}   ${cells.state}`
@@ -1324,7 +1337,8 @@ export class Screen {
   }
 
   private branchTable(state: TuiState): StyledText {
-    const room = nameRoom(this.homeRoom(state))
+    const pane = this.homeRoom(state)
+    const room = nameRoom(pane, longestName(state))
     if (state.branches.length === 0) return new StyledText([fg(palette.muted)(EMPTY_LIST)])
     const heading = [fg(palette.faint)(`${branchHeading(room)}\n\n`)]
     const rows = state.branches.flatMap((branch, index) => {
@@ -1337,7 +1351,7 @@ export class Screen {
         fg(palette.added)(cells.added),
         fg(palette.removed)(cells.gone),
         fg(palette.accent)(`  ${cells.layers.padStart(8)}`),
-        fg(palette.attention)(`   ${stateCell(state, branch)}\n`),
+        fg(palette.attention)(`   ${clip(stateCell(state, branch), stateRoom(pane, room))}\n`),
       ]
     })
     return new StyledText([...heading, ...rows, ...unaskedForge(state)])
@@ -1358,7 +1372,7 @@ export class Screen {
   }
 
   private homeRoom(state: TuiState): number {
-    return homeWidth(this.renderer.width, longestName(state))
+    return homeWidth(this.renderer.width, longestName(state), longestState(state))
   }
 
   private homeKeys(state: TuiState): StyledText {
