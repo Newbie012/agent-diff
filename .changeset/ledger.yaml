@@ -414,3 +414,7 @@
   dir: ""
   intents:
     - what-the-layers-say-it-is
+"@eliya-oss/agent-diff@0.1.0-alpha.91":
+  dir: ""
+  intents:
+    - prose-on-a-line-that-went
