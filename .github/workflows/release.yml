@@ -98,7 +98,8 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          git add -A -- .changeset package.json
+          node scripts/changelog.ts
+          git add -A -- .changeset package.json CHANGELOG.md
           if git diff --cached --quiet; then
             echo "::error::pnpm version -r left the tree unchanged, so there is no release commit to record for $VERSION."
             exit 1
@@ -223,6 +224,10 @@ jobs:
         with:
           ref: v${{ needs.release.outputs.version }}
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
       - name: open the release for its binaries
         env:
           GH_TOKEN: ${{ github.token }}
@@ -233,11 +238,15 @@ jobs:
               echo "::notice::The release for v$VERSION is open."
               exit 0
             fi
+            {
+              node scripts/changelog.ts "$VERSION"
+              printf '\n---\n\nInstall with `brew install Newbie012/tap/adiff`, or `npm i -g @eliya-oss/agent-diff@alpha` if you would rather run it on Node. The binaries below need no runtime at all.\n'
+            } > /tmp/notes.md
             if gh release create "v$VERSION" \
               --verify-tag \
               --prerelease \
               --title "v$VERSION" \
-              --notes "Install with \`brew install Newbie012/tap/adiff\`, or \`npm i -g @eliya-oss/agent-diff@alpha\` if you would rather run it on Node. The binaries below need no runtime at all."; then
+              --notes-file /tmp/notes.md; then
               exit 0
             fi
             echo "::warning::Attempt $ATTEMPT of 5 to open the release for v$VERSION was turned down. Waiting, then trying again."
