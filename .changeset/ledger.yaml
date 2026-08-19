@@ -434,3 +434,7 @@
   dir: ""
   intents:
     - preferences-that-stay
+"@eliya-oss/agent-diff@0.1.0-alpha.96":
+  dir: ""
+  intents:
+    - leaving-with-ctrl-c
