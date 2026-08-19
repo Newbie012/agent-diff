@@ -55,6 +55,7 @@ import {
   composeRoom as composeText,
   panelEntries,
   panelShown,
+  shownMatches,
   reviewWidth,
   type PanelEntry,
   type PanelSection,
@@ -315,6 +316,7 @@ type PaletteParts = {
 type FoundParts = {
   readonly box: BoxRenderable
   readonly title: TextRenderable
+  readonly query: TextareaRenderable
   readonly peek: TextRenderable
   readonly choices: TextRenderable
 }
@@ -418,13 +420,15 @@ const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
 const makeFoundParts = (renderer: CliRenderer): FoundParts => {
   const box = makePalette(renderer)
   const title = bar(renderer, "found-title", palette.faint)
+  const query = asking(renderer, "found-query")
   const peek = bar(renderer, "found-peek", palette.muted)
   const choices = makeChoices(renderer)
   box.id = "found"
   box.add(title)
+  box.add(query)
   box.add(choices)
   box.add(peek)
-  return { box, title, peek, choices }
+  return { box, title, query, peek, choices }
 }
 
 const FONTS = ["tiny", "block", "shade", "slick", "huge", "grid", "pallet"] as const
@@ -845,6 +849,28 @@ type PanelLine = { readonly text: string; readonly tone: string; readonly here?:
 const restingOrHere = (focused: boolean): string =>
   focused ? palette.selection : palette.resting
 
+const foundTitle = (state: TuiState): string => {
+  const shown = shownMatches(state).length
+  const all = state.matches.length
+  const said = shown === all ? `${all} elsewhere` : `${shown} of ${all} elsewhere`
+  return `${state.term}  ·  ${said}`
+}
+
+const MATCH_SHARE = 0.45
+
+const matchRow = (
+  match: { readonly changed: boolean; readonly path: string; readonly line: number; readonly text: string },
+  room: number,
+): string => {
+  const lead = match.changed ? marks().comment : " "
+  const where = `:${match.line}`
+  const said = match.text.trim()
+  const forPath = Math.max(8, Math.floor(room * MATCH_SHARE) - where.length)
+  const path = clipHead(match.path, forPath)
+  const left = `${lead} ${path}${where}`
+  return `${left}  ${clip(said, Math.max(1, room - left.length - 2))}`
+}
+
 const panelWhere = (entry: PanelEntry, room: number): string => {
   const where = `:${entry.comment.end}`
   return `${clipPath(entry.comment.file, Math.max(4, room - where.length))}${where}`
@@ -941,6 +967,7 @@ export class Screen {
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
   private readonly keysQuery: TextareaRenderable
+  private readonly foundQuery: TextareaRenderable
   private readonly keysChoices: TextRenderable
   private readonly found: BoxRenderable
   private readonly foundTitle: TextRenderable
@@ -994,6 +1021,7 @@ export class Screen {
     this.keys = modals.keys.box
     this.keysTitle = modals.keys.title
     this.keysQuery = modals.keys.query
+    this.foundQuery = modals.found.query
     this.keysChoices = modals.keys.choices
     this.found = modals.found.box
     this.foundTitle = modals.found.title
@@ -1084,6 +1112,7 @@ export class Screen {
 
   asking(screen: TuiState["screen"]): TextareaRenderable | undefined {
     if (screen === "palette") return this.paletteQuery
+    if (screen === "search") return this.foundQuery
     return screen === "keys" ? this.keysQuery : undefined
   }
 
@@ -1459,19 +1488,16 @@ export class Screen {
     }
     const room = panelWidth(this.renderer.width)
     const here = matchHere(state)
-    this.foundTitle.content = `${state.term}  ·  ${state.matches.length} elsewhere`
+    this.foundTitle.content = foundTitle(state)
     const peekHigh = here?.around.length ?? 0
     const foundRoom = Math.min(
       panelRows(this.renderer.height, PANEL_FIFTH),
-      state.matches.length + peekHigh + PALETTE_CHROME,
+      shownMatches(state).length + peekHigh + PALETTE_CHROME,
     )
+    const wide = Math.max(1, room - MODAL_ROOM)
+    const shown = shownMatches(state)
     this.foundChoices.content = listText(
-      state.matches.map((match) =>
-        clip(
-          `${match.changed ? marks().comment : " "} ${match.path}:${match.line}  ${match.text}`,
-          Math.max(1, room - MODAL_ROOM),
-        ),
-      ),
+      shown.map((match) => matchRow(match, wide)),
       state.matchIndex,
       Math.max(1, foundRoom - peekHigh - PALETTE_CHROME),
     )
@@ -1482,7 +1508,7 @@ export class Screen {
     this.foundPeek.height = peekRows
     this.found.height = Math.min(
       panelRows(this.renderer.height, PANEL_FIFTH),
-      state.matches.length + peekRows + PALETTE_CHROME,
+      shownMatches(state).length + peekRows + PALETTE_CHROME,
     )
     this.found.width = room
     this.found.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))

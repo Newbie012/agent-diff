@@ -13,6 +13,7 @@ import {
   hunkStarts,
   onLayers,
   selectedPatch,
+  shownMatches,
   selectionRange,
   layerFile,
   layerFiles,
@@ -337,7 +338,7 @@ const openCompose = (state: TuiState): TuiState => {
 }
 
 const goBack = (state: TuiState): TuiState => {
-  if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "" }
+  if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "", query: "" }
   if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
   if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
   if (state.screen === "keys") return { ...state, screen: state.returnTo, query: "" }
@@ -348,7 +349,7 @@ const goBack = (state: TuiState): TuiState => {
 
 const walkMatches = (state: TuiState, delta: number): TuiState => ({
   ...state,
-  matchIndex: clamp(state.matchIndex + delta, 0, Math.max(0, state.matches.length - 1)),
+  matchIndex: clamp(state.matchIndex + delta, 0, Math.max(0, shownMatches(state).length - 1)),
 })
 
 const openPalette = (state: TuiState): TuiState => ({
@@ -673,6 +674,7 @@ export const withMatches = (state: TuiState, matches: TuiState["matches"], term:
   matches,
   matchIndex: 0,
   term,
+  query: "",
   selecting: false,
 })
 
