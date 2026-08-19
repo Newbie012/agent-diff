@@ -237,6 +237,12 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **The keys a terminal sends without being taught also move the review.** Paging and jumping were
+  bound to `ctrl+d`, `ctrl+u`, `g` and `G`, which are the right keys for anyone who already knows
+  them and no keys at all for anyone who does not. Page Up, Page Down, Home and End arrive from
+  every terminal and every keyboard, and pressing one and getting nothing reads as the review being
+  stuck. They do the same as the letters beside them.
+
 - **The count in the header counts the order the reviewer moves in.** It counted the file's place
   in the diff git handed over, while `[` and `]` walk the tree, so on a branch whose folders do not
   match git's ordering the number jumped — 127, then 1, then 131 — and said nothing about how far
