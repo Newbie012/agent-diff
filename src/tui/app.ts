@@ -126,6 +126,19 @@ export const LEAVING_MS = 3000
 const LOOK_MS = 110
 const LEAVING_SAID = "press ctrl+c again to leave"
 
+const layersAsk = (state: TuiState): string => {
+  if (state.layers.length === 0) {
+    return "Please write a reading order for this branch with `adiff layers set`, so the diff can be read in the order the change was made rather than by filename."
+  }
+  if (state.layersStale) {
+    return "The reading order on this branch describes an older commit. Please read the diff again and write a new one with `adiff layers set`."
+  }
+  return "Please revise the reading order on this branch with `adiff layers set`."
+}
+
+const askedFor = (state: TuiState): string =>
+  state.layers.length === 0 ? "asked for a reading order" : "asked for a new reading order"
+
 const alongFrom = (state: TuiState): TuiState => {
   const along = nextUnreviewed(state, state.patchIndex)
   return along === undefined ? withNotice(state, "every file reviewed") : atFile(state, along)
@@ -635,6 +648,7 @@ export class App {
       "cursor.next": () => this.stepped(1),
       "cursor.prev": () => this.stepped(-1),
       "rail.toggle": () => this.commitSynced("rail.toggle"),
+      "layers.ask": () => this.askForLayers(),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
       "thread.settle": () => this.settleHere(),
@@ -1359,6 +1373,27 @@ export class App {
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(withSent({ ...this.state, replyTo: undefined }, sent), "sent to the agent"))
+    })
+  }
+
+  private askForLayers(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const patch = selectedPatch(this.state)
+      const branch = selectedBranch(this.state)
+      if (patch === undefined || branch === undefined) return
+      yield* this.commenting(branch.branch, {
+        repo: this.repo,
+        branch: branch.branch,
+        file: patch.path,
+        side: "new",
+        start: 1,
+        end: 1,
+        body: layersAsk(this.state),
+        id: randomUUID(),
+        at: new Date().toISOString(),
+      })
+      const sent = yield* this.loadSent(branch.branch)
+      this.commit(withNotice(withSent(this.state, sent), askedFor(this.state)))
     })
   }
 

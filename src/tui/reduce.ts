@@ -466,6 +466,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
     panelIndex: 0,
   }),
   "rail.toggle": toggleRail,
+  "layers.ask": (state) => state,
   "file.vouch": (state) => state,
   "file.vouch.next": (state) => state,
   "tree.collapse": (state) => fold(state, true),
