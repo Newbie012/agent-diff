@@ -45,7 +45,7 @@ describe("looking for something", () => {
     await driver.screen.typeText("useProcessFold")
 
     // ASSERT
-    expect(await driver.screen.untilShown("elsewhere")).toBe(true)
+    expect(await driver.screen.untilShown("places")).toBe(true)
     expect(await driver.screen.getFrame()).toContain("useProcessFold  ·")
   })
 
@@ -60,6 +60,57 @@ describe("looking for something", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toMatch(/\d+ places? elsewhere/)
+    expect(await driver.screen.getFrame()).toMatch(/\d+ places?/)
+  })
+})
+
+describe("what a search counts as a match", () => {
+  it("finds a name however it was capitalised", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await opened(driver)
+    await driver.screen.pressKeys(["/"])
+
+    // ACT
+    await driver.screen.typeText("USEPROCESSFOLD")
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toMatch(/\d+ places?/)
+  })
+
+  it("reads the branch once, and only asks git to search", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await opened(driver)
+    await driver.screen.pressKeys(["/"])
+    driver.screen.forgetDiffs()
+
+    // ACT
+    await driver.screen.typeText("useProcessFold")
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(driver.screen.diffsRun()).toBe(0)
+  })
+})
+
+describe("a name that is defined where the reviewer is standing", () => {
+  it("is still one of the places it lists", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await opened(driver)
+    await driver.screen.pressKeys(["]"])
+    await driver.screen.pressKeys(["ARROW_DOWN"])
+
+    // ACT
+    await driver.screen.pressKeys(["/"])
+    await driver.screen.typeText("useProcessFold")
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("hooks.ts")
+    expect(frame).toContain("graph.ts")
   })
 })

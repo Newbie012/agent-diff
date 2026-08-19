@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { Git } from "../service/git/index.ts"
-import { findBranch, listPatches } from "./commands.ts"
+import { readingOf, type BranchReading } from "./commands.ts"
 
 export type Match = {
   readonly path: string
@@ -47,15 +47,13 @@ const byChangedFirst = (left: Match, right: Match): number => {
   return left.path === right.path ? left.line - right.line : left.path.localeCompare(right.path)
 }
 
-export const searchBranch = Effect.fn("Cli.searchBranch")(function* (
-  repo: string,
-  branch: string,
+export const searchIn = Effect.fn("Cli.searchIn")(function* (
+  reading: BranchReading,
   term: string,
 ) {
   const git = yield* Git
-  const worktree = yield* findBranch(repo, branch)
-  const patches = yield* listPatches(repo, branch)
-  const touched = new Set(patches.map((patch) => patch.path))
+  const worktree = reading.worktree
+  const touched = new Set(reading.patches.map((patch) => patch.path))
   const rows = readRows(yield* git.grep(worktree, term))
   const found: Array<Match> = []
   for (const [at, row] of rows.entries()) {
@@ -69,4 +67,12 @@ export const searchBranch = Effect.fn("Cli.searchBranch")(function* (
     })
   }
   return found.toSorted(byChangedFirst)
+})
+
+export const searchBranch = Effect.fn("Cli.searchBranch")(function* (
+  repo: string,
+  branch: string,
+  term: string,
+) {
+  return yield* searchIn(yield* readingOf(repo, branch), term)
 })

@@ -256,6 +256,20 @@ Three screens, and the keys each answers to:
   are typed rather than when a key says to go. Nothing is read from the clipboard: what a reviewer
   copied is theirs, and a review that pastes it into a box unasked has helped itself.
 
+- **A search asks git to search, and nothing else.** Every search resolved the branch and read its
+  whole diff again to learn which files it changes, so a search of a hundred and thirty-one files
+  cost two hundred milliseconds before a single line had been looked at — and it cost that again
+  for every word typed. The review already holds what the branch changes.
+
+- **A search hides nothing.** The place the cursor was standing on was left out of what was found,
+  a habit from when a search meant "find this selection somewhere else". Typing a name and being
+  shown one of its two uses, with the one under the cursor missing, reads as a search that does not
+  work. Every place is a place.
+
+- **A name is found however it was capitalised.** A reviewer looking for `useProcessFold` and
+  typing `useprocessfold` means the same thing, and a search that answers "nothing" to the second
+  is answering a question about typing rather than about the code.
+
 - **A match is a place in a file, not a line of text.** Every match drew one row that began with
   the same long path, cut where the reader could not see, so a list of twenty said one thing twenty
   times. A file is named once and its matches sit under it by line number, and the one under the

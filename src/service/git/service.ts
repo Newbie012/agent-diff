@@ -202,6 +202,7 @@ const readGrep = Effect.fn("Git.grep")(function* (worktree: Worktree, term: stri
     "-n",
     "-I",
     "-F",
+    "-i",
     "-w",
     "-C",
     String(GREP_CONTEXT),
