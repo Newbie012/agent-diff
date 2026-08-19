@@ -382,11 +382,23 @@ export class ScreenTestDriver {
     return this.findPainted(marker, fgOf)
   }
 
-  async believes(): Promise<{ readonly scroll: number; readonly cursor: number }> {
+  async believes(): Promise<{
+    readonly scroll: number
+    readonly cursor: number
+    readonly wrap: boolean
+    readonly sticky: boolean
+    readonly hold: boolean
+  }> {
     const app = this.app
     await app?.settled()
     const state = app?.shown()
-    return { scroll: state?.scroll ?? -1, cursor: state?.cursor ?? -1 }
+    return {
+      scroll: state?.scroll ?? -1,
+      cursor: state?.cursor ?? -1,
+      wrap: state?.wrap ?? false,
+      sticky: state?.sticky ?? false,
+      hold: state?.hold ?? false,
+    }
   }
 
   async paintedTop(): Promise<number> {

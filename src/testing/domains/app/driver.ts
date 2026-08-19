@@ -299,6 +299,18 @@ export class AppTestDriver {
     ])
   }
 
+  runConfigList(): Promise<CliResult> {
+    return this.run(["config", "list"])
+  }
+
+  runConfigGet(name: string): Promise<CliResult> {
+    return this.run(["config", "get", "--name", name])
+  }
+
+  runConfigSet(name: string, value: boolean): Promise<CliResult> {
+    return this.run(["config", "set", "--name", name, "--value", value ? "on" : "off"])
+  }
+
   runProgress(branch: string): Promise<CliResult> {
     return this.run(["review", "progress", "--repo", this.state.repo, "--branch", branch])
   }
