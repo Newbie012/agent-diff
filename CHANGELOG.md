@@ -450,6 +450,10 @@
 
 - r reads the branch again, so the agent's newest work appears without leaving the review.
 
+## 0.1.0-alpha.104
+
+- Looking for something shows the places as the words are typed, keeps a readable panel before there is anything to show, and never reads the clipboard.
+
 ## 0.1.0-alpha.103
 
 - Looking for something opens a box to type in, filled from the clipboard or from what the mouse picked, rather than guessing a name from the selected line. Matches are grouped under the file they are in, and the one under the cursor shows the lines around it.
