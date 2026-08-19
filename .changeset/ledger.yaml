@@ -444,3 +444,8 @@
     - a-changelog-that-is-kept
     - clicking-a-line
     - where-the-panel-stays
+"@eliya-oss/agent-diff@0.1.0-alpha.98":
+  dir: ""
+  intents:
+    - finding-what-was-picked
+    - which-pane-the-keys-reach
