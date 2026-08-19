@@ -66,9 +66,9 @@ describe("walking a review by the argument instead of the filesystem", () => {
 
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
-    expect(pane).toContain("1. Add the invitation")
-    expect(pane).toContain("2. Add the invitation")
-    expect(pane).not.toContain("Panel.tsx")
+    expect(pane).toContain("1  Add the invitation")
+    expect(pane).toContain("2  Add the invitation")
+    expect(pane.indexOf("Panel.tsx")).toBeGreaterThan(pane.indexOf("not in any layer"))
   })
 
   it("puts the files no layer claims in a group of their own, so nothing hides", async () => {
@@ -118,7 +118,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     // ASSERT
     const pane = paneOf(await driver.screen.getFrame())
     expect(pane).toContain("Panel.tsx")
-    expect(pane).not.toContain("1. Add the invitation")
+    expect(pane).not.toContain("1  Add the invitation")
   })
 
   it("wraps a title too long for the rail instead of cutting it off", async () => {
@@ -138,7 +138,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(rail).not.toContain("…")
   })
 
-  it("opens onto the layer being read, and closes it when asked", async () => {
+  it("lists a layer's files under the directory they share, and folds them away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -148,46 +148,30 @@ describe("walking a review by the argument instead of the filesystem", () => {
 
     // ASSERT
     const open = paneOf(await driver.screen.getFrame())
-    expect(open).toContain("dropped")
-    expect(open).toContain("seats")
+    expect(open).toContain("src/")
+    expect(open).toContain("model.ts")
 
     // ACT
     await driver.screen.pressKeys(["h"])
 
     // ASSERT
-    expect(paneOf(await driver.screen.getFrame())).not.toContain("dropped")
+    expect(paneOf(await driver.screen.getFrame())).not.toContain("model.ts")
   })
 
-  it("keeps the file count on the title line while the layer is open", async () => {
+  it("keeps a layer's note out of the rail, since the diff already carries it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
     await driver.app.runLayersSet(branch.worktree, noted)
     await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
 
     // ACT
-    await driver.screen.pressKeys(["l"])
-
-    // ASSERT
-    const title = railRows(await driver.screen.getFrame()).find((line) => line.includes("1."))
-    expect(title).toBeDefined()
-    expect(title?.endsWith("1")).toBe(true)
-  })
-
-  it("says so when a layer carries no prose, rather than opening onto nothing", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    const branch = await driver.branch.create(threeFiles)
-    await driver.app.runLayersSet(branch.worktree, noted)
-    await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
 
-    // ACT
-    await driver.screen.pressKeys(["TAB", "j", "l"])
-
     // ASSERT
-    expect(paneOf(await driver.screen.getFrame())).toContain("no note")
+    const frame = await driver.screen.getFrame()
+    expect(paneOf(frame)).not.toContain("dropped")
+    expect(frame).toContain("dropped")
   })
 
   it("shows the file tree when the branch has no layers at all", async () => {

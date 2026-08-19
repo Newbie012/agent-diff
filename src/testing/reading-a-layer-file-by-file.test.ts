@@ -29,6 +29,8 @@ const layered = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["RETURN"])
 }
 
+const ticks = (frame: string): number => (frame.match(/✓/g) ?? []).length
+
 const fileIn = (frame: string): string => (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
 describe("a layer that says two things about one file", () => {
@@ -77,17 +79,18 @@ describe("reading a layer a file at a time", () => {
     expect(frame).toContain("two.ts")
   })
 
-  it("says how many of a layer's files have been read", async () => {
+  it("ticks a file in the rail once it has been read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
-    expect(await driver.screen.getFrame()).toContain(" 2")
+    const before = await driver.screen.getFrame()
 
     // ACT
     await driver.screen.pressKeys(["m"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("1/2")
+    const after = await driver.screen.getFrame()
+    expect(ticks(after)).toBeGreaterThan(ticks(before))
   })
 
   it("walks from the last file of one layer into the first of the next", async () => {

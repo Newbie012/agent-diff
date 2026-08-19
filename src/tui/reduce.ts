@@ -589,7 +589,9 @@ const laidOver = (
   layersStale: told.stale,
   summary: told.summary ?? "",
   layerIndex: anew ? 0 : Math.min(state.layerIndex, Math.max(0, told.layers.length - 1)),
-  openLayers: anew ? [0] : state.openLayers.filter((at) => at < told.layers.length),
+  openLayers: anew
+    ? told.layers.map((_, at) => at)
+    : state.openLayers.filter((at) => at < told.layers.length),
   rail: told.layers.length === 0 ? "tree" : anew ? "layers" : state.rail,
 })
 

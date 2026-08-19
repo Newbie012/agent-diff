@@ -81,8 +81,11 @@ const codeBlockOf = (span: Span): LayerBlock => ({
 })
 
 const blocksOf = (layer: LayerInput): ReadonlyArray<LayerBlock> => {
-  if (Array.isArray(layer.blocks)) return layer.blocks.filter(isBlock)
-  const note = typeof layer.note === "string" ? [{ kind: "prose" as const, markdown: layer.note }] : []
+  const note =
+    typeof layer.note === "string" && layer.note.trim().length > 0
+      ? [{ kind: "prose" as const, markdown: layer.note }]
+      : []
+  if (Array.isArray(layer.blocks)) return [...note, ...layer.blocks.filter(isBlock)]
   const spans = Array.isArray(layer.spans) ? layer.spans.filter(isSpan) : []
   return [...note, ...spans.map(codeBlockOf)]
 }

@@ -22,7 +22,7 @@ import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
   readonly index: number
-  readonly kind: "title" | "note" | "file"
+  readonly kind: "title" | "dir" | "file" | "gap" | "count"
   readonly text: string
   readonly lead: boolean
   readonly fileIndex?: number
@@ -261,57 +261,8 @@ export const wrapped = (text: string, room: number): ReadonlyArray<string> => {
     .reduce<ReadonlyArray<string>>((lines, word) => packed(lines, word, width), [])
 }
 
-export const NO_NOTE = "no note"
-
-const noteRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
-  const lines = wrapped(state.layers[layerIndex]?.note ?? "", room)
-  const shown = lines.length === 0 ? [NO_NOTE] : lines
-  return shown.map((text) => ({ index: layerIndex, kind: "note" as const, text, lead: false }))
-}
-
-const proseRow = (layerIndex: number, text: string): LayerRow => ({
-  index: layerIndex,
-  kind: "note",
-  text,
-  lead: false,
-})
-
-const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
-  const blocks = state.layers[layerIndex]?.prose ?? []
-  const rows: Array<LayerRow> = []
-  const said = new Set<string>()
-  for (const [at, block] of blocks.entries()) {
-    if (at > 0) rows.push(proseRow(layerIndex, ""))
-    for (const text of wrapped(block.markdown, room)) rows.push(proseRow(layerIndex, text))
-    if (said.has(block.path)) continue
-    said.add(block.path)
-    rows.push(...fileRow(state, layerIndex, block.path, room))
-  }
-  return rows
-}
-
-const fileRow = (
-  state: TuiState,
-  layerIndex: number,
-  path: string,
-  room: number,
-): ReadonlyArray<LayerRow> => {
-  const at = state.patches.findIndex((patch) => patch.path === path)
-  if (at === -1) return []
-  const done = isReviewed(state, at)
-  if (done && state.hideReviewed && at !== state.patchIndex) return []
-  return [
-    {
-      index: layerIndex,
-      kind: "file" as const,
-      text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
-      lead: false,
-      fileIndex: at,
-      reviewed: done,
-      here: at === state.patchIndex,
-    },
-  ]
-}
+const clip = (label: string, room: number): string =>
+  label.length > room ? `${label.slice(0, Math.max(0, room - 1))}…` : label
 
 const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
   wordWrapped(state.layers[layerIndex]?.title ?? "", room).map((text, at) => ({
@@ -321,70 +272,128 @@ const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
     lead: at === 0,
   }))
 
-const clipEnd = (text: string, room: number): string => {
-  if (text.length <= room) return text
-  const parts = text.split("/")
-  const kept: Array<string> = []
-  for (const part of parts.toReversed()) {
-    const wanted = [part, ...kept].join("/")
-    if (wanted.length + 2 > room) break
-    kept.unshift(part)
-  }
-  const tail = kept.length === 0 ? (parts.at(-1) ?? text) : kept.join("/")
-  return `…/${tail}`
+export const shortDir = (dir: string, room: number): string => {
+  const whole = `${dir}/`
+  if (whole.length <= room) return whole
+  const parts = dir.split("/")
+  if (parts.length < 3) return `${clip(dir, Math.max(1, room - 1))}/`
+  const first = parts[0] ?? ""
+  const last = parts.at(-1) ?? ""
+  return `${first}/…/${last}/`
 }
 
-const FILE_LEAD = 2
+const fileRow = (state: TuiState, layerIndex: number, at: number, room: number): LayerRow => {
+  const path = state.patches[at]?.path ?? ""
+  const name = path.split("/").at(-1) ?? path
+  return {
+    index: layerIndex,
+    kind: "file",
+    text: clip(name, room),
+    lead: false,
+    fileIndex: at,
+    reviewed: isReviewed(state, at),
+    here: at === state.patchIndex,
+  }
+}
+
+const shownFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> =>
+  layerFiles(state, layerIndex).filter(
+    (at) => !(state.hideReviewed && isReviewed(state, at) && at !== state.patchIndex),
+  )
+
+const dirOf = (state: TuiState, at: number): string => {
+  const parts = (state.patches[at]?.path ?? "").split("/")
+  return parts.slice(0, -1).join("/")
+}
 
 const fileRows = (
   state: TuiState,
   layerIndex: number,
-  room: number,
-  already: ReadonlySet<string> = new Set(),
-): ReadonlyArray<LayerRow> =>
-  (state.layers[layerIndex]?.files ?? []).flatMap((path) =>
-    already.has(path) ? [] : fileRow(state, layerIndex, path, room),
-  )
+  room: { readonly dir: number; readonly file: number },
+): ReadonlyArray<LayerRow> => {
+  const rows: Array<LayerRow> = []
+  let held: string | undefined
+  for (const at of shownFiles(state, layerIndex)) {
+    const dir = dirOf(state, at)
+    if (dir !== held && dir.length > 0) {
+      rows.push({ index: layerIndex, kind: "dir", text: shortDir(dir, room.dir), lead: false })
+    }
+    held = dir
+    rows.push(fileRow(state, layerIndex, at, room.file))
+  }
+  return rows
+}
 
 export const layerRead = (state: TuiState, layerIndex: number): { done: number; all: number } => {
   const files = layerFiles(state, layerIndex)
   return { done: files.filter((at) => isReviewed(state, at)).length, all: files.length }
 }
 
-const spokenFor = (state: TuiState, layerIndex: number): ReadonlySet<string> =>
-  new Set((state.layers[layerIndex]?.prose ?? []).map((block) => block.path))
+export const layerDone = (state: TuiState, layerIndex: number): boolean => {
+  const read = layerRead(state, layerIndex)
+  return read.all > 0 && read.done === read.all
+}
 
-const saidOf = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
-  (state.layers[layerIndex]?.prose ?? []).length > 0
-    ? proseRows(state, layerIndex, room)
-    : noteRows(state, layerIndex, room)
+export type LayerRoom = {
+  readonly title: number
+  readonly dir: number
+  readonly file: number
+}
+
+const countRow = (state: TuiState, index: number): ReadonlyArray<LayerRow> => {
+  const read = layerRead(state, index)
+  if (read.all === 0) return []
+  const one = read.all === 1 ? "file" : "files"
+  return [{ index, kind: "count", text: `${read.done}/${read.all} ${one}`, lead: false }]
+}
+
+const layerBody = (
+  state: TuiState,
+  index: number,
+  room: LayerRoom,
+  spine: boolean,
+): ReadonlyArray<LayerRow> => {
+  if (!layerOpen(state, index)) return []
+  if (spine && index !== state.layerIndex) return countRow(state, index)
+  return fileRows(state, index, room)
+}
 
 export const layerRows = (
   state: TuiState,
-  titleRoom: number,
-  noteRoom: number,
+  room: LayerRoom,
+  spine = false,
 ): ReadonlyArray<LayerRow> =>
-  state.layers.flatMap((_, index) =>
-    layerOpen(state, index)
-      ? [
-          ...titleRows(state, index, titleRoom),
-          ...saidOf(state, index, noteRoom),
-          ...fileRows(state, index, noteRoom, spokenFor(state, index)),
-        ]
-      : titleRows(state, index, titleRoom),
-  )
+  state.layers.flatMap((_, index) => [
+    ...(index > 0 ? [{ index, kind: "gap" as const, text: "", lead: false }] : []),
+    ...titleRows(state, index, room.title),
+    ...layerBody(state, index, room, spine),
+  ])
+
+export type RailWindow = {
+  readonly rows: ReadonlyArray<LayerRow>
+  readonly more: number
+  readonly above: number
+}
 
 export const railWindow = (
   rows: ReadonlyArray<LayerRow>,
   height: number,
   layerIndex: number,
-): { readonly rows: ReadonlyArray<LayerRow>; readonly more: number } => {
-  if (rows.length <= height) return { rows, more: 0 }
+): RailWindow => {
+  if (rows.length <= height) return { rows, more: 0, above: 0 }
   const first = Math.max(0, rows.findIndex((row) => row.index === layerIndex))
   const block = rows.findLastIndex((row) => row.index === layerIndex) - first + 1
   const wanted = block >= height ? first : first - Math.floor((height - block) / 2)
   const start = Math.max(0, Math.min(rows.length - height, wanted))
-  return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
+  const shown = rows.slice(start, start + height)
+  const here = new Set(shown.map((row) => row.index))
+  const seen = (from: ReadonlyArray<LayerRow>): number =>
+    new Set(from.filter((row) => !here.has(row.index)).map((row) => row.index)).size
+  return {
+    rows: shown,
+    more: seen(rows.slice(start + height)),
+    above: seen(rows.slice(0, start)),
+  }
 }
 
 export const selectedBranch = (state: TuiState): BranchSummary | undefined =>

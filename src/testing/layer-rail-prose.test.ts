@@ -36,49 +36,47 @@ const spread: LayersInput = {
 }
 
 const railRows = (frame: string, room: number): ReadonlyArray<string> =>
-  frame.split("\n").map((line) => line.slice(3, room))
+  frame
+    .split("\n")
+    .slice(1)
+    .map((line) => line.slice(3, room))
 
 const rowWith = (rows: ReadonlyArray<string>, text: string): number =>
   rows.findIndex((line) => line.includes(text))
 
-describe("reading a layer's blocks in the rail", () => {
-  it("separates one block of prose from the next", async () => {
+describe("reading a layer's blocks", () => {
+  it("leaves the prose to the diff, and lists the files it spans in the rail", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(across)
     await driver.app.runLayersSet(branch.worktree, spread)
     await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
 
     // ACT
-    await driver.screen.pressKeys(["l"])
+    await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const rows = railRows(await driver.screen.getFrame(), 34)
-    const first = rowWith(rows, "dropped the")
-    const second = rowWith(rows, "wording follows")
-    expect(first).toBeGreaterThan(0)
-    expect(second).toBeGreaterThan(first)
-    const between = rows.slice(first, second).filter((line) => line.trim().length === 0)
-    expect(between.length).toBeGreaterThan(0)
+    const frame = await driver.screen.getFrame()
+    const rail = railRows(frame, 34)
+    expect(frame).toContain("dropped the")
+    expect(rowWith(rail, "dropped the")).toBe(-1)
+    expect(rowWith(rail, "api.ts")).toBeGreaterThan(0)
+    expect(rowWith(rail, "notes.md")).toBeGreaterThan(0)
   })
 
-  it("names the file each block sits above", async () => {
+  it("groups each file under the directory it sits in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(across)
     await driver.app.runLayersSet(branch.worktree, spread)
     await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
 
     // ACT
-    await driver.screen.pressKeys(["l"])
+    await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const rows = railRows(await driver.screen.getFrame(), 34)
-    const first = rowWith(rows, "dropped the")
-    const second = rowWith(rows, "wording follows")
-    expect(rows.slice(first, second).some((line) => line.includes("api.ts"))).toBe(true)
-    expect(rows.slice(second).some((line) => line.includes("notes.md"))).toBe(true)
+    const rail = railRows(await driver.screen.getFrame(), 34)
+    expect(rowWith(rail, "src/")).toBeLessThan(rowWith(rail, "api.ts"))
+    expect(rowWith(rail, "docs/")).toBeLessThan(rowWith(rail, "notes.md"))
   })
 })
