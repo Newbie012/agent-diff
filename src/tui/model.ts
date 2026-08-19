@@ -283,21 +283,34 @@ const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
   for (const [at, block] of blocks.entries()) {
     if (at > 0) rows.push(proseRow(layerIndex, ""))
     for (const text of wrapped(block.markdown, room)) rows.push(proseRow(layerIndex, text))
-    const found = state.patches.findIndex((patch) => patch.path === block.path)
-    if (found !== -1 && !said.has(block.path)) {
-      said.add(block.path)
-      rows.push({
-        index: layerIndex,
-        kind: "file",
-        text: clipEnd(block.path, Math.max(1, room - FILE_LEAD)),
-        lead: false,
-        fileIndex: found,
-        reviewed: isReviewed(state, found),
-        here: found === state.patchIndex,
-      })
-    }
+    if (said.has(block.path)) continue
+    said.add(block.path)
+    rows.push(...fileRow(state, layerIndex, block.path, room))
   }
   return rows
+}
+
+const fileRow = (
+  state: TuiState,
+  layerIndex: number,
+  path: string,
+  room: number,
+): ReadonlyArray<LayerRow> => {
+  const at = state.patches.findIndex((patch) => patch.path === path)
+  if (at === -1) return []
+  const done = isReviewed(state, at)
+  if (done && state.hideReviewed && at !== state.patchIndex) return []
+  return [
+    {
+      index: layerIndex,
+      kind: "file" as const,
+      text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
+      lead: false,
+      fileIndex: at,
+      reviewed: done,
+      here: at === state.patchIndex,
+    },
+  ]
 }
 
 const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
@@ -329,24 +342,9 @@ const fileRows = (
   room: number,
   already: ReadonlySet<string> = new Set(),
 ): ReadonlyArray<LayerRow> =>
-  (state.layers[layerIndex]?.files ?? []).flatMap((path) => {
-    if (already.has(path)) return []
-    const at = state.patches.findIndex((patch) => patch.path === path)
-    if (at === -1) return []
-    const done = isReviewed(state, at)
-    if (done && state.hideReviewed && at !== state.patchIndex) return []
-    return [
-      {
-        index: layerIndex,
-        kind: "file" as const,
-        text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
-        lead: false,
-        fileIndex: at,
-        reviewed: done,
-        here: at === state.patchIndex,
-      },
-    ]
-  })
+  (state.layers[layerIndex]?.files ?? []).flatMap((path) =>
+    already.has(path) ? [] : fileRow(state, layerIndex, path, room),
+  )
 
 export const layerRead = (state: TuiState, layerIndex: number): { done: number; all: number } => {
   const files = layerFiles(state, layerIndex)
@@ -861,18 +859,43 @@ export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
       )
 
 export const filePlace = (state: TuiState): { readonly at: number; readonly of: number } => {
-  const order = fileOrder(state)
+  const order = [...new Set(fileOrder(state))]
   const at = order.indexOf(state.patchIndex)
   if (at === -1) return { at: state.patchIndex + 1, of: state.patches.length }
   return { at: at + 1, of: order.length }
 }
 
+export const readingOrder = (
+  state: TuiState,
+): ReadonlyArray<{ readonly layer: number; readonly file: number }> =>
+  onLayers(state)
+    ? state.layers.flatMap((_, layer) =>
+        layerFiles(state, layer).map((file) => ({ layer, file })),
+      )
+    : fileOrder(state).map((file) => ({ layer: state.layerIndex, file }))
+
+export const placeIn = (state: TuiState): number => {
+  const order = readingOrder(state)
+  const at = order.findIndex(
+    (one) => one.file === state.patchIndex && (!onLayers(state) || one.layer === state.layerIndex),
+  )
+  return at === -1 ? order.findIndex((one) => one.file === state.patchIndex) : at
+}
+
 export const layerFile = (state: TuiState, delta: number): number => {
-  const order = fileOrder(state)
-  const position = order.indexOf(state.patchIndex)
-  if (position === -1) return order[0] ?? state.patchIndex
-  const next = Math.max(0, Math.min(order.length - 1, position + delta))
-  return order[next] ?? state.patchIndex
+  const order = readingOrder(state)
+  const at = placeIn(state)
+  if (at === -1) return order[0]?.file ?? state.patchIndex
+  const next = Math.max(0, Math.min(order.length - 1, at + delta))
+  return order[next]?.file ?? state.patchIndex
+}
+
+export const layerAfter = (state: TuiState, delta: number): number => {
+  const order = readingOrder(state)
+  const at = placeIn(state)
+  if (at === -1) return order[0]?.layer ?? state.layerIndex
+  const next = Math.max(0, Math.min(order.length - 1, at + delta))
+  return order[next]?.layer ?? state.layerIndex
 }
 
 export const selectionRange = (state: TuiState): readonly [number, number] =>

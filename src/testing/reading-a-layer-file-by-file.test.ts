@@ -81,7 +81,7 @@ describe("reading a layer a file at a time", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
-    expect(await driver.screen.getFrame()).toContain("0/2")
+    expect(await driver.screen.getFrame()).toContain(" 2")
 
     // ACT
     await driver.screen.pressKeys(["m"])
@@ -104,5 +104,43 @@ describe("reading a layer a file at a time", () => {
     const landed = fileIn(await driver.screen.getFrame())
     expect(started).toContain("one.ts")
     expect(landed).toContain("three.ts")
+  })
+})
+
+describe("two layers that claim the same file", () => {
+  it("still walks to the end of the review", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ files })
+    await driver.app.runLayersSet(branch.worktree, {
+      summary: "One file said twice.",
+      layers: [
+        {
+          title: "The first pass",
+          note: "Where it starts.",
+          spans: [{ path: "src/one.ts", start: 1, end: 2 }],
+        },
+        {
+          title: "The second pass",
+          note: "And again here.",
+          spans: [
+            { path: "src/one.ts", start: 1, end: 2 },
+            { path: "src/three.ts", start: 1, end: 2 },
+          ],
+        },
+      ],
+    })
+    await driver.screen.open({ width: 120, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ACT
+    const seen: Array<string> = []
+    for (let step = 0; step < 4; step += 1) {
+      await driver.screen.pressKeys(["]"])
+      seen.push(fileIn(await driver.screen.getFrame()))
+    }
+
+    // ASSERT
+    expect(seen).toContain("src/three.ts")
   })
 })

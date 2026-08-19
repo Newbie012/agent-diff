@@ -15,7 +15,10 @@ import {
   selectedPatch,
   shownMatches,
   selectionRange,
+  layerAfter,
   layerFile,
+  placeIn,
+  readingOrder,
   layerFiles,
   layerHolding,
   type TuiState,
@@ -158,19 +161,11 @@ const panned = (state: TuiState, delta: number): TuiState => {
   return { ...state, pan: Math.max(0, state.pan + delta) }
 }
 
-const acrossLayers = (state: TuiState): ReadonlyArray<{ layer: number; file: number }> =>
-  state.layers.flatMap((_, layer) =>
-    layerFiles(state, layer).map((file) => ({ layer, file })),
-  )
-
 const moveLayer = (state: TuiState, delta: number): TuiState => {
-  const order = acrossLayers(state)
+  const order = readingOrder(state)
   if (order.length === 0) return state
-  const at = order.findIndex(
-    (one) => one.file === state.patchIndex && one.layer === state.layerIndex,
-  )
-  const from = at === -1 ? 0 : at
-  const landed = order[clamp(from + delta, 0, order.length - 1)]
+  const at = placeIn(state)
+  const landed = order[clamp((at === -1 ? 0 : at) + delta, 0, order.length - 1)]
   if (landed === undefined) return state
   return {
     ...state,
@@ -296,12 +291,18 @@ const revealing = (state: TuiState, patchIndex: number): ReadonlyArray<string> =
   return state.closed.filter((path) => !wanted.includes(path))
 }
 
+const atTheEnd = (state: TuiState, delta: number): boolean => {
+  const at = placeIn(state)
+  const wanted = at + delta
+  return at !== -1 && (wanted < 0 || wanted >= readingOrder(state).length)
+}
+
 const moveFile = (state: TuiState, delta: number): TuiState => {
-  const next = layerFile(state, delta)
-  if (next === state.patchIndex) {
+  if (atTheEnd(state, delta)) {
     return withNoticeHere(state, delta > 0 ? "last file" : "first file")
   }
-  const layer = onLayers(state) ? layerHolding(state, next) : state.layerIndex
+  const next = layerFile(state, delta)
+  const layer = onLayers(state) ? layerAfter(state, delta) : state.layerIndex
   return {
     ...state,
     notice: "",

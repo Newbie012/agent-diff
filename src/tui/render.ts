@@ -801,7 +801,7 @@ const staleBanner = (room: number): string =>
     .join("\n")
 
 const layerRoom = (state: TuiState, pane: number): LayerRoom => {
-  const tally = Math.max(3, ...state.layers.map((layer) => `${layer.files.length}/${layer.files.length}`.length))
+  const tally = Math.max(1, ...state.layers.map((_, at) => tallyOf(state, at).length))
   return {
     title: Math.max(4, pane - PANE_CHROME - STEP_LEAD - STEP_GAP - tally),
     note: Math.max(4, pane - PANE_CHROME - NOTE_LEAD),
@@ -821,14 +821,18 @@ const layerHead = (state: TuiState, row: LayerRow): string => {
   return `${mark} ${layerFold(state, row.index)} ${`${row.index + 1}.`.padStart(STEP_NUMBER)} `
 }
 
+const tallyOf = (state: TuiState, layerIndex: number): string => {
+  const read = layerRead(state, layerIndex)
+  return read.done === 0 ? `${read.all}` : `${read.done}/${read.all}`
+}
+
 const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
   if (row.kind === "file") {
     const seen = row.reviewed === true ? marks().reviewed : " "
     return `${" ".repeat(NOTE_LEAD)}${seen} ${row.text}`
   }
   if (row.kind === "note") return `${" ".repeat(NOTE_LEAD)}${row.text}`
-  const read = layerRead(state, row.index)
-  const count = row.lead ? `${read.done}/${read.all}` : ""
+  const count = row.lead ? tallyOf(state, row.index) : ""
   const tail = count.padStart(room.tally + STEP_GAP)
   return `${layerHead(state, row)}${row.text.padEnd(room.title)}${tail}`
 }
