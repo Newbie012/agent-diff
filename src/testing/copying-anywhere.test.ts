@@ -44,7 +44,7 @@ describe("the key sheet and the palette", () => {
     const first = opened.split("\n").find((line) => line.includes("▶")) ?? ""
 
     // ACT
-    await driver.screen.pressKeys(["down"])
+    await driver.screen.pressKeys(["ARROW_DOWN"])
 
     // ASSERT
     const frame = await driver.screen.getFrame()
