@@ -81,6 +81,7 @@ export type TuiState = {
   readonly pan: number
   readonly layers: ReadonlyArray<ReportedLayer>
   readonly layersStale: boolean
+  readonly summary: string
   readonly pulls: Readonly<Record<string, string>>
   readonly forge: ForgeAnswer
   readonly layerIndex: number
@@ -157,6 +158,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   pan: 0,
   layers: [],
   layersStale: false,
+  summary: "",
   pulls: {},
   forge: "asking",
   layerIndex: 0,

@@ -234,11 +234,14 @@ export const showLayers = Effect.fn("Cli.showLayers")(function* (worktreePath: s
 export const layersIn = Effect.fn("Cli.layersIn")(function* (reading: BranchReading) {
   const worktree = reading.worktree
   const found = yield* storedLayers(worktree)
-  if (Option.isNone(found)) return { layers: [] as ReadonlyArray<ReportedLayer>, stale: false }
+  if (Option.isNone(found)) {
+    return { layers: [] as ReadonlyArray<ReportedLayer>, stale: false, summary: "" }
+  }
   return {
     layers: reportedLayers(reading.patches, found.value),
     stale: found.value.head !== worktree.head,
     rebased: found.value.base !== worktree.base,
+    summary: found.value.summary,
   }
 })
 
