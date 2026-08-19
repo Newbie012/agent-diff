@@ -215,26 +215,28 @@ export type ProgressReport = VouchReport
 const blobOf = (patches: ReadonlyArray<Patch>, file: string): Option.Option<string> =>
   Option.map(findPatch(patches, file), (patch) => patch.blob)
 
-export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: VouchRequest) {
+export const vouchIn = Effect.fn("Cli.vouchIn")(function* (reading: BranchReading, file: string) {
   const store = yield* Store
-  const worktree = yield* findBranch(request.repo, request.branch)
-  const patches = yield* patchesOf(worktree)
+  const patches = reading.patches
 
-  const blob = yield* Option.match(blobOf(patches, request.file), {
-    onNone: () =>
-      new UnknownFile({ file: request.file, known: patches.map((patch) => patch.path) }),
+  const blob = yield* Option.match(blobOf(patches, file), {
+    onNone: () => new UnknownFile({ file, known: patches.map((patch) => patch.path) }),
     onSome: Effect.succeed,
   })
 
-  const current = yield* store.state(worktree.path)
-  const next = vouch(current.vouches, request.file, blob)
-  yield* store.saveState(worktree.path, { ...current, vouches: next })
+  const current = yield* store.state(reading.worktree.path)
+  const next = vouch(current.vouches, file, blob)
+  yield* store.saveState(reading.worktree.path, { ...current, vouches: next })
 
   const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
   return {
-    vouched: files.filter((file) => isVouched(next, file.path, file.blob)).map((file) => file.path),
+    vouched: files.filter((one) => isVouched(next, one.path, one.blob)).map((one) => one.path),
     total: patches.length,
   } satisfies VouchReport
+})
+
+export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: VouchRequest) {
+  return yield* vouchIn(yield* readingOf(request.repo, request.branch), request.file)
 })
 
 export type BranchReading = {

@@ -33,6 +33,9 @@ import {
   submitComment,
   submitReply,
   toggleVouch,
+  vouchIn,
+  type BranchReading,
+  type VouchReport,
   removeComment,
   settleThread,
   settleRead,
@@ -223,6 +226,7 @@ export class App {
   private readonly intents: Queue.Queue<Intent>
   private consuming: Fiber.Fiber<void> | undefined
   private failure = ""
+  private reading: BranchReading | undefined
 
   private readonly renderer: CliRenderer
   private readonly repo: string
@@ -696,6 +700,7 @@ export class App {
   private readBranch(name: string): Work<TuiState> {
     return Effect.gen({ self: this }, function* () {
       const reading = yield* readingOf(this.repo, name)
+      this.reading = reading
       const [progress, layers, sent] = yield* Effect.all(
         [progressIn(reading), layersIn(reading), sentIn(reading)],
         { concurrency: "unbounded" },
@@ -1018,9 +1023,7 @@ export class App {
       const branch = selectedBranch(this.state)
       const patch = selectedPatch(this.state)
       if (branch === undefined || patch === undefined) return
-      const report = yield* (
-        toggleVouch({ repo: this.repo, branch: branch.branch, file: patch.path })
-      )
+      const report = yield* this.vouching(branch.branch, patch.path)
       const marked = report.vouched.includes(patch.path)
       const next = withVouched(this.state, report.vouched)
       if (!advance) {
@@ -1034,6 +1037,13 @@ export class App {
       }
       this.commit(withNotice(atFile(next, target), `marked ${patch.path}`))
     })
+  }
+
+  private vouching(branch: string, file: string): Work<VouchReport> {
+    const held = this.reading
+    return held === undefined || held.worktree.branch !== branch
+      ? toggleVouch({ repo: this.repo, branch, file })
+      : vouchIn(held, file)
   }
 
   private loadSent(branch: string): Work<TuiState["sent"]> {
