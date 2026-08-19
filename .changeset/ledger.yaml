@@ -87,6 +87,10 @@
   dir: ""
   intents:
     - sweet-walls-itch
+"@eliya-oss/agent-diff@0.1.0-alpha.110":
+  dir: ""
+  intents:
+    - what-a-comment-is-about
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:
