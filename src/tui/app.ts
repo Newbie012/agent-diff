@@ -867,18 +867,8 @@ export class App {
         reading === undefined || reading.worktree.branch !== branch.branch
           ? yield* searchBranch(this.repo, branch.branch, wanted)
           : yield* searchIn(reading, wanted)
-      const elsewhere = found.filter((match) => !this.isHere(match))
-      this.commit(withMatches(this.state, elsewhere, wanted))
-      if (elsewhere.length === 0) {
-        this.commit(withNoticeHere(this.state, `no other place uses ${wanted}`))
-      }
+      this.commit(withMatches(this.state, found, wanted))
     })
-  }
-
-  private isHere(match: { path: string; line: number }): boolean {
-    const patch = selectedPatch(this.state)
-    if (patch === undefined || patch.path !== match.path) return false
-    return sourceLineAt(this.state, this.state.cursor) === match.line
   }
 
   private openMatch(): Work {

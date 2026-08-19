@@ -91,7 +91,7 @@ describe("searching the branch for what is selected", () => {
 
     // ASSERT
     const whole = (await driver.screen.getFrame()).split("\n")
-    const from = whole.findIndex((line) => line.includes("elsewhere"))
+    const from = whole.findIndex((line) => /\d+ places?/.test(line))
     const lines = whole.slice(from)
     const inDiff = lines.findIndex((line) => line.includes("src/seats.ts"))
     const outside = lines.findIndex((line) => line.includes("src/invite.ts"))
@@ -146,7 +146,7 @@ describe("searching the branch for what is selected", () => {
     await driver.screen.pressKeys(["/"])
     await driver.screen.typeText(TERM)
     await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["ARROW_DOWN"])
+    await driver.screen.pressKeys(["ARROW_DOWN", "ARROW_DOWN", "ARROW_DOWN", "ARROW_DOWN"])
 
     // ACT
     await driver.screen.pressKeys(["RETURN"])
@@ -172,7 +172,7 @@ describe("searching the branch for what is selected", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("src/seats.ts")
-    expect(frame).not.toContain("elsewhere")
+    expect(frame).not.toContain("places")
   })
 
   it("says so when nothing matches", async () => {
@@ -187,10 +187,10 @@ describe("searching the branch for what is selected", () => {
 
     // ACT
     await driver.screen.pressKeys(["/"])
-    await driver.screen.typeText(TERM)
+    await driver.screen.typeText("nowhereAtAllInThisRepo")
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("no other place")
+    expect(await driver.screen.getFrame()).toContain("nothing uses")
   })
 })

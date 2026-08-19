@@ -853,13 +853,13 @@ const FOUND_LEAST = 6
 const nothingYet = (state: TuiState, room: number): string => {
   const wanted = state.query.trim()
   if (wanted.length === 0 || state.term.length === 0) return "".padEnd(room)
-  return clip(` nothing else uses ${wanted}`, room).padEnd(room)
+  return clip(` nothing uses ${wanted}`, room).padEnd(room)
 }
 
 const foundTitle = (state: TuiState): string => {
   const all = state.matches.length
   if (state.term.length === 0) return "Look for something"
-  return `${state.term}  ·  ${all === 1 ? "1 place" : `${all} places`} elsewhere`
+  return `${state.term}  ·  ${all === 1 ? "1 place" : `${all} places`}`
 }
 
 type Block = { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> }
