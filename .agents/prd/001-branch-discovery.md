@@ -40,6 +40,12 @@ reads as the checkout it is rather than as a worktree someone prepared.
 
 ## Implementation Decisions
 
+- **The worktrees are read together.** Each one is asked what it is diffed against, which is a
+  command per worktree, and they were run one after another. Nothing about one worktree tells you
+  anything about the next, so the wait was the sum where it could be the longest. On a machine
+  holding thirteen of them that is most of the time between asking for a review and seeing it.
+
+
 - **The list shows the whole name of the branch a review is stacked on, or says it did not.** The
   row's width was budgeted for the name, the counts and eleven columns of state, and a branch
   stacked on another needs the other branch's name — usually more than eleven. The rest was cut at
