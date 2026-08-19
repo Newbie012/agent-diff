@@ -46,7 +46,7 @@ describe("picking up work the agent did while you read", () => {
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["]"])
     const before = await driver.screen.getFrame()
-    expect(before).toContain("src/ui.tsx  2/2")
+    expect(before).toContain("src/ui.tsx  file 2 of 2")
 
     // ACT
     await driver.branch.setFile(branch, "src/api.ts", [
@@ -58,7 +58,7 @@ describe("picking up work the agent did while you read", () => {
     await driver.screen.pressKeys(["r"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("src/ui.tsx  2/2")
+    expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
   })
 
   it("says it read the branch again", async () => {

@@ -41,7 +41,7 @@ describe("marking a file reviewed from the terminal", () => {
     await driver.screen.pressKeys(["m"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("1/2 reviewed")
+    expect(await driver.screen.getFrame()).toContain("1 reviewed")
   })
 
   it("un-marks a file that was marked, because reviewers change their mind", async () => {

@@ -16,13 +16,13 @@ describe("marking reviewed past the last file", () => {
     await driver.screen.pressKeys(["M"])
     await driver.screen.pressKeys(["M"])
     const done = await driver.screen.getFrame()
-    expect(done).toContain("2/2 reviewed")
+    expect(done).toContain("2 reviewed")
 
     // ACT
     await driver.screen.pressKeys(["M"])
     await driver.screen.pressKeys(["M"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("2/2 reviewed")
+    expect(await driver.screen.getFrame()).toContain("2 reviewed")
   })
 })

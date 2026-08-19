@@ -22,7 +22,7 @@ describe("backing out of what you are doing", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("src/api.ts")
-    expect(frame).toContain("1/2")
+    expect(frame).toContain("file 1 of 2")
   })
 
   it("leaves the review only on a second press", async () => {

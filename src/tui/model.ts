@@ -884,7 +884,7 @@ export const nextUnreviewed = (state: TuiState, from: number): number | undefine
 }
 
 export const reviewedCount = (state: TuiState): string =>
-  `${state.vouched.length}/${state.patches.length} reviewed`
+  `${state.vouched.length} reviewed`
 
 export const countsOf = (state: TuiState, fileIndex: number): string => {
   const patch = state.patches[fileIndex]

@@ -50,6 +50,6 @@ describe("reviewing a branch with many files", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("1/30")
+    expect(await driver.screen.getFrame()).toContain("file 1 of 30")
   })
 })

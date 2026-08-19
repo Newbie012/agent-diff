@@ -22,7 +22,7 @@ describe("a branch with nothing left to read", () => {
 
     // ASSERT
     const header = (await driver.screen.getFrame()).split("\n").find((row) => row.trim()) ?? ""
-    expect(header).not.toContain("1/0")
+    expect(header).not.toContain("file 1 of 0")
     expect(header).toContain("nothing to read")
   })
 })

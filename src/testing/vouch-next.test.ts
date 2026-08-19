@@ -23,7 +23,7 @@ describe("working through a branch file by file", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("src/ui.ts")
-    expect(frame).toContain("1/3 reviewed")
+    expect(frame).toContain("1 reviewed")
   })
 
   it("skips files already reviewed rather than stopping on them", async () => {
@@ -42,7 +42,7 @@ describe("working through a branch file by file", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("src/zed.ts")
-    expect(frame).toContain("2/3 reviewed")
+    expect(frame).toContain("2 reviewed")
   })
 
   it("says the branch is done when the last file is marked", async () => {
@@ -59,7 +59,7 @@ describe("working through a branch file by file", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("3/3 reviewed")
+    expect(frame).toContain("3 reviewed")
     expect(frame).toContain("every file reviewed")
   })
 })

@@ -746,7 +746,7 @@ const branchCells = (branch: TuiState["branches"][number], here: boolean, room: 
 
 const placeLabel = (state: TuiState): string => {
   const place = filePlace(state)
-  return `${place.at}/${place.of}`
+  return `file ${place.at} of ${place.of}`
 }
 
 const headerParts = (

@@ -16,13 +16,13 @@ describe("picking up where the terminal was closed", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["]"])
-    expect(await driver.screen.getFrame()).toContain("src/ui.tsx  2/2")
+    expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
 
     // ACT
     await driver.screen.restart()
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("src/ui.tsx  2/2")
+    expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
   })
 
   it("starts on the branch list when nothing was remembered", async () => {

@@ -43,7 +43,7 @@ describe("finding a command without knowing its key", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("src/ui.tsx")
-    expect(frame).toContain("2/2")
+    expect(frame).toContain("file 2 of 2")
   })
 
   it("leaves the review untouched when the palette is dismissed", async () => {
@@ -63,7 +63,7 @@ describe("finding a command without knowing its key", () => {
     const frame = await driver.screen.getFrame()
     expect(frame).not.toContain("Go to last line")
     expect(frame).toContain("src/api.ts")
-    expect(frame).toContain("1/2")
+    expect(frame).toContain("file 1 of 2")
   })
 })
 
