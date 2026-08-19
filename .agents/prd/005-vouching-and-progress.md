@@ -36,6 +36,13 @@ Vouching is a toggle, because the reviewer changes their mind.
 
 ## Implementation Decisions
 
+- **Marking a file reviewed uses the diff the review is already holding.** Recording a vouch needs
+  the file's blob, and it was re-running `git diff` over the whole branch to find one it already
+  had on screen. On a branch of a hundred and thirty-one files that made the most-pressed key in a
+  review three times slower than moving the cursor. The command line still resolves the branch for
+  itself, because it has nothing in hand.
+
+
 ### Owns
 
 The vouch record, the staleness rule, and the progress report.

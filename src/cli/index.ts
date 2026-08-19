@@ -25,6 +25,7 @@ export {
   submitReply,
   takeComments,
   toggleVouch,
+  vouchIn,
 } from "./commands.ts"
 export { initRepository, refreshSkill } from "./init.ts"
 export { openPane } from "./pane.ts"
@@ -60,5 +61,5 @@ export { addressing, catalog, commandNames, findCommand, nearestCommand, verbsUn
 export { failure, fieldsOf, narrow } from "./report.ts"
 export type { CommandSpec, OptionSpec } from "./catalog.ts"
 export { InitUnwritable, MalformedLayers, MissingOption, NoLayers, UnknownBase, UnknownBranch, UnknownComment, UnknownCommand, UnknownFile, UnknownWorktree, UnselectableRange } from "./error.ts"
-export type { BranchSummary, PendingComment, ProgressReport, CommentRequest, VouchReport, VouchRequest } from "./commands.ts"
+export type { BranchReading, BranchSummary, PendingComment, ProgressReport, CommentRequest, VouchReport, VouchRequest } from "./commands.ts"
 export type { Options } from "./parse.ts"
