@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-alpha.99
+
+- What a search found can be narrowed by typing, and each match shows the end of its path and the line it matched rather than a long path cut at the edge.
+
 ## 0.1.0-alpha.98
 
 - Finding the selection elsewhere looks for the words the reviewer picked, rather than the longest name on the line they were picked from.

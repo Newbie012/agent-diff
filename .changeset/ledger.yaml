@@ -449,3 +449,7 @@
   intents:
     - finding-what-was-picked
     - which-pane-the-keys-reach
+"@eliya-oss/agent-diff@0.1.0-alpha.99":
+  dir: ""
+  intents:
+    - narrowing-the-matches
