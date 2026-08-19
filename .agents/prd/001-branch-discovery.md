@@ -40,6 +40,14 @@ reads as the checkout it is rather than as a worktree someone prepared.
 
 ## Implementation Decisions
 
+- **The list shows the whole name of the branch a review is stacked on, or says it did not.** The
+  row's width was budgeted for the name, the counts and eleven columns of state, and a branch
+  stacked on another needs the other branch's name — usually more than eleven. The rest was cut at
+  the edge of the pane, so `on release-2-fix-the-tree-drawing` was drawn as `on release-2`, which reads as
+  a branch that exists. The list is as wide as the longest state it has to draw, and what still
+  does not fit is marked as shortened rather than cut.
+
+
 - **The worktrees are read at once, not one after another.** Each one costs a diff, a stat and a
   read of what it is based on, and a machine with a dozen of them spent that cost thirteen times in
   a row before the list could be drawn. They are read together, which is what the list waits on.
