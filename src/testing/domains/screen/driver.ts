@@ -4,7 +4,7 @@ import { Effect, Exit, Layer, Scope } from "effect"
 import { Git, GitLive } from "../../../service/git/index.ts"
 import { Forge, ForgeLive } from "../../../service/forge/index.ts"
 import { storeAt } from "../../../service/store/index.ts"
-import { launch } from "../../../tui/index.ts"
+import { launch, palette } from "../../../tui/index.ts"
 import type { App, TuiState } from "../../../tui/index.ts"
 import { series, type DriverState } from "../../state.ts"
 
@@ -574,6 +574,15 @@ export class ScreenTestDriver {
 
   async findHighlighted(marker: string): Promise<ReadonlyArray<string>> {
     return this.findPainted(marker, bgOf)
+  }
+
+  async findUnderCursor(): Promise<ReadonlyArray<string>> {
+    const found = await Promise.all(
+      [palette.cursorOn, palette.cursorOnAdded, palette.cursorOnRemoved].map((one) =>
+        this.findPainted(one, bgOf),
+      ),
+    )
+    return found.flat()
   }
 
   async debugSpans(): Promise<ReadonlyArray<string>> {

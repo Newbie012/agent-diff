@@ -32,6 +32,13 @@ export const palette = {
   removedBg: "#2e1418",
   addedGutter: "#1d4a2b",
   removedGutter: "#4a1f26",
+
+  cursorOn: "#243a4f",
+  cursorOnAdded: "#1a3d26",
+  cursorOnRemoved: "#40202a",
+  cursorGutter: "#2f4a68",
+  cursorGutterAdded: "#27573a",
+  cursorGutterRemoved: "#5a2b36",
 } as const
 
 export const syntaxTheme = {
@@ -57,9 +64,9 @@ export const syntaxTheme = {
   "punctuation.delimiter": { fg: inkFaint },
   gap: { fg: inkFaint },
   picked: { bg: "#2b3854" },
-  note: { fg: "#9aa7c7", italic: true },
-  prose: { fg: "#a9b4cc" },
-  "note.sent": { fg: "#6d7893", italic: true },
+  note: { fg: "#c8d0dc" },
+  prose: { fg: "#8b95a7" },
+  "note.sent": { fg: "#c8d0dc" },
   "note.label": { fg: "#7aa2f7" },
   default: { fg: ink },
 }

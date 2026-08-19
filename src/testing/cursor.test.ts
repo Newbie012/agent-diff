@@ -24,7 +24,7 @@ describe("knowing which line you are on", () => {
     await driver.screen.pressKeys(["j", "j"])
 
     // ASSERT
-    const highlighted = await driver.screen.findHighlighted(palette.cursor)
+    const highlighted = await driver.screen.findUnderCursor()
     expect(highlighted).toHaveLength(1)
     expect(highlighted[0]).toContain("const two = 2")
   })

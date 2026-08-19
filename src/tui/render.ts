@@ -164,15 +164,29 @@ type PaintFlags = {
 }
 
 const pickPaint = (view: DiffView, kind: RowKind, flags: PaintFlags): LinePaint | undefined => {
-  if (flags.cursor) return { gutter: ACCENT, content: CURSOR }
+  if (flags.cursor) return UNDER_CURSOR[kind] ?? PLAIN_CURSOR
   if (flags.selected) return { gutter: SELECTION, content: SELECTION }
   if (flags.gap) return GAP_PAINT
   return view.washOf(kind)
 }
 
 const SELECTION = RGBA.fromHex(palette.selection)
-const CURSOR = RGBA.fromHex(palette.cursor)
-const ACCENT = RGBA.fromHex(palette.accent)
+
+const PLAIN_CURSOR: LinePaint = {
+  gutter: RGBA.fromHex(palette.cursorGutter),
+  content: RGBA.fromHex(palette.cursorOn),
+}
+
+const UNDER_CURSOR: Partial<Record<RowKind, LinePaint>> = {
+  added: {
+    gutter: RGBA.fromHex(palette.cursorGutterAdded),
+    content: RGBA.fromHex(palette.cursorOnAdded),
+  },
+  removed: {
+    gutter: RGBA.fromHex(palette.cursorGutterRemoved),
+    content: RGBA.fromHex(palette.cursorOnRemoved),
+  },
+}
 const GAP_PAINT: LinePaint = {
   gutter: RGBA.fromHex(palette.overlay),
   content: RGBA.fromHex(palette.overlay),

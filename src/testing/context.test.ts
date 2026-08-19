@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-import { palette } from "../tui/index.ts"
 
 const around = (mark: string): ReadonlyArray<string> => [
   ...Array.from({ length: 12 }, (_, index) => `const above${index} = ${index}`),
@@ -64,14 +63,14 @@ describe("asking for more of the file", () => {
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["j", "j", "j", "j"])
-    const before = await driver.screen.findHighlighted(palette.cursor)
+    const before = await driver.screen.findUnderCursor()
     expect(before.join(" ")).toContain("changed")
 
     // ACT
     await driver.screen.typeText("+")
 
     // ASSERT
-    const after = await driver.screen.findHighlighted(palette.cursor)
+    const after = await driver.screen.findUnderCursor()
     expect(after.join(" ")).toContain("changed")
   })
 })
