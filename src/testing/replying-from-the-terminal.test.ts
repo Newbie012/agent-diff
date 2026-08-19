@@ -44,7 +44,7 @@ describe("replying from the terminal", () => {
 
     // ACT
     await driver.screen.typeText("the imports")
-    await driver.screen.pressKeys(["ctrl+s"])
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
