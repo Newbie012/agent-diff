@@ -30,16 +30,21 @@ import {
   saveReport,
   saveWrap,
   saveSticky,
+  commentIn,
   submitComment,
   submitReply,
   toggleVouch,
   vouchIn,
   type BranchReading,
+  type CommentRequest,
   type VouchReport,
   removeComment,
+  settleIn,
+  removeIn,
   settleThread,
   settleRead,
 } from "../cli/index.ts"
+import type { Worktree } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
 import { Forge } from "../service/forge/index.ts"
@@ -872,7 +877,7 @@ export class App {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
-      yield* (settleThread(this.repo, branch.branch, id, new Date().toISOString()))
+      yield* this.settling(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
       const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
       this.commit(withNotice(this.staying(held, id), "settled"))
@@ -906,7 +911,7 @@ export class App {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
-      yield* (removeComment(this.repo, branch.branch, id, new Date().toISOString()))
+      yield* this.removing(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
       const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
       this.commit(withNotice(held, "removed, restore it with comment restore"))
@@ -1039,6 +1044,32 @@ export class App {
     })
   }
 
+  private worktreeFor(branch: string): Worktree | undefined {
+    const reading = this.reading
+    return reading === undefined || reading.worktree.branch !== branch ? undefined : reading.worktree
+  }
+
+  private commenting(branch: string, request: CommentRequest): Work<unknown> {
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined ? submitComment(request) : commentIn(worktree, request)
+  }
+
+  private settling(branch: string, id: string): Work<{ readonly settled: string }> {
+    const at = new Date().toISOString()
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined
+      ? settleThread(this.repo, branch, id, at)
+      : settleIn(worktree, id, at)
+  }
+
+  private removing(branch: string, id: string): Work<{ readonly removed: string }> {
+    const at = new Date().toISOString()
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined
+      ? removeComment(this.repo, branch, id, at)
+      : removeIn(worktree, id, at)
+  }
+
   private vouching(branch: string, file: string): Work<VouchReport> {
     const held = this.reading
     return held === undefined || held.worktree.branch !== branch
@@ -1047,7 +1078,10 @@ export class App {
   }
 
   private loadSent(branch: string): Work<TuiState["sent"]> {
-    return listSent(this.repo, branch)
+    const reading = this.reading
+    return reading === undefined || reading.worktree.branch !== branch
+      ? listSent(this.repo, branch)
+      : sentIn(reading)
   }
 
   private showPull(): Work {
@@ -1203,19 +1237,17 @@ export class App {
         this.commit(withNotice(this.state, "nothing selected"))
         return
       }
-      yield* (
-        submitComment({
-          repo: this.repo,
-          branch: branch.branch,
-          file: patch.path,
-          side: anchor.value.side,
-          start: anchor.value.start,
-          end: anchor.value.end,
-          body: yield* this.display.written,
-          id: randomUUID(),
-          at: new Date().toISOString(),
-        })
-      )
+      yield* this.commenting(branch.branch, {
+        repo: this.repo,
+        branch: branch.branch,
+        file: patch.path,
+        side: anchor.value.side,
+        start: anchor.value.start,
+        end: anchor.value.end,
+        body: yield* this.display.written,
+        id: randomUUID(),
+        at: new Date().toISOString(),
+      })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(withSent(this.state, sent), "sent to the agent"))
     })
