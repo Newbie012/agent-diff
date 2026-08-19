@@ -52,7 +52,9 @@ describe("prose about code the branch deleted", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(inTheDiff(await driver.screen.getFrame(), "Nothing imports this any more")).toBe(true)
+    const frame = await driver.screen.getFrame()
+    expect(inTheDiff(frame, "Nothing imports this any more")).toBe(true)
+    expect(rowOf(frame, "Nothing imports this any more")).toBeLessThan(rowOf(frame, "export const one"))
   })
 
   it("is drawn beside the lines it describes", async () => {

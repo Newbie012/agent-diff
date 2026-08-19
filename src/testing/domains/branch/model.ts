@@ -27,6 +27,7 @@ export const generateFileTestModel = (overrides: Partial<FileTestModel> = {}): F
     "  return first + second + third",
     "}",
   ],
+  ...(overrides.gone === true ? { gone: true } : {}),
 })
 
 export type BranchOverrides = {
