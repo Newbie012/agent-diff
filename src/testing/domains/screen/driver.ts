@@ -56,6 +56,7 @@ export type Wheel = "up" | "down" | "left" | "right"
 
 const PUMP_MS = 4
 const PUMP_ATTEMPTS = 250
+const PUMP_LONG = 700
 const REST_PASSES = 4
 const HIGHLIGHT_LINES = 40
 const HIGHLIGHTED: ReadonlyArray<string> = ["diff-code", "diff-pin"]
@@ -246,6 +247,13 @@ export class ScreenTestDriver {
     await setup.mockInput.pasteBracketedText(text)
     await this.app?.settled()
     await setup.flush()
+  }
+
+  async untilShown(text: string): Promise<boolean> {
+    const setup = this.active()
+    const found = await this.pump(() => setup.captureCharFrame().includes(text), PUMP_LONG)
+    this.guard()
+    return found
   }
 
   async waitForNoticeToClear(notice: string): Promise<void> {

@@ -31,11 +31,25 @@ describe("looking for something", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("elsewhere")
+    expect(frame).toContain("Look for something")
     expect(frame).not.toContain("useProcessFold  ·")
   })
 
-  it("looks for what was typed when return is pressed", async () => {
+  it("looks while the reviewer types, without being told to", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await opened(driver)
+    await driver.screen.pressKeys(["/"])
+
+    // ACT
+    await driver.screen.typeText("useProcessFold")
+
+    // ASSERT
+    expect(await driver.screen.untilShown("elsewhere")).toBe(true)
+    expect(await driver.screen.getFrame()).toContain("useProcessFold  ·")
+  })
+
+  it("looks straight away when return is pressed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -46,8 +60,6 @@ describe("looking for something", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const frame = await driver.screen.getFrame()
-    expect(frame).toContain("useProcessFold")
-    expect(frame).toMatch(/\d+ elsewhere/)
+    expect(await driver.screen.getFrame()).toMatch(/\d+ places? elsewhere/)
   })
 })

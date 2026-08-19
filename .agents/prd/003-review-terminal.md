@@ -249,11 +249,12 @@ Three screens, and the keys each answers to:
   room. Typing narrows the list, and the count says how many of how many are left, because a
   thousand matches is a list nobody reads.
 
-- **Looking for something asks what to look for.** It guessed: the longest name on the selected
-  line, which is right often enough to be trusted and wrong often enough to mislead — asking for
-  `ActionsMenu` and being shown every use of `ActionsMenuProps`. It opens with a box instead. What
-  the reviewer picked with the mouse fills it, or what is on the clipboard if that reads like one
-  thing, and otherwise it is empty and waiting.
+- **Looking for something asks what to look for, and looks while it is being told.** It guessed:
+  the longest name on the selected line, which is right often enough to be trusted and wrong often
+  enough to mislead — asking for `ActionsMenu` and being shown every use of `ActionsMenuProps`. It
+  opens with a box, empty unless the mouse picked something, and the places appear as the words
+  are typed rather than when a key says to go. Nothing is read from the clipboard: what a reviewer
+  copied is theirs, and a review that pastes it into a box unasked has helped itself.
 
 - **A match is a place in a file, not a line of text.** Every match drew one row that began with
   the same long path, cut where the reader could not see, so a list of twenty said one thing twenty
