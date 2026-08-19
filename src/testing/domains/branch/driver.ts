@@ -1,4 +1,4 @@
-import { mkdir, realpath, writeFile } from "node:fs/promises"
+import { mkdir, realpath, rm, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { series, type DriverState } from "../../state.ts"
 import { generateBranchTestModel, type BranchTestModel, type FileTestModel } from "./model.ts"
@@ -24,7 +24,7 @@ export class BranchTestDriver {
     await this.commitBaseline(model)
     const worktree = join(dirname(this.state.repo), model.name)
     await this.state.git(this.state.repo, ["worktree", "add", "-q", "-b", model.name, worktree])
-    await Promise.all(model.files.map((file) => this.write(worktree, file.path, file.after)))
+    await Promise.all(model.files.map((file) => this.lay(worktree, file)))
     return { ...model, worktree: await realpath(worktree) }
   }
 
@@ -40,7 +40,7 @@ export class BranchTestDriver {
       worktree,
       parent.name,
     ])
-    await series(model.files, (file) => this.write(worktree, file.path, file.after))
+    await series(model.files, (file) => this.lay(worktree, file))
     const stacked = { ...model, worktree: await realpath(worktree) }
     await this.commitAll(stacked, model.name)
     return stacked
@@ -81,6 +81,11 @@ export class BranchTestDriver {
     await series(model.files, (file) => this.write(this.state.repo, file.path, file.before))
     await this.state.git(this.state.repo, ["add", "-A"])
     await this.state.git(this.state.repo, ["commit", "-q", "--allow-empty", "-m", "baseline"])
+  }
+
+  private async lay(root: string, file: FileTestModel): Promise<void> {
+    if (file.gone !== true) return this.write(root, file.path, file.after)
+    await rm(join(root, file.path), { force: true })
   }
 
   private async write(root: string, path: string, lines: ReadonlyArray<string>): Promise<void> {

@@ -268,7 +268,7 @@ export class DiffView {
     this.unpin()
     this.shown = patch
     this.noted = key
-    this.display = layout({ patch, notes, room, gaps, prose })
+    this.display = layout({ patch, notes, room, gaps, prose, fresh: freshLines(patch) })
     this.starts = startsOf(this.display)
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
     this.feed()
@@ -742,12 +742,21 @@ type Plan = {
   readonly room: number
   readonly gaps: ReadonlySet<number>
   readonly prose: ReadonlyArray<Prose>
+  readonly fresh: ReadonlySet<number>
 }
 
+const freshLines = (patch: Patch): ReadonlySet<number> =>
+  new Set(patch.rows.flatMap((row) => {
+    const line = sideLineOf(row, "new")
+    return line === undefined ? [] : [line]
+  }))
+
 const proseAt = (plan: Plan, row: Row, after: boolean): ReadonlyArray<Prose> => {
-  const line = sideLineOf(row, "new")
+  const fresh = sideLineOf(row, "new")
+  const line = fresh ?? sideLineOf(row, "old")
   if (line === undefined) return []
-  return plan.prose.filter((entry) => entry.after === after && entry.line === line)
+  const wanted = plan.prose.filter((entry) => entry.after === after && entry.line === line)
+  return fresh !== undefined ? wanted : wanted.filter(() => !plan.fresh.has(line))
 }
 
 const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>

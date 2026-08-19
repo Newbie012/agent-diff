@@ -95,6 +95,12 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
 A layer is an ordered list of blocks: prose, then the code that prose introduces, then more of
 each. Reading a layer in the terminal presents them in that order.
 
+- **Prose about deleted code sits beside the deleted code.** A prose block anchors to a line, and
+  a line was looked for on the new side of the diff only. A file the branch deletes has no new
+  side, so everything an agent wrote about the code it removed was dropped without a word — the
+  case a reviewer most needs told, because deleted code cannot be read for intent. A line is looked
+  for on the side that has it.
+
 - **Prose renders in the diff, above the code it introduces.** Each prose block anchors to the
   first line of the code block that follows it, and prose written after the last code block anchors
   below that block's last line. Prose the layer wrote about a file the branch does not touch is

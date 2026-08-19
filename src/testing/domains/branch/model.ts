@@ -2,6 +2,7 @@ export type FileTestModel = {
   readonly path: string
   readonly before: ReadonlyArray<string>
   readonly after: ReadonlyArray<string>
+  readonly gone?: boolean
 }
 
 export type BranchTestModel = {
