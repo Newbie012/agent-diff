@@ -237,6 +237,13 @@ Three screens, and the keys each answers to:
   for one of them. The named one is read first and drawn, and the others arrive behind it, in time
   for the list they belong to.
 
+- **What was found can be narrowed, and shows the part that differs.** Every match of a name used
+  across one directory drew the same long path over and over, cut at the right edge — so the rows
+  differed only where the reader could not see, and the line the match was on was the first thing
+  lost. The path keeps its end, where the file name is, and the matching line gets the rest of the
+  room. Typing narrows the list, and the count says how many of how many are left, because a
+  thousand matches is a list nobody reads.
+
 - **Finding the selection elsewhere looks for what was selected.** A reviewer who picks part of a
   line has said exactly what they mean, and the search took the longest name on that line instead —
   so picking a short name looked for a longer one nearby and found the wrong places. Picking

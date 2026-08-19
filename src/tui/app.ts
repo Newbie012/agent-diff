@@ -202,7 +202,7 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
-const LISTENS: ReadonlySet<string> = new Set(["keys", "palette"])
+const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search"])
 
 const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
 

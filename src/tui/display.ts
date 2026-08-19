@@ -3,7 +3,7 @@ import { getTreeSitterClient, pathToFiletype } from "@opentui/core"
 import { Context, Effect, Layer } from "effect"
 import type { Screen as ScreenName, TuiState } from "./model.ts"
 
-const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys"]
+const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys", "search"]
 import { Screen, type Mouse } from "./render.ts"
 
 export type Shape = {

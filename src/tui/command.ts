@@ -664,7 +664,13 @@ export const commands: ReadonlyArray<Command> = [
   }),
 ]
 
-const TEXT_SCREENS: ReadonlySet<Screen> = new Set<Screen>(["compose", "keys", "palette", "report"])
+const TEXT_SCREENS: ReadonlySet<Screen> = new Set<Screen>([
+  "compose",
+  "keys",
+  "palette",
+  "report",
+  "search",
+])
 
 const PRINTABLE_KEY = /^[\S ]$/
 

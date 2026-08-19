@@ -593,7 +593,16 @@ export const searchTerm = (state: TuiState): string => {
   return longestName(line) ?? line
 }
 
-export const matchHere = (state: TuiState): Match | undefined => state.matches[state.matchIndex]
+export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
+  const wanted = state.query.trim().toLowerCase()
+  if (wanted.length === 0) return state.matches
+  return state.matches.filter((match) =>
+    `${match.path}:${match.line} ${match.text}`.toLowerCase().includes(wanted),
+  )
+}
+
+export const matchHere = (state: TuiState): Match | undefined =>
+  shownMatches(state)[state.matchIndex]
 
 export const selectionReadout = (state: TuiState): string => {
   const patch = selectedPatch(state)
