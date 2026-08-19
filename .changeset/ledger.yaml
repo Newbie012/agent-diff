@@ -390,6 +390,10 @@
   dir: ""
   intents:
     - the-keys-everyone-presses
+"@eliya-oss/agent-diff@0.1.0-alpha.86":
+  dir: ""
+  intents:
+    - the-end-of-the-files
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
