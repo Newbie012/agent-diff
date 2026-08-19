@@ -6,6 +6,7 @@ import type { DiffStat, Worktree } from "./model.ts"
 import { gitOrEmpty } from "./run.ts"
 
 const GREP_CONTEXT = 2
+const AT_ONCE = 8
 
 const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "main"]
 
@@ -154,17 +155,18 @@ const readText = Effect.fn("Git.readText")(function* (absolute: string, path: st
 const settled = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
+const seenAs = Effect.fn("Git.seenAs")(function* (entry: Entry, base: string, opened: string) {
+  const path = yield* settled(entry.path)
+  return yield* toWorktree(entry, base, path === opened)
+})
+
 const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
   const porcelain = yield* gitOrEmpty(repo, ["worktree", "list", "--porcelain"])
   const base = yield* defaultBranch(repo)
   const entries = readEntries(porcelain)
   const opened = yield* settled(repo)
-  const found: Array<Worktree> = []
-  for (const entry of entries) {
-    const path = yield* settled(entry.path)
-    found.push(yield* toWorktree(entry, base, path === opened))
-  }
-  return found
+  const read = (entry: Entry) => seenAs(entry, base, opened)
+  return yield* Effect.forEach(entries, read, { concurrency: AT_ONCE })
 })
 
 const readDiff = Effect.fn("Git.diff")(function* (
