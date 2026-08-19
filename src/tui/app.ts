@@ -72,7 +72,6 @@ import {
   spokenSince,
   panelEntry,
   panelEntries,
-  panelIndexOf,
   threadAtRow,
   threadChosen,
   threadAtStop,
@@ -891,10 +890,11 @@ export class App {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
+      const was = this.state.panelIndex
       yield* this.settling(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
-      const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
-      this.commit(withNotice(this.staying(held, id), "settled"))
+      const held = withSent({ ...this.state, opened: this.state.opened.filter((one) => one !== id) }, sent)
+      this.commit(withNotice(this.staying(held, id, was), "settled"))
     })
   }
 
@@ -910,10 +910,11 @@ export class App {
     })
   }
 
-  private staying(state: TuiState, id: string): TuiState {
-    const at = panelIndexOf(state, id)
-    const last = Math.max(0, panelEntries(state).length - 1)
-    return { ...state, panelIndex: Math.min(at, last) }
+  private staying(state: TuiState, id: string, was: number): TuiState {
+    const entries = panelEntries(state)
+    const last = Math.max(0, entries.length - 1)
+    const at = entries.findIndex((entry) => entry.comment.id === id)
+    return { ...state, panelIndex: Math.min(at === -1 ? was : at, last) }
   }
 
   private removeHere(): Work {
@@ -925,10 +926,11 @@ export class App {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
+      const was = this.state.panelIndex
       yield* this.removing(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
-      const held = withSent({ ...this.state, opened: this.state.opened.filter((was) => was !== id) }, sent)
-      this.commit(withNotice(held, "removed, restore it with comment restore"))
+      const held = withSent({ ...this.state, opened: this.state.opened.filter((one) => one !== id) }, sent)
+      this.commit(withNotice(this.staying(held, id, was), "removed, restore it with comment restore"))
     })
   }
 

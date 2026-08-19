@@ -116,6 +116,12 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   they could see, could not settle, and could only be rid of from the command line. With the panel
   focused, settling and removing act on the entry under its cursor, and the footer offers the key
   there for the same reason it offers it on a thread in the diff.
+- **Settling a thread leaves the cursor where the reviewer was.** Reading the review again after a
+  settle rebuilds the list from the top, and the panel went with it, so settling the second of
+  three threads put the reviewer back on the first. Where they were is what they were reading. If
+  the settled thread is still listed the cursor stays on it; if it has gone, the cursor keeps its
+  place in the list and the next thread comes to it.
+
 - **A thread is one stop, not one per row.** Wrapped over several rows and carrying answers, a
   thread can run to eight; stepping through each of them costs keystrokes for nothing, because
   every action applies to the whole thread.
