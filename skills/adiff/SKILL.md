@@ -167,6 +167,16 @@ long enough that the order matters, say you can publish one and let them decide.
 Only when the reviewer asks. A reading order is a real piece of work, it can be wrong, and one
 nobody wanted spends their attention on your summary rather than on the code.
 
+The ask often arrives as a comment. Pressing `L` in the review sends you one of these:
+
+- "Please write a reading order for this branch with `adiff layers set` …" — there is none yet.
+- "The reading order on this branch describes an older commit …" — read the diff again from
+  scratch. Do not patch the old layers; line numbers have moved.
+- "Please revise the reading order …" — there is one and the reviewer wants it different. Ask what
+  is wrong with it if the comment does not say.
+
+Answer it like any other comment when you are done.
+
 When they do ask, write **layers**: an ordered set over the diff, each one a claim about a span of
 code. The reviewer then walks the argument instead of the filesystem.
 
@@ -212,7 +222,16 @@ Rules that make a layers worth reading:
 The answer to `layers set` is the honest report — check it before you claim to be done:
 
 ```json
-{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"partial":1,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"]}]}}
+{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"partial":1,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"],"covered":1,"partial":0,"vanished":[]}]}}
+
+`covered`, `partial` and `vanished` appear per layer as well as for the document, so you can tell
+which of your own layers is the thin one. `vanished` on a layer names paths it claims that are not
+in the diff — usually a typo or a file that moved.
+
+`layers set` refuses a document it cannot use and says which layer is wrong and why: a span that
+ends before it starts, a span starting below line 1, a start or end that is not a whole number, a
+block with no `kind`, a layer with no title. It no longer drops a bad span quietly, so a layer that
+used to cover less than you thought now fails loudly instead.
 ```
 
 `total` counts hunks. `covered` counts the ones where every changed line sits inside a layer, and

@@ -30,6 +30,7 @@ export type Action =
   | "sticky.toggle"
   | "pan.right"
   | "pan.left"
+  | "layers.ask"
   | "rail.toggle"
   | "tree.winnow"
   | "panel.winnow"
@@ -504,6 +505,13 @@ export const commands: ReadonlyArray<Command> = [
     hint: "hide read",
     whenReviewed: true,
     rank: 3,
+  }),
+  command({
+    action: "layers.ask",
+    title: "Ask the agent for a reading order",
+    category: "Files",
+    keys: ["L"],
+    screens: ["review"],
   }),
   command({
     action: "rail.toggle",
