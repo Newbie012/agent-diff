@@ -402,6 +402,10 @@
   dir: ""
   intents:
     - keys-that-were-waiting-on-git
+"@eliya-oss/agent-diff@0.1.0-alpha.89":
+  dir: ""
+  intents:
+    - what-a-branch-is-stacked-on
 "@eliya-oss/agent-diff@0.1.0-alpha.9":
   dir: ""
   intents:
