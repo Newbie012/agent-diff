@@ -438,3 +438,9 @@
   dir: ""
   intents:
     - leaving-with-ctrl-c
+"@eliya-oss/agent-diff@0.1.0-alpha.97":
+  dir: ""
+  intents:
+    - a-changelog-that-is-kept
+    - clicking-a-line
+    - where-the-panel-stays
