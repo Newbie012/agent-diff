@@ -36,6 +36,13 @@ says what happened, the driver knows how.
 
 ## Implementation Decisions
 
+- **The driver presses the keys the review is bound to.** The mock behind it knows a fixed set of
+  names and sends anything else as text, so `pressKeys(["ctrl+s"])` typed six letters and a test
+  that meant to submit a comment passed without submitting one. The driver translates what the
+  binding table calls a key — `escape`, `tab`, `down`, `pagedown`, `ctrl+s`, `shift+down` — into
+  what the mock sends, so a test presses what a reviewer presses.
+
+
 - **A branch has shapes, and the properties are checked against all of them.** Every defect the
   fixtures missed was a shape they never took: a folder holding more files than the tree opens, a
   path deeper than it indents, a change further down a file than the screen reaches. The shapes are

@@ -8,6 +8,24 @@ import { launch } from "../../../tui/index.ts"
 import type { App } from "../../../tui/index.ts"
 import { series, type DriverState } from "../../state.ts"
 
+const NAMED: Readonly<Record<string, string>> = {
+  up: "ARROW_UP",
+  down: "ARROW_DOWN",
+  left: "ARROW_LEFT",
+  right: "ARROW_RIGHT",
+  tab: "TAB",
+  return: "RETURN",
+  escape: "ESCAPE",
+  backspace: "BACKSPACE",
+  home: "HOME",
+  end: "END",
+  space: " ",
+  pageup: "\u001B[5~",
+  pagedown: "\u001B[6~",
+}
+
+const sendable = (key: string): string => NAMED[key] ?? key
+
 const hex = (value: number): string => value.toString(16).padStart(2, "0")
 
 const fgOf = (span: Span): string =>
@@ -172,7 +190,11 @@ export class ScreenTestDriver {
 
   async pressKeys(keys: ReadonlyArray<string>): Promise<void> {
     const setup = this.active()
-    await setup.mockInput.pressKeys([...keys])
+    for (const key of keys) {
+      const chord = /^(ctrl|shift)\+(.+)$/.exec(key)
+      if (chord === null) setup.mockInput.pressKey(sendable(key))
+      else setup.mockInput.pressKey(sendable(chord[2] ?? ""), { [chord[1] ?? ""]: true })
+    }
     await this.app?.settled()
     await setup.waitForVisualIdle()
   }
