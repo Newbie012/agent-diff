@@ -266,6 +266,12 @@ Three screens, and the keys each answers to:
   after it grew that selection instead of moving. A press that goes down and up in one place puts
   the cursor there; a press that moves selects what it moved over.
 
+- **A key means what it prints, not the key it sits on.** A terminal reporting keys in full says
+  which key was pressed and which modifiers were held, and for a key whose face carries two
+  characters it says the lower one: `?` arrives as `/` with shift. So `?` opened the search rather
+  than the key sheet, and the same held for every binding that is a shifted character. What was
+  pressed is what the key would print.
+
 - **Ctrl+C asks before it leaves.** With nothing open over the review it left at once, and a review
   is a place a person is working: comments not yet written, a file half read, a place in a hundred
   and thirty-one of them. The key that everything else in a terminal uses to stop the current thing

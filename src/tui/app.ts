@@ -217,17 +217,44 @@ const writesInto = (screen: TuiState["screen"]): boolean => WRITES.has(screen)
 
 const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
 
-const laidOut = (key: KeyEvent): string =>
-  key.baseCode === undefined || key.name.length !== 1
-    ? key.name
-    : String.fromCodePoint(key.baseCode)
+const LETTER = /^[a-z]$/i
+
+const laidOut = (key: KeyEvent): string => {
+  if (key.baseCode === undefined || key.name.length !== 1) return key.name
+  const laid = String.fromCodePoint(key.baseCode)
+  return LETTER.test(laid) ? laid : key.name
+}
 
 const ARROWS: ReadonlySet<string> = new Set(["up", "down", "left", "right"])
+
+const SHIFTED: Readonly<Record<string, string>> = {
+  "1": "!",
+  "2": "@",
+  "3": "#",
+  "4": "$",
+  "5": "%",
+  "6": "^",
+  "7": "&",
+  "8": "*",
+  "9": "(",
+  "0": ")",
+  "-": "_",
+  "=": "+",
+  "[": "{",
+  "]": "}",
+  "\\": "|",
+  ";": ":",
+  "'": '"',
+  ",": "<",
+  ".": ">",
+  "/": "?",
+  "`": "~",
+}
 
 const keyName = (key: KeyEvent): string => {
   if (key.shift && (key.name === "tab" || ARROWS.has(key.name))) return `shift+${key.name}`
   const named = laidOut(key)
-  const base = key.shift && named.length === 1 ? named.toUpperCase() : named
+  const base = key.shift && named.length === 1 ? (SHIFTED[named] ?? named.toUpperCase()) : named
   return key.ctrl ? `ctrl+${base}` : base
 }
 
