@@ -75,6 +75,14 @@
   intents:
     - asking-for-a-reading-order
     - drafting-a-review
+"@eliya-oss/agent-diff@0.1.0-alpha.109":
+  dir: ""
+  intents:
+    - the-line-you-are-on
+    - two-counts-that-are-not-alike
+    - what-an-option-is-allowed-to-say
+    - what-the-bug-bash-found
+    - wrapping-follows-the-pane
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:
