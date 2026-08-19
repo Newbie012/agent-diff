@@ -594,6 +594,13 @@ export class ScreenTestDriver {
     return this.getFrame()
   }
 
+  async resize(width: number, height: number): Promise<void> {
+    const setup = this.active()
+    setup.renderer.resize(width, height)
+    await this.settleLayout()
+    await setup.waitForVisualIdle()
+  }
+
   async getFrame(): Promise<string> {
     const setup = this.active()
     await this.settleLayout()

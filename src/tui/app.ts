@@ -54,6 +54,7 @@ import { actionFor, takesText, type Action } from "./command.ts"
 import { gapAtRow, shownOf, GAP_CHUNK } from "./gaps.ts"
 import {
   initialState,
+  isReviewed,
   nextUnreviewed,
   rowAtSourceLine,
   rowShowing,
@@ -124,6 +125,11 @@ import { upgradeHint } from "./upgrade.ts"
 export const LEAVING_MS = 3000
 const LOOK_MS = 110
 const LEAVING_SAID = "press ctrl+c again to leave"
+
+const alongFrom = (state: TuiState): TuiState => {
+  const along = nextUnreviewed(state, state.patchIndex)
+  return along === undefined ? withNotice(state, "every file reviewed") : atFile(state, along)
+}
 const NOTICE_MS = 2200
 
 export type AppOptions = {
@@ -324,6 +330,7 @@ export class App {
     renderer.on("destroy", () => this.stopPainting())
     renderer.on("destroy", () => this.stopConsuming())
     renderer.on("frame", () => this.syncGeometry())
+    renderer.on("resize", () => this.resized())
     renderer.setFrameCallback(() => Effect.runPromise(this.applying()))
     const resume = options.resume
     const opensOn = options.opensOn
@@ -503,6 +510,11 @@ export class App {
     }
     const moved = down === 0 ? this.measured() : scrolled(this.standing(), down)
     this.commit(across === 0 ? moved : panBy(moved, across))
+  }
+
+  private resized(): void {
+    Effect.runSync(this.display.paint(this.state))
+    this.syncGeometry()
   }
 
   private syncGeometry(): void {
@@ -1107,11 +1119,14 @@ export class App {
     return this.commitSynced(delta > 0 ? "file.next" : "file.prev")
   }
 
-  private vouch(advance: boolean): Work {
-    return Effect.gen({ self: this }, function* () {
+  private vouch(advance: boolean): Work {    return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       const patch = selectedPatch(this.state)
       if (branch === undefined || patch === undefined) return
+      if (advance && isReviewed(this.state, this.state.patchIndex)) {
+        this.commit(alongFrom(this.state))
+        return
+      }
       const report = yield* this.vouching(branch.branch, patch.path)
       const marked = report.vouched.includes(patch.path)
       const next = withVouched(this.state, report.vouched)

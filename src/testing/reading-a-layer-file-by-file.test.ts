@@ -135,10 +135,12 @@ describe("two layers that claim the same file", () => {
 
     // ACT
     const seen: Array<string> = []
-    for (let step = 0; step < 4; step += 1) {
-      await driver.screen.pressKeys(["]"])
-      seen.push(fileIn(await driver.screen.getFrame()))
-    }
+    await driver.screen.pressKeys(["]"])
+    seen.push(fileIn(await driver.screen.getFrame()))
+    await driver.screen.pressKeys(["]"])
+    seen.push(fileIn(await driver.screen.getFrame()))
+    await driver.screen.pressKeys(["]"])
+    seen.push(fileIn(await driver.screen.getFrame()))
 
     // ASSERT
     expect(seen).toContain("src/three.ts")
