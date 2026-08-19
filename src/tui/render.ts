@@ -32,6 +32,7 @@ import {
   railWindow,
   selectionReadout,
   layerOpen,
+  layerRead,
   layerRows,
   type LayerRow,
   wrapped,
@@ -800,7 +801,7 @@ const staleBanner = (room: number): string =>
     .join("\n")
 
 const layerRoom = (state: TuiState, pane: number): LayerRoom => {
-  const tally = Math.max(1, ...state.layers.map((layer) => `${layer.files.length}`.length))
+  const tally = Math.max(3, ...state.layers.map((layer) => `${layer.files.length}/${layer.files.length}`.length))
   return {
     title: Math.max(4, pane - PANE_CHROME - STEP_LEAD - STEP_GAP - tally),
     note: Math.max(4, pane - PANE_CHROME - NOTE_LEAD),
@@ -821,15 +822,22 @@ const layerHead = (state: TuiState, row: LayerRow): string => {
 }
 
 const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
-  if (row.kind === "file") return `${" ".repeat(NOTE_LEAD)}${marks().file} ${row.text}`
+  if (row.kind === "file") {
+    const seen = row.reviewed === true ? marks().reviewed : " "
+    return `${" ".repeat(NOTE_LEAD)}${seen} ${row.text}`
+  }
   if (row.kind === "note") return `${" ".repeat(NOTE_LEAD)}${row.text}`
-  const count = row.lead ? `${state.layers[row.index]?.files.length ?? 0}` : ""
+  const read = layerRead(state, row.index)
+  const count = row.lead ? `${read.done}/${read.all}` : ""
   const tail = count.padStart(room.tally + STEP_GAP)
   return `${layerHead(state, row)}${row.text.padEnd(room.title)}${tail}`
 }
 
+const litRow = (row: LayerRow, state: TuiState, drawn: TextChunk): TextChunk =>
+  row.here === true ? bg(restingOrHere(state.focus === "tree"))(drawn) : drawn
+
 const layerPaint = (state: TuiState, row: LayerRow): string => {
-  if (row.kind === "file") return palette.ink
+  if (row.kind === "file") return row.reviewed === true ? palette.muted : palette.ink
   if (row.kind === "note") return palette.faint
   return row.index === state.layerIndex ? palette.ink : palette.muted
 }
@@ -1355,7 +1363,7 @@ export class Screen {
     const window =
       whole.more === 0 ? whole : railWindow(all, Math.max(1, height - 1), state.layerIndex)
     const rows = window.rows.map((row) =>
-      fg(layerPaint(state, row))(`${layerText(state, row, room)}\n`),
+      litRow(row, state, fg(layerPaint(state, row))(`${layerText(state, row, room)}\n`)),
     )
     const more = window.more > 0 ? [fg(palette.faint)(` … ${window.more} more`)] : []
     const warn = state.layersStale

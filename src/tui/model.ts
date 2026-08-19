@@ -25,6 +25,9 @@ export type LayerRow = {
   readonly kind: "title" | "note" | "file"
   readonly text: string
   readonly lead: boolean
+  readonly fileIndex?: number
+  readonly reviewed?: boolean
+  readonly here?: boolean
 }
 
 export type Spot = { readonly row: number; readonly column: number }
@@ -279,12 +282,18 @@ const proseRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
   for (const [at, block] of blocks.entries()) {
     if (at > 0) rows.push(proseRow(layerIndex, ""))
     for (const text of wrapped(block.markdown, room)) rows.push(proseRow(layerIndex, text))
-    rows.push({
-      index: layerIndex,
-      kind: "file",
-      text: clipEnd(block.path, Math.max(1, room - FILE_LEAD)),
-      lead: false,
-    })
+    const found = state.patches.findIndex((patch) => patch.path === block.path)
+    if (found !== -1) {
+      rows.push({
+        index: layerIndex,
+        kind: "file",
+        text: clipEnd(block.path, Math.max(1, room - FILE_LEAD)),
+        lead: false,
+        fileIndex: found,
+        reviewed: isReviewed(state, found),
+        here: found === state.patchIndex,
+      })
+    }
   }
   return rows
 }
@@ -312,13 +321,43 @@ const clipEnd = (text: string, room: number): string => {
 
 const FILE_LEAD = 2
 
-const fileRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
-  (state.layers[layerIndex]?.files ?? []).map((path) => ({
-    index: layerIndex,
-    kind: "file" as const,
-    text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
-    lead: false,
-  }))
+const fileRows = (
+  state: TuiState,
+  layerIndex: number,
+  room: number,
+  already: ReadonlySet<string> = new Set(),
+): ReadonlyArray<LayerRow> =>
+  (state.layers[layerIndex]?.files ?? []).flatMap((path) => {
+    if (already.has(path)) return []
+    const at = state.patches.findIndex((patch) => patch.path === path)
+    if (at === -1) return []
+    const done = isReviewed(state, at)
+    if (done && state.hideReviewed && at !== state.patchIndex) return []
+    return [
+      {
+        index: layerIndex,
+        kind: "file" as const,
+        text: clipEnd(path, Math.max(1, room - FILE_LEAD)),
+        lead: false,
+        fileIndex: at,
+        reviewed: done,
+        here: at === state.patchIndex,
+      },
+    ]
+  })
+
+export const layerRead = (state: TuiState, layerIndex: number): { done: number; all: number } => {
+  const files = layerFiles(state, layerIndex)
+  return { done: files.filter((at) => isReviewed(state, at)).length, all: files.length }
+}
+
+const spokenFor = (state: TuiState, layerIndex: number): ReadonlySet<string> =>
+  new Set((state.layers[layerIndex]?.prose ?? []).map((block) => block.path))
+
+const saidOf = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> =>
+  (state.layers[layerIndex]?.prose ?? []).length > 0
+    ? proseRows(state, layerIndex, room)
+    : noteRows(state, layerIndex, room)
 
 export const layerRows = (
   state: TuiState,
@@ -329,9 +368,8 @@ export const layerRows = (
     layerOpen(state, index)
       ? [
           ...titleRows(state, index, titleRoom),
-          ...((state.layers[index]?.prose ?? []).length > 0
-            ? proseRows(state, index, noteRoom)
-            : [...noteRows(state, index, noteRoom), ...fileRows(state, index, noteRoom)]),
+          ...saidOf(state, index, noteRoom),
+          ...fileRows(state, index, noteRoom, spokenFor(state, index)),
         ]
       : titleRows(state, index, titleRoom),
   )
@@ -815,7 +853,7 @@ export const countsOf = (state: TuiState, fileIndex: number): string => {
 
 export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
   onLayers(state)
-    ? layerFiles(state, state.layerIndex)
+    ? state.layers.flatMap((_, at) => layerFiles(state, at))
     : flattenTree(treeOf(state), []).flatMap((row) =>
         row.fileIndex === undefined ? [] : [row.fileIndex],
       )

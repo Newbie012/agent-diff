@@ -138,17 +138,13 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(rail).not.toContain("…")
   })
 
-  it("opens a layer onto the prose that explains it, and closes it again", async () => {
+  it("opens onto the layer being read, and closes it when asked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
     await driver.app.runLayersSet(branch.worktree, noted)
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
-    expect(paneOf(await driver.screen.getFrame())).not.toContain("dropped")
-
-    // ACT
-    await driver.screen.pressKeys(["l"])
 
     // ASSERT
     const open = paneOf(await driver.screen.getFrame())

@@ -79,6 +79,26 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   wrapped to the rail, and a long one is cut to three lines and marked, because the layers
   underneath are what the reviewer moves through.
 
+- **A layer is a card: what it is called, what it says, and the files it covers.** The rail listed
+  layers, and a layer opened to show its prose — but the files it covered were a list nobody could
+  stand on, so the reviewer moved through layers with one pair of keys and through files with
+  another, and the rail never said which of a layer's files had been read. A card carries its
+  number and title, its note under that, and its files as rows of their own.
+
+- **Moving in the rail moves from file to file, whatever the rail is showing.** Reading is done a
+  file at a time — read it, mark it, take the next — and that is the same motion whether the files
+  are grouped by folder or by layer. Moving past the last file of a layer lands on the first file
+  of the next, because a layers is a reading order and the order runs through it.
+
+- **A card says how much of it has been read.** Every layer shows how many of its files are marked
+  reviewed against how many it covers, and each file says whether it is one of them. A reading
+  order that cannot show progress through itself is a table of contents, not a plan.
+
+- **What the reviewer chose to look at survives a reload.** Reading the branch again put the rail
+  back on the layers, so a reviewer who had switched to the files lost that every time they pressed
+  reload. Which of the two the rail is showing is the reviewer's choice, and only the layers
+  arriving where there were none before makes it adiff's.
+
 - **A branch with a layers reads by layer.** The review terminal replaces the file tree with the
   layers's numbered layers and their file counts; moving to a layer scopes the diff to that layer's
   files, and one key switches back to the file tree. The hunks no layer claims appear as a final
