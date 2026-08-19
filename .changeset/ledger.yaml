@@ -58,6 +58,14 @@
   dir: ""
   intents:
     - a-faster-search
+"@eliya-oss/agent-diff@0.1.0-alpha.106":
+  dir: ""
+  intents:
+    - a-layer-read-as-a-chapter
+    - a-terminal-that-changed-size
+    - naming-the-layer-that-is-wrong
+    - reading-a-layer-file-by-file
+    - walking-a-layered-review
 "@eliya-oss/agent-diff@0.1.0-alpha.11":
   dir: ""
   intents:
