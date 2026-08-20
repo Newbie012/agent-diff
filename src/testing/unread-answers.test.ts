@@ -78,7 +78,7 @@ describe("when answers are waiting to be read", () => {
 })
 
 describe("when the review panel has answers waiting", () => {
-  test("then the panel says how many are unread after a reload", async () => {
+  test("then the panel counts the unread answers after a reload", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answered(driver)
@@ -91,7 +91,7 @@ describe("when the review panel has answers waiting", () => {
     expect(await driver.screen.getFrame()).toContain("1 unread")
   })
 
-  test("then the panel stops saying it once the comment is opened", async () => {
+  test("then the panel drops the count once the comment is opened", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answered(driver)

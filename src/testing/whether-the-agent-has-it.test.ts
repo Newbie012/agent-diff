@@ -32,7 +32,7 @@ describe("when a comment is waiting on the agent", () => {
     expect(frame).not.toContain("Not picked up")
   })
 
-  test("then the thread says how long ago the comment was picked up", async () => {
+  test("then the thread reads how long ago the comment was picked up", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const worktree = await commented(driver)
@@ -46,7 +46,7 @@ describe("when a comment is waiting on the agent", () => {
     expect(await driver.screen.getFrame()).toContain("picked up just now")
   })
 
-  test("then an uncollected comment says only that it was sent", async () => {
+  test("then an uncollected comment reads only as sent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commented(driver)

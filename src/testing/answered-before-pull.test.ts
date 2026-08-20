@@ -66,7 +66,7 @@ describe("when answers are waiting to be pulled", () => {
     expect(await driver.screen.getFrame()).not.toContain("Dropped it")
   })
 
-  test("then adiff still names it after a notice has come and gone", async () => {
+  test("then the comment is named again after a notice has come and gone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { ids, worktree } = await openOnTwo(driver)

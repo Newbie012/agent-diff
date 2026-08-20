@@ -39,7 +39,7 @@ describe("when a branch touches many files", () => {
     expect(pane(frame)).toContain(name.replace(".ts", ""))
   })
 
-  test("then adiff says how many files the branch touches", async () => {
+  test("then the header counts the files the branch touches", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)

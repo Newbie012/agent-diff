@@ -8,7 +8,7 @@ const oneFile = {
 const homeRows = (frame: string): ReadonlyArray<string> => frame.split("\n")
 
 describe("when the worktree list is drawn", () => {
-  test("then the list says which state the pull request is in", async () => {
+  test("then the list shows the state of the pull request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

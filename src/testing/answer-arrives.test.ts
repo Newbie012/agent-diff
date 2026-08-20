@@ -30,7 +30,7 @@ const openOnComment = async (
 }
 
 describe("when an answer arrives while the reviewer reads", () => {
-  test("then the footer says an answer arrived and names the key that pulls it", async () => {
+  test("then the footer reports the answer and names the key that pulls it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { id, worktree } = await openOnComment(driver)

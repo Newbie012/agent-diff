@@ -2,7 +2,7 @@ import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 describe("when a person runs adiff for the first time", () => {
-  test("then adiff says what it is and how to go on", async () => {
+  test("then the output names what adiff is and how to go on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

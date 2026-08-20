@@ -15,7 +15,7 @@ const spread = {
 }
 
 describe("when the diff skips lines", () => {
-  test("then the diff says how many lines it is not showing", async () => {
+  test("then the diff counts the lines it is not showing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)

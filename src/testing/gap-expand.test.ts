@@ -39,7 +39,7 @@ const hiddenCounts = (frame: string): ReadonlyArray<number> =>
   gapRows(frame).map((line) => Number(/(\d+) lines hidden/.exec(line)?.[1] ?? -1))
 
 describe("when the lines a diff leaves out are opened", () => {
-  test("then the gap row says how many lines it holds back", async () => {
+  test("then the gap row counts the lines it holds back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)

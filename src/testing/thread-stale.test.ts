@@ -12,7 +12,7 @@ const oneFile = {
 }
 
 describe("when the code under a thread moves", () => {
-  test("then the thread says the comment describes an older commit", async () => {
+  test("then the thread is marked as describing an older commit", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -34,7 +34,7 @@ describe("when the code under a thread moves", () => {
     expect(frame).toContain("moved on")
   })
 
-  test("then the thread says nothing of the sort while the code stands still", async () => {
+  test("then the thread carries no such mark while the code stands still", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

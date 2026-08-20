@@ -65,7 +65,7 @@ describe("when the rail carries a stale layer set", () => {
     expect(rail).not.toMatch(/invitatio ns/)
   })
 
-  test("then a narrow rail says only that the layers are stale", async () => {
+  test("then a narrow rail carries only the stale mark", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

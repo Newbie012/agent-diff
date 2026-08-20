@@ -58,7 +58,7 @@ describe("when the agent answers a comment", () => {
     expect(thread?.answers[0]?.body).toBe("removed it, and the import with it")
   })
 
-  test("then the answer says it is asking something back", async () => {
+  test("then the answer is marked as asking something back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()

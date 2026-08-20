@@ -24,7 +24,7 @@ const layers = {
 }
 
 describe("when the layers go stale", () => {
-  test("then the file tree says the layers are stale too", async () => {
+  test("then the file tree carries the stale mark too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)

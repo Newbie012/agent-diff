@@ -21,7 +21,7 @@ describe("when the pull request is reached from the worktree list", () => {
     expect(asked.some((line) => line.includes(`pr view ${branch.name} --web`))).toBe(true)
   })
 
-  test("then adiff says the branch has no pull request", async () => {
+  test("then the footer reports no pull request on the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

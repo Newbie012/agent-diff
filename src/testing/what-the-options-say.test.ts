@@ -124,7 +124,7 @@ describe("when an option is given a value", () => {
     expect(Object.keys(parsed.branches[0] ?? {})).toEqual(["branch"])
   })
 
-  test("then adiff says a line number is not a whole number", async () => {
+  test("then the output reports a line number that is not a whole number", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

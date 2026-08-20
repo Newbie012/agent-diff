@@ -17,7 +17,7 @@ describe("when an agent meets adiff with nothing read", () => {
     expect(result.stdout).toContain("layers set")
   })
 
-  test("then adiff says one command can be asked about on its own", async () => {
+  test("then the output offers to describe one command on its own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -57,7 +57,7 @@ describe("when comments are collected and none are waiting", () => {
     expect(hint).toContain("comment answer")
   })
 
-  test("then adiff says nothing extra once a comment is waiting", async () => {
+  test("then the output carries nothing extra once a comment is waiting", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })

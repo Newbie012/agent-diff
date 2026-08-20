@@ -95,7 +95,7 @@ describe("when a search counts its matches", () => {
 })
 
 describe("when the name searched for is defined where the reviewer stands", () => {
-  test("then that definition is one of the places listed", async () => {
+  test("then the definition where the reviewer stands is one of the places listed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

@@ -66,7 +66,7 @@ describe("when the forge only partly takes a send", () => {
     ])
   })
 
-  test("then adiff says how many landed and how many are still held", async () => {
+  test("then the output counts what landed and what is still held", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })

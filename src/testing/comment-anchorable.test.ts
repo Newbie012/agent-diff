@@ -15,7 +15,7 @@ const branch = {
 }
 
 describe("when a comment is written where there is no line", () => {
-  test("then adiff refuses on a row of hidden lines and says why", async () => {
+  test("then a row of hidden lines is refused, with the reason", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)

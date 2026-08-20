@@ -17,7 +17,7 @@ const told: LayersInput = {
 }
 
 describe("when layers describe an older commit", () => {
-  test("then adiff says a new revision is needed", async () => {
+  test("then the rail asks for a new revision", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(one)
@@ -34,7 +34,7 @@ describe("when layers describe an older commit", () => {
     expect(body.layers.advice).toContain("new revision")
   })
 
-  test("then adiff says nothing while the layers still describe the branch", async () => {
+  test("then the rail carries no such note while the layers describe the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(one)

@@ -20,7 +20,8 @@ How to make a change here, in order. `AGENTS.md` is the short version; this is w
    watch it fail for the right reason — a test that passes before the code exists is testing
    something else. `describe("when …")`, `test("then …")`, and both name their subject: the `then`
    has no `it` to borrow one from, so "then it is still that way" says nothing. Write "then long
-   lines still wrap the next time adiff opens".
+   lines still wrap the next time adiff opens". A screen shows, lists, marks or counts; the CLI
+   prints, names or exits. Nothing "says so". `adiff/test-title` enforces it.
 6. **Write the code.** Then `pnpm check`.
 7. **Write the change intent**, if a reviewer would notice the difference. One entry per thing that
    changed, in the shape `.claude/skills/release-notes/SKILL.md` describes. A refactor, a test or a

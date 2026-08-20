@@ -65,7 +65,7 @@ describe("when the terminal changes size", () => {
     expect(frame).toContain("src/")
   })
 
-  test("then adiff says the terminal is too narrow", async () => {
+  test("then the screen reports the terminal is too narrow", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

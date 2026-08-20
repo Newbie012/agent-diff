@@ -11,7 +11,7 @@ const rowWithCursor = (frame: string): string =>
   (frame.split("\n").find((line) => line.includes("\u258e")) ?? "").trim()
 
 describe("when the worktree list is read again", () => {
-  test("then adiff says it read the list again", async () => {
+  test("then the footer reports the list was read again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })

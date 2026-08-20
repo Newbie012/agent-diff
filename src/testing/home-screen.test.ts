@@ -8,7 +8,7 @@ const oneFile = {
 }
 
 describe("when adiff opens on the home screen", () => {
-  test("then the home screen says which repository is being reviewed", async () => {
+  test("then the home screen names the repository being reviewed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

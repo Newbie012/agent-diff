@@ -89,7 +89,7 @@ describe("when the command list is read", () => {
     expect(result.stdout).toContain("adiff <command> --help")
   })
 
-  test("then adiff says what it is when given flags and no command", async () => {
+  test("then the output names what adiff is when given flags and no command", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -159,7 +159,7 @@ describe("when a command is missing an option it needs", () => {
 })
 
 describe("when an agent reads the catalog", () => {
-  test("then each command says which part of the loop it belongs to", async () => {
+  test("then each command names the part of the loop it belongs to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

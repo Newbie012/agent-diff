@@ -21,7 +21,7 @@ describe("when the agent is asked for a reading order", () => {
     expect(taken.map((one) => one.body).join("\n")).toContain("adiff layers set")
   })
 
-  test("then adiff says the order is stale", async () => {
+  test("then the order is reported stale", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

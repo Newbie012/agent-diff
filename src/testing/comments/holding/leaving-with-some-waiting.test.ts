@@ -24,7 +24,7 @@ const holdingOneComment = scenario({
 })
 
 describe("when you try to leave with comments still waiting", () => {
-  test("then adiff says how many are waiting and stays open", async () => {
+  test("then the footer counts the waiting comments and the review stays open", async () => {
     // ARRANGE
     await using review = await reviewing(holdingOneComment)
 

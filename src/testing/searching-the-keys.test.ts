@@ -33,7 +33,7 @@ describe("when a key is searched for in the sheet", () => {
     expect(frame).not.toContain("Report a bug")
   })
 
-  test("then adiff says nothing matches and takes the typing back", async () => {
+  test("then the sheet reports nothing matches and takes the typing back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openSheet(driver)

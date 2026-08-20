@@ -238,7 +238,7 @@ describe("when the held comments are sent to the pull request", () => {
     expect(await listed(driver, created.name)).toHaveLength(1)
   })
 
-  test("then adiff says there is nothing held to send", async () => {
+  test("then the output reports nothing held to send", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })

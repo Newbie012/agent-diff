@@ -23,7 +23,7 @@ describe("when the wheel and a key move the diff", () => {
     expect(await driver.screen.paintedTop()).toBe(believed.scroll)
   })
 
-  test("then they still match after a key follows the wheel", async () => {
+  test("then what the review believes still matches what it draws after a key follows the wheel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)

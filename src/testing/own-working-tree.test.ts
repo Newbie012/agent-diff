@@ -40,7 +40,7 @@ describe("when the repository's own working tree is reviewed", () => {
     expect(branches.map((entry) => entry.branch)).toContain("master")
   })
 
-  test("then adiff says why the list is empty", async () => {
+  test("then the empty list carries its reason", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

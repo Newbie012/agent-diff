@@ -2,7 +2,7 @@ import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 describe("when a binary file is opened", () => {
-  test("then the diff says the file is binary", async () => {
+  test("then the diff marks the file as binary", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({
@@ -21,7 +21,7 @@ describe("when a binary file is opened", () => {
 })
 
 describe("when a file has no newline at the end", () => {
-  test("then the diff says the newline is missing", async () => {
+  test("then the diff marks the missing newline", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({

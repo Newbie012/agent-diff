@@ -18,7 +18,7 @@ const kept = [
 const untouched = { path: "pkg/widget.ts", before: kept, after: kept }
 
 describe("when a file's lines did not change", () => {
-  test("then the diff says the mode changed", async () => {
+  test("then the diff shows the changed mode", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: [edited, untouched] })
@@ -31,7 +31,7 @@ describe("when a file's lines did not change", () => {
     expect(await driver.screen.getFrame()).toContain("mode changed, 100644 to 100755")
   })
 
-  test("then the diff says where the renamed file came from", async () => {
+  test("then the diff shows where the renamed file came from", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: [edited, untouched] })
@@ -46,7 +46,7 @@ describe("when a file's lines did not change", () => {
 })
 
 describe("when an empty file is added", () => {
-  test("then the diff says the file is empty", async () => {
+  test("then the diff shows the file as empty", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: [edited] })
@@ -62,7 +62,7 @@ describe("when an empty file is added", () => {
 })
 
 describe("when a file is renamed and edited", () => {
-  test("then the diff says where the file came from and still shows the changes", async () => {
+  test("then the diff shows where the file came from and the changes in it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: [edited, untouched] })

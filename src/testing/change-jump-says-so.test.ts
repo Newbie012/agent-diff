@@ -22,7 +22,7 @@ const oneChange = {
 }
 
 describe("when the reviewer jumps between changes", () => {
-  test("then adiff says there is no change after this one", async () => {
+  test("then the footer reports no change after this one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
@@ -35,7 +35,7 @@ describe("when the reviewer jumps between changes", () => {
     expect(await driver.screen.getFrame()).toContain("no change after this one")
   })
 
-  test("then adiff says there is no change before this one", async () => {
+  test("then the footer reports no change before this one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
@@ -63,7 +63,7 @@ describe("when the reviewer jumps between changes", () => {
     expect(marked ?? "").toMatch(/\d+ [+-] /)
   })
 
-  test("then adiff says nothing changed in the file", async () => {
+  test("then the footer reports nothing changed in the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneChange)

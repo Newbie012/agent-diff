@@ -51,7 +51,7 @@ describe("when a comment's file is no longer in the diff", () => {
     expect(await driver.screen.getFrame()).toContain("removed")
   })
 
-  test("then opening the comment says where the file went", async () => {
+  test("then opening the comment shows where the file went", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commentedThenGone(driver)

@@ -43,7 +43,7 @@ describe("when a branch is worked through file by file", () => {
     expect(frame).toContain("2 reviewed")
   })
 
-  test("then adiff says the branch is done when the last file is marked", async () => {
+  test("then the branch reads as done once the last file is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)

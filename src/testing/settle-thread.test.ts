@@ -62,7 +62,7 @@ describe("when a thread is settled from the terminal", () => {
     expect(row).toContain("d")
   })
 
-  test("then adiff says there is no thread under the cursor", async () => {
+  test("then the footer reports no thread under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)

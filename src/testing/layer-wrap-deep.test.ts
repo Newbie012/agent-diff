@@ -83,7 +83,7 @@ describe("when a layer spanning files is read at a narrow width", () => {
     expect(bare(codeOf(frame))).toContain(bare("without opening the logs"))
   })
 
-  test("then each gap still says how many lines it holds back", async () => {
+  test("then each gap keeps counting the lines it holds back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

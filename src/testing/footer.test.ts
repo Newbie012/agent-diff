@@ -28,7 +28,7 @@ describe("when the footer is read", () => {
     expect(footer).not.toContain("ctrl+s")
   })
 
-  test("then the footer says what is selected", async () => {
+  test("then the footer counts what is selected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

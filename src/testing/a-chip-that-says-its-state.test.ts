@@ -7,7 +7,7 @@ const files = [
 ]
 
 describe("when a footer chip toggles something", () => {
-  test("then the chip says which way the toggle will go", async () => {
+  test("then the chip shows which way the toggle will go", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

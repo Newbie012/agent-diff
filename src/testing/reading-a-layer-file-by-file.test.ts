@@ -32,7 +32,7 @@ const ticks = (frame: string): number => (frame.match(/✓/g) ?? []).length
 
 const fileIn = (frame: string): string => (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
-describe("when a layer says two things about one file", () => {
+describe("when a layer covers one file twice", () => {
   test("then the rail lists that file once", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

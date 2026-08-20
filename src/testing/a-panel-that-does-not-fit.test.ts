@@ -6,7 +6,7 @@ const files = [
 ]
 
 describe("when the review panel is asked for and cannot fit", () => {
-  test("then adiff says it cannot fit, every time it is asked", async () => {
+  test("then the footer reports the panel cannot fit, every time it is asked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

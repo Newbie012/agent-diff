@@ -57,7 +57,7 @@ describe("when the compose box is closed on a draft", () => {
 })
 
 describe("when a comment with nothing in it is sent", () => {
-  test("then adiff refuses it and says so", async () => {
+  test("then the comment is refused, with the reason", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

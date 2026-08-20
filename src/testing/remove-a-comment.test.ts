@@ -42,7 +42,7 @@ describe("when a comment is removed from the diff", () => {
     expect(await driver.screen.getFrame()).not.toContain("meant for another line")
   })
 
-  test("then adiff says the comment was removed", async () => {
+  test("then the footer reports the comment removed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -76,7 +76,7 @@ describe("when a comment is removed from the diff", () => {
     expect(frame).not.toContain("the second point")
   })
 
-  test("then adiff says there is no thread under the cursor", async () => {
+  test("then the footer reports no thread under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

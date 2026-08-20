@@ -34,7 +34,7 @@ describe("when the branch list is read", () => {
     })
   })
 
-  test("then each branch says how many comments the agent has not collected", async () => {
+  test("then each branch counts the comments the agent has not collected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

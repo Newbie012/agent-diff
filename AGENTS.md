@@ -16,7 +16,7 @@ Talk tachles: be concise, direct, and practical.
    or an agent can observe — never an internal call, an intermediate value, or a private function.
    `describe("when …")` and `test("then …")`, each naming its subject rather than leaning on "it",
    "them" or "that way": the title is read on a PR page and on a recording's title card, with
-   nothing beside it.
+   nothing beside it. `adiff/test-title` enforces it.
 4. Then the code. Then `pnpm check`.
 
 `.agents/prd/` holds behavior contracts, `.agents/adr/` durable decisions, GitHub issues the work.
@@ -41,6 +41,9 @@ Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entr
 - **No import reaches past another module's `index.ts`.** This is what lets two agents work in two
   modules of one worktree without colliding.
 - **No unit tests.** Assert on outcomes through the driver (ADR-003).
+- **A test title opens `when …` or `then …` and names its subject.** No pronoun standing where the
+  subject belongs, no "says so", no "that way", and never "adiff says" — name the surface that
+  shows it: the footer, the header, the diff, the rail, the output.
 - **No constructor parameter properties.** Node strips types rather than compiling them, so the
   syntax never runs even though `tsc` and vitest both accept it.
 

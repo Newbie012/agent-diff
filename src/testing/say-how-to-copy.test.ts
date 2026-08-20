@@ -12,7 +12,7 @@ const oneFile = {
 }
 
 describe("when a selection is under way", () => {
-  test("then the footer says which key copies", async () => {
+  test("then the footer names the key that copies", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

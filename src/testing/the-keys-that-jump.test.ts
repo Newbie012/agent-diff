@@ -13,7 +13,7 @@ const fileIn = (frame: string): string =>
   (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
 describe("when the jumping keys are pressed", () => {
-  test("then they move the file list when it has focus", async () => {
+  test("then the jumping keys move the file list when it has focus", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -36,7 +36,7 @@ describe("when the jumping keys are pressed", () => {
     expect(fileIn(await driver.screen.getFrame())).toBe(started)
   })
 
-  test("then they move the diff when it has focus", async () => {
+  test("then the jumping keys move the diff when it has focus", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

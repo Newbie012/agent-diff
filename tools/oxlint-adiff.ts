@@ -205,6 +205,37 @@ const effectNotPromises = {
   },
 }
 
+const NO_SUBJECT = /^(?:when|then) (it|its|they|them|that|those|this)\b/
+const HOLLOW = /\b(says so|that way|adiff says)\b/
+
+const titleOf = (node) => {
+  if (node.callee.type !== "Identifier") return undefined
+  if (node.callee.name !== "describe" && node.callee.name !== "test") return undefined
+  const first = node.arguments[0]
+  return first?.type === "Literal" && typeof first.value === "string" ? first : undefined
+}
+
+const faultIn = (said, lead) => {
+  if (!said.startsWith(lead)) return `a title here opens "${lead}…"`
+  const hollow = HOLLOW.exec(said)
+  if (hollow !== null) return `"${hollow[0]}" says nothing on its own — name what it is about`
+  const bare = NO_SUBJECT.exec(said)
+  return bare === null ? undefined : `"${bare[1]}" stands where the subject should be — name it`
+}
+
+const testTitle = {
+  create(context) {
+    return {
+      CallExpression(node) {
+        const said = titleOf(node)
+        if (said === undefined) return
+        const fault = faultIn(said.value, node.callee.name === "describe" ? "when " : "then ")
+        if (fault !== undefined) context.report({ node: said, message: fault })
+      },
+    }
+  },
+}
+
 export default {
   meta: { name: "adiff" },
   rules: {
@@ -217,5 +248,6 @@ export default {
     "span-name": spanName,
     "service-tag": serviceTag,
     "effect-not-promises": effectNotPromises,
+    "test-title": testTitle,
   },
 }

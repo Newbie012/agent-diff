@@ -16,7 +16,7 @@ const pane = (frame: string): string =>
     .join("\n")
 
 describe("when a file is marked reviewed from the terminal", () => {
-  test("then the file under the cursor is marked and the tree says so", async () => {
+  test("then the file under the cursor is marked, in the tree too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

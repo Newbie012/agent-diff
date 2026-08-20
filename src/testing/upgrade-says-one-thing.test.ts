@@ -9,7 +9,7 @@ const SKILL_AT = join(".claude", "skills", "adiff", "SKILL.md")
 const alone = (where: string): Readonly<Record<string, string>> => ({ HOME: where })
 
 describe("when adiff upgrade reports", () => {
-  test("then it names the command it ran and the version it landed on, and nothing else", async () => {
+  test("then the output names the command it ran and the version it landed on, and nothing else", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -26,7 +26,7 @@ describe("when adiff upgrade reports", () => {
     ])
   })
 
-  test("then it says one thing when there is nothing to do", async () => {
+  test("then the output carries one line when there is nothing to do", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -40,7 +40,7 @@ describe("when adiff upgrade reports", () => {
     expect(result.stdout.trim().split("\n")).toHaveLength(1)
   })
 
-  test("then it leaves the registry's tags out", async () => {
+  test("then the output leaves the registry's tags out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })

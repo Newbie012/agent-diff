@@ -61,7 +61,7 @@ describe("when everything already read is settled", () => {
     expect(stateOf(listed, "read one")).toBe("answered")
   })
 
-  test("then adiff says nothing read is waiting", async () => {
+  test("then the footer reports nothing read is waiting", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answeredTwice(driver)

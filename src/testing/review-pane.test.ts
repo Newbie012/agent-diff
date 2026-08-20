@@ -75,7 +75,7 @@ describe("when the review is opened in a pane", () => {
     expect(asked).toContain("new-pane")
   })
 
-  test("then adiff says the multiplexer failed", async () => {
+  test("then the output reports the multiplexer failed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const bin = join(driver.repoPath, "broken-bin")

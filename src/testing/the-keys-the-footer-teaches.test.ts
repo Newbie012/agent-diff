@@ -7,7 +7,7 @@ const files = [
 ]
 
 describe("when the footer teaches the keys", () => {
-  test("then the footer says how to move first", async () => {
+  test("then the footer leads with how to move", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

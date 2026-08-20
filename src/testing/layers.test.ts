@@ -108,7 +108,7 @@ describe("when a diff is read in the order the agent built it", () => {
     expect(layers.stale).toBe(false)
   })
 
-  test("then a reading order reads as stale once the branch moves past it", async () => {
+  test("then a reading order reads stale once the branch moves past it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -135,7 +135,7 @@ describe("when a diff is read in the order the agent built it", () => {
     expect(result.envelope).toEqual({ ok: true, layers: { covered: 2, total: 2 } })
   })
 
-  test("then adiff says there is no reading order", async () => {
+  test("then the output reports no reading order", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -149,7 +149,7 @@ describe("when a diff is read in the order the agent built it", () => {
     expect(result.envelope).toMatchObject({ ok: false, error: { type: "NoLayers" } })
   })
 
-  test("then adiff refuses an empty reading order and says what one looks like", async () => {
+  test("then an empty reading order is refused, with the shape one takes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

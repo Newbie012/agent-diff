@@ -24,7 +24,7 @@ const threaded = async (driver: TestDriver, asks = true) => {
 }
 
 describe("when the reviewer replies from the terminal", () => {
-  test("then the box says which thread is being answered", async () => {
+  test("then the box names the thread being answered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await threaded(driver)

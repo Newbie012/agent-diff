@@ -12,7 +12,7 @@ const walk = async (driver: TestDriver, key: string, times: number): Promise<voi
 }
 
 describe("when the reviewer presses on past the last file", () => {
-  test("then adiff says there is no next file", async () => {
+  test("then the footer reports no next file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
@@ -26,7 +26,7 @@ describe("when the reviewer presses on past the last file", () => {
     expect(await driver.screen.getFrame()).toContain("last file")
   })
 
-  test("then adiff says there is no previous file at the first one", async () => {
+  test("then the footer reports no previous file at the first one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
@@ -39,7 +39,7 @@ describe("when the reviewer presses on past the last file", () => {
     expect(await driver.screen.getFrame()).toContain("first file")
   })
 
-  test("then adiff says nothing while there are files to turn to", async () => {
+  test("then the footer stays quiet while there are files to turn to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })

@@ -9,7 +9,7 @@ const oneFile = {
 }
 
 describe("when a branch has nothing left to read", () => {
-  test("then adiff says the branch is fully read", async () => {
+  test("then the header reads as fully read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

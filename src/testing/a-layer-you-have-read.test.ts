@@ -16,7 +16,7 @@ const railOf = (frame: string): string =>
     .join("\n")
 
 describe("when every file of a layer has been read", () => {
-  test("then the rail still says the layer is read once its files are hidden", async () => {
+  test("then the rail keeps the layer marked read once its files are hidden", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

@@ -18,7 +18,7 @@ const opened = async (driver: TestDriver): Promise<void> => {
 }
 
 describe("when the file list runs past the pane", () => {
-  test("then the count says how many rows are below", async () => {
+  test("then the count reads how many rows are below", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

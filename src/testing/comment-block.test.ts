@@ -20,7 +20,7 @@ const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
 const rowWith = (frame: string, text: string): string => rowsWith(frame, text)[0] ?? ""
 
 describe("when a comment sits in the diff", () => {
-  test("then the comment says it has gone to the agent", async () => {
+  test("then the comment is marked as gone to the agent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

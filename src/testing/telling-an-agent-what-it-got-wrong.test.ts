@@ -108,7 +108,7 @@ describe("when an agent publishes a broken reading order", () => {
     expect(reportIn(shown.stdout).layers[0]?.files).toEqual(["src/one.ts", "src/two.ts"])
   })
 
-  test("then each layer says how much of the diff it covers", async () => {
+  test("then each layer reports how much of the diff it covers", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

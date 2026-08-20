@@ -20,7 +20,7 @@ const recalled = async (driver: TestDriver): Promise<Record<string, unknown>> =>
   >
 
 describe("when a newer version has been seen", () => {
-  test("then the footer says one quiet line", async () => {
+  test("then the footer carries one quiet line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -33,7 +33,7 @@ describe("when a newer version has been seen", () => {
     expect(await driver.screen.getFrame()).toContain("9.9.9")
   })
 
-  test("then adiff says nothing when the version it saw is the one running", async () => {
+  test("then the footer stays empty when the version it saw is the one running", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })

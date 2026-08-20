@@ -71,7 +71,7 @@ describe("when the reviewer walks between comments", () => {
     expect(rowWith(frame, "over here")).not.toHaveLength(0)
   })
 
-  test("then adiff says there is nothing to walk to", async () => {
+  test("then the footer reports nothing to walk to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)

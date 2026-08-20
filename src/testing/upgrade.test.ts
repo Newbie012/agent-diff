@@ -4,7 +4,7 @@ import { TestDriver } from "./index.ts"
 const NOWHERE = "http://127.0.0.1:1/dist-tags"
 
 describe("when a person runs adiff upgrade", () => {
-  test("then adiff says it is up to date in one line and runs nothing", async () => {
+  test("then the output reads up to date in one line and nothing runs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -36,7 +36,7 @@ describe("when a person runs adiff upgrade", () => {
     expect(result.stdout.trim().split("\n").at(-1)).toBe("adiff 9.9.9 is installed now.")
   })
 
-  test("then adiff says the upgrade did not work and exits 1", async () => {
+  test("then the output reports the upgrade failed and the exit code is 1", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -84,7 +84,7 @@ describe("when a person runs adiff upgrade", () => {
     expect(result.stdout).not.toContain("ran with")
   })
 
-  test("then adiff leaves a checkout alone and says what to run", async () => {
+  test("then a checkout is left alone and the output names what to run", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -133,7 +133,7 @@ describe("when a person runs adiff upgrade", () => {
 })
 
 describe("when adiff upgrade --check runs", () => {
-  test("then it names the newer build and the command, and runs nothing", async () => {
+  test("then the output names the newer build and the command, and nothing runs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -153,7 +153,7 @@ describe("when adiff upgrade --check runs", () => {
     expect(result.stdout).not.toContain("ran with")
   })
 
-  test("then it exits 0 on a route adiff cannot upgrade", async () => {
+  test("then the exit code is 0 on a route adiff cannot upgrade", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -172,7 +172,7 @@ describe("when adiff upgrade --check runs", () => {
 })
 
 describe("when adiff upgrade --json runs", () => {
-  test("then it upgrades and keeps the installer's output off stdout", async () => {
+  test("then the upgrade runs and the installer's output stays off stdout", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -192,7 +192,7 @@ describe("when adiff upgrade --json runs", () => {
     expect(String(upgrade["note"])).toContain("adiff 9.9.9 is installed now.")
   })
 
-  test("then it names the route it found and the command that updates it", async () => {
+  test("then the output names the route it found and the command that updates it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -209,7 +209,7 @@ describe("when adiff upgrade --json runs", () => {
     expect(String(upgrade["command"]).length).toBeGreaterThan(0)
   })
 
-  test("then it says it is current when the registry names the running version", async () => {
+  test("then the output reads current when the registry names the running version", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -236,7 +236,7 @@ describe("when adiff upgrade --json runs", () => {
     expect(upgrade.note).toBe(`adiff ${manifest.default.version} is the newest build.`)
   })
 
-  test("then it answers offline, saying it could not tell", async () => {
+  test("then the output answers offline, reporting it could not tell", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

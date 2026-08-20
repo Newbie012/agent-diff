@@ -68,7 +68,7 @@ describe("when the reviewer reads past the right edge", () => {
     expect(after.some((row) => /\s2\s/.test(row))).toBe(true)
   })
 
-  test("then adiff says there is nothing to pan while wrapping is on", async () => {
+  test("then the footer reports nothing to pan while wrapping is on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -86,7 +86,7 @@ describe("when the reviewer reads past the right edge", () => {
 })
 
 describe("when the diff is panned", () => {
-  test("then adiff says how far right the reader has moved", async () => {
+  test("then the footer reads how far right the view has moved", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)

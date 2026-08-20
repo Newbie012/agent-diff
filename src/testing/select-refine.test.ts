@@ -40,7 +40,7 @@ describe("when a change is selected", () => {
     expect(await driver.screen.getFrame()).toContain("src/api.ts  4 lines")
   })
 
-  test("then adiff says the cursor sits on an unchanged line", async () => {
+  test("then the footer reports the cursor is on an unchanged line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)

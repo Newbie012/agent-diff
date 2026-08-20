@@ -58,7 +58,7 @@ describe("when a repository is told that review happens in adiff", () => {
     expect(claude).toContain("@AGENTS.md")
   })
 
-  test("then a second run says there is nothing to do", async () => {
+  test("then a second run reports nothing to do", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.app.runInit({ write: true })

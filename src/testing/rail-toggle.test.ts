@@ -31,7 +31,7 @@ describe("when the rail can move between layers and files", () => {
     expect(await driver.screen.footer()).toContain("s layers")
   })
 
-  test("then a branch without layers says nothing about them", async () => {
+  test("then a branch without layers offers no switch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

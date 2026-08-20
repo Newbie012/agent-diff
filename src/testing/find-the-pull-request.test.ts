@@ -20,7 +20,7 @@ describe("when the branch has a pull request", () => {
     expect(await driver.screen.footer()).toContain("pull request")
   })
 
-  test("then the header says the branch has a pull request", async () => {
+  test("then the header marks the branch as having a pull request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -52,7 +52,7 @@ describe("when the branch has a pull request", () => {
   })
 })
 
-describe("when the forge says the branch has no pull request", () => {
+describe("when the forge reports no pull request on the branch", () => {
   test("then the footer stops offering the key", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -68,7 +68,7 @@ describe("when the forge says the branch has no pull request", () => {
 })
 
 describe("when the forge cannot answer", () => {
-  test("then the worktree list says it could not reach the forge", async () => {
+  test("then the worktree list reports the forge was unreachable", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

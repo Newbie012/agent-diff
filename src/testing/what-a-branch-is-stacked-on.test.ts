@@ -9,7 +9,7 @@ const file = (mark: string) => ({
 
 const LONG = "release-2-fix-the-tree-drawing"
 
-describe("when the list says what a branch is stacked on", () => {
+describe("when the list shows what a branch is stacked on", () => {
   test("then the whole name shows where there is room", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

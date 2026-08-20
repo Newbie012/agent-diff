@@ -59,7 +59,7 @@ describe("when the agent works while the reviewer reads", () => {
     expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
   })
 
-  test("then adiff says it read the branch again", async () => {
+  test("then the footer reports the branch was read again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

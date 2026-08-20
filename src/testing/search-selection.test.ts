@@ -23,7 +23,7 @@ const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
   frame.split("\n").filter((line) => line.includes(text))
 
 describe("when a selection is copied", () => {
-  test("then adiff says how many lines went to the clipboard", async () => {
+  test("then the footer counts the lines that went to the clipboard", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -130,7 +130,7 @@ describe("when the branch is searched for the selected text", () => {
     expect(await driver.screen.getFrame()).toContain("src/seats.ts")
   })
 
-  test("then a match outside the diff says it has no file to open", async () => {
+  test("then a match outside the diff is marked as having no file to open", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -167,7 +167,7 @@ describe("when the branch is searched for the selected text", () => {
     expect(frame).not.toContain("places")
   })
 
-  test("then adiff says nothing matches", async () => {
+  test("then the list reports nothing matches", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

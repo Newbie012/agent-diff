@@ -173,7 +173,7 @@ describe("when two layers both claim one file", () => {
 })
 
 describe("when a layer's spans name nothing in the diff", () => {
-  test("then the rail says the layer has nothing left, names what it pointed at, and keeps its note", async () => {
+  test("then the rail marks the layer empty, names what it pointed at, and keeps its note", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: sixFiles.slice(0, 2) })
