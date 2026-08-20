@@ -35,6 +35,8 @@ pnpm build          # bundle the CLI into dist/main.js, which is what an install
 pnpm typecheck
 pnpm lint           # oxlint, custom rules included, then proves each rule fires
 pnpm test
+pnpm pr-summary        # the `## What changed` block for this branch, from its change intents
+pnpm shot --keys "enter text:l" --label "a layer opened"   # a real screenshot of the terminal
 pnpm review            # the terminal, on this repo
 pnpm simulate          # the terminal, on a synthetic repo (--probe for headless)
 ```
@@ -59,8 +61,13 @@ before it checks the code.
 ## Release notes
 
 A change a reviewer would notice needs a change intent in `.changeset/`; a refactor, a test or a
-doc does not. `.claude/skills/release-notes/SKILL.md` is the format, and
-`node scripts/changelog.ts` regenerates `CHANGELOG.md` from every intent.
+doc does not. `.claude/skills/release-notes/SKILL.md` is the format, the PR template, and the rule
+that nothing private ever reaches a public PR. `node scripts/changelog.ts` regenerates
+`CHANGELOG.md` from every intent.
+
+Screenshots need `cargo install --locked terminal-control` and
+`gh extension install drogers0/gh-image`, and are always captured against the synthetic repo that
+`pnpm simulate` builds — never against real work.
 
 ## More Detail
 

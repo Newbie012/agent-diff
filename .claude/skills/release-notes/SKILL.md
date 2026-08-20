@@ -137,22 +137,128 @@ tests, or how long it took you. Those belong in the PR.
 
 ## The PR description
 
-Same discipline, one level up.
+### The template
 
-- The title is the sentence you would have written as the entry, without the `kind(area):` prefix.
-- The body opens with two or three sentences on what changed and why. Then, if the PR fixes several
-  things, one `##` heading per thing, matching the entries in the change intent.
-- Reproduction steps and the reasoning go in the body. That is what the body is for, and it is why
-  the changelog does not need them.
-- Never paste raw command output, a directory listing, or a shell transcript into a PR body. Check
-  what you wrote actually renders before you open the PR.
-- No test counts, no "full suite green", no self-assessment.
+```markdown
+One paragraph. What this changes, and what prompted it. Two or three sentences.
+
+## What changed
+
+### Fixed
+
+- **Layers rail** — the cursor stays on the rail when you collapse the layer you are reading.
+- **Reading order** — a first layer naming no file in the diff opens at the first file, not the last.
+
+### Added
+
+- **Search** — typing narrows the matches as you type.
+
+## The rail lost the cursor when you folded the layer you were in
+
+The repro, as keys to press. Then what the fix was.
+
+<table>
+<tr><th>Before</th><th>After</th></tr>
+<tr>
+<td><img src="https://github.com/user-attachments/assets/…" alt="before"></td>
+<td><img src="https://github.com/user-attachments/assets/…" alt="after"></td>
+</tr>
+</table>
+
+## Reading order opened at the end
+
+The repro. Then what the fix was.
+```
+
+- The **title** is the entry sentence without the `kind(area):` prefix, and follows the same
+  no-gerund rule.
+- **`## What changed` is generated, never typed.** `node scripts/pr-summary.ts` prints it from the
+  change intents on this branch. The PR and the changelog then cannot drift apart.
+- **One `##` section per thing changed**, in the order the bullets list them, titled with the
+  symptom rather than the fix. That is what a reader searching their own bug will match on.
+- A PR with **one entry and nothing to reproduce** is a title and a sentence. The template starts
+  earning its keep at two.
+- A PR with **no change intent** — a refactor, a test, a doc — writes prose. `pnpm pr-summary`
+  will tell you there is nothing to paste, and that is the correct answer, not a problem to fix.
+
+### What never goes in a PR body
+
+- **Raw command output.** No `ls` listings, no shell transcripts, no stack traces pasted whole.
+  Quote the one line that matters.
+- **Backticks around anything a shell would run.** Writing a body in a heredoc executes
+  `` `l` `` and pastes its output into your prose. Write the body to a file, then
+  `gh pr create --body-file`.
+- **Test counts, timings, or self-assessment.** No "full suite green", no "740 tests", no
+  "verified twice". CI says whether the tests pass.
+- **Anything from a private repository.** See below.
+
+### Nothing private, ever
+
+This repository is public, and so is every PR body, screenshot and recording attached to it. Before
+you open or edit a PR, read what you wrote and confirm none of it carries:
+
+- an employer's or a customer's name, or a private repository's name
+- a ticket id, an internal URL, a dashboard link, or an internal hostname
+- a real branch name, file path, or line of source from private work
+- a colleague's name or address, or any credential, token or key
+
+A screenshot leaks all of this faster than prose does, which is why **every capture runs against the
+synthetic demo repository** — `scripts/simulate.ts` builds a repo of invented invitation code with
+invented branch names. Never screenshot a review of real work. If you cannot reproduce a bug on the
+synthetic repo, describe it instead, or seed what you need in `scripts/simulation/seed.ts`.
+
+An attachment cannot be deleted once uploaded. There is no public deletion API for
+user-attachments, so a leak is permanent.
+
+### Showing a screen
+
+adiff is a terminal, so a screenshot is a real PNG of a real terminal, captured with
+[terminal-control](https://github.com/anomalyco/terminal-control) and uploaded to GitHub's
+attachment store.
+
+```bash
+cargo install --locked terminal-control          # once
+gh extension install drogers0/gh-image           # once, then `gh image check-token`
+```
+
+**Something new** gets one image:
+
+```bash
+pnpm shot --keys "enter text:l" --label "a layer opened"
+```
+
+**Something that changed** gets a before and an after, in a one-row table so the two sit side by
+side rather than a screen apart:
+
+```bash
+pnpm shot --keys "enter text:l" --label "the layers rail" --against origin/main
+```
+
+`--against` builds a worktree at the merge base, captures the same keystrokes on the code as it was,
+and prints the finished `<table>` with both images uploaded. Paste it under the section it belongs
+to. If the two frames come out identical the script says so and stops — those keys do not reach the
+screen you changed.
+
+**Something about motion** — scroll feel, focus moving, a gap opening ten lines at a time — gets a
+recording, because a still frame cannot show it:
+
+```bash
+pnpm shot --keys "enter text:l text:l text:l" --label "the gap opening" --video
+```
+
+That prints a bare URL. Leave it bare: GitHub wraps a player around a user-attachments URL on its
+own line, and `![…](…)` image markdown around a video renders nothing.
+
+Keys are termctrl's: `enter`, `escape`, `tab`, `up`, `down`, `page-up`, `ctrl-a` through `ctrl-z`,
+and `text:<value>` for anything typed, including single letters like `text:l`. Add `--keep` to leave
+the files in `shots/` instead of deleting them after upload.
 
 ## Before you open the PR
 
 ```bash
 node scripts/changelog.ts            # rewrites CHANGELOG.md from every change intent
 node scripts/changelog.ts 0.1.0-alpha.133   # prints one release's note, as the release page shows it
+node scripts/pr-summary.ts           # prints the `## What changed` block for this branch
 ```
 
 `CHANGELOG.md` is regenerated by the release workflow, so it does not need to be committed with the
