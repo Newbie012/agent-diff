@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Effect, Schema } from "effect"
 
 const Side = Schema.Literals(["old", "new"])
 
@@ -46,13 +46,19 @@ export const Batch = Schema.Struct({
   comments: Schema.Array(StoredComment),
 })
 
+const Stamps = Schema.Record(Schema.String, Schema.String)
+
+const Counts = Schema.Record(Schema.String, Schema.Int)
+
+const noStamps = Schema.withDecodingDefaultKey<typeof Stamps>(Effect.succeed({}))
+
 export const BranchState = Schema.Struct({
-  vouches: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
-  consumed: Schema.optionalKey(Schema.Int),
-  settled: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
-  removed: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
-  base: Schema.optionalKey(Schema.String),
-  read: Schema.optionalKey(Schema.Record(Schema.String, Schema.Int)),
+  vouches: Stamps.pipe(noStamps),
+  consumed: Schema.Int.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
+  settled: Stamps.pipe(noStamps),
+  removed: Stamps.pipe(noStamps),
+  base: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(""))),
+  read: Counts.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
 })
 
 export const Settings = Schema.Struct({

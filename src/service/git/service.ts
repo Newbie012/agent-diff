@@ -1,12 +1,17 @@
 import { readFile, realpath } from "node:fs/promises"
 import { join, resolve } from "node:path"
-import { Context, Effect, Layer, Option } from "effect"
+import { Cache, Context, Effect, Layer, Option } from "effect"
 import { FileUnreadable, NotARepository } from "./error.ts"
 import type { DiffStat, Worktree } from "./model.ts"
 import { gitOrEmpty } from "./run.ts"
 
 const GREP_CONTEXT = 2
 export const AT_ONCE = 8
+
+const CACHE_SIZE = 256
+const NAME_TTL = "5 minutes"
+const FRESH_TTL = "3 seconds"
+const SPLIT = "\u0000"
 
 const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "main"]
 
@@ -60,9 +65,6 @@ const readEntries = (porcelain: string): ReadonlyArray<Entry> => {
   return entries
 }
 
-const baseNames = new Map<string, string>()
-const mergeBases = new Map<string, string>()
-
 const findDefaultBranch = Effect.fn("Git.findDefaultBranch")(function* (repo: string) {
   const symbolic = yield* gitOrEmpty(repo, ["symbolic-ref", "refs/remotes/origin/HEAD"])
   if (symbolic.trim().length > 0) return symbolic.trim().replace("refs/remotes/", "")
@@ -73,25 +75,26 @@ const findDefaultBranch = Effect.fn("Git.findDefaultBranch")(function* (repo: st
   return "HEAD"
 })
 
-const defaultBranch = Effect.fn("Git.defaultBranch")(function* (repo: string) {
-  const known = baseNames.get(repo)
-  if (known !== undefined) return known
-  const found = yield* findDefaultBranch(repo)
-  baseNames.set(repo, found)
-  return found
+const partsOf = (key: string): ReadonlyArray<string> => key.split(SPLIT)
+
+const findMergeBase = Effect.fn("Git.mergeBase")(function* (key: string) {
+  const [path = "", base = ""] = partsOf(key)
+  return (yield* gitOrEmpty(path, ["merge-base", base, "HEAD"])).trim()
 })
 
-const mergeBaseOf = Effect.fn("Git.mergeBase")(function* (entry: Entry, base: string) {
-  const key = `${entry.path} ${entry.head} ${base}`
-  const known = mergeBases.get(key)
-  if (known !== undefined) return known
-  const found = (yield* gitOrEmpty(entry.path, ["merge-base", base, "HEAD"])).trim()
-  mergeBases.set(key, found)
-  return found
-})
+type Caches = {
+  readonly baseName: Cache.Cache<string, string>
+  readonly mergeBase: Cache.Cache<string, string>
+  readonly parent: Cache.Cache<string, string>
+}
 
-const toWorktree = Effect.fn("Git.toWorktree")(function* (entry: Entry, base: string, own: boolean) {
-  const mergeBase = yield* mergeBaseOf(entry, base)
+const toWorktree = Effect.fn("Git.toWorktree")(function* (
+  caches: Caches,
+  entry: Entry,
+  base: string,
+  own: boolean,
+) {
+  const mergeBase = yield* Cache.get(caches.mergeBase, `${entry.path}${SPLIT}${base}`)
   return {
     path: entry.path,
     branch: entry.detached ? `(detached ${entry.head.slice(0, 8)})` : entry.branch,
@@ -120,24 +123,18 @@ const branchTips = Effect.fn("Git.branchTips")(function* (repo: string) {
   return tips
 })
 
-const parents = new Map<string, string>()
-
-const parentOf = Effect.fn("Git.parentOf")(function* (repo: string, branch: string, fallback: string) {
+const findParent = Effect.fn("Git.parentOf")(function* (key: string) {
+  const [repo = "", branch = "", fallback = ""] = partsOf(key)
   const own = (yield* gitOrEmpty(repo, ["rev-list", `${fallback}..${branch}`]))
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-  const tip = own[0]
-  if (tip === undefined) return fallback
-  const key = `${repo} ${branch} ${tip} ${fallback}`
-  const known = parents.get(key)
-  if (known !== undefined) return known
+  if (own[0] === undefined) return fallback
   const tips = yield* branchTips(repo)
   const found = own
     .slice(1)
     .flatMap((sha) => tips.get(sha) ?? [])
     .find((name) => name !== branch)
-  parents.set(key, found ?? fallback)
   return found ?? fallback
 })
 
@@ -155,18 +152,23 @@ const readText = Effect.fn("Git.readText")(function* (absolute: string, path: st
 const settled = (path: string): Effect.Effect<string> =>
   Effect.promise(() => realpath(path).catch(() => resolve(path)))
 
-const seenAs = Effect.fn("Git.seenAs")(function* (entry: Entry, base: string, opened: string) {
+const seenAs = Effect.fn("Git.seenAs")(function* (
+  caches: Caches,
+  entry: Entry,
+  base: string,
+  opened: string,
+) {
   const path = yield* settled(entry.path)
-  return yield* toWorktree(entry, base, path === opened)
+  return yield* toWorktree(caches, entry, base, path === opened)
 })
 
-const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
+const listWorktrees = Effect.fn("Git.worktrees")(function* (caches: Caches, repo: string) {
   const porcelain = yield* gitOrEmpty(repo, ["worktree", "list", "--porcelain"])
   if (porcelain.trim().length === 0) return yield* new NotARepository({ path: repo })
-  const base = yield* defaultBranch(repo)
+  const base = yield* Cache.get(caches.baseName, repo)
   const entries = readEntries(porcelain)
   const opened = yield* settled(repo)
-  const read = (entry: Entry) => seenAs(entry, base, opened)
+  const read = (entry: Entry) => seenAs(caches, entry, base, opened)
   return yield* Effect.forEach(entries, read, { concurrency: AT_ONCE })
 })
 
@@ -235,19 +237,46 @@ const sharedCommit = Effect.fn("Git.sharedWith")(function* (
   return (yield* gitOrEmpty(repo, ["merge-base", branch, ref])).trim()
 })
 
-const shape: Shape = {
-  worktrees: listWorktrees,
+const makeCaches = Effect.fn("Git.caches")(function* () {
+  const baseName = yield* Cache.make({
+    capacity: CACHE_SIZE,
+    timeToLive: NAME_TTL,
+    lookup: findDefaultBranch,
+  })
+  const mergeBase = yield* Cache.make({
+    capacity: CACHE_SIZE,
+    timeToLive: FRESH_TTL,
+    lookup: findMergeBase,
+  })
+  const parent = yield* Cache.make({
+    capacity: CACHE_SIZE,
+    timeToLive: FRESH_TTL,
+    lookup: findParent,
+  })
+  return { baseName, mergeBase, parent } satisfies Caches
+})
+
+const shapeWith = (caches: Caches): Shape => ({
+  worktrees: (repo: string) => listWorktrees(caches, repo),
   repoOf: findRepo,
   diff: readDiff,
   stat: readStat,
   source: readSource,
   blob: readBlob,
   grep: readGrep,
-  defaultBranch,
+  defaultBranch: (repo: string) => Cache.get(caches.baseName, repo),
   stackParent: (repo: string, branch: string) =>
-    defaultBranch(repo).pipe(Effect.flatMap((fallback) => parentOf(repo, branch, fallback))),
+    Cache.get(caches.baseName, repo).pipe(
+      Effect.flatMap((fallback) =>
+        Cache.get(caches.parent, `${repo}${SPLIT}${branch}${SPLIT}${fallback}`),
+      ),
+    ),
   resolves: refResolves,
   sharedWith: sharedCommit,
-}
+})
 
-export const GitLive = Layer.succeed(Git)(shape)
+const makeGit = Effect.fn("Git.make")(function* () {
+  return shapeWith(yield* makeCaches())
+})
+
+export const GitLive: Layer.Layer<Git> = Layer.effect(Git)(makeGit())
