@@ -32,6 +32,8 @@ import {
   panelEntries,
   panelFits,
   panelShown,
+  railRowsFor,
+  railTop,
   treeRows,
   treeStart,
 } from "./model.ts"
@@ -173,6 +175,7 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
       ? state.openLayers
       : [...state.openLayers, landed.layer],
     patchIndex: landed.file,
+    railScroll: -1,
     top: 0,
     cursor: landingOn(state, landed.file),
     anchorRow: 0,
@@ -183,8 +186,16 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
 const inRail = (state: TuiState, delta: number): TuiState =>
   onLayers(state) ? moveLayer(state, delta) : moveFile(state, delta)
 
+const layersRolled = (state: TuiState, delta: number): TuiState => {
+  const height = Math.max(1, state.railRows)
+  const rows = railRowsFor(state)
+  if (rows.length <= height) return state
+  const start = railTop(rows, height, state.layerIndex, state.railScroll)
+  return { ...state, railScroll: clamp(start + delta, 0, rows.length - height) }
+}
+
 export const railScrolled = (state: TuiState, delta: number): TuiState => {
-  if (onLayers(state)) return inRail(state, delta)
+  if (onLayers(state)) return layersRolled(state, delta)
   const height = Math.max(1, state.railRows)
   const rows = treeRows(state).length
   if (rows <= height) return state

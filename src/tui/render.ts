@@ -34,6 +34,11 @@ import {
   selectionReadout,
   layerDone,
   layerFitted,
+  layerRoomIn,
+  RAIL_DIR_LEAD,
+  RAIL_FILE_LEAD,
+  RAIL_GUTTER,
+  RAIL_TITLE_LEAD,
   type LayerRoom,
   type RailWindow,
   type LayerRow,
@@ -883,30 +888,28 @@ const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
   return `${treeMarks(state, row)}${clip(treeLabel(state, row, room), room).padEnd(room)}${tail}`
 }
 
-const GUTTER = 3
-const DIR_LEAD = GUTTER
-const TITLE_LEAD = GUTTER + 1
-const FILE_LEAD = TITLE_LEAD + 2
+const GUTTER = RAIL_GUTTER
+const DIR_LEAD = RAIL_DIR_LEAD
+const TITLE_LEAD = RAIL_TITLE_LEAD
+const FILE_LEAD = RAIL_FILE_LEAD
 const STALE_ROOM = 13
+const STALE_ASKING = 24
 
-const STALE_LONG = "stale, the branch moved on"
+const STALE_LONG = "stale, the branch moved on — press L to ask for a new one"
+const STALE_MIDDLE = "stale, the branch moved on"
 const STALE_SHORT = "stale"
 
+const staleSaid = (room: number): string => {
+  if (room >= STALE_ASKING) return STALE_LONG
+  return room >= STALE_ROOM ? STALE_MIDDLE : STALE_SHORT
+}
+
 const staleBanner = (room: number): string =>
-  wrapped(room >= STALE_ROOM ? STALE_LONG : STALE_SHORT, room)
+  wrapped(staleSaid(room), room)
     .map((line) => ` ${line}`)
     .join("\n")
 
 type Screened = TuiState["screen"]
-
-const layerRoom = (pane: number): LayerRoom => {
-  const whole = Math.max(8, pane - PANE_CHROME)
-  return {
-    title: Math.max(4, whole - TITLE_LEAD),
-    dir: Math.max(4, whole - DIR_LEAD),
-    file: Math.max(4, whole - FILE_LEAD),
-  }
-}
 
 type LayerLook = {
   readonly lead: number
@@ -959,6 +962,7 @@ const layerLook = (state: TuiState, row: LayerRow): LayerLook => {
     case "dir":
       return { lead: DIR_LEAD, mark: " ", paint: palette.faint }
     case "count":
+      return { lead: DIR_LEAD, mark: " ", paint: palette.faint }
     case "gap":
       return { lead: TITLE_LEAD, mark: " ", paint: palette.faint }
     case "note":
@@ -1563,7 +1567,7 @@ export class Screen {
   }
 
   private layerRail(state: TuiState): StyledText {
-    const room = layerRoom(this.paneRoom())
+    const room = layerRoomIn(state)
     const said = summaryLines(state.summary, room.title, this.listRoom())
     const banner = (state.layersStale ? 1 : 0) + said.length
     const height = Math.max(1, this.listRoom() - banner)
@@ -1595,11 +1599,11 @@ export class Screen {
     all: ReadonlyArray<LayerRow>,
     height: number,
   ): RailWindow {
-    const whole = railWindow(all, height, state.layerIndex)
+    const whole = railWindow(all, height, state.layerIndex, state.railScroll)
     if (whole.more === 0 && whole.above === 0) return whole
-    const once = railWindow(all, Math.max(1, height - 1), state.layerIndex)
+    const once = railWindow(all, Math.max(1, height - 1), state.layerIndex, state.railScroll)
     if (once.above === 0 || once.more === 0) return once
-    return railWindow(all, Math.max(1, height - 2), state.layerIndex)
+    return railWindow(all, Math.max(1, height - 2), state.layerIndex, state.railScroll)
   }
 
   private paintDiff(state: TuiState): void {

@@ -15,6 +15,7 @@ export type StagedComment = {
   readonly answers?: ReadonlyArray<string>
   readonly turns?: ReadonlyArray<{ readonly voice: "reviewer" | "agent"; readonly body: string }>
   readonly unread?: number
+  readonly takenAt?: string
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
@@ -311,10 +312,12 @@ const shortDir = (dir: string, room: number): string => {
   const whole = `${dir}/`
   if (whole.length <= room) return whole
   const parts = dir.split("/")
-  if (parts.length < 3) return `${clip(dir, Math.max(1, room - 1))}/`
-  const first = parts[0] ?? ""
   const last = parts.at(-1) ?? ""
-  return `${first}/…/${last}/`
+  const shrunk = parts.length < 3 ? "" : `${parts[0] ?? ""}/…/${last}/`
+  if (shrunk.length > 0 && shrunk.length <= room) return shrunk
+  const tail = `…/${last}/`
+  if (tail.length <= room) return tail
+  return `${clip(last, Math.max(1, room - 1))}/`
 }
 
 const fileRow = (state: TuiState, layerIndex: number, at: number, room: number): LayerRow => {
@@ -466,16 +469,54 @@ export type RailWindow = {
   readonly above: number
 }
 
+const restingAt = (
+  rows: ReadonlyArray<LayerRow>,
+  height: number,
+  layerIndex: number,
+): number => {
+  const first = Math.max(0, rows.findIndex((row) => row.index === layerIndex))
+  const block = rows.findLastIndex((row) => row.index === layerIndex) - first + 1
+  return block >= height ? first : first - Math.floor((height - block) / 2)
+}
+
+export const railTop = (
+  rows: ReadonlyArray<LayerRow>,
+  height: number,
+  layerIndex: number,
+  scroll: number,
+): number => {
+  const wanted = scroll >= 0 ? scroll : restingAt(rows, height, layerIndex)
+  return Math.max(0, Math.min(Math.max(0, rows.length - height), wanted))
+}
+
+const PANE_CHROME = 3
+
+export const RAIL_STEP = 2
+export const RAIL_GUTTER = 3
+export const RAIL_TITLE_LEAD = RAIL_GUTTER + 1
+export const RAIL_DIR_LEAD = RAIL_TITLE_LEAD + RAIL_STEP
+export const RAIL_FILE_LEAD = RAIL_DIR_LEAD + RAIL_STEP
+
+export const layerRoomIn = (state: TuiState): LayerRoom => {
+  const whole = Math.max(8, treeWidth(state.columns) - PANE_CHROME)
+  return {
+    title: Math.max(4, whole - RAIL_TITLE_LEAD),
+    dir: Math.max(4, whole - RAIL_DIR_LEAD),
+    file: Math.max(4, whole - RAIL_FILE_LEAD),
+  }
+}
+
+export const railRowsFor = (state: TuiState): ReadonlyArray<LayerRow> =>
+  layerFitted(state, layerRoomIn(state), Math.max(1, state.railRows))
+
 export const railWindow = (
   rows: ReadonlyArray<LayerRow>,
   height: number,
   layerIndex: number,
+  scroll = -1,
 ): RailWindow => {
   if (rows.length <= height) return { rows, more: 0, above: 0 }
-  const first = Math.max(0, rows.findIndex((row) => row.index === layerIndex))
-  const block = rows.findLastIndex((row) => row.index === layerIndex) - first + 1
-  const wanted = block >= height ? first : first - Math.floor((height - block) / 2)
-  const start = Math.max(0, Math.min(rows.length - height, wanted))
+  const start = railTop(rows, height, layerIndex, scroll)
   const shown = rows.slice(start, start + height)
   const here = new Set(shown.map((row) => row.index))
   const seen = (from: ReadonlyArray<LayerRow>): number =>
