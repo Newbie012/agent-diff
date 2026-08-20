@@ -79,6 +79,14 @@ export class BranchTestDriver {
     await rm(join(root, file.path), { force: true })
   }
 
+  async setBinary(branch: CreatedBranch, path: string, bytes: number): Promise<void> {
+    const absolute = join(branch.worktree, path)
+    await mkdir(dirname(absolute), { recursive: true })
+    const made = Buffer.alloc(bytes)
+    for (let at = 0; at < bytes; at += 1) made[at] = (at * 7) % 256
+    await writeFile(absolute, made)
+  }
+
   private async write(root: string, path: string, lines: ReadonlyArray<string>): Promise<void> {
     const absolute = join(root, path)
     await mkdir(dirname(absolute), { recursive: true })

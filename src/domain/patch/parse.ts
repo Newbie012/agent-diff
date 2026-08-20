@@ -3,6 +3,8 @@ import type { Hunk, Patch, Row, RowKind } from "./model.ts"
 
 const FILE_MARKER = "diff --git "
 const HUNK_MARKER = "@@"
+const BINARY_MARKER = "Binary files "
+const BINARY_SAID = "binary file, adiff cannot show what changed in it"
 const BLOB_MARKER = "index "
 const OLD_PATH_MARKER = "--- "
 const NEW_PATH_MARKER = "+++ "
@@ -77,6 +79,13 @@ const readBody = (draft: Draft, line: string): void => {
   if (kind !== undefined) appendRow(draft, kind, line.slice(1))
 }
 
+const readBinary = (draft: Draft, line: string): boolean => {
+  if (!line.startsWith(BINARY_MARKER)) return false
+  draft.hunks.push({ marker: "", scope: "", startRow: 0, newStart: 1, rows: [], skipped: 0 })
+  appendRow(draft, "context", BINARY_SAID)
+  return true
+}
+
 const readHeader = (draft: Draft, line: string): boolean => {
   if (line.startsWith(BLOB_MARKER)) {
     draft.blob = line.slice(BLOB_MARKER.length).split("..")[1]?.split(" ")[0] ?? ""
@@ -100,6 +109,7 @@ export const parsePatches = (diff: string): ReadonlyArray<Patch> => {
     const draft = drafts.at(-1)
     if (draft === undefined) continue
     if (readHeader(draft, line)) continue
+    if (readBinary(draft, line)) continue
     if (line.startsWith(HUNK_MARKER)) openHunk(draft, line)
     else readBody(draft, line)
   }
