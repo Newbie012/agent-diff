@@ -2,6 +2,14 @@
 "@eliya-oss/agent-diff": patch
 ---
 
-Copying a selection that crosses a collapsed gap no longer puts adiff's own `⋯ 103 lines hidden` marker on the clipboard as if it were source. `y` also stops discarding a selection you made because the cursor happens to be resting on a comment — with a selection active it copies the selection.
+fix(diff): copying across a collapsed gap no longer puts adiff's own `⋯ 103 lines hidden` marker on the clipboard.
 
-The two numbers on screen say what they count. The footer now reads `4 lines selected` and the toast `2 lines copied`, which is honest about the difference: a change shows both its old and its new line, and copy takes the one you are keeping.
+fix(diff): `y` copies the selection you made even when the cursor is resting on a comment.
+
+fix(footer): the two numbers on screen say what they count — `4 lines selected` against `2 lines copied`.
+
+<details><summary>Why they differ</summary>
+
+A change shows both its old and its new line, and copy takes the one you are keeping.
+
+</details>
