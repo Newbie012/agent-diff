@@ -1,6 +1,8 @@
 import { Option } from "effect"
 import { WHOLE_FILE } from "../domain/patch/index.ts"
 
+export type Focus = "tree" | "diff" | "review"
+
 export type StagedComment = {
   readonly id?: string
   readonly file: string
@@ -82,7 +84,7 @@ export type TuiState = {
   readonly source: ReadonlyArray<string>
   readonly full: ReadonlyArray<Patch>
   readonly revealed: ReadonlyArray<Reveal>
-  readonly focus: "tree" | "diff" | "review"
+  readonly focus: Focus
   readonly navOpen: boolean
   readonly wrap: boolean
   readonly sticky: boolean
@@ -114,6 +116,7 @@ export type TuiState = {
   readonly railRows: number
   readonly railScroll: number
   readonly now: number
+  readonly focusWas: Focus
 }
 
 const nothingReviewed = {
@@ -133,6 +136,7 @@ const nothingReviewed = {
   railRows: 12,
   railScroll: -1,
   now: 0,
+  focusWas: "diff" as Focus,
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
