@@ -101,10 +101,9 @@ const PALETTE_GAP = 2
 const PALETTE_CHROME = 4
 const PENDING_CHROME = 4
 
-const keysTitle = (found: number, shown: number): string => {
+const keysTitle = (found: number, whole: boolean): string => {
   if (found === 0) return "No key matches"
-  if (found <= shown) return `Keys here, ${found} of them`
-  return `Keys here, ${found} of them — arrows for the rest`
+  return whole ? `Keys here, ${found} of them` : `Keys here, ${found} of them — arrows for the rest`
 }
 const PALETTE_WIDTH = 76
 const PANEL_SHARE = 0.62
@@ -453,6 +452,97 @@ const listText = (
     const text = `${here ? marks().cursor : " "} ${row}`.padEnd(LIST_LEAD)
     return here ? bg(palette.selection)(fg(palette.ink)(`${text}\n`)) : fg(palette.ink)(`${text}\n`)
   })
+  return new StyledText(drawn)
+}
+
+type SheetRow = { readonly text: string; readonly at: number; readonly heading: boolean }
+
+const SHEET_GAP = 3
+
+const sheetRow = (entry: Command, room: number): string => {
+  const key = clip(keysOf(entry), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
+  return `${key}${clip(entry.title, Math.max(1, room - PALETTE_KEY))}`
+}
+
+const groupedBy = (rows: ReadonlyArray<Command>): ReadonlyArray<ReadonlyArray<number>> => {
+  const groups: Array<Array<number>> = []
+  for (const [at, entry] of rows.entries()) {
+    const last = groups.at(-1)
+    const same = last !== undefined && rows[last[0] ?? 0]?.category === entry.category
+    if (same && last !== undefined) last.push(at)
+    else groups.push([at])
+  }
+  return groups
+}
+
+const sheetBlock = (
+  rows: ReadonlyArray<Command>,
+  group: ReadonlyArray<number>,
+  room: number,
+): ReadonlyArray<SheetRow> => [
+  { text: rows[group[0] ?? 0]?.category ?? "", at: -1, heading: true },
+  ...group.map((at) => ({
+    text: sheetRow(rows[at] as Command, room),
+    at,
+    heading: false,
+  })),
+  { text: "", at: -1, heading: false },
+]
+
+const splitInTwo = (
+  blocks: ReadonlyArray<ReadonlyArray<SheetRow>>,
+): { readonly left: ReadonlyArray<SheetRow>; readonly right: ReadonlyArray<SheetRow> } => {
+  const total = blocks.reduce((sum, block) => sum + block.length, 0)
+  const left: Array<SheetRow> = []
+  const right: Array<SheetRow> = []
+  for (const block of blocks) {
+    if (left.length + block.length <= Math.ceil(total / 2) || left.length === 0) {
+      left.push(...block)
+    } else right.push(...block)
+  }
+  return { left, right }
+}
+
+const sheetPaint = (row: SheetRow | undefined, here: boolean, room: number): TextChunk => {
+  if (row === undefined) return fg(palette.ink)("".padEnd(room))
+  const mark = row.heading || row.at === -1 ? " " : here ? marks().cursor : " "
+  const text = `${mark} ${row.text}`.padEnd(room)
+  if (row.heading) return fg(palette.accent)(text)
+  return here ? bg(palette.selection)(fg(palette.ink)(text)) : fg(palette.ink)(text)
+}
+
+const sheetDeep = (rows: ReadonlyArray<Command>, room: number): number => {
+  const column = Math.max(12, Math.floor((room - SHEET_GAP) / 2))
+  const { left, right } = splitInTwo(
+    groupedBy(rows).map((group) => sheetBlock(rows, group, column - 2)),
+  )
+  return Math.max(left.length, right.length)
+}
+
+const sheetText = (
+  rows: ReadonlyArray<Command>,
+  at: number,
+  shown: { readonly height: number; readonly room: number },
+): StyledText => {
+  const column = Math.max(12, Math.floor((shown.room - SHEET_GAP) / 2))
+  const { left, right } = splitInTwo(
+    groupedBy(rows).map((group) => sheetBlock(rows, group, column - 2)),
+  )
+  const deep = Math.max(left.length, right.length)
+  const where = left.findIndex((row) => row.at === at)
+  const also = right.findIndex((row) => row.at === at)
+  const on = where === -1 ? also : where
+  const top = Math.max(0, Math.min(deep - shown.height, on - Math.floor(shown.height / 2)))
+  const drawn: Array<TextChunk> = []
+  for (let step = 0; step < Math.min(shown.height, deep); step += 1) {
+    const row = top + step
+    drawn.push(
+      sheetPaint(left[row], left[row]?.at === at, column),
+      fg(palette.ink)(" ".repeat(SHEET_GAP)),
+      sheetPaint(right[row], right[row]?.at === at, column),
+      fg(palette.ink)("\n"),
+    )
+  }
   return new StyledText(drawn)
 }
 
@@ -1290,7 +1380,6 @@ export class Screen {
     this.wheelOnSheet(this.keys)
     this.wheelOnSheet(this.palette)
     this.wheelOnRail(this.listPane)
-    this.wheelOnRail(this.list)
     this.view.listenTo({
       scroll: (delta) => {
         this.dragFrom = undefined
@@ -1470,22 +1559,19 @@ export class Screen {
       return
     }
     const rows = keyMatches(state)
-    const room = panelWidth(this.renderer.width)
-    const keysRoom = Math.min(
-      panelRows(this.renderer.height, PANEL_QUARTER),
-      rows.length + PENDING_CHROME,
-    )
+    const room = this.renderer.width
+    const keysRoom = this.renderer.height
     const shown = Math.max(1, keysRoom - PENDING_CHROME)
-    this.keysTitle.content = keysTitle(rows.length, shown)
-    this.keysChoices.content = listText(
-      rows.map((entry) => commandRow(entry, room - MODAL_ROOM)),
+    this.keysTitle.content = keysTitle(rows.length, sheetDeep(rows, room - MODAL_ROOM) <= shown)
+    this.keysChoices.content = sheetText(
+      rows,
       Math.min(state.paletteIndex, Math.max(0, rows.length - 1)),
-      shown,
+      { height: shown, room: room - MODAL_ROOM },
     )
     this.keys.height = keysRoom
     this.keys.width = room
-    this.keys.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.keys.top = panelTop(this.renderer.height, PANEL_QUARTER)
+    this.keys.left = 0
+    this.keys.top = 0
   }
 
   private headerText(state: TuiState): StyledText {

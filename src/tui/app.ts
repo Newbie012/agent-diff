@@ -312,6 +312,7 @@ export class App {
   private leaving: number | undefined
   private looking: ReturnType<typeof setTimeout> | undefined
   private rolling = false
+  private pendingRoll = 0
   private ticking: ReturnType<typeof setInterval> | undefined
   private grewWithShift = false
   private readonly keys: Array<string> = []
@@ -1139,14 +1140,19 @@ export class App {
       const was = this.state.patchIndex
       this.commit(reduce(this.measured(), delta > 0 ? "comment.next" : "comment.prev"))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
-      this.rolling = false
     })
   }
 
   private rollFrom(delta: number): void {
-    const costly = onLayers(this.state)
-    if (costly && this.rolling) return
-    this.rolling = costly
+    if (!onLayers(this.state)) {
+      this.dispatchTask(this.rolled(delta))
+      return
+    }
+    if (this.rolling) {
+      this.pendingRoll = delta
+      return
+    }
+    this.rolling = true
     this.dispatchTask(this.rolled(delta))
   }
 
@@ -1194,7 +1200,14 @@ export class App {
       const was = this.state.patchIndex
       this.commit(railScrolled(this.measured(), delta))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
-    })
+    }).pipe(Effect.ensuring(Effect.sync(() => this.rolledOn())))
+  }
+
+  private rolledOn(): void {
+    this.rolling = false
+    const held = this.pendingRoll
+    this.pendingRoll = 0
+    if (held !== 0) this.rollFrom(held > 0 ? 1 : -1)
   }
 
   private moveFile(delta: number): Work {

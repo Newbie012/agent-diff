@@ -258,12 +258,22 @@ const togglePanel = (state: TuiState): TuiState => {
   if (!panelFits(state)) {
     return withNotice(state, "the terminal is too narrow for the review panel")
   }
-  const panelOpen = !state.panelOpen
+  if (state.panelOpen) {
+    return {
+      ...state,
+      panelOpen: false,
+      panelWas: false,
+      focus: state.focus === "review" ? state.focusWas : state.focus,
+      panelIndex: 0,
+    }
+  }
+  const worthReading = panelEntries(state).length > 0
   return {
     ...state,
-    panelOpen,
-    panelWas: panelOpen,
-    focus: panelOpen ? state.focus : "diff",
+    panelOpen: true,
+    panelWas: true,
+    focus: worthReading ? "review" : state.focus,
+    focusWas: state.focus,
     panelIndex: 0,
   }
 }

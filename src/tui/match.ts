@@ -35,7 +35,21 @@ export const searchCommands = (screen: Screen, query: string): ReadonlyArray<Com
     .filter((entry) => matches(entry, query))
     .toSorted((left, right) => closeness(left, query) - closeness(right, query))
 
-export const searchGlossary = (screen: Screen, query: string): ReadonlyArray<Command> =>
-  glossaryFor(screen)
+const byCategory = (screen: Screen): ReadonlyMap<string, number> => {
+  const seen = new Map<string, number>()
+  for (const entry of glossaryFor(screen)) {
+    if (!seen.has(entry.category)) seen.set(entry.category, seen.size)
+  }
+  return seen
+}
+
+export const searchGlossary = (screen: Screen, query: string): ReadonlyArray<Command> => {
+  const order = byCategory(screen)
+  const placed = (entry: Command): number => order.get(entry.category) ?? order.size
+  return glossaryFor(screen)
     .filter((entry) => matches(entry, query))
-    .toSorted((left, right) => closeness(left, query) - closeness(right, query))
+    .toSorted(
+      (left, right) =>
+        closeness(left, query) - closeness(right, query) || placed(left) - placed(right),
+    )
+}
