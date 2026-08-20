@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.139
+
+### Added
+
+- **Preferences** — `,` opens a screen listing what adiff does, and turns any of it on or off.
+
 ## 0.1.0-alpha.138
 
 ### Fixed
