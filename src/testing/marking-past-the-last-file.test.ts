@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -6,8 +6,8 @@ const files = [
   { path: "src/two.ts", before: ["const b = 1"], after: ["const b = 1", "const two = 2"] },
 ]
 
-describe("marking reviewed past the last file", () => {
-  it("does not undo a review that is already done", async () => {
+describe("when reviewed is marked past the last file", () => {
+  test("then the review already done is not undone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

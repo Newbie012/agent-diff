@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 12 }, (_, at) => `const line${at} = ${at};`)
@@ -29,8 +29,8 @@ const lastRow = (frame: string): string => {
   )
 }
 
-describe("a file whose comment fills the screen", () => {
-  it("scrolls to the end of the file", async () => {
+describe("when a comment fills the screen", () => {
+  test("then scrolling still reaches the end of the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(shortFile)

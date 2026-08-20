@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Change = { readonly path: string; readonly action: string }
@@ -13,8 +13,8 @@ const envelopeOf = (result: { readonly envelope: unknown }): InitEnvelope =>
 const actionAt = (envelope: InitEnvelope, path: string): string | undefined =>
   envelope.changes.find((change) => change.path === path)?.action
 
-describe("telling a repository that review happens in adiff", () => {
-  it("reports what it would write and leaves the repository alone", async () => {
+describe("when a repository is told that review happens in adiff", () => {
+  test("then a dry run reports what it would write and changes nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -30,7 +30,7 @@ describe("telling a repository that review happens in adiff", () => {
     await expect(readFile(join(driver.repoPath, "AGENTS.md"), "utf8")).rejects.toThrow()
   })
 
-  it("writes the loop where an agent reads instructions", async () => {
+  test("then the loop is written where an agent reads instructions", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -46,7 +46,7 @@ describe("telling a repository that review happens in adiff", () => {
     expect(agents).toContain("adiff:end")
   })
 
-  it("imports those instructions for a harness that reads its own file", async () => {
+  test("then a harness reading its own file gets the instructions imported", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -58,7 +58,7 @@ describe("telling a repository that review happens in adiff", () => {
     expect(claude).toContain("@AGENTS.md")
   })
 
-  it("says there is nothing to do when it has already been run", async () => {
+  test("then a second run says there is nothing to do", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.app.runInit({ write: true })
@@ -73,7 +73,7 @@ describe("telling a repository that review happens in adiff", () => {
     expect(agents.split("adiff:begin")).toHaveLength(2)
   })
 
-  it("keeps what someone else wrote in the same file", async () => {
+  test("then what someone else wrote in the file is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.app.writeFileAt("AGENTS.md", "# House rules\n\nRun the tests before you push.\n")
@@ -88,7 +88,7 @@ describe("telling a repository that review happens in adiff", () => {
     expect(agents).toContain("adiff comment take")
   })
 
-  it("commits the skill only when it is asked to", async () => {
+  test("then the skill is committed only when asked for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

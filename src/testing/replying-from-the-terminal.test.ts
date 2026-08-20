@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const threaded = async (driver: TestDriver, asks = true) => {
@@ -23,8 +23,8 @@ const threaded = async (driver: TestDriver, asks = true) => {
   return { branch, id }
 }
 
-describe("replying from the terminal", () => {
-  it("opens a box that says which thread is being answered", async () => {
+describe("when the reviewer replies from the terminal", () => {
+  test("then the box says which thread is being answered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await threaded(driver)
@@ -36,7 +36,7 @@ describe("replying from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("Reply on src/api.ts")
   })
 
-  it("sends what was written, and shows it under the answer it followed", async () => {
+  test("then the reply sends and shows under the answer it followed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await threaded(driver)
@@ -55,8 +55,8 @@ describe("replying from the terminal", () => {
   })
 })
 
-describe("a thread the reviewer wrote back to", () => {
-  it("says it is with the agent rather than answered", async () => {
+describe("when the reviewer has written back to a thread", () => {
+  test("then the thread reads as with the agent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch, id } = await threaded(driver)

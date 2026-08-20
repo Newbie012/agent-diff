@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const long =
@@ -22,8 +22,8 @@ const codeRow = (frame: string): string =>
 const numbered = (frame: string): ReadonlyArray<string> =>
   rowsOf(frame).filter((row) => /│\s*[▎●\s]*\d+\s/.test(row))
 
-describe("reading past the right edge", () => {
-  it("pans the code sideways", async () => {
+describe("when the reviewer reads past the right edge", () => {
+  test("then the code pans sideways", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -38,7 +38,7 @@ describe("reading past the right edge", () => {
     expect(rowsOf(frame).some((row) => row.includes("could not be sent"))).toBe(true)
   })
 
-  it("comes back to the left", async () => {
+  test("then the code comes back to the left", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -52,7 +52,7 @@ describe("reading past the right edge", () => {
     expect(codeRow(await driver.screen.getFrame())).toContain("const message")
   })
 
-  it("keeps the line numbers where they are", async () => {
+  test("then the line numbers stay where they are", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -68,7 +68,7 @@ describe("reading past the right edge", () => {
     expect(after.some((row) => /\s2\s/.test(row))).toBe(true)
   })
 
-  it("says nothing to pan while the diff is wrapped", async () => {
+  test("then adiff says there is nothing to pan while wrapping is on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -85,8 +85,8 @@ describe("reading past the right edge", () => {
   })
 })
 
-describe("knowing the diff is panned", () => {
-  it("says how far right the reader has moved", async () => {
+describe("when the diff is panned", () => {
+  test("then adiff says how far right the reader has moved", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -101,8 +101,8 @@ describe("knowing the diff is panned", () => {
   })
 })
 
-describe("panning with the wheel", () => {
-  it("moves sideways when shift is held", async () => {
+describe("when the wheel pans", () => {
+  test("then holding shift moves the code sideways", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -115,7 +115,7 @@ describe("panning with the wheel", () => {
     expect(await driver.screen.getFrame()).toContain("columns")
   })
 
-  it("leaves the diff where it was for a plain wheel", async () => {
+  test("then a plain wheel leaves the code where it was", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)

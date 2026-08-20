@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -8,8 +8,8 @@ const twoFiles = {
   ],
 }
 
-describe("picking up where the terminal was closed", () => {
-  it("comes back on the same branch and file", async () => {
+describe("when adiff opens after being closed", () => {
+  test("then adiff comes back on the same branch and file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create({ remember: true })
     await driver.branch.create(twoFiles)
@@ -24,7 +24,7 @@ describe("picking up where the terminal was closed", () => {
     expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
   })
 
-  it("starts on the branch list when nothing was remembered", async () => {
+  test("then adiff starts on the branch list with nothing remembered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

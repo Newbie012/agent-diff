@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -41,8 +41,8 @@ const sent = async (driver: TestDriver, branch: string, range: Range): Promise<v
   ])
 }
 
-describe("what a comment says it is about", () => {
-  it("quotes only lines that are on the side it names", async () => {
+describe("when a comment quotes the code it is about", () => {
+  test("then only lines on the side it names are quoted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -57,7 +57,7 @@ describe("what a comment says it is about", () => {
     expect(one?.snippet).toContain("BRAVO2")
   })
 
-  it("keeps a deleted line out of a comment on the new side", async () => {
+  test("then a deleted line stays out of a comment on the new side", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -72,7 +72,7 @@ describe("what a comment says it is about", () => {
     expect(one?.snippet).toContain("EPSILON")
   })
 
-  it("stays on the old side when the old side was asked for", async () => {
+  test("then a comment on the old side quotes the old side", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

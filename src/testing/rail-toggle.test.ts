@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -7,8 +7,8 @@ const oneFile = {
   ],
 }
 
-describe("moving between layers and files", () => {
-  it("offers the switch once a branch has layers, naming where it would go", async () => {
+describe("when the rail can move between layers and files", () => {
+  test("then the switch is offered and names where it would go", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -31,7 +31,7 @@ describe("moving between layers and files", () => {
     expect(await driver.screen.footer()).toContain("s layers")
   })
 
-  it("says nothing about layers on a branch without any", async () => {
+  test("then a branch without layers says nothing about them", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

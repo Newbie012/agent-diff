@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 200 }, (_, at) => `  const step${at} = ${at};`)
@@ -18,8 +18,8 @@ const PAGE_UP = "[5~"
 
 const cursor = async (driver: TestDriver): Promise<number> => (await driver.screen.believes()).cursor
 
-describe("the keys a reviewer presses without being told", () => {
-  it("moves down a page on page down, the way ctrl+d does", async () => {
+describe("when the reviewer presses the keys nobody taught them", () => {
+  test("then page down moves a page down", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -33,7 +33,7 @@ describe("the keys a reviewer presses without being told", () => {
     expect(await cursor(driver)).toBeGreaterThan(before + 1)
   })
 
-  it("moves back up on page up", async () => {
+  test("then page up moves a page back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -48,7 +48,7 @@ describe("the keys a reviewer presses without being told", () => {
     expect(await cursor(driver)).toBeLessThan(before - 1)
   })
 
-  it("goes to the end of the file on end, and back to the top on home", async () => {
+  test("then end goes to the end of the file and home back to the top", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)

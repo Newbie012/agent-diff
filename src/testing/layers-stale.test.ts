@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -10,8 +10,8 @@ const layers = {
   layers: [{ title: "Add the second line", spans: [{ path: "src/api.ts", start: 2, end: 2 }] }],
 }
 
-describe("a layers the branch has moved past", () => {
-  it("says so on the worktree list and in the rail", async () => {
+describe("when the branch has moved past its layers", () => {
+  test("then the worktree list and the rail say the layers are stale", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

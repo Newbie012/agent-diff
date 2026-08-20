@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -22,8 +22,8 @@ const pane = (frame: string): ReadonlyArray<string> =>
     .map((line) => line.slice(0, 38).trimEnd())
     .filter((line) => line.trim().length > 0)
 
-describe("reading the file tree", () => {
-  it("shows a directory as open or closed", async () => {
+describe("when the file tree is read", () => {
+  test("then a directory shows as open or closed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -39,7 +39,7 @@ describe("reading the file tree", () => {
     expect(shut.some((line) => line.includes("▸"))).toBe(true)
   })
 
-  it("counts the files in a directory", async () => {
+  test("then a directory counts its files", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -54,7 +54,7 @@ describe("reading the file tree", () => {
     expect(rows.every((line) => !/\d+f\b/.test(line))).toBe(true)
   })
 
-  it("marks a file that has a comment on it", async () => {
+  test("then a file with a comment on it is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -69,7 +69,7 @@ describe("reading the file tree", () => {
     expect(pane(await driver.screen.getFrame()).some((line) => line.includes("1○"))).toBe(true)
   })
 
-  it("marks the file under the cursor with the same bar the diff uses", async () => {
+  test("then the file under the cursor carries the same bar the diff uses", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -84,7 +84,7 @@ describe("reading the file tree", () => {
     expect(marked[0]).toContain("notes.md")
   })
 
-  it("counts only the threads still open", async () => {
+  test("then only the threads still open are counted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(nested)

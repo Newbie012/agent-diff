@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -40,8 +40,8 @@ const rowsOf = (frame: string): ReadonlyArray<string> => frame.split("\n")
 const diffRow = (frame: string, text: string): number =>
   rowsOf(frame).findIndex((line) => line.includes(text))
 
-describe("reading a layer's argument beside the code it describes", () => {
-  it("puts the prose above the code it introduces", async () => {
+describe("when a layer's prose is read beside its code", () => {
+  test("then the prose sits above the code it introduces", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)
@@ -59,7 +59,7 @@ describe("reading a layer's argument beside the code it describes", () => {
     expect(code).toBeGreaterThan(prose)
   })
 
-  it("shows each block in the order the layer lists them", async () => {
+  test("then the blocks show in the order the layer lists them", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)
@@ -75,7 +75,7 @@ describe("reading a layer's argument beside the code it describes", () => {
     expect(diffRow(frame, "reads it back")).toBeLessThan(diffRow(frame, "apiAdded4"))
   })
 
-  it("leaves the prose out of the line numbers", async () => {
+  test("then the prose carries no line numbers", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)
@@ -92,7 +92,7 @@ describe("reading a layer's argument beside the code it describes", () => {
     expect(row).not.toMatch(/│[▎●\s]*\d/)
   })
 
-  it("anchors a comment written below the prose to the line it was written on", async () => {
+  test("then a comment written below the prose anchors to its own line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)
@@ -110,7 +110,7 @@ describe("reading a layer's argument beside the code it describes", () => {
     expect(await driver.screen.getFrame()).toContain("why read it back here")
   })
 
-  it("keeps the plain file view free of prose", async () => {
+  test("then the plain file view carries no prose", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)

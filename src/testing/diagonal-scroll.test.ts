@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const steps = (mark: string): ReadonlyArray<string> => [
@@ -14,8 +14,8 @@ const file = {
 const firstCodeRow = (frame: string): string =>
   frame.split("\n").find((line) => /│[▎●\s]*\d/.test(line)) ?? ""
 
-describe("scrolling sideways", () => {
-  it("leaves the diff where it is", async () => {
+describe("when the wheel scrolls sideways", () => {
+  test("then the diff stays where it is", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -31,8 +31,8 @@ describe("scrolling sideways", () => {
   })
 })
 
-describe("scrolling down and sideways at once", () => {
-  it("moves by what the vertical events asked for", async () => {
+describe("when the wheel scrolls down and sideways at once", () => {
+  test("then the diff moves by what the vertical events asked for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)

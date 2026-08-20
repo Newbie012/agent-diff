@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 150, height: 20 }
@@ -17,8 +17,8 @@ const litPane = async (driver: TestDriver): Promise<number> =>
 const panesDrawn = async (driver: TestDriver): Promise<number> =>
   (await driver.screen.listForegroundsOfEach("╭")).length
 
-describe("tab with the file list hidden", () => {
-  it("moves to the review panel and leaves the list hidden", async () => {
+describe("when tab is pressed with the file list hidden", () => {
+  test("then tab moves to the review panel and leaves the list hidden", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -33,7 +33,7 @@ describe("tab with the file list hidden", () => {
     expect(await litPane(driver)).toBe(1)
   })
 
-  it("leaves the list hidden going back the other way", async () => {
+  test("then shift and tab leave the list hidden too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

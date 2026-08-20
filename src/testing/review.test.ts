@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("reviewing a branch", () => {
-  it("lists only branches that have something to review", async () => {
+describe("when a branch is reviewed", () => {
+  test("then only branches with something to review are listed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -18,7 +18,7 @@ describe("reviewing a branch", () => {
     })
   })
 
-  it("delivers a comment to the agent anchored to the lines that were selected", async () => {
+  test("then a comment reaches the agent anchored to the lines that were selected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -48,7 +48,7 @@ describe("reviewing a branch", () => {
     ])
   })
 
-  it("carries the changed source so the agent needs no other reference", async () => {
+  test("then the comment carries the changed source", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({
@@ -76,7 +76,7 @@ describe("reviewing a branch", () => {
     expect(comments[0]?.file).toBe("src/deep/nested.ts")
   })
 
-  it("anchors to the removed side when asked about code that was deleted", async () => {
+  test("then a comment on deleted code anchors to the removed side", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({
@@ -105,7 +105,7 @@ describe("reviewing a branch", () => {
     expect(comments[0]?.snippet).toBe("const doomed = 2")
   })
 
-  it("refuses a range the diff does not show, rather than anchoring somewhere else", async () => {
+  test("then adiff refuses a range the diff does not show", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -132,7 +132,7 @@ describe("reviewing a branch", () => {
     expect(await driver.agent.listComments(branch.worktree)).toHaveLength(0)
   })
 
-  it("names the branches it knows when asked for one that does not exist", async () => {
+  test("then adiff names the branches it knows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-invite-emails-real" })
@@ -154,7 +154,7 @@ describe("reviewing a branch", () => {
     })
   })
 
-  it("keeps every submitted comment, so a second review does not replace the first", async () => {
+  test("then every submitted comment is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()

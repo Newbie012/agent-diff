@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 150, height: 18 }
@@ -23,8 +23,8 @@ const twoFiles = {
 const litPane = async (driver: TestDriver): Promise<number> =>
   (await driver.screen.listForegroundsOfEach("╭")).findIndex((colour) => colour === ACCENT)
 
-describe("moving between the panes", () => {
-  it("walks left to right on tab", async () => {
+describe("when the keys move between the panes", () => {
+  test("then tab walks left to right", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -43,7 +43,7 @@ describe("moving between the panes", () => {
     expect(third).toBe(0)
   })
 
-  it("walks right to left on shift and tab", async () => {
+  test("then shift and tab walk right to left", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -57,7 +57,7 @@ describe("moving between the panes", () => {
     expect(back).toBe(0)
   })
 
-  it("comes back where it started", async () => {
+  test("then the focus comes back where it started", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

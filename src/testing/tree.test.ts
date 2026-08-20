@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -26,8 +26,8 @@ const paneOf = (frame: string): string => {
     .join("\n")
 }
 
-describe("navigating the files of a branch", () => {
-  it("groups the changed files under the directories they live in", async () => {
+describe("when the files of a branch are navigated", () => {
+  test("then the changed files are grouped under the directories they live in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -45,7 +45,7 @@ describe("navigating the files of a branch", () => {
     expect(pane).not.toContain("src/api/incidents.ts")
   })
 
-  it("collapses a directory so its files stop taking room", async () => {
+  test("then collapsing a directory stops its files taking room", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -60,7 +60,7 @@ describe("navigating the files of a branch", () => {
     expect(pane).not.toContain("incidents.ts")
   })
 
-  it("folds a directory that only leads to one place into a single row", async () => {
+  test("then a directory leading to one place folds into a single row", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({
@@ -77,7 +77,7 @@ describe("navigating the files of a branch", () => {
     expect(pane).toContain("errors.ts")
   })
 
-  it("opens the file the cursor lands on, so moving down reads the branch in order", async () => {
+  test("then the file the cursor lands on opens", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { series } from "./state.ts"
 import { TestDriver } from "./index.ts"
 
@@ -42,8 +42,8 @@ const answeredTwice = async (driver: TestDriver) => {
   return branch
 }
 
-describe("settling everything already read", () => {
-  it("settles an answer the reviewer has opened", async () => {
+describe("when everything already read is settled", () => {
+  test("then an answer the reviewer opened settles", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await answeredTwice(driver)
@@ -61,7 +61,7 @@ describe("settling everything already read", () => {
     expect(stateOf(listed, "read one")).toBe("answered")
   })
 
-  it("says when nothing read is waiting", async () => {
+  test("then adiff says nothing read is waiting", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answeredTwice(driver)

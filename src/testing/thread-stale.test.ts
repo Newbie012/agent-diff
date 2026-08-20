@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("a thread whose code has moved", () => {
-  it("says the comment describes an older commit", async () => {
+describe("when the code under a thread moves", () => {
+  test("then the thread says the comment describes an older commit", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -34,7 +34,7 @@ describe("a thread whose code has moved", () => {
     expect(frame).toContain("moved on")
   })
 
-  it("says nothing of the sort while the code stands still", async () => {
+  test("then the thread says nothing of the sort while the code stands still", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

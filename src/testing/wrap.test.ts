@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const wide =
@@ -26,8 +26,8 @@ const open = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ width: 84, height: 24, review: true })
 }
 
-describe("reading a line wider than the pane", () => {
-  it("shows the end of the line once wrapping is on", async () => {
+describe("when a line is wider than the pane", () => {
+  test("then wrapping shows the end of the line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -40,7 +40,7 @@ describe("reading a line wider than the pane", () => {
     expect(await driver.screen.getFrame()).toContain("is already spent")
   })
 
-  it("gives a wrapped line one line number", async () => {
+  test("then a wrapped line carries one line number", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -56,7 +56,7 @@ describe("reading a line wider than the pane", () => {
     expect(tail[0]).not.toMatch(/│[▎●\s]*\d/)
   })
 
-  it("marks the cursor on one row of a wrapped line", async () => {
+  test("then the cursor is marked on one row of the wrapped line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -72,7 +72,7 @@ describe("reading a line wider than the pane", () => {
     expect(rowsWith(frame, marks.cursor)[0]).toContain("a team invitation")
   })
 
-  it("anchors a comment written on a wrapped line to that line", async () => {
+  test("then a comment written on a wrapped line anchors to that line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(file)

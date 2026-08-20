@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 
 const SHIPPED = 135
 
@@ -20,8 +20,8 @@ const consumed = async (): Promise<ReadonlySet<string>> => {
   )
 }
 
-describe("a change intent", () => {
-  it("is gone from .changeset once a release has shipped it", async () => {
+describe("when a release ships a change intent", () => {
+  test("then the intent is gone from .changeset", async () => {
     // ARRANGE
     const shipped = await consumed()
 
@@ -34,7 +34,7 @@ describe("a change intent", () => {
     expect(held.filter((name) => shipped.has(name))).toEqual([])
   })
 
-  it("leaves its words behind in the changelog", async () => {
+  test("then the intent's words are in the changelog", async () => {
     // ARRANGE
     const text = await readFile("CHANGELOG.md", "utf8")
 

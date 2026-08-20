@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -11,8 +11,8 @@ const twoFiles = {
 const railOf = (frame: string): ReadonlyArray<string> =>
   frame.split("\n").map((row) => row.slice(0, 40))
 
-describe("seeing what a layer covers", () => {
-  it("lists every file of the layer it is standing on", async () => {
+describe("when a layer is standing under the cursor", () => {
+  test("then the rail lists every file of that layer", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

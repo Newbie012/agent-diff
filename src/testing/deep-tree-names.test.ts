@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDTH = 157
@@ -52,8 +52,8 @@ const openDeepBranch = async (driver: TestDriver): Promise<string> => {
   return driver.screen.getFrame()
 }
 
-describe("reading a file that sits deep in the tree", () => {
-  it("draws two files whose names end the same way as two different rows", async () => {
+describe("when a file sits deep in the tree", () => {
+  test("then two files whose names end alike draw as different rows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -66,7 +66,7 @@ describe("reading a file that sits deep in the tree", () => {
     expect(new Set(names).size).toBe(names.length)
   })
 
-  it("keeps the beginning of a name that says what the file does", async () => {
+  test("then the beginning of the name is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -80,7 +80,7 @@ describe("reading a file that sits deep in the tree", () => {
     expect(names.every((name) => name.endsWith(".ts"))).toBe(true)
   })
 
-  it("names the file the cursor is on in the header", async () => {
+  test("then the header names the file the cursor is on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -91,7 +91,7 @@ describe("reading a file that sits deep in the tree", () => {
     expect(headerRow(frame)).toContain("reduce-measurement-batches.ts")
   })
 
-  it("marks the header path as shortened instead of letting it run off the edge", async () => {
+  test("then the header marks a shortened path", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

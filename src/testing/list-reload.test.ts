@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -10,8 +10,8 @@ const oneFile = {
 const rowWithCursor = (frame: string): string =>
   (frame.split("\n").find((line) => line.includes("\u258e")) ?? "").trim()
 
-describe("reading the worktree list again", () => {
-  it("says it read the list again", async () => {
+describe("when the worktree list is read again", () => {
+  test("then adiff says it read the list again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })
@@ -24,7 +24,7 @@ describe("reading the worktree list again", () => {
     expect(await driver.screen.getFrame()).toContain("read the list again")
   })
 
-  it("shows a worktree that appeared since opening", async () => {
+  test("then a worktree that appeared since opening shows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })
@@ -41,7 +41,7 @@ describe("reading the worktree list again", () => {
     expect(frame).toContain("resend-expired-invites")
   })
 
-  it("keeps the reader on the branch they were pointing at", async () => {
+  test("then the cursor stays on the branch it was pointing at", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })
@@ -58,7 +58,7 @@ describe("reading the worktree list again", () => {
     expect(before).toContain("resend-expired-invites")
   })
 
-  it("shows the comments sent on another branch since opening", async () => {
+  test("then comments sent on another branch since opening show", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })

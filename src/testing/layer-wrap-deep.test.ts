@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number, from: number): ReadonlyArray<string> =>
@@ -69,8 +69,8 @@ const openOnLayer = async (driver: TestDriver): Promise<string> => {
   return branch.worktree
 }
 
-describe("wrapping a layer that spans files at a narrow width", () => {
-  it("keeps a wrapped line whole under the layer's prose", async () => {
+describe("when a layer spanning files is read at a narrow width", () => {
+  test("then a wrapped line stays whole under the prose", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -83,7 +83,7 @@ describe("wrapping a layer that spans files at a narrow width", () => {
     expect(bare(codeOf(frame))).toContain(bare("without opening the logs"))
   })
 
-  it("still says how many lines each gap holds back", async () => {
+  test("then each gap still says how many lines it holds back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -94,7 +94,7 @@ describe("wrapping a layer that spans files at a narrow width", () => {
     expect(gapRows(await driver.screen.getFrame()).length).toBeGreaterThan(0)
   })
 
-  it("opens a gap and keeps the revealed lines readable", async () => {
+  test("then an opened gap keeps its revealed lines readable", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnLayer(driver)
@@ -106,7 +106,7 @@ describe("wrapping a layer that spans files at a narrow width", () => {
     expect(bare(codeOf(await driver.screen.getFrame()))).toContain("constkept23=23")
   })
 
-  it("anchors a comment written on a revealed line", async () => {
+  test("then a comment written on a revealed line anchors to it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const worktree = await openOnLayer(driver)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const deep = [
@@ -24,8 +24,8 @@ const changed = deep.map((line) =>
   line.includes("const changed") ? line.replace("= 1", "= 2") : line,
 )
 
-describe("the scope pinned above the diff", () => {
-  it("keeps the innermost scopes and says that outer ones were dropped", async () => {
+describe("when the scope chain is too deep to pin whole", () => {
+  test("then the innermost scopes are kept and the dropped ones are named", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

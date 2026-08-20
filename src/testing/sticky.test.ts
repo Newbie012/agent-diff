@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const kept = Array.from({ length: 20 }, (_, index) => `    const kept${index} = ${index}`)
@@ -24,8 +24,8 @@ const pinned = (frame: string): ReadonlyArray<string> =>
     .map((line) => line.slice(36).trim())
     .filter((line) => /^(export function outer|if \(ready)/.test(line))
 
-describe("keeping the enclosing scope on screen", () => {
-  it("pins the whole chain once you are inside it", async () => {
+describe("when the enclosing scope is kept on screen", () => {
+  test("then the whole chain pins once the reviewer is inside it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -42,7 +42,7 @@ describe("keeping the enclosing scope on screen", () => {
     expect(driver.screen.renderCrashes()).toEqual([])
   })
 
-  it("pins nothing when the first line of the file is on screen", async () => {
+  test("then nothing pins with the first line of the file on screen", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({
@@ -70,8 +70,8 @@ describe("keeping the enclosing scope on screen", () => {
   })
 })
 
-describe("the pin looks like the code it names", () => {
-  it("highlights the pinned line the same way the diff does", async () => {
+describe("when the pinned line is drawn", () => {
+  test("then the pinned line is highlighted the way the diff is", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)

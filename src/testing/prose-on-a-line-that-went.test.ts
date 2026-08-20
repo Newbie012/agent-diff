@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const RAIL_EDGE = 40
@@ -29,8 +29,8 @@ const removed = {
   ],
 }
 
-describe("prose about code the branch deleted", () => {
-  it("is drawn even when the whole file went", async () => {
+describe("when a layer describes code the branch deleted", () => {
+  test("then the prose draws even where the whole file went", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(removed)
@@ -56,7 +56,7 @@ describe("prose about code the branch deleted", () => {
     expect(rowOf(frame, "Nothing imports this any more")).toBeLessThan(rowOf(frame, "export const one"))
   })
 
-  it("is drawn beside the lines it describes", async () => {
+  test("then the prose draws beside the lines it describes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(gone)

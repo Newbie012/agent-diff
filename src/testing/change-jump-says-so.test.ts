@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoChanges = {
@@ -21,8 +21,8 @@ const oneChange = {
   ],
 }
 
-describe("jumping between changes", () => {
-  it("says when there is no change after this one", async () => {
+describe("when the reviewer jumps between changes", () => {
+  test("then adiff says there is no change after this one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
@@ -35,7 +35,7 @@ describe("jumping between changes", () => {
     expect(await driver.screen.getFrame()).toContain("no change after this one")
   })
 
-  it("says when there is no change before this one", async () => {
+  test("then adiff says there is no change before this one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
@@ -48,7 +48,7 @@ describe("jumping between changes", () => {
     expect(await driver.screen.getFrame()).toContain("no change before this one")
   })
 
-  it("still finds the next change when the whole file is shown", async () => {
+  test("then the next change is still found with the whole file shown", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
@@ -63,7 +63,7 @@ describe("jumping between changes", () => {
     expect(marked ?? "").toMatch(/\d+ [+-] /)
   })
 
-  it("says so when nothing changed in the file", async () => {
+  test("then adiff says nothing changed in the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneChange)
@@ -77,8 +77,8 @@ describe("jumping between changes", () => {
   })
 })
 
-describe("where a change jump lands", () => {
-  it("lands on the changed line, not the context above it", async () => {
+describe("when a change jump lands", () => {
+  test("then the cursor lands on the changed line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)

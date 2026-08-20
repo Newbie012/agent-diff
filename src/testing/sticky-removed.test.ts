@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const layers = (count: number, mark: string): ReadonlyArray<string> =>
@@ -26,8 +26,8 @@ const pinnedRows = (frame: string): ReadonlyArray<string> =>
     .map((line) => line.slice(36).trim())
     .filter((line) => line.startsWith("export "))
 
-describe("pinning the scope you are actually inside", () => {
-  it("names the enclosing function, not a type declared above it", async () => {
+describe("when the scope the reviewer is inside is pinned", () => {
+  test("then the pin names the enclosing function", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -43,8 +43,8 @@ describe("pinning the scope you are actually inside", () => {
   })
 })
 
-describe("lining up the sign column", () => {
-  it("starts context and changed code in the same column", async () => {
+describe("when the sign column is drawn", () => {
+  test("then context and changed code start in the same column", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -17,8 +17,8 @@ const gone = [
   },
 ]
 
-describe("copying a selection that crosses a change", () => {
-  it("copies the version being kept, not both versions of the line", async () => {
+describe("when a selection crossing a change is copied", () => {
+  test("then the version being kept is copied", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -34,7 +34,7 @@ describe("copying a selection that crosses a change", () => {
     expect(taken).not.toContain("const one = 1\n")
   })
 
-  it("still copies deleted lines when that is all that was picked", async () => {
+  test("then deleted lines are copied when only they were picked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: gone })

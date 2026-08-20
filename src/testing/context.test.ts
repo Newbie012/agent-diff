@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const around = (mark: string): ReadonlyArray<string> => [
@@ -11,8 +11,8 @@ const buried = {
   files: [{ path: "src/api.ts", before: around("before"), after: around("after") }],
 }
 
-describe("asking for more of the file", () => {
-  it("shows only a little context to begin with", async () => {
+describe("when the reviewer asks for more of the file", () => {
+  test("then the diff shows only a little context to begin with", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)
@@ -27,7 +27,7 @@ describe("asking for more of the file", () => {
     expect(frame).not.toContain("above2")
   })
 
-  it("widens the context when asked", async () => {
+  test("then the context widens", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)
@@ -40,7 +40,7 @@ describe("asking for more of the file", () => {
     expect(await driver.screen.getFrame()).toContain("above2")
   })
 
-  it("narrows it again", async () => {
+  test("then the context narrows again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)
@@ -54,7 +54,7 @@ describe("asking for more of the file", () => {
     expect(await driver.screen.getFrame()).not.toContain("above2")
   })
 
-  it("keeps the cursor on the same line of the file", async () => {
+  test("then the cursor stays on the same line of the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)

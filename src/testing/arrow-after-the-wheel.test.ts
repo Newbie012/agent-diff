@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 60 }, (_, at) => `const line${at} = ${at};`)
@@ -6,8 +6,8 @@ const body = Array.from({ length: 60 }, (_, at) => `const line${at} = ${at};`)
 const firstRow = (frame: string): string =>
   frame.split("\n").find((line) => /line\d+/.test(line)) ?? ""
 
-describe("an arrow pressed after the wheel", () => {
-  it("moves the cursor into what is on screen, leaving the view where it is", async () => {
+describe("when an arrow is pressed after the wheel", () => {
+  test("then the cursor moves into what is on screen and the view stays put", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/small.ts", before: [], after: body }] })

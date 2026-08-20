@@ -1,6 +1,6 @@
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type PaneEnvelope = {
@@ -21,8 +21,8 @@ const fakeMultiplexer = async (driver: TestDriver, name: string): Promise<string
   return bin
 }
 
-describe("putting the review in front of the reviewer", () => {
-  it("splits the pane the reviewer is already looking at", async () => {
+describe("when the review is opened in a pane", () => {
+  test("then the pane the reviewer is looking at splits", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const bin = await fakeMultiplexer(driver, "tmux")
@@ -42,7 +42,7 @@ describe("putting the review in front of the reviewer", () => {
     expect(asked).toContain(driver.repoPath)
   })
 
-  it("hands back the command when nothing can be split", async () => {
+  test("then adiff hands back the command when nothing can be split", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -57,7 +57,7 @@ describe("putting the review in front of the reviewer", () => {
     expect(envelope.command).toBe(`adiff review open --repo ${driver.repoPath}`)
   })
 
-  it("reports the command it would run whether or not it split", async () => {
+  test("then adiff reports the command it would run either way", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const bin = await fakeMultiplexer(driver, "zellij")
@@ -75,7 +75,7 @@ describe("putting the review in front of the reviewer", () => {
     expect(asked).toContain("new-pane")
   })
 
-  it("says a multiplexer failed rather than claiming a pane opened", async () => {
+  test("then adiff says the multiplexer failed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const bin = join(driver.repoPath, "broken-bin")

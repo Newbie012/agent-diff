@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -20,8 +20,8 @@ const listedKeys = (frame: string): ReadonlyArray<string> =>
 const widest = (frame: string): number =>
   Math.max(...frame.split("\n").map((line) => line.trimEnd().length))
 
-describe("a panel on a wide terminal", () => {
-  it("reads a long command title to its end", async () => {
+describe("when a panel is drawn on a wide terminal", () => {
+  test("then a long command title reads to its end", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -34,7 +34,7 @@ describe("a panel on a wide terminal", () => {
     expect(await driver.screen.getFrame()).toContain(LONG_TITLE)
   })
 
-  it("still draws inside an eighty column terminal", async () => {
+  test("then the panel still draws inside eighty columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -50,8 +50,8 @@ describe("a panel on a wide terminal", () => {
   })
 })
 
-describe("the sheet of every key on a tall terminal", () => {
-  it("lists more of them than a short terminal has room for", async () => {
+describe("when the key sheet is drawn on a tall terminal", () => {
+  test("then the sheet lists more keys than a short terminal has room for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -71,8 +71,8 @@ describe("the sheet of every key on a tall terminal", () => {
   })
 })
 
-describe("the worktree list on a wide terminal", () => {
-  it("reads a long worktree name to its end", async () => {
+describe("when the worktree list is drawn on a wide terminal", () => {
+  test("then a long worktree name reads to its end", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: LONG_NAME })
@@ -84,7 +84,7 @@ describe("the worktree list on a wide terminal", () => {
     expect(await driver.screen.getFrame()).toContain(LONG_NAME)
   })
 
-  it("keeps both ends of a name it has to cut, so two worktrees stay two rows", async () => {
+  test("then a cut name keeps both ends and two worktrees stay two rows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "rework-the-invitation-scheduler-rewrite" })
@@ -102,7 +102,7 @@ describe("the worktree list on a wide terminal", () => {
     expect(frame).toContain("tests")
   })
 
-  it("keeps the row inside an eighty column terminal", async () => {
+  test("then the row stays inside eighty columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: LONG_NAME })

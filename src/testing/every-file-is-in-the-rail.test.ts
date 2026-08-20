@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -15,8 +15,8 @@ const railOf = (frame: string): string =>
 const place = (frame: string): string =>
   (frame.split("\n")[0] ?? "").split(/\s{2,}/).find((part) => part.startsWith("file ")) ?? ""
 
-describe("every changed file has a place in the layers rail", () => {
-  it("lists a file that no layer could order, so the walk can reach it", async () => {
+describe("when the layers rail is drawn", () => {
+  test("then a file no layer could order is still listed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -42,7 +42,7 @@ describe("every changed file has a place in the layers rail", () => {
     expect(railOf(await driver.screen.getFrame())).toContain("logo.bin")
   })
 
-  it("counts the same files the walk visits", async () => {
+  test("then the rail counts the same files the walk visits", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

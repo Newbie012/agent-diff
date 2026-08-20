@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -19,8 +19,8 @@ const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
 
 const rowWith = (frame: string, text: string): string => rowsWith(frame, text)[0] ?? ""
 
-describe("how a comment sits in the diff", () => {
-  it("says a comment has gone to the agent", async () => {
+describe("when a comment sits in the diff", () => {
+  test("then the comment says it has gone to the agent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -38,7 +38,7 @@ describe("how a comment sits in the diff", () => {
     expect(lines[anchor + 2]).toContain("short one")
   })
 
-  it("wraps a long comment inside the diff instead of running off it", async () => {
+  test("then a long comment wraps inside the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -57,7 +57,7 @@ describe("how a comment sits in the diff", () => {
     )
   })
 
-  it("runs a rule down the left of every line it takes up", async () => {
+  test("then a rule runs down the left of every line the comment takes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

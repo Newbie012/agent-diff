@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -48,8 +48,8 @@ const twoLayers: LayersInput = {
   ],
 }
 
-describe("a layer folded shut with the cursor inside it", () => {
-  it("keeps the cursor on the layer's title, so the rail still says where you are", async () => {
+describe("when a layer is folded shut with the cursor inside it", () => {
+  test("then the cursor keeps to the layer's title", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: sixFiles })
@@ -66,8 +66,8 @@ describe("a layer folded shut with the cursor inside it", () => {
   })
 })
 
-describe("reading the branch again after the layers were rewritten", () => {
-  it("puts the cursor on the layer that now holds the file being read", async () => {
+describe("when the branch is read again after the layers were rewritten", () => {
+  test("then the cursor lands on the layer that now holds the file being read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({
@@ -106,8 +106,8 @@ describe("reading the branch again after the layers were rewritten", () => {
   })
 })
 
-describe("a first layer that names nothing the branch changed", () => {
-  it("opens on the first file of the reading order all the same", async () => {
+describe("when the first layer names nothing the branch changed", () => {
+  test("then adiff opens on the first file of the reading order", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: sixFiles.slice(0, 5) })
@@ -138,8 +138,8 @@ describe("a first layer that names nothing the branch changed", () => {
   })
 })
 
-describe("a file two layers both claim", () => {
-  it("counts each stop of the walk and marks only the layer being read", async () => {
+describe("when two layers both claim one file", () => {
+  test("then each stop of the walk is counted and only the layer being read is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({
@@ -172,8 +172,8 @@ describe("a file two layers both claim", () => {
   })
 })
 
-describe("a layer whose spans name nothing in the diff", () => {
-  it("says the layer has nothing left, names what it pointed at, and keeps its note", async () => {
+describe("when a layer's spans name nothing in the diff", () => {
+  test("then the rail says the layer has nothing left, names what it pointed at, and keeps its note", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: sixFiles.slice(0, 2) })

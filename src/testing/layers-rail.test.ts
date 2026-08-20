@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -53,8 +53,8 @@ const railRows = (frame: string): ReadonlyArray<string> =>
 
 const paneOf = (frame: string): string => railRows(frame).join("\n")
 
-describe("walking a review by the argument instead of the filesystem", () => {
-  it("lists the layers's layers, numbered and counted, in place of the file tree", async () => {
+describe("when a review is walked by the layers rail", () => {
+  test("then the rail lists the layers, numbered and counted, in place of the file tree", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -71,7 +71,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(pane.indexOf("Panel.tsx")).toBeGreaterThan(pane.indexOf("not in any layer"))
   })
 
-  it("puts the files no layer claims in a group of their own, so nothing hides", async () => {
+  test("then the files no layer claims sit in a group of their own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -85,7 +85,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(paneOf(await driver.screen.getFrame())).toContain("not in any layer")
   })
 
-  it("scopes the diff to the layer the reviewer is standing on", async () => {
+  test("then the diff is scoped to the layer under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -103,7 +103,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(frame).not.toContain("modelAdded")
   })
 
-  it("goes back to the file tree when the reviewer asks for it", async () => {
+  test("then the file tree comes back when asked for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -119,7 +119,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(pane).not.toContain("1 Add the invitation")
   })
 
-  it("wraps a title too long for the rail instead of cutting it off", async () => {
+  test("then a title too long for the rail wraps", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -136,7 +136,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(rail).not.toContain("…")
   })
 
-  it("lists a layer's files under the directory they share, and folds them away", async () => {
+  test("then a layer's files list under the directory they share and fold away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -155,7 +155,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(paneOf(await driver.screen.getFrame())).not.toContain("model.ts")
   })
 
-  it("keeps a layer's note out of the rail, since the diff already carries it", async () => {
+  test("then a layer's note stays out of the rail", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
@@ -171,7 +171,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     expect(frame).toContain("dropped")
   })
 
-  it("shows the file tree when the branch has no layers at all", async () => {
+  test("then a branch with no layers shows the file tree", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)

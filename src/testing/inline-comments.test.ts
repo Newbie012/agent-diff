@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -14,8 +14,8 @@ const oneFile = {
 const rowWith = (frame: string, text: string): string =>
   frame.split("\n").find((line) => line.includes(text)) ?? ""
 
-describe("comments in the diff", () => {
-  it("shows a comment under the line it was written against", async () => {
+describe("when a comment sits in the diff", () => {
+  test("then the comment shows under the line it was written against", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -35,7 +35,7 @@ describe("comments in the diff", () => {
     expect(comment).toBe(anchor + 2)
   })
 
-  it("leaves the comment row out of the line numbers", async () => {
+  test("then the comment row carries no line number", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -50,7 +50,7 @@ describe("comments in the diff", () => {
     expect(rowWith(frame, "why first")).not.toMatch(/│[▎●\s]*\d/)
   })
 
-  it("stops once on the comment, then carries on to the next line", async () => {
+  test("then the cursor stops once on the comment before the next line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -71,8 +71,8 @@ describe("comments in the diff", () => {
   })
 })
 
-describe("how a comment row reads", () => {
-  it("draws the comment in one colour, not as code", async () => {
+describe("when a comment row is drawn", () => {
+  test("then the comment draws in one colour", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -106,8 +106,8 @@ const many = {
   ],
 }
 
-describe("reading a diff full of comments", () => {
-  it("keeps the cursor on screen once comments take up room", async () => {
+describe("when the diff is full of comments", () => {
+  test("then the cursor stays on screen", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)

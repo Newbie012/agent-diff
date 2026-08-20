@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -22,8 +22,8 @@ const rowAt = (frame: string, text: string): number =>
 const LONG =
   "a line long enough that it has to wrap inside the panel instead of running off the edge"
 
-describe("the box you write a comment in", () => {
-  it("is drawn as a panel with a bar down its edge, not a box", async () => {
+describe("when the compose box is drawn", () => {
+  test("then the compose box is a panel with a bar down its edge", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -41,7 +41,7 @@ describe("the box you write a comment in", () => {
     expect(rowWith(frame, "Comment on src/api.ts")).toContain("┃")
   })
 
-  it("ends just below what you have written", async () => {
+  test("then the compose box ends just below what was written", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -59,7 +59,7 @@ describe("the box you write a comment in", () => {
     expect(actions - written).toBe(2)
   })
 
-  it("offers its actions on the box, with their keys", async () => {
+  test("then the compose box offers its actions with their keys", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -77,7 +77,7 @@ describe("the box you write a comment in", () => {
     expect(actions).not.toContain("add to review")
   })
 
-  it("grows as the comment runs onto more lines", async () => {
+  test("then the compose box grows as the comment runs onto more lines", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -96,7 +96,7 @@ describe("the box you write a comment in", () => {
     expect(rowAt(frame, "cancel") - rowAt(frame, "second line")).toBe(2)
   })
 
-  it("wraps a line too long for the panel, and grows to fit the wrap", async () => {
+  test("then a line too long for the panel wraps and the box grows to fit", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -114,7 +114,7 @@ describe("the box you write a comment in", () => {
     expect(rowAt(frame, "cancel") - rowAt(frame, "off the edge")).toBe(2)
   })
 
-  it("breaks inside a word too long to fit rather than letting it run off", async () => {
+  test("then a word too long to fit breaks inside itself", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -131,7 +131,7 @@ describe("the box you write a comment in", () => {
     expect(Math.max(...written.map((row) => row.length))).toBeLessThanOrEqual(64)
   })
 
-  it("keeps a blank line the reviewer left between two lines", async () => {
+  test("then a blank line the reviewer left is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -148,7 +148,7 @@ describe("the box you write a comment in", () => {
     expect(rowAt(frame, "three") - rowAt(frame, "one")).toBe(2)
   })
 
-  it("wraps to the panel at whatever width the terminal is", async () => {
+  test("then the comment wraps to the panel at any terminal width", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

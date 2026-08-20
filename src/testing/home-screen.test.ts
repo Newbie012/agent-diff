@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -7,8 +7,8 @@ const oneFile = {
   ],
 }
 
-describe("the screen you land on", () => {
-  it("says which repository you are reviewing", async () => {
+describe("when adiff opens on the home screen", () => {
+  test("then the home screen says which repository is being reviewed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -20,7 +20,7 @@ describe("the screen you land on", () => {
     expect(await driver.screen.getFrame()).toContain("repo")
   })
 
-  it("heads the worktree list with its columns", async () => {
+  test("then the worktree list is headed with its columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -35,7 +35,7 @@ describe("the screen you land on", () => {
     expect(heading).toContain("STATE")
   })
 
-  it("splits what was added from what was taken away", async () => {
+  test("then what was added is split from what was taken away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(oneFile)

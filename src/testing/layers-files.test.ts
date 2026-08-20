@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -21,8 +21,8 @@ const backwards = {
   ],
 }
 
-describe("a layer that spans several files", () => {
-  it("walks them in the order the layer lists", async () => {
+describe("when a layer spans several files", () => {
+  test("then the walk follows the order the layer lists", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

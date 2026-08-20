@@ -1,12 +1,12 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
   { path: "src/one.ts", before: ["const a = 1"], after: ["const a = 1", "const one = 2"] },
 ]
 
-describe("closing the box you were writing in", () => {
-  it("still has what you wrote when you open it again on the same line", async () => {
+describe("when the compose box is closed on a draft", () => {
+  test("then the draft is still there on the same line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -22,7 +22,7 @@ describe("closing the box you were writing in", () => {
     expect(await driver.screen.getFrame()).toContain("a point worth keeping")
   })
 
-  it("starts empty on a different line", async () => {
+  test("then the box starts empty on a different line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -39,7 +39,7 @@ describe("closing the box you were writing in", () => {
     expect(await driver.screen.getFrame()).not.toContain("about the first line")
   })
 
-  it("starts empty again once what was written has been sent", async () => {
+  test("then the box starts empty once the comment has been sent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -56,8 +56,8 @@ describe("closing the box you were writing in", () => {
   })
 })
 
-describe("a comment with nothing in it", () => {
-  it("is refused, and says so, rather than reaching the agent", async () => {
+describe("when a comment with nothing in it is sent", () => {
+  test("then adiff refuses it and says so", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

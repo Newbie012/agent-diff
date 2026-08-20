@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (name: string, count: number): ReadonlyArray<string> =>
@@ -35,8 +35,8 @@ const shown = async (driver: TestDriver): Promise<ReadonlyArray<string>> => {
   return (await driver.screen.getFrame()).split("\n")
 }
 
-describe("a layer's prose beside the code", () => {
-  it("carries a rule down its margin, so it cannot be read as the file", async () => {
+describe("when a layer's prose sits beside the code", () => {
+  test("then a rule runs down the prose's margin", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -48,7 +48,7 @@ describe("a layer's prose beside the code", () => {
     expect(said).toContain(`${RULE} ${SAID}`)
   })
 
-  it("keeps the rule on the lines it wraps onto and the blank that closes it", async () => {
+  test("then the rule stays on the wrapped lines and the blank that closes them", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

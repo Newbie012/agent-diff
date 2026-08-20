@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("writing a comment", () => {
-  it("shows the code the comment will be attached to", async () => {
+describe("when a comment is written", () => {
+  test("then the compose box shows the code the comment attaches to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -29,7 +29,7 @@ describe("writing a comment", () => {
     expect(echoed).toHaveLength(2)
   })
 
-  it("takes more than one line of prose", async () => {
+  test("then the compose box takes more than one line of prose", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -49,7 +49,7 @@ describe("writing a comment", () => {
     expect(lines.some((line) => line.includes("second line"))).toBe(true)
   })
 
-  it("sends the comment as soon as it is written", async () => {
+  test("then the comment sends as soon as it is written", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

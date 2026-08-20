@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
@@ -23,8 +23,8 @@ const small = [
 const readout = (frame: string): string =>
   frame.split("\n").find((line) => line.includes(" lines")) ?? ""
 
-describe("what copy takes", () => {
-  it("leaves the gap marker out of the clipboard", async () => {
+describe("when the reviewer copies", () => {
+  test("then the gap marker stays out of the clipboard", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: wide })
@@ -44,7 +44,7 @@ describe("what copy takes", () => {
     expect(taken).not.toContain("opens")
   })
 
-  it("counts the same lines it copies", async () => {
+  test("then the count matches the lines copied", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: small })
@@ -62,7 +62,7 @@ describe("what copy takes", () => {
     expect(await driver.screen.getFrame()).toContain(`${taken.length} lines copied`)
   })
 
-  it("copies the selection, not the comment the cursor rests on", async () => {
+  test("then the selection is copied rather than the comment under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: small })

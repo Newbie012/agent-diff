@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -24,8 +24,8 @@ const layered = async (driver: TestDriver): Promise<void> => {
 
 const fileIn = (frame: string): string => (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
-describe("a wheel over the layers rail", () => {
-  it("moves one file at a time", async () => {
+describe("when the wheel turns over the layers rail", () => {
+  test("then the rail moves one file at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
@@ -40,7 +40,7 @@ describe("a wheel over the layers rail", () => {
     expect(after).toContain("part1")
   })
 
-  it("keeps working after a burst, rather than going dead", async () => {
+  test("then the rail keeps working after a burst", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
@@ -54,7 +54,7 @@ describe("a wheel over the layers rail", () => {
     expect(fileIn(await driver.screen.getFrame())).not.toBe(landed)
   })
 
-  it("stops where the gesture stopped, rather than running on to the end", async () => {
+  test("then the rail stops where the gesture stopped", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)

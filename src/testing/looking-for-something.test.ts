@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -14,8 +14,8 @@ const files = [
   },
 ]
 
-describe("looking for something", () => {
-  it("asks what to look for rather than guessing from the line", async () => {
+describe("when the reviewer searches", () => {
+  test("then adiff asks what to look for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -30,7 +30,7 @@ describe("looking for something", () => {
     expect(frame).not.toContain("useProcessFold  ·")
   })
 
-  it("looks while the reviewer types, without being told to", async () => {
+  test("then the matches narrow as the reviewer types", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -45,7 +45,7 @@ describe("looking for something", () => {
     expect(await driver.screen.getFrame()).toContain("useProcessFold  ·")
   })
 
-  it("looks straight away when return is pressed", async () => {
+  test("then return searches straight away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -61,8 +61,8 @@ describe("looking for something", () => {
   })
 })
 
-describe("what a search counts as a match", () => {
-  it("finds a name however it was capitalised", async () => {
+describe("when a search counts its matches", () => {
+  test("then a name is found however it was capitalised", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -77,7 +77,7 @@ describe("what a search counts as a match", () => {
     expect(await driver.screen.getFrame()).toMatch(/\d+ places?/)
   })
 
-  it("reads the branch once, and only asks git to search", async () => {
+  test("then the branch is read once and only git searches", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -94,8 +94,8 @@ describe("what a search counts as a match", () => {
   })
 })
 
-describe("a name that is defined where the reviewer is standing", () => {
-  it("is still one of the places it lists", async () => {
+describe("when the name searched for is defined where the reviewer stands", () => {
+  test("then that definition is one of the places listed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

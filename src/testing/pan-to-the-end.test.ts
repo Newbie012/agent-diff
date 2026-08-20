@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const tail = "END_OF_THE_LINE"
@@ -11,8 +11,8 @@ const wide = [
 
 const wideFile = { files: [{ path: "src/wide.ts", before: ["const short = 1;"], after: wide }] }
 
-describe("panning a line wider than the pane", () => {
-  it("reaches the end of the longest line", async () => {
+describe("when a line is wider than the pane", () => {
+  test("then panning reaches the end of the longest line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wideFile)

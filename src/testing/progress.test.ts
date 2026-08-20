@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("tracking review progress", () => {
-  it("starts with nothing marked reviewed", async () => {
+describe("when review progress is tracked", () => {
+  test("then nothing is marked reviewed to begin with", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -14,7 +14,7 @@ describe("tracking review progress", () => {
     expect(result.envelope).toMatchObject({ ok: true, reviewed: [], total: 1 })
   })
 
-  it("records a file the reviewer marked reviewed", async () => {
+  test("then a file the reviewer marked reviewed is recorded", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -26,7 +26,7 @@ describe("tracking review progress", () => {
     expect(result.envelope).toMatchObject({ ok: true, reviewed: ["src/api.ts"], total: 1 })
   })
 
-  it("survives the tool restarting, because progress is worth nothing if it does not", async () => {
+  test("then the progress survives a restart", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -39,7 +39,7 @@ describe("tracking review progress", () => {
     expect(result.envelope).toMatchObject({ reviewed: ["src/api.ts"] })
   })
 
-  it("takes the vouch back when the reviewer changes their mind", async () => {
+  test("then the vouch comes back off when the reviewer changes their mind", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -52,7 +52,7 @@ describe("tracking review progress", () => {
     expect(result.envelope).toMatchObject({ reviewed: [] })
   })
 
-  it("stops counting a file the agent rewrote after it was marked reviewed", async () => {
+  test("then a file the agent rewrote stops counting as reviewed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -70,7 +70,7 @@ describe("tracking review progress", () => {
     expect(result.envelope).toMatchObject({ reviewed: [] })
   })
 
-  it("refuses to vouch for a file that is not in the diff", async () => {
+  test("then adiff refuses to vouch for a file that is not in the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()

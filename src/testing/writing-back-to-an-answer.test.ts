@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const asked = async (driver: TestDriver) => {
@@ -21,8 +21,8 @@ const asked = async (driver: TestDriver) => {
   return { branch, id }
 }
 
-describe("writing back to an answer", () => {
-  it("goes to the agent as a comment it still owes an answer on", async () => {
+describe("when the reviewer writes back to an answer", () => {
+  test("then the agent gets a comment it still owes an answer on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch, id } = await asked(driver)
@@ -37,7 +37,7 @@ describe("writing back to an answer", () => {
     expect(comments.map((one) => one.body)).toEqual(["the imports"])
   })
 
-  it("carries the conversation it belongs to", async () => {
+  test("then the reply carries the conversation it belongs to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch, id } = await asked(driver)
@@ -57,7 +57,7 @@ describe("writing back to an answer", () => {
     ])
   })
 
-  it("stays one thread rather than becoming two", async () => {
+  test("then the thread stays one thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch, id } = await asked(driver)
@@ -72,7 +72,7 @@ describe("writing back to an answer", () => {
     expect(threads[0]?.id).toBe(id)
   })
 
-  it("opens a settled thread again, because writing says the reviewer wants more", async () => {
+  test("then a settled thread opens again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch, id } = await asked(driver)

@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -27,8 +27,8 @@ const reported = async (driver: TestDriver, minimal: boolean): Promise<string> =
   return readFile(join(dir, found.at(-1) ?? ""), "utf8")
 }
 
-describe("reporting a bug", () => {
-  it("carries the notices the reviewer was shown, with the clock", async () => {
+describe("when a bug is reported", () => {
+  test("then the report carries the notices the reviewer was shown, with the clock", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -39,7 +39,7 @@ describe("reporting a bug", () => {
     expect(text).toMatch(/\d+:\d\d\s+said\s+\S/)
   })
 
-  it("sends everything on screen by default", async () => {
+  test("then the report sends everything on screen by default", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -51,7 +51,7 @@ describe("reporting a bug", () => {
     expect(text).toContain("secret-name.ts")
   })
 
-  it("sends no file names or code when asked for the least", async () => {
+  test("then a minimal report sends no file names or code", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

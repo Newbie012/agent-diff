@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("running adiff the way a person first would", () => {
-  it("says what it is and how to go on when run with no arguments", async () => {
+describe("when a person runs adiff for the first time", () => {
+  test("then adiff says what it is and how to go on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -16,7 +16,7 @@ describe("running adiff the way a person first would", () => {
     expect(result.stdout).not.toContain('"ok"')
   })
 
-  it("prints its version", async () => {
+  test("then adiff prints its version", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -30,7 +30,7 @@ describe("running adiff the way a person first would", () => {
     expect(short.stdout).toBe(long.stdout)
   })
 
-  it("lists the commands when asked for help", async () => {
+  test("then adiff lists the commands", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -47,7 +47,7 @@ describe("running adiff the way a person first would", () => {
     expect(short.stdout).toBe(long.stdout)
   })
 
-  it("explains one command when asked about it", async () => {
+  test("then adiff explains one command", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -60,7 +60,7 @@ describe("running adiff the way a person first would", () => {
     expect(result.stdout).toContain("worktree")
   })
 
-  it("fails loudly on a command it does not have", async () => {
+  test("then adiff fails loudly on a command it does not have", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

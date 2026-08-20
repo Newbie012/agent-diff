@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("comments that have already gone to the agent", () => {
-  it("stays in the diff after it is sent", async () => {
+describe("when a comment has gone to the agent", () => {
+  test("then the comment stays in the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -32,7 +32,7 @@ describe("comments that have already gone to the agent", () => {
     expect(lines.findIndex((line) => line.includes("already said this"))).toBe(anchor + 2)
   })
 
-  it("comes back when the review is reopened", async () => {
+  test("then the comment comes back when the review is reopened", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -50,8 +50,8 @@ describe("comments that have already gone to the agent", () => {
   })
 })
 
-describe("walking past comments already sent", () => {
-  it("stops on a sent comment too", async () => {
+describe("when the reviewer walks past a sent comment", () => {
+  test("then the walk stops on the sent comment too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

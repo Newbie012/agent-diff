@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -16,8 +16,8 @@ const tableRow = (frame: string, name: string): string =>
     .filter((row) => !row.includes("worktrees"))
     .find((row) => new RegExp(`${name}\\s`).test(row) && row.includes("+")) ?? ""
 
-describe("naming the repository it opened", () => {
-  it("shows a path even when the argument is a dot", async () => {
+describe("when adiff names the repository it opened", () => {
+  test("then a dot argument still shows a path", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -31,7 +31,7 @@ describe("naming the repository it opened", () => {
     expect(row).not.toContain("/.")
   })
 
-  it("resolves a path that walks back up through a parent", async () => {
+  test("then a path walking up through a parent resolves", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -44,8 +44,8 @@ describe("naming the repository it opened", () => {
   })
 })
 
-describe("marking the worktree the reader opened", () => {
-  it("marks the worktree the repository argument names", async () => {
+describe("when the reader opens a worktree", () => {
+  test("then the worktree the argument names is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const first = await driver.branch.create(oneFile)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("choosing which branch needs you", () => {
-  it("says nothing is unanswered when the agent has taken every comment", async () => {
+describe("when the branch list is read", () => {
+  test("then a branch whose comments the agent took reads as nothing unanswered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -34,7 +34,7 @@ describe("choosing which branch needs you", () => {
     })
   })
 
-  it("says how many the agent has not collected", async () => {
+  test("then each branch says how many comments the agent has not collected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -56,7 +56,7 @@ describe("choosing which branch needs you", () => {
     })
   })
 
-  it("shows the counts on the branches screen", async () => {
+  test("then the counts show on the branches screen", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -78,8 +78,8 @@ describe("choosing which branch needs you", () => {
   })
 })
 
-describe("coming back to the branch list", () => {
-  it("shows a comment sent since the list was last drawn", async () => {
+describe("when the reviewer comes back to the branch list", () => {
+  test("then a comment sent since the list was last drawn shows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

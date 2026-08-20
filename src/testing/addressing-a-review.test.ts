@@ -1,10 +1,10 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Listed = { readonly comments: ReadonlyArray<{ readonly id: string; readonly body: string }> }
 
-describe("naming the review an agent is standing in", () => {
-  it("lists comments by worktree, the way `comment take` was already addressed", async () => {
+describe("when an agent names the review it is standing in", () => {
+  test("then the comments are listed by worktree", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })
@@ -26,7 +26,7 @@ describe("naming the review an agent is standing in", () => {
     )
   })
 
-  it("collects comments by repository and branch, the way a reviewer names them", async () => {
+  test("then the comments are collected by repository and branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })
@@ -55,7 +55,7 @@ describe("naming the review an agent is standing in", () => {
     )
   })
 
-  it("answers a comment from the worktree and reads it back by branch", async () => {
+  test("then a comment answered by worktree reads back by branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })
@@ -94,7 +94,7 @@ describe("naming the review an agent is standing in", () => {
     expect(found?.state).toBe("question")
   })
 
-  it("refuses when neither spelling is given, and says which two there are", async () => {
+  test("then adiff refuses with neither spelling and names both", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -109,8 +109,8 @@ describe("naming the review an agent is standing in", () => {
   })
 })
 
-describe("taking a comment out of the review", () => {
-  it("says a comment that was already sent came out of the sent record", async () => {
+describe("when a comment is taken out of the review", () => {
+  test("then the sent record no longer holds the comment", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })
@@ -134,8 +134,8 @@ describe("taking a comment out of the review", () => {
   })
 })
 
-describe("refusing a command it does not have", () => {
-  it("does not print the catalog into every refusal", async () => {
+describe("when adiff is given a command it does not have", () => {
+  test("then the refusal leaves the catalog out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -12,8 +12,8 @@ const shown = (result: { readonly envelope: unknown }): ReadonlyArray<{ name: st
 const valueOf = (result: { readonly envelope: unknown }, name: string): boolean | undefined =>
   shown(result).find((one) => one.name === name)?.value
 
-describe("the preferences adiff keeps", () => {
-  it("start as what adiff did before there were any", async () => {
+describe("when adiff reads its preferences", () => {
+  test("then every preference starts as what adiff did before there were any", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -26,7 +26,7 @@ describe("the preferences adiff keeps", () => {
     expect(valueOf(listed, "wrap")).toBe(false)
   })
 
-  it("keeps what the command line set", async () => {
+  test("then what the command line set is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -37,7 +37,7 @@ describe("the preferences adiff keeps", () => {
     expect(valueOf(await driver.app.runConfigList(), "hold")).toBe(true)
   })
 
-  it("refuses a name it does not know, and says which it does", async () => {
+  test("then adiff refuses a name it does not know and names the ones it does", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -49,7 +49,7 @@ describe("the preferences adiff keeps", () => {
     expect(JSON.stringify(result.envelope)).toContain("sticky")
   })
 
-  it("carries a toggle made in the review into the next session", async () => {
+  test("then a toggle made in the review carries into the next session", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -62,7 +62,7 @@ describe("the preferences adiff keeps", () => {
     expect(valueOf(await driver.app.runConfigList(), "sticky")).toBe(false)
   })
 
-  it("opens the next session the way the command line left it", async () => {
+  test("then the next session opens the way the command line left it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -6,8 +6,8 @@ const files = [
   { path: "src/two.ts", before: ["const b = 1"], after: ["const b = 1", "const two = 2"] },
 ]
 
-describe("a review opened on a branch", () => {
-  it("reads the branch before it asks about pull requests", async () => {
+describe("when a review opens on a branch", () => {
+  test("then the branch is read before the forge is asked about pull requests", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

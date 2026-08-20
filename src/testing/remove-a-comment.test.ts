@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Thread = {
@@ -27,8 +27,8 @@ const onTheThread = async (driver: TestDriver, body: string): Promise<void> => {
 const threadsOf = (envelope: unknown): ReadonlyArray<Thread> =>
   (envelope as { readonly comments?: ReadonlyArray<Thread> }).comments ?? []
 
-describe("removing a comment from the diff", () => {
-  it("takes the thread out of the diff", async () => {
+describe("when a comment is removed from the diff", () => {
+  test("then the thread comes out of the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -42,7 +42,7 @@ describe("removing a comment from the diff", () => {
     expect(await driver.screen.getFrame()).not.toContain("meant for another line")
   })
 
-  it("says the comment was removed", async () => {
+  test("then adiff says the comment was removed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -56,7 +56,7 @@ describe("removing a comment from the diff", () => {
     expect(await driver.screen.getFrame()).toContain("removed")
   })
 
-  it("leaves a thread that is not under the cursor alone", async () => {
+  test("then a thread that is not under the cursor is left alone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -76,7 +76,7 @@ describe("removing a comment from the diff", () => {
     expect(frame).not.toContain("the second point")
   })
 
-  it("says so when the cursor is on code", async () => {
+  test("then adiff says there is no thread under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -90,8 +90,8 @@ describe("removing a comment from the diff", () => {
   })
 })
 
-describe("what the agent sees after a comment is removed", () => {
-  it("still carries the comment, marked removed", async () => {
+describe("when the agent looks after a comment is removed", () => {
+  test("then the agent still gets the comment, marked removed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -108,7 +108,7 @@ describe("what the agent sees after a comment is removed", () => {
     expect(threads[0]?.body).toBe("meant for another line")
   })
 
-  it("keeps the delivery record that a take already handed over", async () => {
+  test("then the delivery record of the earlier take is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -125,8 +125,8 @@ describe("what the agent sees after a comment is removed", () => {
   })
 })
 
-describe("bringing a removed comment back", () => {
-  it("returns it to the diff", async () => {
+describe("when a removed comment is brought back", () => {
+  test("then the comment returns to the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -143,7 +143,7 @@ describe("bringing a removed comment back", () => {
     expect(await driver.screen.getFrame()).toContain("meant for another line")
   })
 
-  it("refuses an id it has never seen", async () => {
+  test("then adiff refuses an id it has never seen", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

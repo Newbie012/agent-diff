@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const wide =
@@ -21,8 +21,8 @@ const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
     .map((row) => row.slice(row.indexOf("││") + 2))
     .filter((row) => row.includes(text))
 
-describe("what still holds when the diff wraps", () => {
-  it("keeps a comment on its own rows below the line it was written on", async () => {
+describe("when the diff wraps", () => {
+  test("then a comment keeps its own rows below the line it was written on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -41,7 +41,7 @@ describe("what still holds when the diff wraps", () => {
     expect(said).toBe(tail + 2)
   })
 
-  it("moves the cursor a line at a time, not a row at a time", async () => {
+  test("then the cursor moves a line at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -58,8 +58,8 @@ describe("what still holds when the diff wraps", () => {
   })
 })
 
-describe("the gutter below the last line", () => {
-  it("marks the cursor once when the file ends above the fold", async () => {
+describe("when the file ends above the fold", () => {
+  test("then the cursor is marked once", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

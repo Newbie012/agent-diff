@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const file = (mark: string) => ({
@@ -7,8 +7,8 @@ const file = (mark: string) => ({
   after: ["const a = 1", `const ${mark} = 2`],
 })
 
-describe("opening straight onto a branch", () => {
-  it("draws its diff without waiting for the other worktrees", async () => {
+describe("when adiff opens straight onto a branch", () => {
+  test("then the diff draws without waiting for the other worktrees", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-invitations-first", files: [file("one")] })
@@ -23,7 +23,7 @@ describe("opening straight onto a branch", () => {
     expect(frame).toContain("const two = 2")
   })
 
-  it("has the rest of them by the time the list is asked for", async () => {
+  test("then the other worktrees are there by the time the list is asked for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-invitations-first", files: [file("one")] })

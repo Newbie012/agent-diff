@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -15,8 +15,8 @@ const commented = async (driver: TestDriver): Promise<string> => {
   return branch.worktree
 }
 
-describe("whether the agent has a comment yet", () => {
-  it("files it apart until something collects it", async () => {
+describe("when a comment is waiting on the agent", () => {
+  test("then the comment is filed apart until something collects it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const worktree = await commented(driver)
@@ -32,7 +32,7 @@ describe("whether the agent has a comment yet", () => {
     expect(frame).not.toContain("Not picked up")
   })
 
-  it("says how long ago it was picked up, on the thread itself", async () => {
+  test("then the thread says how long ago the comment was picked up", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const worktree = await commented(driver)
@@ -46,7 +46,7 @@ describe("whether the agent has a comment yet", () => {
     expect(await driver.screen.getFrame()).toContain("picked up just now")
   })
 
-  it("leaves a comment nothing has collected saying only that it was sent", async () => {
+  test("then an uncollected comment says only that it was sent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commented(driver)

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("reviewing on the terminal", () => {
-  it("opens on the branches that have something to review", async () => {
+describe("when a review is read on the terminal", () => {
+  test("then adiff opens on the branches with something to review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -14,7 +14,7 @@ describe("reviewing on the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("add-a-third-line")
   })
 
-  it("shows the changed lines of a branch once it is opened", async () => {
+  test("then the changed lines show once a branch is opened", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({
@@ -37,7 +37,7 @@ describe("reviewing on the terminal", () => {
     expect(frame).toContain("const added = 2")
   })
 
-  it("delivers a comment written on the terminal to the agent", async () => {
+  test("then a comment written on the terminal reaches the agent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({

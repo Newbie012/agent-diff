@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
@@ -22,8 +22,8 @@ const manyFiles = {
   })),
 }
 
-describe("a branch big enough to be real", () => {
-  it("survives being read from top to bottom", async () => {
+describe("when a branch is big enough to be real", () => {
+  test("then adiff survives being read from top to bottom", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(hugeFile)
@@ -39,7 +39,7 @@ describe("a branch big enough to be real", () => {
     expect(await driver.screen.getFrame()).toContain("scheduler.ts")
   })
 
-  it("survives every key on every file", async () => {
+  test("then adiff survives every key on every file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(manyFiles)
@@ -54,7 +54,7 @@ describe("a branch big enough to be real", () => {
     expect(driver.screen.renderCrashes()).toEqual([])
   })
 
-  it("survives widening the context on a large file", async () => {
+  test("then adiff survives widening the context on a large file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(hugeFile)

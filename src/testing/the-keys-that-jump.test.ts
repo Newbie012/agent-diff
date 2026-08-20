@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -12,8 +12,8 @@ const files = Array.from({ length: 12 }, (_, at) => change(`src/file${at}.ts`))
 const fileIn = (frame: string): string =>
   (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
-describe("the keys that jump", () => {
-  it("moves the file list when the file list has focus", async () => {
+describe("when the jumping keys are pressed", () => {
+  test("then they move the file list when it has focus", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -36,7 +36,7 @@ describe("the keys that jump", () => {
     expect(fileIn(await driver.screen.getFrame())).toBe(started)
   })
 
-  it("still moves the diff when the diff has focus", async () => {
+  test("then they move the diff when it has focus", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

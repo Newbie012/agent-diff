@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/theme.ts"
 
@@ -8,8 +8,8 @@ const oneFile = {
   ],
 }
 
-describe("pointing at an action in the footer", () => {
-  it("marks it without moving anything", async () => {
+describe("when the pointer rests on a footer action", () => {
+  test("then the action is marked and nothing moves", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -31,8 +31,8 @@ describe("pointing at an action in the footer", () => {
   })
 })
 
-describe("what hovering an action looks like", () => {
-  it("lights the one under the pointer", async () => {
+describe("when the pointer moves across the footer", () => {
+  test("then only the action under the pointer lights", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

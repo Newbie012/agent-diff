@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const many = {
@@ -21,8 +21,8 @@ const pane = (frame: string): string =>
 const headerOf = (frame: string): string =>
   frame.split("\n").find((line) => line.trim().length > 0)?.trim() ?? ""
 
-describe("reviewing a branch with many files", () => {
-  it("keeps the current file visible in the list", async () => {
+describe("when a branch touches many files", () => {
+  test("then the current file stays visible in the list", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)
@@ -39,7 +39,7 @@ describe("reviewing a branch with many files", () => {
     expect(pane(frame)).toContain(name.replace(".ts", ""))
   })
 
-  it("says how many files the branch touches", async () => {
+  test("then adiff says how many files the branch touches", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)

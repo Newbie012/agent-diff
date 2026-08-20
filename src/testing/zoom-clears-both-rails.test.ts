@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 160, height: 32 }
@@ -26,8 +26,8 @@ const commented = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ ...WIDE, review: true })
 }
 
-describe("giving the diff the whole window", () => {
-  it("clears the file list and the review panel together", async () => {
+describe("when the diff is given the whole window", () => {
+  test("then the file list and the review panel clear together", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commented(driver)
@@ -42,7 +42,7 @@ describe("giving the diff the whole window", () => {
     expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
-  it("brings both back when zoomed a second time", async () => {
+  test("then zooming again brings both back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commented(driver)
@@ -55,7 +55,7 @@ describe("giving the diff the whole window", () => {
     expect(await driver.screen.getFrame()).toContain("Not picked up")
   })
 
-  it("leaves the panel shut if the reader had shut it themselves", async () => {
+  test("then a panel the reader shut stays shut", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commented(driver)
@@ -69,7 +69,7 @@ describe("giving the diff the whole window", () => {
     expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
-  it("names the key that hides the panel", async () => {
+  test("then the footer names the key that hides the panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

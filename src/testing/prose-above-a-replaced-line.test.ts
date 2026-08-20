@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -12,8 +12,8 @@ const files = [
 const rowsOf = (frame: string): ReadonlyArray<string> =>
   frame.split("\n").map((line) => line.split("││")[1] ?? "")
 
-describe("a layer's note about a replaced line", () => {
-  it("sits above the pair, not between the two halves of it", async () => {
+describe("when a layer notes a replaced line", () => {
+  test("then the note sits above the pair", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 
 const NUMBERS = /\d+/g
 
@@ -23,8 +23,8 @@ const versionsIn = (text: string): ReadonlyArray<string> =>
     .filter((line) => line.startsWith("## "))
     .map((line) => line.slice(3).trim())
 
-describe("the changelog", () => {
-  it("reads newest first, counting versions as numbers rather than as words", async () => {
+describe("when the changelog is written", () => {
+  test("then the versions read newest first, counted as numbers", async () => {
     // ARRANGE
     const text = await readFile("CHANGELOG.md", "utf8")
 
@@ -39,7 +39,7 @@ describe("the changelog", () => {
     expect(outOfOrder).toEqual([])
   })
 
-  it("puts the version now released at the top", async () => {
+  test("then the version now released is at the top", async () => {
     // ARRANGE
     const [text, manifest] = await Promise.all([
       readFile("CHANGELOG.md", "utf8"),

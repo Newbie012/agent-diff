@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (count: number): ReadonlyArray<string> =>
@@ -15,8 +15,8 @@ const files = [
 const hiddenIn = (frame: string): string =>
   frame.split("\n").find((line) => line.includes("lines hidden")) ?? ""
 
-describe("a comment left inside a gap", () => {
-  it("can still be reached from the review after the gap closes", async () => {
+describe("when a comment is left inside a gap", () => {
+  test("then the comment is still reachable from the review panel after the gap closes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

@@ -14,6 +14,9 @@ Talk tachles: be concise, direct, and practical.
 2. `.agents/prd/CONTEXT.md` is the glossary. Never invent a word it already has.
 3. Write the failing test first, and watch it fail for the right reason. It asserts what a reviewer
    or an agent can observe — never an internal call, an intermediate value, or a private function.
+   `describe("when …")` and `test("then …")`, each naming its subject rather than leaning on "it",
+   "them" or "that way": the title is read on a PR page and on a recording's title card, with
+   nothing beside it.
 4. Then the code. Then `pnpm check`.
 
 `.agents/prd/` holds behavior contracts, `.agents/adr/` durable decisions, GitHub issues the work.

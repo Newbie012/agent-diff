@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -13,8 +13,8 @@ const oneFile = {
 
 const HEBREW_LETTER_ON_THE_N_KEY = `[1503::110u`
 
-describe("a keyboard that is not English", () => {
-  it("answers to the key the letter sits on", async () => {
+describe("when the keyboard is not English", () => {
+  test("then adiff answers to the key the letter sits on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

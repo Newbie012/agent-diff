@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const spread = {
@@ -19,8 +19,8 @@ const spread = {
 const rowWith = (frame: string, text: string): string =>
   frame.split("\n").find((line) => line.includes(text)) ?? ""
 
-describe("walking between comments", () => {
-  it("jumps forward to the line the next comment sits on", async () => {
+describe("when the reviewer walks between comments", () => {
+  test("then the cursor jumps to the line the next comment sits on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
@@ -36,7 +36,7 @@ describe("walking between comments", () => {
     expect(await driver.screen.rowWith("const layer4 = 4")).toContain("▎")
   })
 
-  it("jumps back to the comment above", async () => {
+  test("then the cursor jumps back to the comment above", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
@@ -52,7 +52,7 @@ describe("walking between comments", () => {
     expect(await driver.screen.rowWith("const layer1 = 1")).toContain("▎")
   })
 
-  it("carries on into the next file that has one", async () => {
+  test("then walking carries on into the next file with a comment", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
@@ -71,7 +71,7 @@ describe("walking between comments", () => {
     expect(rowWith(frame, "over here")).not.toHaveLength(0)
   })
 
-  it("says so when there is nothing to walk to", async () => {
+  test("then adiff says there is nothing to walk to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)

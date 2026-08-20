@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -9,8 +9,8 @@ const oneFile = {
 
 const indentOf = (row: string): number => row.length - row.trimStart().length
 
-describe("how the chrome reads", () => {
-  it("draws footer keys brighter than what they do", async () => {
+describe("when the chrome is drawn", () => {
+  test("then the footer keys are brighter than their labels", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -23,7 +23,7 @@ describe("how the chrome reads", () => {
     expect(await driver.screen.listForegroundsOn("v select")).toHaveLength(2)
   })
 
-  it("draws the branch name brighter than the rest of the header", async () => {
+  test("then the branch name is brighter than the rest of the header", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -37,8 +37,8 @@ describe("how the chrome reads", () => {
   })
 })
 
-describe("how the screen breathes", () => {
-  it("keeps an even gutter down the left of every bar", async () => {
+describe("when the bars are drawn", () => {
+  test("then every bar keeps an even gutter down its left", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

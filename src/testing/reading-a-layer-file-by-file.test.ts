@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -32,8 +32,8 @@ const ticks = (frame: string): number => (frame.match(/✓/g) ?? []).length
 
 const fileIn = (frame: string): string => (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
-describe("a layer that says two things about one file", () => {
-  it("lists that file once", async () => {
+describe("when a layer says two things about one file", () => {
+  test("then the rail lists that file once", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -63,8 +63,8 @@ describe("a layer that says two things about one file", () => {
   })
 })
 
-describe("reading a layer a file at a time", () => {
-  it("lists the files of a layer as rows of the rail", async () => {
+describe("when a layer is read a file at a time", () => {
+  test("then the layer's files are rows of the rail", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -77,7 +77,7 @@ describe("reading a layer a file at a time", () => {
     expect(frame).toContain("two.ts")
   })
 
-  it("ticks a file in the rail once it has been read", async () => {
+  test("then a file ticks in the rail once it is read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
@@ -91,7 +91,7 @@ describe("reading a layer a file at a time", () => {
     expect(ticks(after)).toBeGreaterThan(ticks(before))
   })
 
-  it("walks from the last file of one layer into the first of the next", async () => {
+  test("then the walk goes from the last file of one layer into the first of the next", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
@@ -108,8 +108,8 @@ describe("reading a layer a file at a time", () => {
   })
 })
 
-describe("two layers that claim the same file", () => {
-  it("still walks to the end of the review", async () => {
+describe("when two layers claim the same file", () => {
+  test("then the walk still reaches the end of the review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

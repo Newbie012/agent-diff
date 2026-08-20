@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -6,8 +6,8 @@ const files = [
   { path: "src/two.ts", before: ["const b = 1"], after: ["const b = 1", "const two = 2"] },
 ]
 
-describe("the keys the footer teaches", () => {
-  it("says how to move, before anything else", async () => {
+describe("when the footer teaches the keys", () => {
+  test("then the footer says how to move first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -22,7 +22,7 @@ describe("the keys the footer teaches", () => {
     expect(footer.indexOf("move")).toBeLessThan(footer.indexOf("reviewed"))
   })
 
-  it("keeps the most useful keys when the terminal is narrow", async () => {
+  test("then a narrow terminal keeps the most useful keys", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

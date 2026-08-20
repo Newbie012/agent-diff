@@ -1,12 +1,12 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
   files: [{ path: "src/api.ts", before: ["const a = 1"], after: ["const a = 1", "const b = 2"] }],
 }
 
-describe("reaching the pull request while reading the diff", () => {
-  it("names the key in the footer of the review", async () => {
+describe("when the branch has a pull request", () => {
+  test("then the footer names the key that opens it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -20,7 +20,7 @@ describe("reaching the pull request while reading the diff", () => {
     expect(await driver.screen.footer()).toContain("pull request")
   })
 
-  it("says in the header that the branch has one", async () => {
+  test("then the header says the branch has a pull request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -36,7 +36,7 @@ describe("reaching the pull request while reading the diff", () => {
     expect(header).toContain("open pull request")
   })
 
-  it("opens it from the review", async () => {
+  test("then the pull request opens from the review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -52,8 +52,8 @@ describe("reaching the pull request while reading the diff", () => {
   })
 })
 
-describe("a branch the forge says has no pull request", () => {
-  it("stops offering the key", async () => {
+describe("when the forge says the branch has no pull request", () => {
+  test("then the footer stops offering the key", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -67,8 +67,8 @@ describe("a branch the forge says has no pull request", () => {
   })
 })
 
-describe("a forge that cannot answer", () => {
-  it("says the worktree list could not reach the forge", async () => {
+describe("when the forge cannot answer", () => {
+  test("then the worktree list says it could not reach the forge", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -81,7 +81,7 @@ describe("a forge that cannot answer", () => {
     expect(await driver.screen.getFrame()).toContain("could not reach the forge")
   })
 
-  it("keeps the key out of the footer, but still lists it under ?", async () => {
+  test("then the key stays out of the footer and stays in the key sheet", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

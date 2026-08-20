@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const long =
@@ -19,8 +19,8 @@ const rowsOf = (frame: string): ReadonlyArray<string> => frame.split("\n")
 const runOn = (frame: string): boolean =>
   rowsOf(frame).some((row) => row.includes("spent`") && !row.includes("const message"))
 
-describe("keeping a reader's wrapping preference", () => {
-  it("wraps again the next time the terminal opens", async () => {
+describe("when a reader's wrapping preference is kept", () => {
+  test("then the diff wraps again the next time the terminal opens", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -36,7 +36,7 @@ describe("keeping a reader's wrapping preference", () => {
     expect(runOn(await driver.screen.getFrame())).toBe(true)
   })
 
-  it("leaves it off for a reader who never asked", async () => {
+  test("then wrapping stays off for a reader who never asked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -48,7 +48,7 @@ describe("keeping a reader's wrapping preference", () => {
     expect(runOn(await driver.screen.getFrame())).toBe(false)
   })
 
-  it("forgets it once the reader turns it off", async () => {
+  test("then wrapping is forgotten once the reader turns it off", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)

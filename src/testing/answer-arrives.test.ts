@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -29,8 +29,8 @@ const openOnComment = async (
   return { id: listed.comments[0]?.id ?? "", worktree: branch.worktree }
 }
 
-describe("an answer arriving while the reviewer reads", () => {
-  it("says an answer arrived, and names the key that pulls it", async () => {
+describe("when an answer arrives while the reviewer reads", () => {
+  test("then the footer says an answer arrived and names the key that pulls it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { id, worktree } = await openOnComment(driver)
@@ -43,7 +43,7 @@ describe("an answer arriving while the reviewer reads", () => {
     expect(frame).toContain("press r")
   })
 
-  it("leaves the diff alone until the reviewer pulls", async () => {
+  test("then the diff is unchanged until the reviewer pulls", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { id, worktree } = await openOnComment(driver)
@@ -58,7 +58,7 @@ describe("an answer arriving while the reviewer reads", () => {
     expect(frame).not.toContain("Dropped it")
   })
 
-  it("shows the answer once the reviewer pulls", async () => {
+  test("then the answer shows once the reviewer pulls", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { id, worktree } = await openOnComment(driver)

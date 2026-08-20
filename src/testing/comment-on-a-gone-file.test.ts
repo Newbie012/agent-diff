@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 150, height: 24 }
@@ -26,8 +26,8 @@ const commentedThenGone = async (driver: TestDriver) => {
   return branch
 }
 
-describe("a comment whose file is no longer in the diff", () => {
-  it("settles from the review panel", async () => {
+describe("when a comment's file is no longer in the diff", () => {
+  test("then the comment settles from the review panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commentedThenGone(driver)
@@ -39,7 +39,7 @@ describe("a comment whose file is no longer in the diff", () => {
     expect(await driver.screen.getFrame()).toContain("settled")
   })
 
-  it("is removed from the review panel", async () => {
+  test("then the comment is removed from the review panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commentedThenGone(driver)
@@ -51,7 +51,7 @@ describe("a comment whose file is no longer in the diff", () => {
     expect(await driver.screen.getFrame()).toContain("removed")
   })
 
-  it("says where it went when opened", async () => {
+  test("then opening the comment says where the file went", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commentedThenGone(driver)

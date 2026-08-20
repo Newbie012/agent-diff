@@ -1,12 +1,12 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
   { path: "src/one.ts", before: ["const a = 1"], after: ["const a = 1", "const one = 2"] },
 ]
 
-describe("asking for the review panel where it cannot fit", () => {
-  it("says so every time, not only the first", async () => {
+describe("when the review panel is asked for and cannot fit", () => {
+  test("then adiff says it cannot fit, every time it is asked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

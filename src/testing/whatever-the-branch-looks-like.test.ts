@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { shapes } from "./shapes.ts"
 
@@ -22,9 +22,9 @@ const opened = async (driver: TestDriver, files: number): Promise<ReadonlyArray<
   return seen
 }
 
-describe("whatever shape a branch is", () => {
+describe("when a branch takes any shape", () => {
   for (const shape of shapes) {
-    it(`walks every file of ${shape.name}`, async () => {
+    test(`walks every file of ${shape.name}`, async () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       await driver.branch.create({ files: [...shape.files] })
@@ -38,7 +38,7 @@ describe("whatever shape a branch is", () => {
       expect(driver.screen.renderCrashes()).toEqual([])
     })
 
-    it(`can comment on the row every file of ${shape.name} opens on`, async () => {
+    test(`can comment on the row every file of ${shape.name} opens on`, async () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       await driver.branch.create({ files: [...shape.files] })

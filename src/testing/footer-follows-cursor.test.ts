@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -18,8 +18,8 @@ const send = async (driver: TestDriver, body: string): Promise<void> => {
   await driver.screen.writeComment(body)
 }
 
-describe("the chips the cursor earns", () => {
-  it("offers settling only once the cursor is on a thread", async () => {
+describe("when the cursor moves onto and off a thread", () => {
+  test("then settling is offered only with the cursor on a thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -37,7 +37,7 @@ describe("the chips the cursor earns", () => {
     expect(footer(await driver.screen.getFrame())).toContain("settle")
   })
 
-  it("returns the reading chips when the cursor leaves the thread", async () => {
+  test("then the reading chips return as the cursor leaves the thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

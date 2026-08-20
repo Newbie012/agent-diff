@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const long =
@@ -51,8 +51,8 @@ const layers = {
   ],
 }
 
-describe("wrapping while reading layers", () => {
-  it("wraps a long line under a layer's prose", async () => {
+describe("when the diff wraps while layers are read", () => {
+  test("then a long line wraps under the layer's prose", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(wide)
@@ -69,7 +69,7 @@ describe("wrapping while reading layers", () => {
     expect(spoken(frame)).toContain("which invitation failed without opening the logs")
   })
 
-  it("keeps the cursor on one line at a time", async () => {
+  test("then the cursor keeps to one line at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(wide)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -17,8 +17,8 @@ const openSheet = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["?"])
 }
 
-describe("finding a key in the sheet", () => {
-  it("keeps only what the typing matches", async () => {
+describe("when a key is searched for in the sheet", () => {
+  test("then only what the typing matches is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openSheet(driver)
@@ -33,7 +33,7 @@ describe("finding a key in the sheet", () => {
     expect(frame).not.toContain("Report a bug")
   })
 
-  it("says so when nothing matches, and takes the typing back", async () => {
+  test("then adiff says nothing matches and takes the typing back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openSheet(driver)

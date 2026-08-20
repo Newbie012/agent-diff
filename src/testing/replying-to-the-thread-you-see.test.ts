@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -9,8 +9,8 @@ const files = [
   },
 ]
 
-describe("replying to a thread", () => {
-  it("shows the conversation, not the code already on screen", async () => {
+describe("when a reply is written to a thread", () => {
+  test("then the box shows the conversation", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

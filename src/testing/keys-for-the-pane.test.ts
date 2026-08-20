@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("the keys the footer carries", () => {
-  it("names what the focused pane answers to, and nothing else", async () => {
+describe("when the footer carries the keys", () => {
+  test("then the footer names only what the focused pane answers to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

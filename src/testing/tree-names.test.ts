@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -25,8 +25,8 @@ const pane = (frame: string): ReadonlyArray<string> =>
 const rowWith = (frame: string, text: string): string =>
   pane(frame).find((line) => line.includes(text)) ?? ""
 
-describe("telling the files apart", () => {
-  it("keeps the end of a name a reader needs", async () => {
+describe("when the tree draws the file names", () => {
+  test("then the end of a name a reader needs is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -41,7 +41,7 @@ describe("telling the files apart", () => {
     expect(rowWith(frame, "InviteListHeader")).toContain("InviteListHeader.tsx")
   })
 
-  it("tells two names apart when they share a beginning", async () => {
+  test("then two names sharing a beginning are told apart", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -59,7 +59,7 @@ describe("telling the files apart", () => {
     expect(mutations).not.toBe(utils)
   })
 
-  it("keeps the last segments of a folded directory", async () => {
+  test("then a folded directory keeps its last segments", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -72,7 +72,7 @@ describe("telling the files apart", () => {
     expect(await driver.screen.rowWith("pages")).toContain("/pages")
   })
 
-  it("still fits the pane at eighty columns", async () => {
+  test("then the names still fit the pane at eighty columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)

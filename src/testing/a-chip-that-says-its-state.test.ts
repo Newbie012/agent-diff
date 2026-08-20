@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -6,8 +6,8 @@ const files = [
   { path: "src/two.ts", before: ["const b = 1"], after: ["const b = 1", "const two = 2"] },
 ]
 
-describe("a chip that toggles something", () => {
-  it("says which way the toggle will go", async () => {
+describe("when a footer chip toggles something", () => {
+  test("then the chip says which way the toggle will go", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -28,7 +28,7 @@ describe("a chip that toggles something", () => {
     expect(await driver.screen.footer()).toContain("hide read")
   })
 
-  it("offers to restore a thread once it has been removed", async () => {
+  test("then the chip offers to restore a removed thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

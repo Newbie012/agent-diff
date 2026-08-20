@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -14,8 +14,8 @@ const openPanel = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressTab()
 }
 
-describe("the threads already settled", () => {
-  it("go away on f, and come back on f", async () => {
+describe("when the settled threads are hidden", () => {
+  test("then f hides the settled threads and f brings them back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -48,7 +48,7 @@ describe("the threads already settled", () => {
     expect(await driver.screen.getFrame()).toContain("the newer point")
   })
 
-  it("leaves the file list alone, which f is for on the other pane", async () => {
+  test("then the file list is untouched", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

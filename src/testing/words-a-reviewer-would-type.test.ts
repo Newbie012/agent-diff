@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -13,8 +13,8 @@ const looking = async (driver: TestDriver, word: string): Promise<string> => {
   return frame
 }
 
-describe("the words a reviewer would type", () => {
-  it("finds the command behind the word, not only behind its own name", async () => {
+describe("when a reviewer types a word for a command", () => {
+  test("then the command is found behind the word", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

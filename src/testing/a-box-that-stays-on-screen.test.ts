@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -9,8 +9,8 @@ const long = Array.from({ length: 40 }, (_, at) => `line ${at} of a long comment
   " ",
 )
 
-describe("the box a comment is written in", () => {
-  it("stays inside a short terminal however much is typed", async () => {
+describe("when a comment is written in a short terminal", () => {
+  test("then the compose box stays inside the terminal however much is typed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
