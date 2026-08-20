@@ -22,7 +22,9 @@ each test builds its world into a real repository, boots adiff in a real termina
 the test pressed, encodes an mp4 and uploads it. It prints a finished `## Recorded tests` section.
 Paste that under the body.
 
-`pnpm record --test <path>` records one file instead of the whole branch.
+`pnpm record --test <path>` records one file instead of the whole branch. `pnpm record --base
+<branch>` reads the branch against something other than `origin/main`, which is what a PR stacked on
+another PR needs so it records only its own tests.
 
 A recording narrates itself, so somebody who has never opened adiff can follow it:
 
