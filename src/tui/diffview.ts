@@ -793,15 +793,33 @@ const codeRow = (plan: Plan, row: Row): Display => ({
   prose: false,
 })
 
-const rowsFor = (plan: Plan, row: Row): ReadonlyArray<Display> => [
-  ...proseAt(plan, row, false).flatMap((entry) => proseRows(entry, row.index, plan.room)),
+type Around = { readonly lead: ReadonlyArray<Prose>; readonly own: boolean }
+
+const rowsFor = (plan: Plan, row: Row, around: Around): ReadonlyArray<Display> => [
+  ...around.lead.flatMap((entry) => proseRows(entry, row.index, plan.room)),
+  ...(around.own ? proseAt(plan, row, false) : []).flatMap((entry) =>
+    proseRows(entry, row.index, plan.room),
+  ),
   codeRow(plan, row),
   ...notesAt(plan, row),
   ...proseAt(plan, row, true).flatMap((entry) => proseRows(entry, row.index, plan.room)),
 ]
 
-const layout = (plan: Plan): ReadonlyArray<Display> =>
-  plan.patch.rows.flatMap((row) => rowsFor(plan, row))
+const replacedBy = (rows: ReadonlyArray<Row>, at: number): Row | undefined => {
+  const here = rows[at]
+  const next = rows[at + 1]
+  return here?.kind === "removed" && next?.kind === "added" ? next : undefined
+}
+
+const layout = (plan: Plan): ReadonlyArray<Display> => {
+  const rows = plan.patch.rows
+  return rows.flatMap((row, at) => {
+    const ahead = replacedBy(rows, at)
+    const lead = ahead === undefined ? [] : proseAt(plan, ahead, false)
+    const own = replacedBy(rows, at - 1) === undefined
+    return rowsFor(plan, row, { lead, own })
+  })
+}
 
 const lineNumbers = (patch: Patch, display: ReadonlyArray<Display>): Map<number, number> => {
   const numbers = new Map<number, number>()
