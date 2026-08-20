@@ -225,12 +225,15 @@ export const proseFor = (state: TuiState, path: string): ReadonlyArray<ProseAnch
   return layer.prose.filter((anchor) => anchor.path === path)
 }
 
+const kept = (state: TuiState, at: number): boolean =>
+  !state.hideReviewed || at === state.patchIndex || !isReviewed(state, at)
+
 export const layerFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> => {
   const layer = state.layers[layerIndex]
   if (layer === undefined) return []
   return layer.files.flatMap((path) => {
     const at = state.patches.findIndex((patch) => patch.path === path)
-    return at === -1 ? [] : [at]
+    return at === -1 || !kept(state, at) ? [] : [at]
   })
 }
 
@@ -280,10 +283,12 @@ const TITLE_ROWS = 2
 
 const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
   const lines = wordWrapped(state.layers[layerIndex]?.title ?? "", room)
-  const kept = lines.slice(0, TITLE_ROWS)
-  const last = kept.at(-1) ?? ""
+  const heldLines = lines.slice(0, TITLE_ROWS)
+  const last = heldLines.at(-1) ?? ""
   const said =
-    lines.length > TITLE_ROWS ? [...kept.slice(0, -1), clip(`${last} …`, room)] : kept
+    lines.length > TITLE_ROWS
+      ? [...heldLines.slice(0, -1), clip(`${last} …`, room)]
+      : heldLines
   return said.map((text, at) => ({
     index: layerIndex,
     kind: "title" as const,
@@ -449,9 +454,6 @@ export const pullHere = (state: TuiState): string =>
 
 export const knownToHaveNoPull = (state: TuiState): boolean =>
   state.forge === "answered" && pullHere(state).length === 0
-
-const kept = (state: TuiState, at: number): boolean =>
-  !state.hideReviewed || at === state.patchIndex || !isReviewed(state, at)
 
 export const treeOf = (state: TuiState): Tree =>
   buildTree(state.patches.map((patch, at) => (kept(state, at) ? patch.path : "")))

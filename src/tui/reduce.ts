@@ -17,10 +17,10 @@ import {
   selectionRange,
   layerAfter,
   layerFile,
-  placeIn,
-  readingOrder,
   layerFiles,
   layerHolding,
+  placeIn,
+  readingOrder,
   type TuiState,
   commentRowsIn,
   openCommentRows,
@@ -203,6 +203,44 @@ const layerDown = (state: TuiState, delta: number): TuiState => {
   if (state.focus === "review") return movePanel(state, delta)
   return stepStop(state, delta)
 }
+
+const stepsToEnd = (state: TuiState, delta: number): number => {
+  const at = placeIn(state)
+  const last = Math.max(0, readingOrder(state).length - 1)
+  const here = at === -1 ? 0 : at
+  return delta < 0 ? -here : last - here
+}
+
+const toTop = (state: TuiState): TuiState => ({
+  ...atRow(state, landingOn(state, state.patchIndex)),
+  top: 0,
+  scroll: -1,
+})
+
+const farOff = (state: TuiState, delta: number): TuiState => {
+  if (state.focus === "tree") {
+    const steps = stepsToEnd(state, delta)
+    return steps === 0 ? state : inRail(state, steps)
+  }
+  if (state.focus === "review") return movePanel(state, delta * PANEL_FAR)
+  return delta < 0 ? toTop(state) : atRow(state, lastRow(selectedPatch(state)))
+}
+
+const byHalf = (state: TuiState, delta: number): TuiState => {
+  const step = Math.max(1, Math.floor(state.viewport / 2))
+  if (state.focus === "diff") return moveCursor(state, delta * step)
+  const wanted = delta * step
+  const bounded =
+    state.focus === "tree" ? boundedStep(state, wanted) : wanted
+  return bounded === 0 ? state : layerDown(state, bounded)
+}
+
+const boundedStep = (state: TuiState, wanted: number): number => {
+  const most = stepsToEnd(state, wanted)
+  return wanted < 0 ? Math.max(wanted, most) : Math.min(wanted, most)
+}
+
+const PANEL_FAR = 10_000
 
 const PANES: ReadonlyArray<TuiState["focus"]> = ["tree", "diff", "review"]
 
@@ -441,14 +479,10 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "branch.open": (state) => state,
   "branch.pull": (state) => state,
   "cursor.next": (state) => layerDown(state, 1),
-  "cursor.top": (state) => ({
-    ...atRow(state, landingOn(state, state.patchIndex)),
-    top: 0,
-    scroll: -1,
-  }),
-  "cursor.bottom": (state) => atRow(state, lastRow(selectedPatch(state))),
-  "cursor.pageDown": (state) => moveCursor(state, Math.max(1, Math.floor(state.viewport / 2))),
-  "cursor.pageUp": (state) => moveCursor(state, -Math.max(1, Math.floor(state.viewport / 2))),
+  "cursor.top": (state) => farOff(state, -1),
+  "cursor.bottom": (state) => farOff(state, 1),
+  "cursor.pageDown": (state) => byHalf(state, 1),
+  "cursor.pageUp": (state) => byHalf(state, -1),
   "context.more": (state) => state,
   "context.less": (state) => state,
   "context.whole": (state) => state,
@@ -564,6 +598,14 @@ export const withFull = (state: TuiState, full: ReadonlyArray<Patch>): TuiState 
   ...state,
   full,
 })
+
+export const allRevealed = (state: TuiState): TuiState["revealed"] => {
+  const path = selectedPatch(state)?.path
+  if (path === undefined) return state.revealed
+  const here = (shownOf(state)?.gaps ?? []).map((gap) => ({ file: path, gap: gap.index, lines: gap.hidden }))
+  const others = state.revealed.filter((entry) => entry.file !== path)
+  return [...others, ...here]
+}
 
 const revealsAfter = (state: TuiState, gap: number, lines: number): TuiState["revealed"] => {
   const path = state.patches[state.patchIndex]?.path ?? ""
