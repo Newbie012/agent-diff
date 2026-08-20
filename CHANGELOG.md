@@ -446,6 +446,10 @@
 
 - An agent can answer a comment, and a reviewer can settle the thread.
 
+## 0.1.0-alpha.117
+
+- A binary file says it is binary instead of drawing an empty pane. git reports it as changed and adiff listed it in the file tree, but opening it showed a pane with nothing in it — indistinguishable from a rendering failure.
+
 ## 0.1.0-alpha.116
 
 - `g`, `G` and the page keys move whatever pane has focus. With the file list or the review panel focused they moved the diff cursor instead — invisibly, since you were not looking at the diff — so the only way through a long list was one row at a time. Sixty presses to get from the bottom of a forty-layer rail to the top.
