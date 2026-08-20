@@ -24,13 +24,21 @@ Paste that under the body.
 
 `pnpm record --test <path>` records one file instead of the whole branch.
 
-Each step is held for a second so the video can be followed, and every `expect` becomes its own beat:
-the screen stops, and a band across the bottom says what is being checked in the words the assertion
-used — `CHECK ── is review panel`. The claim and the screen that satisfies it are on screen together.
+A recording narrates itself, so somebody who has never opened adiff can follow it:
 
-Assertions that run one after another with nothing in between describe one moment, so they share a
-beat and the band lists them: `contains one.ts · is file list`. Assertions separated by something the
-reviewer does each get their own. `--pace <ms>` and `--hold <ms>` change the two timings.
+- it opens on a title card carrying the test's `when` and `then`
+- each step is held for a second, with a band naming it in plain words — `open the branch`,
+  `leave a comment saying "worth a second look"`
+- every `expect` stops the screen, rings the pane it is about, and says the claim as a sentence:
+  `the review panel contains worth a second look`
+
+The sentence names its own subject, which is why it needs no label. Assertions running one after
+another with nothing in between share a beat and the band lists them; assertions separated by
+something the reviewer does each get their own. `--pace <ms>` and `--hold <ms>` change the timings.
+
+The ring comes from the view accessor the assertion read — `reviewPanel()` rings the review panel,
+`focus()` rings whichever pane the keys reach. An assertion about no single region, such as which
+panes are on screen, gets the sentence and no ring.
 
 For the caption to appear, the test must take `expect` from the testing barrel rather than from
 vitest directly. A test that does not still records; it just has no captions.

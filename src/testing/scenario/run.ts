@@ -40,7 +40,12 @@ export class Review implements AsyncDisposable {
 
   private noteChecks(): void {
     if (!tracing()) return
-    noteChecksWith((does) => this.driver.tracerHere().sawCheck(does))
+    noteChecksWith((does, about) =>
+      this.driver.tracerHere().sawCheck(
+        about?.noun === undefined ? does : `${about.noun} ${does}`,
+        about?.where,
+      ),
+    )
   }
 
   private async build(): Promise<void> {
@@ -52,8 +57,11 @@ export class Review implements AsyncDisposable {
     await series(this.said.steps, (step) => this.take(step))
   }
 
-  private take(step: Step): Promise<void> {
-    return series(step.keys, (token) => this.reach(token))
+  private async take(step: Step): Promise<void> {
+    const tracer = this.driver.tracerHere()
+    tracer.saying(step.does)
+    await series(step.keys, (token) => this.reach(token))
+    tracer.saying(undefined)
   }
 
   private async reach(token: string): Promise<void> {

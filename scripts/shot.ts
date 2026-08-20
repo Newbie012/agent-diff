@@ -5,6 +5,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { argv, exit, stderr, stdout } from "node:process"
 import { traceNamed } from "./scenario.ts"
+import { narrate } from "./lib/narrate.ts"
+import type { Beat, Where } from "./lib/narrate.ts"
 import type { Trace } from "../src/testing/scenario/index.ts"
 
 const SIM = "scripts/simulate.ts"
@@ -93,38 +95,36 @@ const sendOne = (session: string, key: string): void => {
   run("termctrl", ["send", session, "--pace-ms", "120", key])
 }
 
-type Clip = { readonly from: string; readonly to: string; readonly caption?: string }
-
-const banner = (said: string): string => {
-  const head = `── CHECK ── ${said} `
-  return head.length >= cols ? head : `${head}${"─".repeat(cols - head.length)}`
+type Marked = {
+  readonly kind: "step" | "check"
+  readonly does: string
+  readonly name: string
+  readonly where?: Where
 }
 
-const played = (session: string, held: Trace | undefined): ReadonlyArray<Clip> => {
+const played = (session: string, held: Trace | undefined): ReadonlyArray<Marked> => {
   if (held === undefined) {
     for (const key of keys) sendOne(session, key)
     return []
   }
-  const clips: Array<Clip> = []
-  let last = "ready"
-  let at = 0
-  for (const moment of held.moments) {
+  const marks: Array<Marked> = []
+  for (const [at, moment] of held.moments.entries()) {
+    const name = `m${at}`
+    run("termctrl", ["mark", session, name])
+    marks.push({
+      kind: moment.kind,
+      does: moment.does,
+      name,
+      ...(moment.kind === "check" && moment.where !== undefined ? { where: moment.where } : {}),
+    })
     if (moment.kind === "step") {
       for (const key of moment.keys) sendOne(session, key)
       execFileSync("sleep", [String(pace / 1000)])
       continue
     }
-    at += 1
-    const opens = `check${at}`
-    const shuts = `check${at}end`
-    run("termctrl", ["mark", session, opens])
-    clips.push({ from: last, to: opens })
     execFileSync("sleep", [String(hold / 1000)])
-    run("termctrl", ["mark", session, shuts])
-    clips.push({ from: opens, to: shuts, caption: banner(moment.does) })
-    last = shuts
   }
-  return clips
+  return marks
 }
 
 const filmAt = (root: string, name: string): string => {
@@ -140,31 +140,59 @@ const filmAt = (root: string, name: string): string => {
     "node", ...NODE, ...bootArgs(root),
   ])
   const plan = join(shots, `${name}.json`)
-  let clips: ReadonlyArray<Clip> = []
+  let marks: ReadonlyArray<Marked> = []
   try {
     run("termctrl", ["wait", session, wanted, "--timeout", "40000"])
     execFileSync("sleep", ["0.4"])
     run("termctrl", ["mark", session, "ready"])
-    clips = played(session, chosen)
+    marks = played(session, chosen)
     run("termctrl", ["mark", session, "done"])
   } finally {
     run("termctrl", ["stop", session])
   }
-  const whole =
-    clips.length === 0
-      ? [{ from: "ready", to: "done" }]
-      : [...clips, { from: clips.at(-1)?.to ?? "ready", to: "done" }]
-  writeFileSync(plan, JSON.stringify({ clips: whole }), "utf8")
+  writeFileSync(plan, JSON.stringify({ clips: [{ from: "ready", to: "done" }] }), "utf8")
+  const raw = join(shots, `${name}-raw.mp4`)
   run("termctrl", [
     "video", tape,
-    "-o", out,
+    "-o", raw,
     "--hide-cursor",
     "--tail-ms", "1200",
+    "--padding", "0",
     "--edit", plan,
   ])
+  if (chosen === undefined || marks.length === 0) {
+    rmSync(tape, { force: true })
+    rmSync(plan, { force: true })
+    return raw
+  }
+  const clock = timesIn(tape)
+  const started = clock["ready"] ?? 0
+  const shut = clock["done"] ?? 0
+  const beatOf = (mark: Marked, at: number): Beat => {
+    const from = ((clock[mark.name] ?? started) - started) / 1000
+    const to = ((clock[marks[at + 1]?.name ?? "done"] ?? shut) - started) / 1000
+    const held: Beat = { kind: mark.kind, does: mark.does, from, to }
+    return mark.where === undefined ? held : { ...held, where: mark.where }
+  }
+  const beats = marks.map(beatOf)
+  const at = chosen.test.lastIndexOf(" > ")
+  narrate(raw, out, {
+    seat: { cols, rows },
+    asks: at === -1 ? chosen.test : chosen.test.slice(0, at),
+    proves: at === -1 ? "" : chosen.test.slice(at + 3),
+    beats,
+    lead: 2.5,
+  })
   rmSync(tape, { force: true })
   rmSync(plan, { force: true })
+  rmSync(raw, { force: true })
   return out
+}
+
+const timesIn = (tape: string): Readonly<Record<string, number>> => {
+  const said = run("termctrl", ["markers", tape, "--json"])
+  const found = JSON.parse(said) as ReadonlyArray<{ at_ms: number; name: string }>
+  return Object.fromEntries(found.map((one) => [one.name, one.at_ms]))
 }
 
 const atBase = (commit: string, name: string): string => {

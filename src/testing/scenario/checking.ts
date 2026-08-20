@@ -1,5 +1,6 @@
 import { expect as plain } from "@effect/vitest"
 import { tracing } from "./trace.ts"
+import type { Bounds } from "./trace.ts"
 
 const SAID: Readonly<Record<string, string>> = {
   toBe: "is",
@@ -21,16 +22,28 @@ const shortly = (value: unknown): string => {
   return String(value)
 }
 
-export type NoteCheck = (does: string) => void
+export type Subject = {
+  readonly noun: string
+  readonly where?: Bounds
+}
+
+export type NoteCheck = (does: string, about: Subject | undefined) => void
 
 let noting: NoteCheck | undefined
+let subject: Subject | undefined
 
 export const noteChecksWith = (note: NoteCheck | undefined): void => {
   noting = note
 }
 
+export const noteSubject = (about: Subject): void => {
+  subject = about
+}
+
 const phrase = (matcher: string, negated: boolean, args: ReadonlyArray<unknown>): string => {
-  const verb = SAID[matcher] ?? matcher
+  const many = Array.isArray(args[0]) && (args[0] as ReadonlyArray<unknown>).length !== 1
+  const spelt = SAID[matcher] ?? matcher
+  const verb = many && spelt === "is" ? "are" : spelt
   const said = args.length === 0 ? "" : ` ${shortly(args[0])}`
   return `${negated ? "not " : ""}${verb}${said}`.trim()
 }
@@ -42,7 +55,8 @@ const wrapped = (held: object, negated: boolean): object =>
       if (prop === "not") return wrapped(value as object, !negated)
       if (typeof value !== "function") return value
       return (...args: ReadonlyArray<unknown>) => {
-        noting?.(phrase(String(prop), negated, args))
+        noting?.(phrase(String(prop), negated, args), subject)
+        subject = undefined
         return Reflect.apply(value as (...rest: ReadonlyArray<unknown>) => unknown, target, args)
       }
     },
