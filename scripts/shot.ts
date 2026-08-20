@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { argv, exit, stderr, stdout } from "node:process"
@@ -66,7 +66,7 @@ const stillAt = (root: string, name: string): string => {
     "--settle-ms", "3000",
     "--deadline-ms", "40000",
     "--wait-for", wanted,
-    ...keys.filter((key) => !key.startsWith("wait:")).flatMap((key) => ["-s", key]),
+    ...keys.filter((key) => !/^(wait|until):/.test(key)).flatMap((key) => ["-s", key]),
     "--",
     "node", ...NODE, ...bootArgs(root),
   ])
@@ -77,6 +77,18 @@ const bootArgs = (root: string): ReadonlyArray<string> =>
   chosen === undefined || traceAt === undefined || testName === undefined
     ? [join(root, SIM)]
     : [join(root, SCENARIO), traceAt, testName]
+
+const sendOne = (session: string, key: string): void => {
+  if (key.startsWith("wait:")) {
+    execFileSync("sleep", [String(Number(key.slice("wait:".length)) / 1000)])
+    return
+  }
+  if (key.startsWith("until:")) {
+    run("termctrl", ["wait", session, key.slice("until:".length), "--timeout", "20000"])
+    return
+  }
+  run("termctrl", ["send", session, "--pace-ms", "120", key])
+}
 
 const filmAt = (root: string, name: string): string => {
   const tape = join(shots, `${name}.termctrl`)
@@ -90,17 +102,26 @@ const filmAt = (root: string, name: string): string => {
     "--",
     "node", ...NODE, ...bootArgs(root),
   ])
+  const plan = join(shots, `${name}.json`)
   try {
     run("termctrl", ["wait", session, wanted, "--timeout", "40000"])
-    for (const key of keys) {
-      if (key.startsWith("wait:")) execFileSync("sleep", [String(Number(key.slice(5)) / 1000)])
-      else run("termctrl", ["send", session, "--pace-ms", "120", key])
-    }
+    execFileSync("sleep", ["0.4"])
+    run("termctrl", ["mark", session, "ready"])
+    for (const key of keys) sendOne(session, key)
+    run("termctrl", ["mark", session, "done"])
   } finally {
     run("termctrl", ["stop", session])
   }
-  run("termctrl", ["video", tape, "-o", out, "--hide-cursor", "--tail-ms", "1200"])
+  writeFileSync(plan, JSON.stringify({ clips: [{ from: "ready", to: "done" }] }), "utf8")
+  run("termctrl", [
+    "video", tape,
+    "-o", out,
+    "--hide-cursor",
+    "--tail-ms", "1200",
+    "--edit", plan,
+  ])
   rmSync(tape, { force: true })
+  rmSync(plan, { force: true })
   return out
 }
 

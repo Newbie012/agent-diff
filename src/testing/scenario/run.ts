@@ -49,7 +49,7 @@ export class Review implements AsyncDisposable {
   }
 
   private async reach(token: string): Promise<void> {
-    if (token.startsWith("wait:")) return
+    if (/^(wait|until):/.test(token)) return
     const text = typed(token)
     if (text === undefined) {
       await this.driver.screen.pressKeys([bound(token)])

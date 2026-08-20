@@ -5,13 +5,13 @@ describe("reviewing on the terminal", () => {
   it("opens on the branches that have something to review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
 
     // ACT
     await driver.screen.open()
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("cdr-1-add-third")
+    expect(await driver.screen.getFrame()).toContain("add-a-third-line")
   })
 
   it("shows the changed lines of a branch once it is opened", async () => {

@@ -44,7 +44,7 @@ describe("the screen you land on", () => {
     await driver.screen.open()
 
     // ASSERT
-    const row = (await driver.screen.getFrame()).split("\n").find((line) => line.includes("cdr-1")) ?? ""
+    const row = (await driver.screen.getFrame()).split("\n").find((line) => line.includes("add-invitations")) ?? ""
     expect(row).toContain("+1")
     expect(row).toContain("-0")
   })

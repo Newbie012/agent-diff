@@ -53,7 +53,10 @@ export class Tracer {
   }
 
   sawText(said: string): void {
-    this.steps.push({ does: `type ${said}`, keys: [`wait:400`, `text:${said}`, "wait:400"] })
+    this.steps.push({
+      does: `type ${said}`,
+      keys: ["wait:1200", `text:${said}`, `until:${said}`],
+    })
   }
 
   write(test: string): void {

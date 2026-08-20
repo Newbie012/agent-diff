@@ -15,7 +15,7 @@ describe("what the list says a branch is stacked on", () => {
     await using driver = await TestDriver.create()
     const under = await driver.branch.create({ name: LONG, files: [file("one")] })
     await driver.branch.commitAll(under, "under")
-    await driver.branch.stackOn(under, { name: "cdr-3-on-top", files: [file("two")] })
+    await driver.branch.stackOn(under, { name: "add-invite-limits", files: [file("two")] })
 
     // ACT
     await driver.screen.open({ width: 170, height: 24 })
@@ -29,7 +29,7 @@ describe("what the list says a branch is stacked on", () => {
     await using driver = await TestDriver.create()
     const under = await driver.branch.create({ name: LONG, files: [file("one")] })
     await driver.branch.commitAll(under, "under")
-    await driver.branch.stackOn(under, { name: "cdr-3-on-top", files: [file("two")] })
+    await driver.branch.stackOn(under, { name: "add-invite-limits", files: [file("two")] })
 
     // ACT
     await driver.screen.open({ width: 84, height: 24 })

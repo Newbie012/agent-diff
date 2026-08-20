@@ -36,6 +36,6 @@ export type BranchOverrides = {
 }
 
 export const generateBranchTestModel = (overrides: BranchOverrides = {}): BranchTestModel => ({
-  name: overrides.name ?? "cdr-1-add-third",
+  name: overrides.name ?? "add-a-third-line",
   files: (overrides.files ?? [{}]).map(generateFileTestModel),
 })
