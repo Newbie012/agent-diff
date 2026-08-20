@@ -3,8 +3,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { argv, exit, stderr, stdout } from "node:process"
+import { scenarioNamed } from "./scenario.ts"
 
 const SIM = "scripts/simulate.ts"
+const SCENARIO = "scripts/scenario.ts"
 const NODE = ["--experimental-ffi", "--disable-warning=ExperimentalWarning"]
 
 const value = (name: string): string | undefined => {
@@ -17,10 +19,14 @@ const number = (name: string, fallback: number): number => {
   return said === undefined ? fallback : Number(said)
 }
 
-const cols = number("cols", 120)
-const rows = number("rows", 32)
-const keys = (value("keys") ?? "").split(" ").filter((token) => token.length > 0)
-const label = value("label") ?? "after"
+const chosen = value("scenario") === undefined ? undefined : await scenarioNamed(value("scenario") as string)
+const cols = number("cols", chosen?.seat.width ?? 120)
+const rows = number("rows", chosen?.seat.height ?? 32)
+const keys =
+  chosen === undefined
+    ? (value("keys") ?? "").split(" ").filter((token) => token.length > 0)
+    : chosen.steps.flatMap((step) => step.keys)
+const label = value("label") ?? chosen?.name ?? "after"
 const against = value("against")
 const wanted = value("wait-for") ?? "WORKTREE"
 const filming = argv.includes("--video")
@@ -56,12 +62,15 @@ const stillAt = (root: string, name: string): string => {
     "--settle-ms", "3000",
     "--deadline-ms", "40000",
     "--wait-for", wanted,
-    ...keys.flatMap((key) => ["-s", key]),
+    ...keys.filter((key) => !key.startsWith("wait:")).flatMap((key) => ["-s", key]),
     "--",
-    "node", ...NODE, join(root, SIM),
+    "node", ...NODE, ...bootArgs(root),
   ])
   return out
 }
+
+const bootArgs = (root: string): ReadonlyArray<string> =>
+  chosen === undefined ? [join(root, SIM)] : [join(root, SCENARIO), chosen.name]
 
 const filmAt = (root: string, name: string): string => {
   const tape = join(shots, `${name}.termctrl`)
@@ -73,11 +82,14 @@ const filmAt = (root: string, name: string): string => {
     "--cols", String(cols),
     "--rows", String(rows),
     "--",
-    "node", ...NODE, join(root, SIM),
+    "node", ...NODE, ...bootArgs(root),
   ])
   try {
     run("termctrl", ["wait", session, wanted, "--timeout", "40000"])
-    for (const key of keys) run("termctrl", ["send", session, "--pace-ms", "120", key])
+    for (const key of keys) {
+      if (key.startsWith("wait:")) execFileSync("sleep", [String(Number(key.slice(5)) / 1000)])
+      else run("termctrl", ["send", session, "--pace-ms", "120", key])
+    }
   } finally {
     run("termctrl", ["stop", session])
   }
