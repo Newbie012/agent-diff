@@ -79,8 +79,8 @@ import {
   threadAtRow,
   threadChosen,
   threadAtStop,
+  threadHere,
   WHOLE_FILE,
-  type StagedComment,
   type TuiState,
 } from "./model.ts"
 import {
@@ -132,14 +132,16 @@ const LOOK_MS = 110
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
 
+const LAYERS_ASK_LEAD = "About this branch, not about this line."
+
 const layersAsk = (state: TuiState): string => {
   if (state.layers.length === 0) {
-    return "Please write a reading order for this branch with `adiff layers set`, so the diff can be read in the order the change was made rather than by filename."
+    return `${LAYERS_ASK_LEAD} Please write a reading order for it with \`adiff layers set\`, so the diff can be read in the order the change was made rather than by filename.`
   }
   if (state.layersStale) {
-    return "The reading order on this branch describes an older commit. Please read the diff again and write a new one with `adiff layers set`."
+    return `${LAYERS_ASK_LEAD} The reading order on it describes an older commit — please read the diff again and write a new one with \`adiff layers set\`.`
   }
-  return "Please revise the reading order on this branch with `adiff layers set`."
+  return `${LAYERS_ASK_LEAD} Please revise its reading order with \`adiff layers set\`.`
 }
 
 const askedFor = (state: TuiState): string =>
@@ -1426,7 +1428,7 @@ export class App {
 
   private askForLayers(): Work {
     return Effect.gen({ self: this }, function* () {
-      const patch = selectedPatch(this.state)
+      const patch = this.state.patches[0]
       const branch = selectedBranch(this.state)
       if (patch === undefined || branch === undefined) return
       yield* this.commenting(branch.branch, {
@@ -1476,9 +1478,6 @@ export class App {
     })
   }
 }
-
-const threadHere = (state: TuiState): StagedComment | undefined =>
-  threadChosen(state) ?? threadAtStop(state) ?? threadAtRow(state, state.cursor)
 
 const sentAway = (state: TuiState): TuiState => ({
   ...state,

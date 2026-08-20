@@ -49,6 +49,7 @@ import {
   selectedPatch,
   selectionRange,
   threadChosen,
+  threadHere,
   treeWindow,
   tooSmall,
   treeWidth,
@@ -837,7 +838,7 @@ const panLabel = (
 ): string => {
   if (across.pan > 0) return `→ ${across.pan} columns`
   if (state.wrap || across.cutOff === 0) return ""
-  return `→ ${across.cutOff} columns cut off`
+  return `→ ${across.cutOff} columns cut off, > pans`
 }
 
 const HEADER_GAP = 2
@@ -1380,6 +1381,9 @@ export class Screen {
       pull: pullHere(state).length > 0,
       pane: state.screen === "review" ? state.focus : "diff",
       onLayers: onLayers(state),
+      hidingRead: state.hideReviewed,
+      hidingSettled: state.hideSettled,
+      onRemoved: threadHere(state)?.removed === true,
     })
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
@@ -1472,7 +1476,7 @@ export class Screen {
       state,
       branch?.branch ?? "",
       path,
-      { pan: Math.min(state.pan, this.view.panLimit()), cutOff: this.view.panLimit() },
+      { pan: Math.min(state.pan, this.view.panLimit()), cutOff: this.view.cutOff() },
     ).filter((part) => part.length > 0)
     const [name = "", ...rest] = headerFitted(parts, path, headerRoom(this.renderer.width))
     return t`${fg(palette.ink)(name)}  ${fg(palette.muted)(rest.join("  "))}`
