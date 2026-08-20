@@ -35,5 +35,12 @@ export const stickyChain = (
     limit = indent
     if (indent === 0) break
   }
-  return chain.toReversed().slice(0, max)
+  return kept(chain.toReversed(), max)
+}
+
+const kept = (chain: ReadonlyArray<string>, max: number): ReadonlyArray<string> => {
+  if (chain.length <= max || max < 2) return chain.slice(0, max)
+  const outer = chain[0] ?? ""
+  const inner = chain.slice(chain.length - (max - 1))
+  return [`${outer} ⋯`, ...inner]
 }
