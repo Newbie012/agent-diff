@@ -224,6 +224,10 @@
   intents:
     - famous-rings-bathe
     - wide-wombats-relate
+"@eliya-oss/agent-diff@0.1.0-alpha.140":
+  dir: ""
+  intents:
+    - comments-that-wait-until-you-send-them
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
