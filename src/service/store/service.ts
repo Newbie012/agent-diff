@@ -408,9 +408,9 @@ const inboxOps = (root: string, adopted: Keys) => {
   return { submit, inbox }
 }
 
-const LOCK_TRIES = 60
+const LOCK_TRIES = 240
 const LOCK_WAIT_MS = 25
-const LOCK_STALE_MS = 5000
+const LOCK_STALE_MS = 15_000
 
 const held = (path: string): Effect.Effect<void, StoreUnwritable> =>
   Effect.tryPromise({
