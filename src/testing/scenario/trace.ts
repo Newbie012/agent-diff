@@ -6,7 +6,7 @@ import type { Seat, Step } from "./model.ts"
 
 export type Moment =
   | { readonly kind: "step"; readonly does: string; readonly keys: ReadonlyArray<string> }
-  | { readonly kind: "check"; readonly does: string }
+  | { readonly kind: "check"; readonly does: string; readonly checks: ReadonlyArray<string> }
 
 export type Trace = {
   readonly test: string
@@ -61,8 +61,17 @@ export class Tracer {
   }
 
   sawCheck(does: string): void {
-    if (this.moments.at(-1)?.kind === "check") return
-    this.moments.push({ kind: "check", does })
+    const last = this.moments.at(-1)
+    if (last?.kind === "check") {
+      const held = last.checks.includes(does) ? last.checks : [...last.checks, does]
+      this.moments[this.moments.length - 1] = {
+        kind: "check",
+        does: held.join(" · "),
+        checks: held,
+      }
+      return
+    }
+    this.moments.push({ kind: "check", does, checks: [does] })
   }
 
   sawText(said: string): void {

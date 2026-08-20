@@ -95,6 +95,11 @@ const sendOne = (session: string, key: string): void => {
 
 type Clip = { readonly from: string; readonly to: string; readonly caption?: string }
 
+const banner = (said: string): string => {
+  const head = `── CHECK ── ${said} `
+  return head.length >= cols ? head : `${head}${"─".repeat(cols - head.length)}`
+}
+
 const played = (session: string, held: Trace | undefined): ReadonlyArray<Clip> => {
   if (held === undefined) {
     for (const key of keys) sendOne(session, key)
@@ -110,11 +115,14 @@ const played = (session: string, held: Trace | undefined): ReadonlyArray<Clip> =
       continue
     }
     at += 1
-    const mark = `check${at}`
-    run("termctrl", ["mark", session, mark])
-    clips.push({ from: last, to: mark, caption: moment.does })
+    const opens = `check${at}`
+    const shuts = `check${at}end`
+    run("termctrl", ["mark", session, opens])
+    clips.push({ from: last, to: opens })
     execFileSync("sleep", [String(hold / 1000)])
-    last = mark
+    run("termctrl", ["mark", session, shuts])
+    clips.push({ from: opens, to: shuts, caption: banner(moment.does) })
+    last = shuts
   }
   return clips
 }
@@ -153,7 +161,6 @@ const filmAt = (root: string, name: string): string => {
     "--hide-cursor",
     "--tail-ms", "1200",
     "--edit", plan,
-    "--footer",
   ])
   rmSync(tape, { force: true })
   rmSync(plan, { force: true })

@@ -24,10 +24,13 @@ Paste that under the body.
 
 `pnpm record --test <path>` records one file instead of the whole branch.
 
-Each step is held for a second so the video can be followed, and each `expect` becomes a captioned
-clip: the caption says what was being checked, in the words the assertion used — `is review panel`,
-`contains worth a second look`. A viewer sees the claim and the screen that satisfies it at the same
-time. `--pace <ms>` and `--hold <ms>` change the two timings.
+Each step is held for a second so the video can be followed, and every `expect` becomes its own beat:
+the screen stops, and a band across the bottom says what is being checked in the words the assertion
+used — `CHECK ── is review panel`. The claim and the screen that satisfies it are on screen together.
+
+Assertions that run one after another with nothing in between describe one moment, so they share a
+beat and the band lists them: `contains one.ts · is file list`. Assertions separated by something the
+reviewer does each get their own. `--pace <ms>` and `--hold <ms>` change the two timings.
 
 For the caption to appear, the test must take `expect` from the testing barrel rather than from
 vitest directly. A test that does not still records; it just has no captions.
