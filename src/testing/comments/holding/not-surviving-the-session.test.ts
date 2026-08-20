@@ -23,7 +23,7 @@ const holding = async (driver: TestDriver): Promise<string> => {
 }
 
 describe("when adiff is opened again with comments left waiting", () => {
-  test("then they are not waiting any more", async () => {
+  test("then no comment is waiting to be sent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await holding(driver)
@@ -37,7 +37,7 @@ describe("when adiff is opened again with comments left waiting", () => {
     expect(await driver.screen.getFrame()).not.toContain("Waiting to be sent")
   })
 
-  test("then the agent was never told about them", async () => {
+  test("then the agent has no comment from that session", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const worktree = await holding(driver)

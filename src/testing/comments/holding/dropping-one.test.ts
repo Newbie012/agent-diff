@@ -32,7 +32,7 @@ const holdingTwoComments = scenario({
 })
 
 describe("when a comment being held is dropped", () => {
-  test("then it is gone and the other is still waiting", async () => {
+  test("then the dropped comment is gone and the other still waits", async () => {
     // ARRANGE
     await using review = await reviewing(holdingTwoComments)
 
@@ -44,7 +44,7 @@ describe("when a comment being held is dropped", () => {
     expect((await seen.reviewPanel()).join(" ")).toContain("worth a second look")
   })
 
-  test("then the agent never hears about it", async () => {
+  test("then the agent never gets the dropped comment", async () => {
     // ARRANGE
     await using review = await reviewing(holdingTwoComments)
     await review.andThen(dropTheCommentYouAreHolding())

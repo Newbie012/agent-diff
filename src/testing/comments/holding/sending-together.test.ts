@@ -27,7 +27,7 @@ const holdingTwoComments = scenario({
 })
 
 describe("when comments are held", () => {
-  test("then the agent has been told nothing", async () => {
+  test("then nothing reaches the agent", async () => {
     // ARRANGE
     await using review = await reviewing(holdingTwoComments)
 
@@ -38,7 +38,7 @@ describe("when comments are held", () => {
     expect(got).toEqual([])
   })
 
-  test("then the review panel says they are waiting to be sent", async () => {
+  test("then the review panel lists both comments as waiting to be sent", async () => {
     // ARRANGE
     await using review = await reviewing(holdingTwoComments)
 
@@ -52,7 +52,7 @@ describe("when comments are held", () => {
 })
 
 describe("when the comments being held are sent", () => {
-  test("then the agent gets all of them", async () => {
+  test("then the agent gets both comments", async () => {
     // ARRANGE
     await using review = await reviewing(holdingTwoComments)
 
@@ -66,7 +66,7 @@ describe("when the comments being held are sent", () => {
     ])
   })
 
-  test("then the agent is told once, not once per comment", async () => {
+  test("then the agent gets a single hand-over", async () => {
     // ARRANGE
     await using review = await reviewing(holdingTwoComments)
 
