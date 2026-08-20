@@ -139,6 +139,10 @@
   dir: ""
   intents:
     - test-infra
+"@eliya-oss/agent-diff@0.1.0-alpha.122":
+  dir: ""
+  intents:
+    - saying-what-is-not-there
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:

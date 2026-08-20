@@ -442,6 +442,12 @@
 
 - Reword or withdraw a staged comment, and see when a thread describes an older commit.
 
+## 0.1.0-alpha.122
+
+- A file with no newline at the end says so. git reports it and adiff dropped the line, so the change to a file's last byte showed as two lines that read identically with nothing to tell them apart.
+  
+  The lock around a review's state is patient enough for a loaded machine. Four writers arriving at once on a busy box could exhaust its retries and lose a write.
+
 ## 0.1.0-alpha.121
 
 - Nothing about what adiff does changes. The test suite stopped repeating two setups 350 times, stopped reaching into functions no reviewer or agent can see, and stopped leaking `PATH` and a stub HTTP server between tests in the same worker. One existing test was writing to a store key nothing reads and passing anyway; it now derives the key from the store.
