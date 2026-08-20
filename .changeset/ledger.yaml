@@ -143,6 +143,10 @@
   dir: ""
   intents:
     - saying-what-is-not-there
+"@eliya-oss/agent-diff@0.1.0-alpha.123":
+  dir: ""
+  intents:
+    - whitespace-you-can-see
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:
