@@ -211,6 +211,10 @@
   intents:
     - prose-is-not-the-file
     - the-file-list-on-its-own
+"@eliya-oss/agent-diff@0.1.0-alpha.138":
+  dir: ""
+  intents:
+    - the-cursor-stays-where-you-settled
 "@eliya-oss/agent-diff@0.1.0-alpha.14":
   dir: ""
   intents:
