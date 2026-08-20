@@ -446,6 +446,14 @@
 
 - An agent can answer a comment, and a reviewer can settle the thread.
 
+## 0.1.0-alpha.115
+
+- Caches that outlived the process now live inside the layer that owns them, so a reload after the agent commits reads the real base rather than one remembered from earlier. The store's rename guard was set before the rename it guards, so a second reader could take the path the file had just left; it is a proper cache now, and a second reader waits.
+  
+  Child processes are killed when the work that started them is interrupted. Leaving the review used to leave `gh` running behind it, and a cancelled upgrade could orphan a long install.
+  
+  A truncated session file no longer crashes the terminal on launch, the store encodes what it writes through the same schema it decodes what it reads with, and several closed unions became switches so that adding a case fails the build rather than falling through.
+
 ## 0.1.0-alpha.114
 
 - A comment you withdrew can be brought back from the terminal. `X` used to be a one-key destructive action with no confirm, no undo and no trace — the thread vanished from the diff, from the review panel and from the file counts, and the only way back was a CLI command the message named but the terminal could not run. A withdrawn thread now sits under "Withdrawn" in the review, out of the diff, and `X` on it brings it back.

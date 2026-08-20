@@ -107,6 +107,10 @@
   dir: ""
   intents:
     - bringing-a-comment-back
+"@eliya-oss/agent-diff@0.1.0-alpha.115":
+  dir: ""
+  intents:
+    - effect-idiom
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:
