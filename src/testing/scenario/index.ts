@@ -1,0 +1,6 @@
+export { AT_A_DESK, scenario } from "./model.ts"
+export type { Scenario, Seat, Step, World } from "./model.ts"
+export { Review, reviewing } from "./run.ts"
+export { View } from "./view.ts"
+export type { Pane } from "./view.ts"
+export * from "./steps.ts"

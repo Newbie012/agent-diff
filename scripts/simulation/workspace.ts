@@ -53,6 +53,7 @@ const applyAfter = (worktree: string, files: ReadonlyArray<FileFixture>): Promis
 export type WorkspaceOptions = {
   readonly branches: number
   readonly at?: string | undefined
+  readonly fixtures?: ReadonlyArray<BranchFixture> | undefined
 }
 
 export const createWorkspace = async (options: WorkspaceOptions): Promise<Workspace> => {
@@ -70,7 +71,8 @@ export const createWorkspace = async (options: WorkspaceOptions): Promise<Worksp
   await git(repo, ["add", "-A"])
   await git(repo, ["commit", "-q", "-m", "baseline"])
 
-  const chosen: ReadonlyArray<BranchFixture> = variants.slice(0, Math.max(1, count))
+  const chosen: ReadonlyArray<BranchFixture> =
+    options.fixtures ?? variants.slice(0, Math.max(1, count))
   const branches: Array<Branch> = []
   const build = async (fixture: BranchFixture): Promise<void> => {
     await applyBefore(repo, fixture.files)

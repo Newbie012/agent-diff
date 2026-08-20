@@ -26,7 +26,23 @@ const NAMED: Readonly<Record<string, string>> = {
 
 const sendable = (key: string): string => NAMED[key] ?? key
 
+const WHERE: Readonly<Record<string, string>> = {
+  tree: "file list",
+  diff: "diff",
+  review: "review panel",
+}
+
+const panesIn = (state: TuiState | undefined): ReadonlyArray<string> => [
+  ...(state?.navOpen === true ? ["file list"] : []),
+  "diff",
+  ...(state?.panelOpen === true ? ["review panel"] : []),
+]
+
+const whereIn = (state: TuiState | undefined): string => WHERE[state?.focus ?? "diff"] ?? "diff"
+
 const believedIn = (state: TuiState | undefined) => ({
+  focus: whereIn(state),
+  panes: panesIn(state),
   scroll: state?.scroll ?? -1,
   cursor: state?.cursor ?? -1,
   wrap: state?.wrap === true,
@@ -422,6 +438,8 @@ export class ScreenTestDriver {
   }
 
   async believes(): Promise<{
+    readonly focus: string
+    readonly panes: ReadonlyArray<string>
     readonly scroll: number
     readonly cursor: number
     readonly wrap: boolean
