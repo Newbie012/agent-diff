@@ -2,8 +2,26 @@
 "@eliya-oss/agent-diff": patch
 ---
 
-`g`, `G` and the page keys move whatever pane has focus. With the file list or the review panel focused they moved the diff cursor instead — invisibly, since you were not looking at the diff — so the only way through a long list was one row at a time. Sixty presses to get from the bottom of a forty-layer rail to the top.
+fix(keys): `g`, `G` and the page keys move the pane you are looking at.
 
-Hiding reviewed files now works while reading layers. `f` was honoured by the file tree and ignored by the layers rail, so the same key did something in one rail and nothing in the other, and the header count disagreed with what you could see.
+<details><summary>What was wrong</summary>
 
-A comment on a line that is hidden inside a collapsed gap can be reached from the review panel. It used to say the comment was outside the diff while the file it belongs to was open on screen; it now opens the gaps and goes there.
+With the file list or the review panel focused they moved the diff cursor instead — invisibly, since you were not looking at the diff — so the only way through a long list was one row at a time. Sixty presses from the bottom of a forty-layer rail to the top.
+
+</details>
+
+fix(layers rail): `f` hides files already reviewed while you read layers, as it already did in the file tree.
+
+<details><summary>What was wrong</summary>
+
+The same key did something in one rail and nothing in the other, and the header count disagreed with what was on screen.
+
+</details>
+
+fix(review panel): a comment on a line hidden inside a collapsed gap can be reached.
+
+<details><summary>What was wrong</summary>
+
+It said the comment was outside the diff while the file it belongs to was open on screen. It now opens the gaps and goes there.
+
+</details>

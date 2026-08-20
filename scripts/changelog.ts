@@ -57,22 +57,95 @@ const bodyOf = (intent: string): string | undefined => {
   return said.length === 0 ? undefined : said
 }
 
+type Entry = {
+  readonly kind: string
+  readonly area: string
+  readonly said: string
+  readonly detail: string
+}
+
+const SECTIONS = [
+  ["breaking", "Breaking"],
+  ["feat", "Added"],
+  ["fix", "Fixed"],
+  ["perf", "Performance"],
+] as const
+
+const HEAD = /^(?<kind>breaking|feat|fix|perf)\((?<area>[^)]+)\): (?<said>.+)$/
+
+const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`
+
+const indent = (text: string): string =>
+  text
+    .split("\n")
+    .map((line) => (line.trim().length === 0 ? "" : `  ${line}`))
+    .join("\n")
+
+type Read = {
+  readonly typed: ReadonlyArray<Entry>
+  readonly loose: string
+}
+
+const readingOf = (body: string): Read => {
+  const typed: Array<{ kind: string; area: string; said: string; detail: Array<string> }> = []
+  const loose: Array<string> = []
+  for (const line of body.split("\n")) {
+    const found = HEAD.exec(line)?.groups
+    if (found !== undefined) {
+      typed.push({
+        kind: found["kind"] ?? "",
+        area: found["area"] ?? "",
+        said: found["said"] ?? "",
+        detail: [],
+      })
+      continue
+    }
+    const held = typed.at(-1)
+    if (held === undefined) loose.push(line)
+    else held.detail.push(line)
+  }
+  return {
+    typed: typed.map((held) => ({
+      kind: held.kind,
+      area: held.area,
+      said: held.said,
+      detail: held.detail.join("\n").trim(),
+    })),
+    loose: loose.join("\n").trim(),
+  }
+}
+
+const bulletFor = (entry: Entry): string => {
+  const said = `- **${capital(entry.area)}** — ${entry.said}`
+  return entry.detail.length === 0 ? said : `${said}\n\n${indent(entry.detail)}`
+}
+
+const sectionsIn = (typed: ReadonlyArray<Entry>): ReadonlyArray<string> =>
+  SECTIONS.flatMap(([kind, title]) => {
+    const mine = typed.filter((entry) => entry.kind === kind)
+    return mine.length === 0 ? [] : [`### ${title}\n\n${mine.map(bulletFor).join("\n\n")}`]
+  })
+
 const known = (): ReadonlySet<string> =>
   new Set(readdirSync(INTENTS).filter((name) => name.endsWith(".md")).map((name) => name.slice(0, -3)))
 
 const entryFor = (release: Release, have: ReadonlySet<string>): string | undefined => {
-  const said = release.intents
+  const readings = release.intents
     .filter((intent) => have.has(intent))
     .flatMap((intent) => {
       const body = bodyOf(intent)
-      return body === undefined ? [] : [`- ${body.replaceAll("\n", "\n  ")}`]
+      return body === undefined ? [] : [readingOf(body)]
     })
+  const loose = readings
+    .flatMap((reading) => (reading.loose.length === 0 ? [] : [`- ${indent(reading.loose).trim()}`]))
+  const typed = readings.flatMap((reading) => reading.typed)
+  const said = [...loose, ...sectionsIn(typed)]
   if (said.length === 0) return undefined
   return `## ${release.version}\n\n${said.join("\n\n")}\n`
 }
 
 const wanted = argv[2]
-const releases = releasesIn(readFileSync(LEDGER, "utf8"))
+const releases = releasesIn(readFileSync(LEDGER, "utf8")).toSorted(compare)
 const have = known()
 
 if (wanted !== undefined) {
@@ -86,12 +159,10 @@ if (wanted !== undefined) {
   exit(0)
 }
 
-const entries = releases
-  .toSorted(compare)
-  .flatMap((release) => {
-    const entry = entryFor(release, have)
-    return entry === undefined ? [] : [entry]
-  })
+const entries = releases.flatMap((release) => {
+  const entry = entryFor(release, have)
+  return entry === undefined ? [] : [entry]
+})
 
 writeFileSync(OUT, `# Changelog\n\n${entries.join("\n")}`, "utf8")
 stdout.write(`${OUT}: ${entries.length} releases\n`)

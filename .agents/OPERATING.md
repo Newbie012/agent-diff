@@ -20,6 +20,9 @@ How to make a change here, in order. `AGENTS.md` is the short version; this is w
    watch it fail for the right reason — a test that passes before the code exists is testing
    something else.
 6. **Write the code.** Then `pnpm check`.
+7. **Write the change intent**, if a reviewer would notice the difference. One entry per thing that
+   changed, in the shape `.claude/skills/release-notes/SKILL.md` describes. A refactor, a test or a
+   doc gets none, and so ships no release.
 
 ## Changing behavior that a PRD already describes
 
@@ -39,6 +42,7 @@ reasoning should be reviewable separately from the code that follows from it.
 | A word adiff uses | `.agents/prd/CONTEXT.md` |
 | How the code is laid out | `ARCHITECTURE.md` |
 | What an agent in a worktree should do | `skills/adiff/SKILL.md` |
+| What a release says changed | `.claude/skills/release-notes/SKILL.md` |
 
 ## Constraints that are not negotiable
 
