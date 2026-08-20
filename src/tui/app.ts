@@ -323,6 +323,7 @@ export class App {
   private sideways = 0
   private listening: Fiber.Fiber<void> | undefined
   private lighting: Fiber.Fiber<void, unknown> | undefined
+  private sourcing: Fiber.Fiber<void, unknown> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -355,6 +356,7 @@ export class App {
     renderer.on("destroy", () => this.stopTicking())
     this.startTicking()
     renderer.on("destroy", () => this.stopLighting())
+    renderer.on("destroy", () => this.stopSourcing())
     renderer.on("destroy", () => void getTreeSitterClient().destroy())
     renderer.on("destroy", () => this.stopPainting())
     renderer.on("destroy", () => this.stopConsuming())
@@ -505,7 +507,17 @@ export class App {
 
   settled(): Promise<void> {
     if (this.consuming === undefined) return Promise.resolve()
-    return Effect.runPromise(Effect.andThen(this.drained(), this.stillLighting()))
+    return Effect.runPromise(
+      Effect.andThen(
+        Effect.andThen(this.drained(), Effect.suspend(() => this.stillSourcing())),
+        Effect.suspend(() => this.stillLighting()),
+      ),
+    )
+  }
+
+  private stillSourcing(): Effect.Effect<void> {
+    const fiber = this.sourcing
+    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
   }
 
   private stillLighting(): Effect.Effect<void> {
@@ -1349,8 +1361,15 @@ export class App {
   private turnedTo(): Work {
     return Effect.gen({ self: this }, function* () {
       this.commit(withSource(this.state, []))
-      yield* this.loadSource()
+      this.stopSourcing()
+      this.sourcing = yield* Effect.forkDetach(this.loadSource())
     })
+  }
+
+  private stopSourcing(): void {
+    const fiber = this.sourcing
+    this.sourcing = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
   }
 
   private loadSource(): Work {

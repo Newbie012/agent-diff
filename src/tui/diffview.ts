@@ -753,7 +753,7 @@ const noteRows = (note: Note, row: number, room: number, stop: number): Readonly
 
 const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<Display> =>
   [...entry.markdown.split("\n").flatMap((line) => wrap(line, room - 2)), ""].map((line) => ({
-    text: line.length === 0 ? "" : `  ${line}`,
+    text: line.length === 0 ? marks().rule : `${marks().rule} ${line}`,
     row,
     stop: 0,
     comment: false,
