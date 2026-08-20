@@ -394,7 +394,7 @@ type Waiting = {
   readonly staleMs: number
 }
 
-const STATE_LOCK: Waiting = { tries: 240, waitMs: 25, staleMs: 15_000 }
+const STATE_LOCK: Waiting = { tries: 1200, waitMs: 25, staleMs: 30_000 }
 const DRAFTS_LOCK: Waiting = { tries: 600, waitMs: 50, staleMs: 30_000 }
 
 const held = (path: string): Effect.Effect<void, StoreUnwritable> =>
