@@ -442,6 +442,12 @@
 
 - Reword or withdraw a staged comment, and see when a thread describes an older commit.
 
+## 0.1.0-alpha.124
+
+- `draft send` keeps the comments the forge did not take. A send the forge only partly accepted deleted every draft it had asked about and reported success, so comments the pull request never received were gone from disk. Only drafts the forge names back are cleared; the rest stay held, the answer says how many landed and how many are still waiting, and sending again sends only those. A reply adiff cannot read confirms nothing rather than everything.
+  
+  Two sends at once post one review. They used to race, each read the whole set, and each post it, so the pull request got two identical reviews. A send now holds a lock across the whole cycle, and a second one finds nothing left to send.
+
 ## 0.1.0-alpha.123
 
 - A change you can only see in the whitespace is now visible. Adding a trailing space or turning spaces into a tab showed a removed line and an added line that read identically, with nothing to tell them apart. Trailing spaces and tabs on a changed line are marked. Copying still takes the bytes that are in the file.
