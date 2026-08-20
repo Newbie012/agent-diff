@@ -15,6 +15,8 @@ const SPLIT = "\u0000"
 
 const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "main"]
 
+const PLAIN_PATHS: ReadonlyArray<string> = ["-c", "core.quotepath=false"]
+
 const STAT = /(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/
 
 type Shape = {
@@ -179,7 +181,7 @@ const readDiff = Effect.fn("Git.diff")(function* (
 ) {
   const target = worktree.base.length > 0 ? worktree.base : "HEAD"
   const scope = only === undefined ? [] : ["--", only]
-  return yield* gitOrEmpty(worktree.path, ["diff", `-U${context}`, target, ...scope])
+  return yield* gitOrEmpty(worktree.path, [...PLAIN_PATHS, "diff", `-U${context}`, target, ...scope])
 })
 
 const readStat = Effect.fn("Git.stat")(function* (worktree: Worktree) {

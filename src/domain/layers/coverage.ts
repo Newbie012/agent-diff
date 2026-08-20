@@ -86,10 +86,21 @@ export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<La
   }
 }
 
-const missingSaid = (count: number): string =>
+const runsSaid = (count: number): string =>
   count === 1
     ? "One run of changed lines the layers do not account for."
     : `${count} runs of changed lines the layers do not account for.`
+
+const filesSaid = (count: number): string =>
+  count === 1
+    ? "One file the layers had no lines to order."
+    : `${count} files the layers had no lines to order.`
+
+const leftSaid = (runs: number, files: number): string => {
+  if (runs > 0 && files > 0) return `${runsSaid(runs)} ${filesSaid(files)}`
+  if (runs > 0) return runsSaid(runs)
+  return files > 0 ? filesSaid(files) : ""
+}
 
 const unordered = (
   patches: ReadonlyArray<Patch>,
@@ -110,13 +121,11 @@ export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers):
   const left = unordered(patches, layers.layers, gap.missing)
   const spans = [...gap.missing, ...left]
   if (spans.length === 0) return layers
+  const said = leftSaid(gap.missing.length, left.length)
   const remainder: Layer = {
     title: REMAINDER_TITLE,
     blocks: [
-      {
-        kind: "prose",
-        markdown: missingSaid(gap.missing.length),
-      },
+      ...(said.length === 0 ? [] : [{ kind: "prose" as const, markdown: said }]),
       ...spans.map((span) => codeBlockOf(span)),
     ],
   }

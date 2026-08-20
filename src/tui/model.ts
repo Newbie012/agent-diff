@@ -228,14 +228,17 @@ export const proseFor = (state: TuiState, path: string): ReadonlyArray<ProseAnch
 const kept = (state: TuiState, at: number): boolean =>
   !state.hideReviewed || at === state.patchIndex || !isReviewed(state, at)
 
-export const layerFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> => {
+const layerHolds = (state: TuiState, layerIndex: number): ReadonlyArray<number> => {
   const layer = state.layers[layerIndex]
   if (layer === undefined) return []
   return layer.files.flatMap((path) => {
     const at = state.patches.findIndex((patch) => patch.path === path)
-    return at === -1 || !kept(state, at) ? [] : [at]
+    return at === -1 ? [] : [at]
   })
 }
+
+export const layerFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> =>
+  layerHolds(state, layerIndex).filter((at) => kept(state, at))
 
 export const layerHolding = (state: TuiState, fileIndex: number): number => {
   const path = state.patches[fileIndex]?.path
@@ -350,7 +353,7 @@ const fileRows = (
 }
 
 export const layerRead = (state: TuiState, layerIndex: number): { done: number; all: number } => {
-  const files = layerFiles(state, layerIndex)
+  const files = layerHolds(state, layerIndex)
   return { done: files.filter((at) => isReviewed(state, at)).length, all: files.length }
 }
 
@@ -378,10 +381,11 @@ const layerBody = (
   index: number,
   room: LayerRoom,
   shown: ReadonlySet<number>,
-): ReadonlyArray<LayerRow> =>
-  layerOpen(state, index) && shown.has(index)
-    ? fileRows(state, index, room)
-    : countRow(state, index, room.file)
+): ReadonlyArray<LayerRow> => {
+  if (!layerOpen(state, index) || !shown.has(index)) return countRow(state, index, room.file)
+  const rows = fileRows(state, index, room)
+  return rows.length > 0 ? rows : countRow(state, index, room.file)
+}
 
 export const layerRows = (
   state: TuiState,
