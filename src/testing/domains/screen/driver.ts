@@ -156,6 +156,7 @@ export class ScreenTestDriver {
   }
 
   async restart(options: OpenOptions = {}): Promise<void> {
+    this.state.tracer.cannotReplay("a restart")
     await this.close()
     await this.open(options)
   }
