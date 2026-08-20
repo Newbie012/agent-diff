@@ -13,7 +13,7 @@ const oneFile = {
 }
 
 const highlighted = (frame: string): string =>
-  frame.split("\n").find((row) => row.includes("▶")) ?? ""
+  frame.split("\n").find((row) => row.includes("┃") && row.includes("▎")) ?? ""
 
 describe("the sheet of every key", () => {
   it("scrolls with the wheel, not the diff behind it", async () => {

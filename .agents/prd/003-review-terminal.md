@@ -183,7 +183,22 @@ Three screens, and the keys each answers to:
 
 - **The row the cursor is on is washed, not dotted.** A file in the list and a thread in the panel
   were marked with a character a reader had to hunt for. A background reads at a glance, which is
-  what a cursor is for.
+  what a cursor is for. The file list also draws the bar the diff draws, at the edge of the row
+  rather than inside it, so the two marks carry two facts: the bar says which row the cursor is on,
+  and how brightly the wash is lit says whether that pane has the keys.
+
+- **One glyph, one idea.** Five characters carried twelve meanings between them: `▎` was a cursor
+  in three panes and a marker on the landing screen, `✓` meant both settled and merely sent, `○`
+  and `•` drew the same fact in two shapes, and `·` was a bullet in one pane and a separator in the
+  next. Now `▎` is the cursor row and nothing else, `▾` and `▸` are disclosure and nothing else,
+  `✓` means nothing is left to do, `→` means sent, `·` only separates, and `⋯` only stands for
+  hidden lines. A thread is one ring in three states wherever it is drawn: `○` sent and waiting on
+  the agent, `◐` answered but not settled, `●` waiting on you. The file list's badge counts the
+  threads still open, so it never promises work that is already settled.
+
+- **The file list draws no icons.** Every file carried the same glyph whatever its extension, and
+  every folder another, so two columns of every row said nothing and needed a Nerd Font to draw
+  them. The columns go to the path instead.
 
 - **The arrows walk between files.** `[` and `]` do it, and reaching for them is a detour on a
   keyboard where the arrows sit under the hand. Both work everywhere on the review.

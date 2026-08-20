@@ -18,6 +18,7 @@ export type StagedComment = {
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
+import type { ThreadStand } from "./marks.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, Match, ReportedLayer } from "../cli/index.ts"
 import type { ProseAnchor } from "../domain/layers/index.ts"
@@ -514,30 +515,64 @@ export const treeWindow = (
   return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
 }
 
-export const commentsOn = (state: TuiState, fileIndex: number): number => {
+export const threadStand = (thread: StagedComment): ThreadStand => {
+  if (thread.removed === true) return "gone"
+  if (thread.settled === true) return "settled"
+  if (thread.asks === true) return "asked"
+  if (spokeLast(thread) === "reviewer") return "waiting"
+  return answersIn(thread) > 0 ? "answered" : "waiting"
+}
+
+const STAND_WEIGHT: Readonly<Record<ThreadStand, number>> = {
+  gone: 0,
+  settled: 1,
+  waiting: 2,
+  answered: 3,
+  asked: 4,
+}
+
+const louder = (one: ThreadStand, other: ThreadStand): ThreadStand =>
+  STAND_WEIGHT[one] > STAND_WEIGHT[other] ? one : other
+
+export type OpenThreads = { readonly open: number; readonly stand: ThreadStand }
+
+export const threadsOn = (state: TuiState, fileIndex: number): OpenThreads => {
   const patch = state.patches[fileIndex]
-  if (patch === undefined) return 0
-  return state.sent.filter((entry) => entry.file === patch.path && entry.removed !== true).length
+  const stands =
+    patch === undefined
+      ? []
+      : state.sent
+          .filter(
+            (entry) =>
+              entry.file === patch.path && entry.removed !== true && entry.settled !== true,
+          )
+          .map((entry) => threadStand(entry))
+  return { open: stands.length, stand: stands.reduce(louder, "gone") }
 }
 
 export const hiddenLines = (state: TuiState): number =>
   shownOf(state)?.gaps.reduce((total, gap) => total + gap.hidden, 0) ?? 0
 
-export const markedRows = (state: TuiState): ReadonlySet<number> => {
+const rowsUnder = (patch: Patch, entry: StagedComment): ReadonlyArray<number> =>
+  patch.rows
+    .filter((row) =>
+      Option.match(row.newLine, {
+        onNone: () => false,
+        onSome: (line) => line >= entry.start && line <= entry.end,
+      }),
+    )
+    .map((row) => row.index)
+
+export const markedStands = (state: TuiState): ReadonlyMap<number, ThreadStand> => {
   const patch = selectedPatch(state)
-  if (patch === undefined) return new Set()
-  const here = state.sent.filter((entry) => entry.file === patch.path)
-  const rows = here.flatMap((entry) =>
-    patch.rows
-      .filter((row) =>
-        Option.match(row.newLine, {
-          onNone: () => false,
-          onSome: (line) => line >= entry.start && line <= entry.end,
-        }),
-      )
-      .map((row) => row.index),
-  )
-  return new Set(rows)
+  const found = new Map<number, ThreadStand>()
+  if (patch === undefined) return found
+  const here = state.sent.filter((entry) => entry.file === patch.path && entry.removed !== true)
+  for (const entry of here) {
+    const stand = threadStand(entry)
+    for (const row of rowsUnder(patch, entry)) found.set(row, louder(stand, found.get(row) ?? "gone"))
+  }
+  return found
 }
 
 export const carriesLine = (row: Patch["rows"][number]): boolean =>
@@ -842,13 +877,15 @@ const newerOf = (state: TuiState, comment: StagedComment): StagedComment => {
 const spokeLast = (comment: StagedComment): "reviewer" | "agent" | undefined =>
   comment.turns?.at(-1)?.voice
 
-const sectionOf = (comment: StagedComment): PanelSection => {
-  if (comment.removed === true) return "removed"
-  if (comment.settled === true) return "settled"
-  if (comment.asks === true) return "asked"
-  if (spokeLast(comment) === "reviewer") return "with"
-  return answersIn(comment) > 0 ? "answered" : "with"
+const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
+  gone: "removed",
+  settled: "settled",
+  asked: "asked",
+  answered: "answered",
+  waiting: "with",
 }
+
+const sectionOf = (comment: StagedComment): PanelSection => SECTION_OF[threadStand(comment)]
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)

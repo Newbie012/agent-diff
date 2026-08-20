@@ -28,7 +28,7 @@ describe("comments that have already gone to the agent", () => {
     const frame = await driver.screen.getFrame()
     const lines = frame.split("\n")
     const anchor = lines.findIndex((line) => line.includes("const first = 1"))
-    expect(lines[anchor + 1]).toContain("✓ sent")
+    expect(lines[anchor + 1]).toContain("→ sent")
     expect(lines.findIndex((line) => line.includes("already said this"))).toBe(anchor + 2)
   })
 

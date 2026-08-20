@@ -31,6 +31,8 @@ describe("what a modal draws", () => {
   })
 })
 
+const sheetPick = (line: string): boolean => line.includes("┃") && line.includes("▎")
+
 describe("the key sheet and the palette", () => {
   it("still moves through its rows with the arrows", async () => {
     // ARRANGE
@@ -39,14 +41,14 @@ describe("the key sheet and the palette", () => {
     await driver.screen.open({ width: 120, height: 24, review: true })
     await driver.screen.pressCtrl("p")
     const opened = await driver.screen.getFrame()
-    const first = opened.split("\n").find((line) => line.includes("▶")) ?? ""
+    const first = opened.split("\n").find((line) => sheetPick(line)) ?? ""
 
     // ACT
     await driver.screen.pressKeys(["ARROW_DOWN"])
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    const marked = frame.split("\n").filter((line) => line.includes("▶"))
+    const marked = frame.split("\n").filter((line) => sheetPick(line))
     expect(first).not.toHaveLength(0)
     expect(marked).toHaveLength(1)
     expect(marked[0]).not.toBe(first)

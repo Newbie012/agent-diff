@@ -15,7 +15,11 @@ const file = {
 }
 
 const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
-  frame.split("\n").filter((row) => row.includes(text))
+  frame
+    .split("\n")
+    .filter((row) => row.includes("││"))
+    .map((row) => row.slice(row.indexOf("││") + 2))
+    .filter((row) => row.includes(text))
 
 describe("what still holds when the diff wraps", () => {
   it("keeps a comment on its own rows below the line it was written on", async () => {

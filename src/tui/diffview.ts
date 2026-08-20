@@ -692,10 +692,10 @@ const wrap = (text: string, room: number): ReadonlyArray<string> => {
 
 const headOf = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
-  if (note.settled) return `${marks().sent} settled${moved}`
-  if (note.asks) return `${marks().comment} asked back${moved}`
-  if (note.turns.at(-1)?.voice === "reviewer") return `${marks().comment} replied${moved}`
-  if (note.answers.length > 0) return `${marks().sent} answered${moved}`
+  if (note.settled) return `${marks().done} settled${moved}`
+  if (note.asks) return `${marks().asked} asked back${moved}`
+  if (note.turns.at(-1)?.voice === "reviewer") return `${marks().waiting} replied${moved}`
+  if (note.answers.length > 0) return `${marks().answered} answered${moved}`
   return `${marks().sent} sent${moved}`
 }
 
