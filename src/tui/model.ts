@@ -627,9 +627,32 @@ export const composeTarget = (state: TuiState): string => {
 }
 
 const replyTarget = (state: TuiState): string => {
-  const thread = state.sent.find((entry) => entry.id === state.replyTo)
+  const thread = threadReplying(state)
   if (thread === undefined) return "Reply"
-  return `Reply on ${thread.file}:${thread.end}`
+  const span = thread.start === thread.end ? `${thread.end}` : `${thread.start}-${thread.end}`
+  return `Reply on ${thread.file}:${span}`
+}
+
+export const threadReplying = (state: TuiState): StagedComment | undefined =>
+  state.replyTo === undefined
+    ? undefined
+    : state.sent.find((entry) => entry.id === state.replyTo)
+
+const VOICES: Readonly<Record<"reviewer" | "agent", string>> = {
+  reviewer: "you",
+  agent: "the agent",
+}
+
+export const threadQuote = (state: TuiState, room: number): ReadonlyArray<string> => {
+  const thread = threadReplying(state)
+  if (thread === undefined) return []
+  const spoken = (thread.answers ?? []).map((body) => ({ voice: "agent" as const, body }))
+  const turns = thread.turns ?? [{ voice: "reviewer" as const, body: thread.body }, ...spoken]
+  const saidBy = (turn: { voice: "reviewer" | "agent"; body: string }): ReadonlyArray<string> => {
+    const lines = wrapped(turn.body, Math.max(8, room - 4)).map((line) => `    ${line}`)
+    return [`  ${VOICES[turn.voice]}`, ...lines]
+  }
+  return turns.flatMap(saidBy)
 }
 
 export const pickedText = (state: TuiState): string | undefined => {

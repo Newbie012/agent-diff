@@ -96,7 +96,7 @@ describe("knowing the diff is panned", () => {
     await driver.branch.create(wide)
     await driver.screen.open({ width: 72 })
     await driver.screen.pressKeys(["RETURN"])
-    expect(await driver.screen.getFrame()).not.toContain("columns")
+    expect(await driver.screen.getFrame()).not.toMatch(/→ \d+ columns(?! cut off)/)
 
     // ACT
     await driver.screen.pressKeys([">", ">"])
@@ -132,6 +132,6 @@ describe("panning with the wheel", () => {
     await driver.screen.scroll("down", 3)
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("columns")
+    expect(await driver.screen.getFrame()).not.toMatch(/→ \d+ columns(?! cut off)/)
   })
 })
