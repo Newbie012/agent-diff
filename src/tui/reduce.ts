@@ -173,6 +173,7 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
       ? state.openLayers
       : [...state.openLayers, landed.layer],
     patchIndex: landed.file,
+    railScroll: -1,
     top: 0,
     cursor: landingOn(state, landed.file),
     anchorRow: 0,

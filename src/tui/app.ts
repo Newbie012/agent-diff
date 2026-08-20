@@ -58,6 +58,7 @@ import {
   initialState,
   isReviewed,
   nextUnreviewed,
+  onLayers,
   rowAtSourceLine,
   rowShowing,
   sourceLineAt,
@@ -308,6 +309,7 @@ export class App {
   private selectingNow = false
   private leaving: number | undefined
   private looking: ReturnType<typeof setTimeout> | undefined
+  private rolling = false
   private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
@@ -335,7 +337,7 @@ export class App {
         onPan: (delta) => this.onPanWheel(delta),
         onDrag: (from, to, done) => this.dragged(from, to, done),
         onChip: (key) => this.dispatchTask(this.onKey(asKey(key))),
-        onRail: (delta) => this.dispatchTask(this.rolled(delta)),
+        onRail: (delta) => this.rollFrom(delta),
       }),
     )
     renderer.on("selection", () => this.copyDragged())
@@ -1118,7 +1120,15 @@ export class App {
       const was = this.state.patchIndex
       this.commit(reduce(this.measured(), delta > 0 ? "comment.next" : "comment.prev"))
       if (this.state.patchIndex !== was) yield* this.turnedTo()
+      this.rolling = false
     })
+  }
+
+  private rollFrom(delta: number): void {
+    const costly = onLayers(this.state)
+    if (costly && this.rolling) return
+    this.rolling = costly
+    this.dispatchTask(this.rolled(delta))
   }
 
   private stepped(delta: number): Work {

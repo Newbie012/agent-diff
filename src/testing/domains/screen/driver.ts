@@ -300,6 +300,17 @@ export class ScreenTestDriver {
     )
   }
 
+  async flickTree(direction: "up" | "down", times: number): Promise<void> {
+    const setup = this.active()
+    const y = Math.floor(setup.renderer.height / 2)
+    await Promise.all(
+      Array.from({ length: times }, () => setup.mockMouse.scroll(4, y, direction)),
+    )
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    this.guard()
+  }
+
   async burst(wheel: ReadonlyArray<Wheel>): Promise<number> {
     const setup = this.active()
     const x = Math.floor(WIDTH / 2) + 10
