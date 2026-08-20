@@ -135,6 +135,10 @@
   dir: ""
   intents:
     - what-copy-takes
+"@eliya-oss/agent-diff@0.1.0-alpha.121":
+  dir: ""
+  intents:
+    - test-infra
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:

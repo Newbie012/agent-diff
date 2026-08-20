@@ -442,6 +442,10 @@
 
 - Reword or withdraw a staged comment, and see when a thread describes an older commit.
 
+## 0.1.0-alpha.121
+
+- Nothing about what adiff does changes. The test suite stopped repeating two setups 350 times, stopped reaching into functions no reviewer or agent can see, and stopped leaking `PATH` and a stub HTTP server between tests in the same worker. One existing test was writing to a store key nothing reads and passing anyway; it now derives the key from the store.
+
 ## 0.1.0-alpha.120
 
 - Copying a selection that crosses a collapsed gap no longer puts adiff's own `⋯ 103 lines hidden` marker on the clipboard as if it were source. `y` also stops discarding a selection you made because the cursor happens to be resting on a comment — with a selection active it copies the selection.
