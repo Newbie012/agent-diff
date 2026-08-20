@@ -60,7 +60,7 @@ describe("where a thread is filed in the review", () => {
   })
 })
 
-describe("a thread you withdrew", () => {
+describe("a thread you removed", () => {
   it("leaves the diff, stays in the review, and comes back with the same key", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -77,8 +77,8 @@ describe("a thread you withdrew", () => {
 
     // ASSERT
     const gone = await driver.screen.getFrame()
-    expect(gone).toContain("Withdrawn")
-    expect(gone.split("Withdrawn")[0] ?? "").not.toContain("on reflection, no")
+    expect(gone).toContain("Removed")
+    expect(gone.split("Removed")[0] ?? "").not.toContain("on reflection, no")
 
     // ACT
     await driver.screen.pressKeys(["shift+tab"])
@@ -86,7 +86,7 @@ describe("a thread you withdrew", () => {
 
     // ASSERT
     const back = await driver.screen.getFrame()
-    expect(back).not.toContain("Withdrawn")
+    expect(back).not.toContain("Removed")
     expect(back).toContain("on reflection, no")
   })
 })

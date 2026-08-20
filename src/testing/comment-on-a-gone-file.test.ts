@@ -49,7 +49,7 @@ describe("a comment whose file is no longer in the diff", () => {
     await driver.screen.pressKeys(["X"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("withdrawn")
+    expect(await driver.screen.getFrame()).toContain("removed")
   })
 
   it("says where it went when opened", async () => {

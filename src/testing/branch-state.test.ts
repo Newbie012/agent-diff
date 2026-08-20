@@ -30,7 +30,7 @@ describe("choosing which branch needs you", () => {
     // ASSERT
     expect(result.envelope).toMatchObject({
       ok: true,
-      branches: [{ branch: branch.name, unread: 1 }],
+      branches: [{ branch: branch.name, unanswered: 1 }],
     })
   })
 
@@ -52,7 +52,7 @@ describe("choosing which branch needs you", () => {
     // ASSERT
     expect(result.envelope).toMatchObject({
       ok: true,
-      branches: [{ branch: branch.name, unread: 1 }],
+      branches: [{ branch: branch.name, unanswered: 1 }],
     })
   })
 

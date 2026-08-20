@@ -49,7 +49,7 @@ export type BranchSummary = {
   readonly files: number
   readonly added: number
   readonly removed: number
-  readonly unread: number
+  readonly unanswered: number
   readonly layers: number
   readonly stale: boolean
   readonly own: boolean
@@ -154,7 +154,7 @@ const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   const owed = yield* store.take(worktree.path)
   const told = yield* store.layers(worktree.path)
   return {
-    unread: owed.reduce((total, batch) => total + batch.comments.length, 0),
+    unanswered: owed.reduce((total, batch) => total + batch.comments.length, 0),
     layers: Option.match(told, { onNone: () => 0, onSome: (layers) => layers.layers.length }),
     stale: Option.match(told, { onNone: () => false, onSome: (layers) => layers.head !== worktree.head }),
   }
@@ -177,7 +177,7 @@ const summaryOf = Effect.fn("Cli.summaryOf")(function* (
     files: stat.files,
     added: stat.added,
     removed: stat.removed,
-    unread: waiting.unread,
+    unanswered: waiting.unanswered,
     layers: waiting.layers,
     stale: waiting.stale,
     own: worktree.own,

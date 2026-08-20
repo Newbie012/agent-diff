@@ -647,7 +647,7 @@ const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
 }
 
 const waitingLabel = (branch: TuiState["branches"][number]): string =>
-  branch.unread > 0 ? `${branch.unread} unanswered` : ""
+  branch.unanswered > 0 ? `${branch.unanswered} unanswered` : ""
 
 const inRange = (state: TuiState, row: number, from: number, to: number): boolean =>
   state.selecting && row >= from && row <= to
@@ -976,7 +976,7 @@ const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   with: "With the agent",
   answered: "Answered, not settled",
   settled: "Settled",
-  removed: "Withdrawn",
+  removed: "Removed",
 }
 
 const PANEL_ORDER = PANEL_SECTIONS
