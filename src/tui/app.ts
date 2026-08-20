@@ -74,6 +74,7 @@ import {
   selectionRange,
   spokenSince,
   panelEntry,
+  type PanelEntry,
   panelEntries,
   threadAtRow,
   threadChosen,
@@ -114,6 +115,7 @@ import {
   withPatches,
   withFinder,
   withMatches,
+  allRevealed,
   withSent,
   withSource,
   withLayers,
@@ -946,13 +948,28 @@ export class App {
         this.commit(withNoticeHere(this.state, `${entry.comment.file} is not on this branch`))
         return
       }
-      const shown = selectedPatch({ ...this.measured(), patchIndex: at })
+      const opened = { ...this.measured(), patchIndex: at }
+      const shown = selectedPatch(opened)
       if (shown !== undefined && rowShowing(shown, entry.comment.end) === undefined) {
+        yield* this.jumpingPastGaps(opened, at, entry)
+        return
+      }
+      this.commit(openedAt(this.measured(), at, entry.comment.end))
+      yield* this.turnedTo()
+      yield* this.readAnswers(entry.comment.id)
+    })
+  }
+
+  private jumpingPastGaps(opened: TuiState, at: number, entry: PanelEntry): Work {
+    return Effect.gen({ self: this }, function* () {
+      const wide = { ...opened, revealed: allRevealed(opened) }
+      const shown = selectedPatch(wide)
+      if (shown === undefined || rowShowing(shown, entry.comment.end) === undefined) {
         yield* this.readAnswers(entry.comment.id)
         this.commit(withNoticeHere(this.state, "that comment is outside this diff"))
         return
       }
-      this.commit(openedAt(this.measured(), at, entry.comment.end))
+      this.commit(openedAt({ ...this.measured(), revealed: wide.revealed }, at, entry.comment.end))
       yield* this.turnedTo()
       yield* this.readAnswers(entry.comment.id)
     })
