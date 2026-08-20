@@ -18,8 +18,7 @@ const at = (count: number) =>
     await driver.branch.create({ name: `count-${count}`, files: spread(count) })
 
     // ACT
-    await driver.screen.open({ width: 100, height: 14 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 14, review: true })
 
     // ASSERT
     expect(holdingBack(await driver.screen.getFrame())).not.toBe("… 1 more")

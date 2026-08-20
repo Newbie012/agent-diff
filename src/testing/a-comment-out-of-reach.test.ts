@@ -18,8 +18,7 @@ const branchFiles = {
 }
 
 const openWide = async (driver: TestDriver): Promise<void> => {
-  await driver.screen.open({ width: 150, height: 24 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 150, height: 24, review: true })
 }
 
 describe("a comment whose lines are no longer in the diff", () => {

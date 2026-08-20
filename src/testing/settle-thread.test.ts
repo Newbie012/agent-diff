@@ -12,14 +12,10 @@ const oneFile = {
   ],
 }
 
-const rowWith = (frame: string, text: string): string =>
-  frame.split("\n").find((line) => line.includes(text)) ?? ""
-
 const openOnThread = async (driver: TestDriver, body = "why this one"): Promise<void> => {
   const branch = await driver.branch.create(oneFile)
   await driver.app.runComment({ branch: branch.name, file: "src/api.ts", start: 2, end: 2, body })
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ review: true })
 }
 
 describe("settling a thread from the terminal", () => {
@@ -28,7 +24,7 @@ describe("settling a thread from the terminal", () => {
     await using driver = await TestDriver.create()
     await openOnThread(driver)
     await driver.screen.pressKeys(["j"])
-    expect(rowWith(await driver.screen.getFrame(), "sent")).toContain("sent")
+    expect(await driver.screen.rowWith("sent")).toContain("sent")
 
     // ACT
     await driver.screen.pressKeys(["d"])

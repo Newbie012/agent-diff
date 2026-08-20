@@ -22,8 +22,7 @@ describe("copying a selection that crosses a change", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["v", "j", "j", "j"])
@@ -39,8 +38,7 @@ describe("copying a selection that crosses a change", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: gone })
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["j", "v"])

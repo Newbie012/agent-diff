@@ -36,8 +36,7 @@ describe("the pinned scope", () => {
     await driver.branch.create(indented)
 
     // ACT
-    await driver.screen.open({ width: 100, height: 16 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 16, review: true })
     await driver.screen.pressKeys(["k"])
 
     // ASSERT
@@ -48,8 +47,7 @@ describe("the pinned scope", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(indented)
-    await driver.screen.open({ width: 100, height: 16 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 16, review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT

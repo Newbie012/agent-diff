@@ -13,8 +13,7 @@ const holdingBack = (frame: string): string | undefined =>
 
 const opened = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create({ name: "many", files: spread(30) })
-  await driver.screen.open({ width: 100, height: 14 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 100, height: 14, review: true })
   await driver.screen.pressKeys(["TAB", "l", "l", "l", "l", "l", "l"])
 }
 

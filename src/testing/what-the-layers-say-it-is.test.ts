@@ -28,8 +28,7 @@ describe("what the layers say the branch is", () => {
     await layered(driver, SUMMARY)
 
     // ACT
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -43,8 +42,7 @@ describe("what the layers say the branch is", () => {
     await layered(driver, LONG)
 
     // ACT
-    await driver.screen.open({ width: 120, height: 16 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 16, review: true })
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -58,8 +56,7 @@ describe("what the layers say the branch is", () => {
     await driver.branch.create({ files })
 
     // ACT
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ASSERT
     expect(await driver.screen.getFrame()).not.toContain("Replaces the old")

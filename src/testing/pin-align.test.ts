@@ -18,8 +18,7 @@ describe("the pinned line sits over the code it names", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])

@@ -10,8 +10,7 @@ const twoFiles = {
 }
 
 const openPanel = async (driver: TestDriver): Promise<void> => {
-  await driver.screen.open({ width: 150, height: 24 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 150, height: 24, review: true })
   await driver.screen.pressTab()
 }
 

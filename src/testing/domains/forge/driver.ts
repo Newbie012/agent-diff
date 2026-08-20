@@ -91,7 +91,7 @@ export class ForgeTestDriver {
     await mkdir(bin, { recursive: true })
     const path = join(bin, "gh")
     await writeFile(path, `${scriptFor(pulls, this.postedPath(), options)}\n`, { mode: 0o755 })
-    process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+    this.state.prependPath(bin)
   }
 
   async posted(): Promise<PostedReview | undefined> {

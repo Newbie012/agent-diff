@@ -12,11 +12,8 @@ describe("where a thread is filed in the review", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 34 })
-    await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("is this right")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.open({ width: 150, height: 34, review: true })
+    await driver.screen.writeComment("is this right")
     const [one] = await driver.agent.listComments(branch.worktree)
     await driver.app.runAnswer({
       worktree: branch.worktree,
@@ -38,11 +35,8 @@ describe("where a thread is filed in the review", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 34 })
-    await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("a point to close")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.open({ width: 150, height: 34, review: true })
+    await driver.screen.writeComment("a point to close")
     const [one] = await driver.agent.listComments(branch.worktree)
     await driver.app.runAnswer({
       worktree: branch.worktree,
@@ -65,11 +59,8 @@ describe("a thread you removed", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 34 })
-    await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("on reflection, no")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.open({ width: 150, height: 34, review: true })
+    await driver.screen.writeComment("on reflection, no")
 
     // ACT
     await driver.screen.pressKeys(["shift+tab"])

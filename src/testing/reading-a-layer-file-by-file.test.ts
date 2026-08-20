@@ -25,8 +25,7 @@ const layered = async (driver: TestDriver): Promise<void> => {
       { title: "The last one", note: "Then this.", spans: [{ path: "src/three.ts", start: 1, end: 2 }] },
     ],
   })
-  await driver.screen.open({ width: 120, height: 30 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 120, height: 30, review: true })
 }
 
 const ticks = (frame: string): number => (frame.match(/✓/g) ?? []).length
@@ -54,8 +53,7 @@ describe("a layer that says two things about one file", () => {
     })
 
     // ACT
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ASSERT
     const rail = (await driver.screen.getFrame())
@@ -133,8 +131,7 @@ describe("two layers that claim the same file", () => {
         },
       ],
     })
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ACT
     const seen: Array<string> = []

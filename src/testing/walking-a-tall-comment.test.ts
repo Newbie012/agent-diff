@@ -19,8 +19,7 @@ const open = async (driver: TestDriver): Promise<void> => {
     end: 5,
     body: essay,
   })
-  await driver.screen.open({ width: 100, height: 24 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 100, height: 24, review: true })
 }
 
 describe("a comment taller than the pane", () => {

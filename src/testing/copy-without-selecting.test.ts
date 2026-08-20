@@ -8,8 +8,7 @@ describe("copying from the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/small.ts", before: [], after: body }] })
-    await driver.screen.open({ width: 100, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 20, review: true })
     await driver.screen.pressKeys(["j", "j"])
 
     // ACT
@@ -24,8 +23,7 @@ describe("copying from the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/small.ts", before: [], after: body }] })
-    await driver.screen.open({ width: 100, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 20, review: true })
 
     // ACT
     await driver.screen.dragOverDiff(3, 5)
@@ -48,8 +46,7 @@ describe("copying from the diff", () => {
       end: 1,
       body: "the reason this exists is invisible in its body",
     })
-    await driver.screen.open({ width: 100, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 20, review: true })
     await driver.screen.pressKeys(["j", "j"])
 
     // ACT

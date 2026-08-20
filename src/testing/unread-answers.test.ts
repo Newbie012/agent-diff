@@ -51,8 +51,7 @@ describe("answers waiting to be read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch } = await answered(driver)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
     await driver.screen.pressKeys(["TAB"])
 
     // ACT
@@ -67,8 +66,7 @@ describe("answers waiting to be read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch } = await answered(driver)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ACT
     await driver.screen.pressKeys(["r"])
@@ -84,8 +82,7 @@ describe("the review panel with answers waiting", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answered(driver)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ACT
     await driver.screen.pressKeys(["r"])
@@ -98,8 +95,7 @@ describe("the review panel with answers waiting", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answered(driver)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
     await driver.screen.pressKeys(["r"])
 
     // ACT
@@ -126,8 +122,7 @@ describe("opening one of several answers", () => {
       }),
     )
     await Promise.all(both)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
     await driver.screen.pressKeys(["TAB"])
     await driver.screen.pressKeys(["j"])
 

@@ -14,11 +14,8 @@ describe("replying to a thread", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 34 })
-    await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("why is this here")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.open({ width: 150, height: 34, review: true })
+    await driver.screen.writeComment("why is this here")
     const [one] = await driver.agent.listComments(branch.worktree)
     await driver.app.runAnswer({
       worktree: branch.worktree,

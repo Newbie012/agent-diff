@@ -30,8 +30,7 @@ describe("scrolling after a drag", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(bigFile)
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     const before = topRow(await driver.screen.getFrame())
 
     // ACT
@@ -45,9 +44,8 @@ describe("scrolling after a drag", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(bigFile)
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.dragOverDiff(4, 8)
+    await driver.screen.open({ width: 120, height: 24, review: true })
+    await driver.screen.dragOverLines("const line0 = 0;", "const line4 = 4;")
     const before = topRow(await driver.screen.getFrame())
 
     // ACT

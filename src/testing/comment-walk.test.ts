@@ -16,12 +16,6 @@ const spread = {
   ],
 }
 
-const say = async (driver: TestDriver, body: string): Promise<void> => {
-  await driver.screen.pressKeys(["c"])
-  await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("s")
-}
-
 const rowWith = (frame: string, text: string): string =>
   frame.split("\n").find((line) => line.includes(text)) ?? ""
 
@@ -30,45 +24,42 @@ describe("walking between comments", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j", "j", "j", "j", "j"])
-    await say(driver, "look at this")
+    await driver.screen.writeComment("look at this")
     await driver.screen.pressKeys(["g"])
 
     // ACT
     await driver.screen.pressKeys(["n"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const layer4 = 4")).toContain("▎")
+    expect(await driver.screen.rowWith("const layer4 = 4")).toContain("▎")
   })
 
   it("jumps back to the comment above", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j", "j"])
-    await say(driver, "the early one")
+    await driver.screen.writeComment("the early one")
     await driver.screen.pressKeys(["G"])
 
     // ACT
     await driver.screen.pressKeys(["N"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const layer1 = 1")).toContain("▎")
+    expect(await driver.screen.rowWith("const layer1 = 1")).toContain("▎")
   })
 
   it("carries on into the next file that has one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["]"])
     await driver.screen.pressKeys(["j"])
-    await say(driver, "over here")
+    await driver.screen.writeComment("over here")
     await driver.screen.pressKeys(["["])
 
     // ACT
@@ -84,8 +75,7 @@ describe("walking between comments", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["n"])

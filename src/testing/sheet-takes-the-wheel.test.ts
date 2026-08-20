@@ -20,8 +20,8 @@ describe("the sheet of every key", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ height: 40 })
-    await driver.screen.pressKeys(["RETURN", "?"])
+    await driver.screen.open({ height: 40, review: true })
+    await driver.screen.pressKeys(["?"])
 
     const before = highlighted(await driver.screen.getFrame())
 

@@ -19,8 +19,7 @@ describe("writing a comment where there is no line", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
-    await driver.screen.open({ width: 100, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 30, review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT
@@ -36,8 +35,7 @@ describe("writing a comment where there is no line", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
-    await driver.screen.open({ width: 100, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -50,14 +48,11 @@ describe("writing a comment where there is no line", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)
-    await driver.screen.open({ width: 100, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 30, review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("this should never be sent")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("this should never be sent")
 
     // ASSERT
     const threads = await driver.app.runThreads(created.name)

@@ -14,8 +14,7 @@ describe("dragging across part of one line", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/api.ts", before: [], after: [line] }] })
-    await driver.screen.open({ width: 100, height: 12 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 12, review: true })
     const at = whereIs(await driver.screen.getFrame(), "bravo charlie")
 
     // ACT

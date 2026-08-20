@@ -32,8 +32,7 @@ const three = async (driver: TestDriver): Promise<void> => {
       body,
     }),
   )
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ ...WIDE, review: true })
 }
 
 describe("the order of the review panel", () => {

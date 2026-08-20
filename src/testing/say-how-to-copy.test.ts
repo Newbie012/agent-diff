@@ -11,17 +11,12 @@ const oneFile = {
   ],
 }
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(oneFile)
-  await driver.screen.open({ width: 140, height: 20 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("copying what is selected", () => {
   it("says which key copies once a selection is under way", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(oneFile)
+    await driver.screen.open({ width: 140, height: 20, review: true })
     expect(await driver.screen.getFrame()).not.toContain("y copy")
 
     // ACT

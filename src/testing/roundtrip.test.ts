@@ -55,8 +55,7 @@ describe("every reversible action reverses", () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       await driver.branch.create(branch)
-      await driver.screen.open()
-      await driver.screen.pressKeys(["RETURN"])
+      await driver.screen.open({ review: true })
       if (pair.from !== undefined) await driver.screen.pressKeys([...pair.from])
       const seen = pair.keys === true ? (frame: string): string => frame : body
       const start = seen(await driver.screen.getFrame())

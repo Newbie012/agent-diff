@@ -7,11 +7,6 @@ const oneFile = {
   ],
 }
 
-const footerOf = (frame: string): string => {
-  const rows = frame.split("\n").filter((row) => row.trim().length > 0)
-  return rows.at(-1) ?? ""
-}
-
 describe("moving between layers and files", () => {
   it("offers the switch once a branch has layers, naming where it would go", async () => {
     // ARRANGE
@@ -23,18 +18,17 @@ describe("moving between layers and files", () => {
     })
 
     // ACT
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressShiftTab()
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("s file tree")
+    expect(await driver.screen.footer()).toContain("s file tree")
 
     // ACT
     await driver.screen.pressKeys(["s"])
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("s layers")
+    expect(await driver.screen.footer()).toContain("s layers")
   })
 
   it("says nothing about layers on a branch without any", async () => {
@@ -43,10 +37,9 @@ describe("moving between layers and files", () => {
     await driver.branch.create(oneFile)
 
     // ACT
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).not.toContain("s layers")
+    expect(await driver.screen.footer()).not.toContain("s layers")
   })
 })

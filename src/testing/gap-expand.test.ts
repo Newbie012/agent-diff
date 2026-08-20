@@ -57,8 +57,7 @@ describe("opening the lines a diff leaves out", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
     expect(await driver.screen.getFrame()).not.toContain("kept20")
 
@@ -76,8 +75,7 @@ describe("opening the lines a diff leaves out", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT
@@ -93,8 +91,7 @@ describe("opening the lines a diff leaves out", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["l"])
     expect(await driver.screen.getFrame()).toContain("kept20")
@@ -110,8 +107,7 @@ describe("opening the lines a diff leaves out", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
     expect(hiddenCounts(await driver.screen.getFrame())).toEqual([17, 14])
 
@@ -126,8 +122,7 @@ describe("opening the lines a diff leaves out", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT
@@ -149,8 +144,7 @@ describe("how a gap row reads", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT
@@ -181,16 +175,13 @@ describe("commenting on a line a gap gave back", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["l"])
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("this constant is unused")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("this constant is unused")
 
     // ASSERT
     const comments = await driver.agent.listComments(branch.worktree)

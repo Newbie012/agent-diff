@@ -23,17 +23,12 @@ const twoFiles = {
 const litPane = async (driver: TestDriver): Promise<number> =>
   (await driver.screen.listForegroundsOfEach("╭")).findIndex((colour) => colour === ACCENT)
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(twoFiles)
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("moving between the panes", () => {
   it("walks left to right on tab", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(twoFiles)
+    await driver.screen.open({ ...WIDE, review: true })
     const start = await litPane(driver)
 
     // ACT
@@ -51,7 +46,8 @@ describe("moving between the panes", () => {
   it("walks right to left on shift and tab", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(twoFiles)
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ACT
     await driver.screen.pressShiftTab()
@@ -64,7 +60,8 @@ describe("moving between the panes", () => {
   it("comes back where it started", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(twoFiles)
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ACT
     await driver.screen.pressKeys(["TAB"])

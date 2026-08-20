@@ -10,8 +10,7 @@ describe("asking for the review panel where it cannot fit", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 100, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["a"])

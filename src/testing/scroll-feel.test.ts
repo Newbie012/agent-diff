@@ -27,8 +27,7 @@ describe("how scrolling feels", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     const before = firstCodeRow(await driver.screen.getFrame())
 
@@ -61,8 +60,7 @@ const wheel = (count: number, direction: "up" | "down"): ReadonlyArray<"up" | "d
 
 const openDiff = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(repo)
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ review: true })
 }
 
 describe("a burst of wheel events", () => {
@@ -138,8 +136,7 @@ describe("expanding to the whole file", () => {
     await driver.branch.create({
       files: [{ path: "src/deep.ts", before: deep("settle"), after: deep("resolve") }],
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["=", "=", "=", "="])

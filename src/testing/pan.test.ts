@@ -27,8 +27,7 @@ describe("reading past the right edge", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     expect(codeRow(await driver.screen.getFrame())).toContain("const message")
 
     // ACT
@@ -43,8 +42,7 @@ describe("reading past the right edge", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     await driver.screen.pressKeys([">", ">", ">", ">", ">"])
 
     // ACT
@@ -58,8 +56,7 @@ describe("reading past the right edge", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     const before = numbered(await driver.screen.getFrame()).length
 
     // ACT
@@ -75,8 +72,7 @@ describe("reading past the right edge", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     await driver.screen.pressKeys(["w"])
 
     // ACT
@@ -94,8 +90,7 @@ describe("knowing the diff is panned", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     expect(await driver.screen.getFrame()).not.toMatch(/→ \d+ columns(?! cut off)/)
 
     // ACT
@@ -111,8 +106,7 @@ describe("panning with the wheel", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
 
     // ACT
     await driver.screen.panWith("down", 3)
@@ -125,8 +119,7 @@ describe("panning with the wheel", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
 
     // ACT
     await driver.screen.scroll("down", 3)

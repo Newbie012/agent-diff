@@ -14,8 +14,7 @@ describe("the box a comment is written in", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 80, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, height: 24, review: true })
     await driver.screen.pressKeys(["c"])
 
     // ACT

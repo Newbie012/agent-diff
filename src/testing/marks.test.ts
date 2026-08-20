@@ -23,8 +23,8 @@ describe("seeing where the comments are", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "j", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["j", "c"])
     await driver.screen.typeText("about the first")
 
     // ACT

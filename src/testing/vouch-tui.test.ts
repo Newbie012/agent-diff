@@ -20,8 +20,7 @@ describe("marking a file reviewed from the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["m"])
@@ -34,8 +33,7 @@ describe("marking a file reviewed from the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["m"])
@@ -48,8 +46,7 @@ describe("marking a file reviewed from the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["m"])
 
     // ACT
@@ -64,8 +61,7 @@ describe("marking a file reviewed from the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["m"])
 
     // ACT

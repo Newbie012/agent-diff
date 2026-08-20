@@ -83,10 +83,8 @@ describe("coming back to the branch list", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
-    await driver.screen.typeText("hold this")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.open({ review: true })
+    await driver.screen.writeComment("hold this")
 
     // ACT
     await driver.screen.pressEscape()

@@ -29,8 +29,7 @@ describe("keeping the enclosing scope on screen", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])
@@ -76,8 +75,7 @@ describe("the pin looks like the code it names", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])

@@ -148,8 +148,7 @@ describe("reading a thread in the diff", () => {
     })
 
     // ACT
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
@@ -174,8 +173,7 @@ describe("reading a thread in the diff", () => {
     })
 
     // ACT
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("asked back")

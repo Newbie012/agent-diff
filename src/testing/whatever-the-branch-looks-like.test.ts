@@ -28,8 +28,7 @@ describe("whatever shape a branch is", () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       await driver.branch.create({ files: [...shape.files] })
-      await driver.screen.open({ width: WIDTH, height: HEIGHT })
-      await driver.screen.pressKeys(["RETURN"])
+      await driver.screen.open({ width: WIDTH, height: HEIGHT, review: true })
 
       // ACT
       const seen = await opened(driver, shape.files.length)
@@ -43,8 +42,7 @@ describe("whatever shape a branch is", () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       await driver.branch.create({ files: [...shape.files] })
-      await driver.screen.open({ width: WIDTH, height: HEIGHT })
-      await driver.screen.pressKeys(["RETURN"])
+      await driver.screen.open({ width: WIDTH, height: HEIGHT, review: true })
       const refused: Array<string> = []
 
       // ACT

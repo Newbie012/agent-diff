@@ -32,8 +32,7 @@ describe("settling from the review panel", () => {
       end: 1,
       body: "the newer point",
     })
-    await driver.screen.open({ width: 150, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 150, height: 24, review: true })
     await driver.screen.pressTab()
     await driver.screen.pressKeys(["j"])
     expect(await chosen(driver)).toContain("src/api.ts")

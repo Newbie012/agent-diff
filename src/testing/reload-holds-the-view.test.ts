@@ -25,8 +25,7 @@ describe("reading the branch again", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(longFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(Array.from({ length: 30 }, () => "j"))
     const before = topLineOf(await driver.screen.getFrame())
 

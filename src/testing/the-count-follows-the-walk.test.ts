@@ -15,8 +15,7 @@ describe("the count in the header", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     const walked: Array<string> = []
 
     // ACT
@@ -35,8 +34,7 @@ describe("the count in the header", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     const before = place(await driver.screen.getFrame())
 
     // ACT

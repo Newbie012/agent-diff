@@ -14,8 +14,7 @@ describe("working through a branch file by file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["M"])
@@ -30,8 +29,7 @@ describe("working through a branch file by file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["]"])
     await driver.screen.pressKeys(["m"])
     await driver.screen.pressKeys(["["])
@@ -49,8 +47,7 @@ describe("working through a branch file by file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["M"])
     await driver.screen.pressKeys(["M"])
 

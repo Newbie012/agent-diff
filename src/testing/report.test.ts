@@ -16,8 +16,8 @@ describe("reporting a bug from inside the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "j"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["j"])
     await driver.screen.pressCtrl("b")
     await driver.screen.typeText("the cursor jumps two lines when I press j")
 
@@ -34,8 +34,8 @@ describe("reporting a bug from inside the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "j", "v"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["j", "v"])
     await driver.screen.pressCtrl("b")
     await driver.screen.typeText("selection looks wrong")
 
@@ -54,8 +54,7 @@ describe("reporting a bug from inside the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressCtrl("b")
 
     // ACT
@@ -69,8 +68,7 @@ describe("reporting a bug from inside the terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressCtrl("b")
     await driver.screen.typeText("never mind")
 

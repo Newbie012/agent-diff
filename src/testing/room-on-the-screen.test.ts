@@ -25,8 +25,7 @@ describe("a panel on a wide terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 160, height: 40 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 160, height: 40, review: true })
 
     // ACT
     await driver.screen.pressKeys(["?"])
@@ -39,8 +38,7 @@ describe("a panel on a wide terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 80, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, height: 24, review: true })
 
     // ACT
     await driver.screen.pressKeys(["?"])
@@ -57,8 +55,7 @@ describe("the sheet of every key on a tall terminal", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     await driver.screen.pressKeys(["?"])
     const onAShortScreen = listedKeys(await driver.screen.getFrame()).length
 

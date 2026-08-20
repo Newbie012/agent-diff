@@ -11,11 +11,6 @@ const oneFile = {
   ],
 }
 
-const footerOf = (frame: string): string => {
-  const lines = frame.split("\n").filter((line) => line.trim().length > 0)
-  return lines.at(-1) ?? ""
-}
-
 describe("the keys a reviewer is shown", () => {
   it("carries the few a pass through a review is made of", async () => {
     // ARRANGE
@@ -27,7 +22,7 @@ describe("the keys a reviewer is shown", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const footer = footerOf(await driver.screen.getFrame())
+    const footer = await driver.screen.footer()
     expect(footer).toContain("] file")
     expect(footer).toContain("v select")
     expect(footer).toContain("c comment")
@@ -47,7 +42,7 @@ describe("the keys a reviewer is shown", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const footer = footerOf(await driver.screen.getFrame())
+    const footer = await driver.screen.footer()
     expect(footer).toContain("c comment")
     expect(footer).toContain("? keys")
     expect(footer.trimEnd().length).toBeLessThanOrEqual(80)
@@ -59,8 +54,7 @@ describe("the sheet of every key", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["?"])
@@ -77,8 +71,7 @@ describe("the sheet of every key", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["?"])
@@ -91,8 +84,7 @@ describe("the sheet of every key", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["?"])
     await driver.screen.typeText("wrap")
 
@@ -109,8 +101,7 @@ describe("the sheet of every key", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["?"])
     await driver.screen.typeText("wrap")
     expect(await driver.screen.getFrame()).toContain("Wrap long lines")
@@ -126,8 +117,7 @@ describe("the sheet of every key", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v", "c"])
 
     // ACT
@@ -145,8 +135,7 @@ describe("finding a command by typing", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressCtrl("p")

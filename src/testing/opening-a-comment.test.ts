@@ -25,8 +25,7 @@ describe("opening a comment from the review panel", () => {
       end: 60,
       body: "look at this one",
     })
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
     await driver.screen.pressKeys(["TAB"])
 
     // ACT

@@ -24,8 +24,7 @@ describe("using the mouse", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const before = await driver.screen.getFrame()
 
     // ACT
@@ -41,8 +40,7 @@ describe("using the mouse", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const start = body(await driver.screen.getFrame())
     await driver.screen.scroll("down", 6)
     expect(body(await driver.screen.getFrame())).not.toBe(start)
@@ -58,26 +56,24 @@ describe("using the mouse", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
-    const start = await driver.screen.getFrame()
+    await driver.screen.open({ review: true })
+    const start = body(await driver.screen.getFrame())
 
     // ACT
     await driver.screen.scroll("up", 5)
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toBe(start)
+    expect(body(await driver.screen.getFrame())).toBe(start)
   })
 
   it("selects a range by dragging over it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
-    await driver.screen.dragOverDiff(3, 7)
+    await driver.screen.dragOverLines("const layer0 ", "const layer3 ")
 
     // ASSERT
     const selected = await driver.screen.findPicked()

@@ -46,8 +46,7 @@ describe("a monkey at the keyboard", () => {
       const shape = shapes[Math.floor(roll() * shapes.length)] ?? shapes[0]
       const keys = keysOf()
       await driver.branch.create({ files: [...(shape?.files ?? [])] })
-      await driver.screen.open({ width: WIDTH, height: HEIGHT })
-      await driver.screen.pressKeys(["RETURN"])
+      await driver.screen.open({ width: WIDTH, height: HEIGHT, review: true })
       const pressed: Array<string> = []
 
       // ACT

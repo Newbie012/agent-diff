@@ -20,16 +20,13 @@ describe("a comment left inside a gap", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 26 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 150, height: 26, review: true })
     await driver.screen.pressKeys(["k"])
     const before = hiddenIn(await driver.screen.getFrame())
     await driver.screen.pressKeys(["l"])
     expect(hiddenIn(await driver.screen.getFrame())).not.toBe(before)
     await driver.screen.pressKeys(["j", "j", "j", "j"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("a point inside the gap")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("a point inside the gap")
 
     // ACT
     await driver.screen.pressKeys(["k", "k", "k", "k"])

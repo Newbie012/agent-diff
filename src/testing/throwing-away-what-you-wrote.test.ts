@@ -5,17 +5,12 @@ const files = [
   { path: "src/one.ts", before: ["const a = 1"], after: ["const a = 1", "const one = 2"] },
 ]
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create({ files })
-  await driver.screen.open({ width: 120, height: 30 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("closing the box you were writing in", () => {
   it("still has what you wrote when you open it again on the same line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 120, height: 30, review: true })
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("a point worth keeping")
     await driver.screen.pressEscape()
@@ -30,7 +25,8 @@ describe("closing the box you were writing in", () => {
   it("starts empty on a different line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 120, height: 30, review: true })
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("about the first line")
     await driver.screen.pressEscape()
@@ -46,10 +42,9 @@ describe("closing the box you were writing in", () => {
   it("starts empty again once what was written has been sent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("a point already made")
-    await driver.screen.pressCtrl("s")
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 120, height: 30, review: true })
+    await driver.screen.writeComment("a point already made")
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -66,8 +61,7 @@ describe("a comment with nothing in it", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("   ")
 

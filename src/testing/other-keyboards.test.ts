@@ -18,8 +18,7 @@ describe("a keyboard that is not English", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys([HEBREW_LETTER_ON_THE_N_KEY])

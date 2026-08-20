@@ -26,8 +26,7 @@ describe("jumping between changes", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["}", "}", "}"])
@@ -40,8 +39,7 @@ describe("jumping between changes", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["{"])
@@ -54,8 +52,7 @@ describe("jumping between changes", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["F"])
 
     // ACT
@@ -70,8 +67,7 @@ describe("jumping between changes", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneChange)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["}"])
@@ -86,8 +82,7 @@ describe("where a change jump lands", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoChanges)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["}"])

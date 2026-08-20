@@ -15,8 +15,7 @@ describe("wrapping when the pane grows", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["w"])
     const before = partsOf(await driver.screen.getFrame())
 

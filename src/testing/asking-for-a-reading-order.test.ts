@@ -10,8 +10,7 @@ describe("asking the agent for a reading order", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["L"])
@@ -32,8 +31,7 @@ describe("asking the agent for a reading order", () => {
     })
     await driver.branch.setFile(branch, "src/one.ts", ["const a = 1", "const one = 2", "const two = 3"])
     await driver.branch.commitAll(branch, "one more line")
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["L"])

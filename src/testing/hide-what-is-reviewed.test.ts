@@ -21,8 +21,7 @@ const pane = (frame: string): string => {
 
 const reviewedOne = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(three)
-  await driver.screen.open({ width: 120, height: 20 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 120, height: 20, review: true })
   await driver.screen.pressKeys(["m"])
   await driver.screen.pressKeys(["]"])
 }
@@ -55,8 +54,7 @@ describe("hiding the files already read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(three)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     await driver.screen.pressKeys(["f"])
 
     // ACT

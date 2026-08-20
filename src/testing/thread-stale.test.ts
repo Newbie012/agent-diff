@@ -16,11 +16,8 @@ describe("a thread whose code has moved", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("why is this here")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.open({ review: true })
+    await driver.screen.writeComment("why is this here")
     await driver.branch.setFile(branch, "src/api.ts", [
       "const keep = 0",
       "const first = 1",
@@ -41,13 +38,10 @@ describe("a thread whose code has moved", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("why is this here")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("why is this here")
 
     // ASSERT
     const frame = await driver.screen.getFrame()

@@ -57,8 +57,7 @@ describe("wrapping while reading layers", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(wide)
     await driver.app.runLayersSet(branch.worktree, layers)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
 
     // ACT
     await driver.screen.pressKeys(["w"])
@@ -75,15 +74,14 @@ describe("wrapping while reading layers", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(wide)
     await driver.app.runLayersSet(branch.worktree, layers)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     await driver.screen.pressKeys(["w"])
 
     // ACT
     await driver.screen.pressKeys(["j"])
 
     // ASSERT
-    const marked = rowsOf(await driver.screen.getFrame()).filter((row) => row.includes("▎"))
+    const marked = (await driver.screen.rows()).filter((row) => row.includes("▎"))
     expect(marked).toHaveLength(1)
   })
 })

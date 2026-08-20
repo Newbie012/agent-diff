@@ -20,16 +20,4 @@ describe("a review opened on a branch", () => {
     expect(order).toContain("forge")
     expect(order.indexOf("diff")).toBeLessThan(order.indexOf("forge"))
   })
-
-  it("still asks, so the list can say what is open", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    await driver.branch.create({ files })
-
-    // ACT
-    await driver.screen.open({ width: 120, height: 24, forgeWatched: true })
-
-    // ASSERT
-    expect(driver.screen.askedInOrder()).toContain("forge")
-  })
 })

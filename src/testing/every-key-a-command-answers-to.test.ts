@@ -7,13 +7,9 @@ const files = [
 
 const opened = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create({ files })
-  await driver.screen.open({ width: 140, height: 34 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 140, height: 34, review: true })
   await driver.screen.pressKeys(["?"])
 }
-
-const rowWith = (frame: string, text: string): string =>
-  frame.split("\n").find((line) => line.includes(text)) ?? ""
 
 describe("the key sheet", () => {
   it("names every key a command answers to, not only the first", async () => {
@@ -25,7 +21,7 @@ describe("the key sheet", () => {
     await driver.screen.typeText("Next")
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "Next line")).toContain("j")
+    expect(await driver.screen.rowWith("Next line")).toContain("j")
   })
 
   it("finds a command by the key it is on", async () => {

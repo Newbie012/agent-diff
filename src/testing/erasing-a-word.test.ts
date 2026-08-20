@@ -13,8 +13,8 @@ const oneFile = {
 
 const composing = async (driver: TestDriver, text: string): Promise<void> => {
   await driver.branch.create(oneFile)
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN", "c"])
+  await driver.screen.open({ review: true })
+  await driver.screen.pressKeys(["c"])
   await driver.screen.typeText(text)
 }
 

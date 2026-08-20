@@ -14,8 +14,7 @@ describe("a terminal that changed size", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 160, height: 40 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 160, height: 40, review: true })
 
     // ACT
     await driver.screen.resize(80, 24)
@@ -31,8 +30,7 @@ describe("a terminal that changed size", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 160, height: 40 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 160, height: 40, review: true })
 
     // ACT
     const stepped = async (width: number, height: number): Promise<void> => {
@@ -54,8 +52,7 @@ describe("a terminal that changed size", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 140, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 140, height: 30, review: true })
 
     // ACT
     await driver.screen.resize(10, 20)
@@ -72,8 +69,7 @@ describe("a terminal that changed size", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 140, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 140, height: 30, review: true })
 
     // ACT
     await driver.screen.resize(16, 20)
@@ -86,8 +82,7 @@ describe("a terminal that changed size", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 80, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, height: 24, review: true })
 
     // ACT
     await driver.screen.resize(160, 40)

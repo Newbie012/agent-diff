@@ -16,8 +16,8 @@ describe("writing a comment", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "j", "v", "j"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["j", "v", "j"])
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -33,8 +33,8 @@ describe("writing a comment", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("first line")
 
     // ACT
@@ -53,8 +53,8 @@ describe("writing a comment", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("this one goes now")
 
     // ACT

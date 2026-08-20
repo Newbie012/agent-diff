@@ -28,8 +28,7 @@ describe("reading a pinned scope wider than the pane", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
-    await driver.screen.open({ width: 100 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, review: true })
     await driver.screen.pressKeys(["j", "j", "j"])
     const before = await driver.screen.getFrame()
     expect(pinnedRow(before)).toContain("issueInvitation")
@@ -47,15 +46,14 @@ describe("reading a pinned scope wider than the pane", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
-    await driver.screen.open({ width: 100 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, review: true })
     await driver.screen.pressKeys(["j", "j", "j"])
 
     // ACT
     await driver.screen.pressKeys(Array.from({ length: 30 }, () => ">"))
 
     // ASSERT
-    const header = rowsOf(await driver.screen.getFrame()).find((row) => row.trim().length > 0) ?? ""
+    const header = (await driver.screen.rows()).find((row) => row.trim().length > 0) ?? ""
     const reported = Number(/→ (\d+) columns/.exec(header)?.[1] ?? "0")
     expect(reported).toBeGreaterThan(0)
     expect(reported).toBeLessThan(scope.length)
@@ -67,8 +65,7 @@ describe("the pinned scope under the other modes", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
-    await driver.screen.open({ width: 100 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, review: true })
     await driver.screen.pressKeys(["j", "j", "j", "w"])
 
     // ACT
@@ -84,8 +81,7 @@ describe("the pinned scope under the other modes", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
-    await driver.screen.open({ width: 80 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, review: true })
     await driver.screen.pressKeys(["j", "j", "j"])
 
     // ACT

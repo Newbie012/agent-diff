@@ -1,26 +1,8 @@
-import { createServer, type Server } from "node:http"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, it } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
-
-const served = async (tags: Readonly<Record<string, string>>): Promise<{
-  readonly url: string
-  readonly stop: () => Promise<void>
-}> => {
-  const server: Server = createServer((_, response) => {
-    response.writeHead(200, { "content-type": "application/json" })
-    response.end(JSON.stringify(tags))
-  })
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
-  const address = server.address()
-  const port = typeof address === "object" && address !== null ? address.port : 0
-  return {
-    url: `http://127.0.0.1:${port}/dist-tags`,
-    stop: () => new Promise<void>((resolve) => server.close(() => resolve())),
-  }
-}
 
 const SKILL_AT = join(".claude", "skills", "adiff", "SKILL.md")
 
@@ -30,12 +12,11 @@ describe("what adiff upgrade says", () => {
   it("names the command it runs and the version it landed on, and nothing else", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const registry = await served({ alpha: "9.9.9" })
+    const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
     const install = await driver.app.installedBy("npm")
 
     // ACT
-    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
-    await registry.stop()
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry })
 
     // ASSERT
     const mine = result.stdout.split("\n").filter((line) => !line.includes("ran with"))
@@ -49,12 +30,11 @@ describe("what adiff upgrade says", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
-    const registry = await served({ alpha: manifest.default.version })
+    const registry = await driver.app.setRegistry({ alpha: manifest.default.version })
     const install = await driver.app.installedBy("npm")
 
     // ACT
-    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
-    await registry.stop()
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry })
 
     // ASSERT
     expect(result.stdout.trim().split("\n")).toHaveLength(1)
@@ -63,12 +43,11 @@ describe("what adiff upgrade says", () => {
   it("no longer explains the registry's tags at someone who asked for an upgrade", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const registry = await served({ alpha: "9.9.9" })
+    const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
     const install = await driver.app.installedBy("npm")
 
     // ACT
-    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry.url })
-    await registry.stop()
+    const result = await driver.app.run(["upgrade"], { ...install, ADIFF_REGISTRY: registry })
 
     // ASSERT
     expect(result.stdout).not.toContain("tag matters")

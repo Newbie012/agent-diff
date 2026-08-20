@@ -14,8 +14,7 @@ describe("typing a comment", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/mapper.ts", before: [], after: body }] })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     await driver.screen.scroll("down", 20)
     await driver.screen.pressKeys(["c"])
     const before = diffRows(await driver.screen.getFrame())

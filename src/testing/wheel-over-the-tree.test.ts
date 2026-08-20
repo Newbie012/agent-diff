@@ -17,8 +17,7 @@ const many = {
 
 const openTree = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(many)
-  await driver.screen.open({ width: 120, height: 20 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 120, height: 20, review: true })
 }
 
 describe("the wheel over the file tree", () => {

@@ -49,8 +49,7 @@ describe("reviewing on the terminal", () => {
         },
       ],
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["ARROW_DOWN", "c"])

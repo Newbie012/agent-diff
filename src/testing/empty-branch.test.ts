@@ -13,8 +13,7 @@ describe("a branch with nothing left to read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await rm(branch.worktree, { recursive: true, force: true })

@@ -16,8 +16,7 @@ const apart = (gap: number) => ({
 
 const opened = async (driver: TestDriver, gap: number): Promise<string> => {
   await driver.branch.create(apart(gap))
-  await driver.screen.open({ width: 120, height: 30 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 120, height: 30, review: true })
   return driver.screen.getFrame()
 }
 

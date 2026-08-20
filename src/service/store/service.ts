@@ -272,7 +272,7 @@ const repoOf = (worktreePath: string): Promise<string> =>
       .catch(() => dir),
   )
 
-const keyOf = (worktreePath: string): Effect.Effect<string> =>
+export const branchKeyOf = (worktreePath: string): Effect.Effect<string> =>
   Effect.map(
     Effect.all(
       [Effect.promise(() => repoOf(worktreePath)), Effect.promise(() => headOf(worktreePath))],
@@ -316,7 +316,7 @@ const adopting = (root: string) =>
 type Keys = Cache.Cache<string, string>
 
 const keyIn = (adopted: Keys, worktreePath: string): Effect.Effect<string> =>
-  Effect.flatMap(keyOf(worktreePath), (key) =>
+  Effect.flatMap(branchKeyOf(worktreePath), (key) =>
     Cache.get(adopted, `${key}${SPLIT}${worktreePath}`),
   )
 

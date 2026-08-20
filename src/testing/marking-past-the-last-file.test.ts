@@ -11,8 +11,7 @@ describe("marking reviewed past the last file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 120, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 30, review: true })
     await driver.screen.pressKeys(["M"])
     await driver.screen.pressKeys(["M"])
     const done = await driver.screen.getFrame()

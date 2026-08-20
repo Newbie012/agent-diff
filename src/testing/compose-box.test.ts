@@ -27,8 +27,7 @@ describe("the box you write a comment in", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -46,15 +45,14 @@ describe("the box you write a comment in", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["c"])
 
     // ACT
     await driver.screen.typeText("one short remark")
 
     // ASSERT
-    const rows = rowsOf(await driver.screen.getFrame())
+    const rows = await driver.screen.rows()
     const written = rows.findIndex((row) => row.includes("one short remark"))
     const actions = rows.findIndex((row) => row.includes("cancel"))
     expect(written).toBeGreaterThan(0)
@@ -65,8 +63,7 @@ describe("the box you write a comment in", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["c"])
@@ -84,8 +81,7 @@ describe("the box you write a comment in", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("first line")
 
@@ -104,8 +100,7 @@ describe("the box you write a comment in", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["c"])
 
     // ACT
@@ -119,12 +114,45 @@ describe("the box you write a comment in", () => {
     expect(rowAt(frame, "cancel") - rowAt(frame, "off the edge")).toBe(2)
   })
 
+  it("breaks inside a word too long to fit rather than letting it run off", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(oneFile)
+    await driver.screen.open({ width: 64, height: 30, review: true })
+    await driver.screen.pressKeys(["c"])
+
+    // ACT
+    await driver.screen.typeText("supercalifragilisticexpialidocious".repeat(3))
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    const written = rowsOf(frame).filter((row) => row.includes("supercali"))
+    expect(written.length).toBeGreaterThan(1)
+    expect(Math.max(...written.map((row) => row.length))).toBeLessThanOrEqual(64)
+  })
+
+  it("keeps a blank line the reviewer left between two lines", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(oneFile)
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
+
+    // ACT
+    await driver.screen.typeText("one")
+    await driver.screen.pressKeys(["RETURN", "RETURN"])
+    await driver.screen.typeText("three")
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(rowAt(frame, "three") - rowAt(frame, "one")).toBe(2)
+  })
+
   it("wraps to the panel at whatever width the terminal is", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 64, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 64, height: 30, review: true })
     await driver.screen.pressKeys(["c"])
 
     // ACT

@@ -6,8 +6,6 @@ const files = [
   { path: "src/two.ts", before: ["const b = 1"], after: ["const b = 1", "const two = 2"] },
 ]
 
-const footerOf = (frame: string): string => frame.split("\n").at(-2) ?? ""
-
 describe("the keys the footer teaches", () => {
   it("says how to move, before anything else", async () => {
     // ARRANGE
@@ -19,7 +17,7 @@ describe("the keys the footer teaches", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const footer = footerOf(await driver.screen.getFrame())
+    const footer = await driver.screen.footer()
     expect(footer).toContain("move")
     expect(footer.indexOf("move")).toBeLessThan(footer.indexOf("reviewed"))
   })
@@ -34,7 +32,7 @@ describe("the keys the footer teaches", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const footer = footerOf(await driver.screen.getFrame())
+    const footer = await driver.screen.footer()
     expect(footer).toContain("move")
   })
 })

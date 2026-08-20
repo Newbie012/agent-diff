@@ -19,8 +19,7 @@ const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
 
 const open = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(file)
-  await driver.screen.open({ width: 84, height: 24 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 84, height: 24, review: true })
 }
 
 describe("reading a line wider than the pane", () => {
@@ -73,15 +72,12 @@ describe("reading a line wider than the pane", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(file)
-    await driver.screen.open({ width: 84, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 84, height: 24, review: true })
     await driver.screen.pressKeys(["w"])
     await driver.screen.pressKeys(["j", "j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("say the team name first")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("say the team name first")
 
     // ASSERT
     const comments = await driver.agent.listComments(branch.worktree)

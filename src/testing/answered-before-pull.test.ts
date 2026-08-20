@@ -26,8 +26,7 @@ const openOnTwo = async (
   await say(driver, branch.name, 3, "the second question")
   const threads = await driver.app.runThreads(branch.name)
   const listed = threads.envelope as { readonly comments: ReadonlyArray<{ readonly id: string }> }
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ ...WIDE, review: true })
   return { ids: listed.comments.map((comment) => comment.id), worktree: branch.worktree }
 }
 

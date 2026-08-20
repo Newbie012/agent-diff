@@ -13,8 +13,8 @@ describe("backing out of what you are doing", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "v", "j"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["v", "j"])
 
     // ACT
     await driver.screen.pressEscape()
@@ -29,8 +29,8 @@ describe("backing out of what you are doing", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "v", "j"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["v", "j"])
     await driver.screen.pressEscape()
 
     // ACT
@@ -44,8 +44,7 @@ describe("backing out of what you are doing", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["q"])

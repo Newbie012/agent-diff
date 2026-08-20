@@ -23,17 +23,12 @@ const listing = (frame: string): string =>
     .map((row) => row.split("\u2502")[1] ?? "")
     .join("\n")
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(deep)
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("closing the folders a file sits in", () => {
   it("closes the folder the file is in first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(deep)
+    await driver.screen.open({ review: true })
     expect(listing(await driver.screen.getFrame())).toContain("use-it.ts")
 
     // ACT
@@ -48,7 +43,8 @@ describe("closing the folders a file sits in", () => {
   it("closes the folder above it on the next press", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(deep)
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["h", "h"])
@@ -62,7 +58,8 @@ describe("closing the folders a file sits in", () => {
   it("stops once the outermost folder it can close is shut", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(deep)
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["h", "h", "h", "h"])
@@ -76,7 +73,8 @@ describe("closing the folders a file sits in", () => {
   it("opens the outermost closed folder first, so the way back in is the way out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(deep)
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["h", "h"])
     expect(listing(await driver.screen.getFrame())).not.toContain("hooks")
 

@@ -11,57 +11,45 @@ const oneFile = {
   ],
 }
 
-const rowWith = (frame: string, text: string): string =>
-  frame.split("\n").find((line) => line.includes(text)) ?? ""
-
-const sendComment = async (driver: TestDriver, body: string): Promise<void> => {
-  await driver.screen.pressKeys(["c"])
-  await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("s")
-}
-
 describe("standing on a thread", () => {
   it("puts the cursor on the thread under the line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "why is this here")
+    await driver.screen.writeComment("why is this here")
 
     // ACT
     await driver.screen.pressKeys(["j"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "why is this here")).toContain("▎")
+    expect(await driver.screen.rowWith("why is this here")).toContain("▎")
   })
 
   it("steps over a thread in one move, not one row at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "why is this here")
+    await driver.screen.writeComment("why is this here")
 
     // ACT
     await driver.screen.pressKeys(["j", "j"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const second = 2")).toContain("▎")
+    expect(await driver.screen.rowWith("const second = 2")).toContain("▎")
   })
 
   it("settles the thread the cursor is on when a line carries two", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "the first point")
-    await sendComment(driver, "the second point")
+    await driver.screen.writeComment("the first point")
+    await driver.screen.writeComment("the second point")
 
     // ACT
     await driver.screen.pressKeys(["j", "j"])
@@ -79,10 +67,9 @@ describe("a settled thread", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "a point worth closing")
+    await driver.screen.writeComment("a point worth closing")
 
     // ACT
     await driver.screen.pressKeys(["j"])
@@ -99,10 +86,9 @@ describe("a settled thread", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "a point worth closing")
+    await driver.screen.writeComment("a point worth closing")
     await driver.screen.pressKeys(["j"])
     await driver.screen.pressKeys(["d"])
 
@@ -119,16 +105,15 @@ describe("a settled thread", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "a point worth closing")
+    await driver.screen.writeComment("a point worth closing")
     await driver.screen.pressKeys(["j"])
     await driver.screen.pressKeys(["d"])
 
     // ACT
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "about the second line")
+    await driver.screen.writeComment("about the second line")
 
     // ASSERT
     const comments = await driver.agent.listComments(branch.worktree)
@@ -143,10 +128,9 @@ describe("settled threads across a reading", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "closed a while ago")
+    await driver.screen.writeComment("closed a while ago")
     await driver.screen.pressKeys(["j"])
     await driver.screen.pressKeys(["d"])
 
@@ -163,12 +147,11 @@ describe("settled threads across a reading", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await sendComment(driver, "still needs an answer")
+    await driver.screen.writeComment("still needs an answer")
 
     // ASSERT
     const frame = await driver.screen.getFrame()

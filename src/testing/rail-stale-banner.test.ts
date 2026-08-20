@@ -36,8 +36,7 @@ const staleRail = async (driver: TestDriver, width: number): Promise<string> => 
   await driver.app.runLayersSet(created.worktree, layers)
   await driver.branch.setFile(created, "src/invitations.ts", [...client("resolve"), "const extra = 2"])
   await driver.branch.commitAll(created, "one more line")
-  await driver.screen.open({ width, height: 32 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width, height: 32, review: true })
   return driver.screen.getFrame()
 }
 

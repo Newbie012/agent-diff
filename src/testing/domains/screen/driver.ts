@@ -79,6 +79,7 @@ export type OpenOptions = {
   readonly repo?: string
   readonly upgrades?: boolean
   readonly branch?: string
+  readonly review?: boolean
   readonly forgeWatched?: boolean
 }
 
@@ -87,7 +88,6 @@ export class ScreenTestDriver {
   private scope: Scope.Closeable | undefined
   private app: App | undefined
   private diffs = 0
-  private asked: Array<{ readonly context: number; readonly only: string | undefined }> = []
   private readonly order: Array<string> = []
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
@@ -131,6 +131,7 @@ export class ScreenTestDriver {
     )
     await this.app.settled()
     await setup.waitForVisualIdle()
+    if (options.review === true) await this.pressKeys(["RETURN"])
   }
 
   async restart(options: OpenOptions = {}): Promise<void> {
@@ -157,7 +158,6 @@ export class ScreenTestDriver {
           diff: (worktree, context, only) => {
             this.diffs += 1
             this.order.push("diff")
-            this.asked.push({ context, only })
             return git.diff(worktree, context, only)
           },
         }
@@ -169,17 +169,12 @@ export class ScreenTestDriver {
     return this.diffs
   }
 
-  diffsAsked(): ReadonlyArray<{ readonly context: number; readonly only: string | undefined }> {
-    return this.asked
-  }
-
   askedInOrder(): ReadonlyArray<string> {
     return this.order
   }
 
   forgetDiffs(): void {
     this.diffs = 0
-    this.asked = []
   }
 
   private countKeys(setup: TestRendererSetup): void {
@@ -634,6 +629,44 @@ export class ScreenTestDriver {
     setup.renderer.resize(width, height)
     await this.settleLayout()
     await setup.waitForVisualIdle()
+  }
+
+  async rows(): Promise<ReadonlyArray<string>> {
+    return (await this.getFrame()).split("\n")
+  }
+
+  async rowWith(text: string): Promise<string> {
+    return (await this.rows()).find((row) => row.includes(text)) ?? ""
+  }
+
+  async rowOf(text: string): Promise<number> {
+    return (await this.rows()).findIndex((row) => row.includes(text))
+  }
+
+  async footer(): Promise<string> {
+    const rows = await this.rows()
+    return rows.findLast((row) => row.trim().length > 0) ?? ""
+  }
+
+  async writeComment(body: string): Promise<void> {
+    await this.pressKeys(["c"])
+    await this.typeText(body)
+    await this.pressCtrl("s")
+  }
+
+  private async rowFor(text: string): Promise<number> {
+    const at = await this.rowOf(text)
+    if (at < 0) throw new Error(`no row on the screen holds ${text}`)
+    return at
+  }
+
+  async clickOnLine(text: string): Promise<void> {
+    await this.clickOnDiff(await this.rowFor(text))
+  }
+
+  async dragOverLines(from: string, to: string): Promise<void> {
+    const start = await this.rowFor(from)
+    await this.dragOverDiff(start, await this.rowFor(to))
   }
 
   async getFrame(): Promise<string> {

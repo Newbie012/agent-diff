@@ -14,17 +14,12 @@ const files = [
   },
 ]
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create({ files })
-  await driver.screen.open({ width: 150, height: 30 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("looking for something", () => {
   it("asks what to look for rather than guessing from the line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["v", "/"])
@@ -38,7 +33,8 @@ describe("looking for something", () => {
   it("looks while the reviewer types, without being told to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["/"])
 
     // ACT
@@ -52,7 +48,8 @@ describe("looking for something", () => {
   it("looks straight away when return is pressed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["/"])
 
     // ACT
@@ -68,7 +65,8 @@ describe("what a search counts as a match", () => {
   it("finds a name however it was capitalised", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["/"])
 
     // ACT
@@ -82,7 +80,8 @@ describe("what a search counts as a match", () => {
   it("reads the branch once, and only asks git to search", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["/"])
     driver.screen.forgetDiffs()
 
@@ -99,7 +98,8 @@ describe("a name that is defined where the reviewer is standing", () => {
   it("is still one of the places it lists", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["]"])
     await driver.screen.pressKeys(["ARROW_DOWN"])
 

@@ -15,8 +15,7 @@ describe("the left and right arrows", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(files)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     expect(header(await driver.screen.getFrame())).toContain("api.ts")
 
     // ACT

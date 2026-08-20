@@ -47,8 +47,7 @@ describe("settling everything already read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await answeredTwice(driver)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
     await driver.screen.pressKeys(["TAB"])
     await driver.screen.pressKeys(["RETURN"])
     await driver.screen.pressKeys(["TAB", "TAB"])
@@ -66,8 +65,7 @@ describe("settling everything already read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answeredTwice(driver)
-    await driver.screen.open(WIDE)
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ACT
     await driver.screen.pressKeys(["D"])

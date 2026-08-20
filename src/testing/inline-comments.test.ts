@@ -11,12 +11,6 @@ const oneFile = {
   ],
 }
 
-const say = async (driver: TestDriver, body: string): Promise<void> => {
-  await driver.screen.pressKeys(["c"])
-  await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("s")
-}
-
 const rowWith = (frame: string, text: string): string =>
   frame.split("\n").find((line) => line.includes(text)) ?? ""
 
@@ -25,12 +19,11 @@ describe("comments in the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await say(driver, "why first")
+    await driver.screen.writeComment("why first")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -46,12 +39,11 @@ describe("comments in the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await say(driver, "why first")
+    await driver.screen.writeComment("why first")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -62,10 +54,9 @@ describe("comments in the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await say(driver, "why first")
+    await driver.screen.writeComment("why first")
 
     // ACT
     await driver.screen.pressKeys(["j"])
@@ -85,12 +76,11 @@ describe("how a comment row reads", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await say(driver, "const parsed = 1")
+    await driver.screen.writeComment("const parsed = 1")
 
     // ASSERT
     const painted = await driver.screen.listForegroundsOn("const parsed = 1")
@@ -102,7 +92,7 @@ const stageEvery = async (driver: TestDriver, layers: ReadonlyArray<number>): Pr
   const [layer, ...rest] = layers
   if (layer === undefined) return
   await driver.screen.pressKeys(["j"])
-  await say(driver, `note ${layer} spelled out over a whole line of talking`)
+  await driver.screen.writeComment(`note ${layer} spelled out over a whole line of talking`)
   await stageEvery(driver, rest)
 }
 
@@ -121,14 +111,13 @@ describe("reading a diff full of comments", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await stageEvery(driver, [1, 2, 3, 4, 5])
 
     // ACT
     await driver.screen.pressKeys(["G"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const layer29 = 29")).toContain("▎")
+    expect(await driver.screen.rowWith("const layer29 = 29")).toContain("▎")
   })
 })

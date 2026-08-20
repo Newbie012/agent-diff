@@ -32,8 +32,7 @@ describe("moving between the file list and the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["TAB", "j"])
@@ -46,8 +45,7 @@ describe("moving between the file list and the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["j"])
@@ -61,8 +59,7 @@ describe("moving between the file list and the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const before = rules(await driver.screen.getFrame())
 
     // ACT
@@ -77,8 +74,8 @@ describe("moving between the file list and the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "z"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["z"])
 
     // ACT
     await driver.screen.pressKeys(["z"])
@@ -91,8 +88,7 @@ describe("moving between the file list and the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.typeText("\\")
