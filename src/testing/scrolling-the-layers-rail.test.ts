@@ -12,7 +12,7 @@ const files = Array.from({ length: 12 }, (_, at) => change(`src/part${at}/thing.
 const layered = async (driver: TestDriver): Promise<void> => {
   const branch = await driver.branch.create({ files })
   await driver.app.runLayersSet(branch.worktree, {
-    summary: "Twelve files over six layers",
+    summary: "Twelve files over twelve layers",
     layers: files.map((file, at) => ({
       title: `The layer numbered ${at}`,
       spans: [{ path: file.path, start: 1, end: 2 }],
@@ -24,49 +24,31 @@ const layered = async (driver: TestDriver): Promise<void> => {
 
 const fileIn = (frame: string): string => (frame.split("\n")[0] ?? "").split(/\s{2,}/)[2] ?? ""
 
-describe("scrolling the layers rail with a wheel", () => {
-  it("moves the view and leaves the file you are reading alone", async () => {
+describe("a wheel over the layers rail", () => {
+  it("moves one file at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
-    const before = await driver.screen.getFrame()
+    const before = fileIn(await driver.screen.getFrame())
 
     // ACT
-    await driver.screen.scrollTree("down", 4)
+    await driver.screen.scrollTree("down", 1)
 
     // ASSERT
-    const after = await driver.screen.getFrame()
+    const after = fileIn(await driver.screen.getFrame())
     expect(after).not.toBe(before)
-    expect(fileIn(after)).toBe(fileIn(before))
+    expect(after).toContain("part1")
   })
 
-  it("stops at the end rather than walking on for as long as the wheel turns", async () => {
+  it("stops where the gesture stopped, rather than running on to the end", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver)
 
     // ACT
-    await driver.screen.scrollTree("down", 40)
-    const landed = await driver.screen.getFrame()
-    await driver.screen.scrollTree("down", 40)
+    await driver.screen.flickTree("down", 40)
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toBe(landed)
-  })
-
-  it("comes back to the file you are on when you move with the keys", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    await layered(driver)
-    const before = await driver.screen.getFrame()
-    await driver.screen.scrollTree("down", 20)
-    expect(await driver.screen.getFrame()).not.toBe(before)
-
-    // ACT
-    await driver.screen.pressKeys(["]"])
-    await driver.screen.pressKeys(["["])
-
-    // ASSERT
-    expect(await driver.screen.getFrame()).toBe(before)
+    expect(fileIn(await driver.screen.getFrame())).not.toContain("part11")
   })
 })
