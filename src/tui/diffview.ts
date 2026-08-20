@@ -768,8 +768,18 @@ const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>
     .filter((note) => sideLineOf(row, note.side) === note.line)
     .flatMap((note, at) => noteRows(note, row.index, plan.room, at + 1))
 
+const TRAILING = /[ \t]+$/
+
+const shownText = (row: Row): string => {
+  if (row.kind === "context") return row.text
+  const tail = TRAILING.exec(row.text)
+  if (tail === null) return row.text
+  const marked = tail[0].replaceAll("\t", marks().tab).replaceAll(" ", marks().space)
+  return `${row.text.slice(0, tail.index)}${marked}`
+}
+
 const codeRow = (plan: Plan, row: Row): Display => ({
-  text: row.text,
+  text: shownText(row),
   row: row.index,
   stop: 0,
   comment: false,

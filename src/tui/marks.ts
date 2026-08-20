@@ -8,6 +8,8 @@ export type MarkSet = {
   readonly folder: string
   readonly folderOpen: string
   readonly file: string
+  readonly space: string
+  readonly tab: string
 }
 
 const ring: MarkSet = {
@@ -20,6 +22,8 @@ const ring: MarkSet = {
   folder: "",
   folderOpen: "",
   file: "",
+  space: "·",
+  tab: "→",
 }
 
 const plain: MarkSet = { ...ring, folder: "▸", folderOpen: "▾", file: "·" }
@@ -36,6 +40,8 @@ const sets: Readonly<Record<string, MarkSet>> = {
     folder: "",
     folderOpen: "",
     file: "",
+    space: "·",
+    tab: "→",
   },
   quote: {
     comment: "❞",
@@ -47,6 +53,8 @@ const sets: Readonly<Record<string, MarkSet>> = {
     folder: "",
     folderOpen: "",
     file: "",
+    space: "·",
+    tab: "→",
   },
   diamond: {
     comment: "◆",
@@ -58,6 +66,8 @@ const sets: Readonly<Record<string, MarkSet>> = {
     folder: "",
     folderOpen: "",
     file: "",
+    space: "·",
+    tab: "→",
   },
   dot: {
     comment: "●",
@@ -69,6 +79,8 @@ const sets: Readonly<Record<string, MarkSet>> = {
     folder: "",
     folderOpen: "",
     file: "",
+    space: "·",
+    tab: "→",
   },
   plain,
 }
