@@ -119,6 +119,10 @@
   dir: ""
   intents:
     - a-file-adiff-cannot-show
+"@eliya-oss/agent-diff@0.1.0-alpha.118":
+  dir: ""
+  intents:
+    - one-word-per-idea
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:
