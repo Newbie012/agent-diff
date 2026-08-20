@@ -442,6 +442,10 @@
 
 - Reword or withdraw a staged comment, and see when a thread describes an older commit.
 
+## 0.1.0-alpha.127
+
+- The pinned scope keeps the innermost levels rather than the outermost. Deeply nested code pinned the four scopes furthest from the code — so at twelve levels of nesting you were told the class and never the function you were reading. It now pins the outermost one, for orientation, and the innermost ones, and marks the outermost with `⋯` when levels between were dropped.
+
 ## 0.1.0-alpha.126
 
 - A layer's note about a changed line sits above the change, not inside it. When a line is replaced, git shows the old and the new one after the other, and the note was drawn between them — so four rows of prose split the one pairing a diff exists to show, on the first screen of the review.

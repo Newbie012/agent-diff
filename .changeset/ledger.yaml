@@ -159,6 +159,10 @@
   dir: ""
   intents:
     - prose-above-the-pair
+"@eliya-oss/agent-diff@0.1.0-alpha.127":
+  dir: ""
+  intents:
+    - the-scope-you-are-in
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:
