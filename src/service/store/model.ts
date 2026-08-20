@@ -14,9 +14,12 @@ export type BranchState = typeof Wire.BranchState.Type
 
 export type Settings = typeof Wire.Settings.Type
 
+export type Watching = typeof Wire.Watching.Type
+
 export type UpgradeCheck = typeof Wire.UpgradeCheck.Type
 
 export const emptyBranchState: BranchState = {
+  taken: {},
   vouches: {},
   consumed: 0,
   settled: {},

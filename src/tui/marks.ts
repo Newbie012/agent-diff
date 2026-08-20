@@ -1,6 +1,7 @@
-export type ThreadStand = "waiting" | "answered" | "asked" | "settled" | "gone"
+export type ThreadStand = "filed" | "waiting" | "answered" | "asked" | "settled" | "gone"
 
 export type MarkSet = {
+  readonly filed: string
   readonly waiting: string
   readonly answered: string
   readonly asked: string
@@ -24,14 +25,14 @@ const shared = {
   tab: "→",
 } as const
 
-const ring: MarkSet = { ...shared, waiting: "○", answered: "◐", asked: "●", rule: "│" }
+const ring: MarkSet = { ...shared, filed: "○", waiting: "◔", answered: "◐", asked: "●", rule: "│" }
 
 const sets: Readonly<Record<string, MarkSet>> = {
   ring,
-  bubble: { ...shared, waiting: "◌", answered: "◑", asked: "◗", rule: "┃", cursor: "▌" },
-  quote: { ...shared, waiting: "❞", answered: "❠", asked: "❝", rule: "┊" },
-  diamond: { ...shared, waiting: "◇", answered: "◈", asked: "◆", rule: "╎" },
-  dot: { ...shared, waiting: "○", answered: "◉", asked: "●", rule: "▏" },
+  bubble: { ...shared, filed: "◌", waiting: "◔", answered: "◑", asked: "◗", rule: "┃", cursor: "▌" },
+  quote: { ...shared, filed: "❞", waiting: "❟", answered: "❠", asked: "❝", rule: "┊" },
+  diamond: { ...shared, filed: "◇", waiting: "◊", answered: "◈", asked: "◆", rule: "╎" },
+  dot: { ...shared, filed: "○", waiting: "◔", answered: "◉", asked: "●", rule: "▏" },
 }
 
 export const markSetNames: ReadonlyArray<string> = Object.keys(sets)
@@ -45,6 +46,7 @@ export const useMarks = (name: string): void => {
 export const marks = (): MarkSet => chosen
 
 const STAND_KEY: Readonly<Record<ThreadStand, keyof MarkSet | undefined>> = {
+  filed: "filed",
   waiting: "waiting",
   answered: "answered",
   asked: "asked",

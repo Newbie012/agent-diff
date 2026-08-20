@@ -113,6 +113,7 @@ export type TuiState = {
   readonly scroll: number
   readonly railRows: number
   readonly railScroll: number
+  readonly now: number
 }
 
 const nothingReviewed = {
@@ -131,6 +132,7 @@ const nothingReviewed = {
   scroll: -1,
   railRows: 12,
   railScroll: -1,
+  now: 0,
 }
 
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
@@ -594,17 +596,30 @@ export const treeWindow = (
   return { rows: rows.slice(start, start + height), more: rows.length - (start + height) }
 }
 
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+
+export const sinceThen = (at: string, now = Date.now()): string => {
+  const gap = now - Date.parse(at)
+  if (!Number.isFinite(gap) || gap < MINUTE) return "just now"
+  if (gap < HOUR) return `${Math.floor(gap / MINUTE)}m ago`
+  if (gap < DAY) return `${Math.floor(gap / HOUR)}h ago`
+  return `${Math.floor(gap / DAY)}d ago`
+}
+
 export const threadStand = (thread: StagedComment): ThreadStand => {
   if (thread.removed === true) return "gone"
   if (thread.settled === true) return "settled"
   if (thread.asks === true) return "asked"
-  if (spokeLast(thread) === "reviewer") return "waiting"
-  return answersIn(thread) > 0 ? "answered" : "waiting"
+  if (spokeLast(thread) === "agent" && answersIn(thread) > 0) return "answered"
+  return thread.takenAt === undefined ? "filed" : "waiting"
 }
 
 const STAND_WEIGHT: Readonly<Record<ThreadStand, number>> = {
   gone: 0,
   settled: 1,
+  filed: 2,
   waiting: 2,
   answered: 3,
   asked: 4,
@@ -927,10 +942,11 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
 
-export type PanelSection = "asked" | "with" | "answered" | "settled" | "removed"
+export type PanelSection = "asked" | "filed" | "with" | "answered" | "settled" | "removed"
 
 export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
   "asked",
+  "filed",
   "with",
   "answered",
   "settled",
@@ -957,6 +973,7 @@ const spokeLast = (comment: StagedComment): "reviewer" | "agent" | undefined =>
   comment.turns?.at(-1)?.voice
 
 const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
+  filed: "filed",
   gone: "removed",
   settled: "settled",
   asked: "asked",
