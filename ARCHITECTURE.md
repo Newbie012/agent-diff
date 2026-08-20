@@ -48,8 +48,9 @@ Every module directory contains:
 ```
 index.ts     the entire public surface, re-exports only
 *.ts         implementation, importable only from within this directory
-*.test.ts    colocated, tests the public surface
 ```
+
+No tests among them: every test lives in `src/testing/` and goes through the driver.
 
 ### The rule that makes parallel work safe
 

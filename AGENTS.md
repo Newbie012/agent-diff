@@ -5,74 +5,57 @@ review comments back to that agent.
 
 Talk tachles: be concise, direct, and practical.
 
-## Start Here
+## Order of work
 
-This repo is PRD-driven. Runtime behavior must be specified in `.agents/prd/` before code changes.
+**PRD → failing test → code.** Runtime behavior is specified before it is built.
 
-Before changing behavior:
+1. `.agents/prd/000-overview.md` maps every behavior to its PRD. Read the one that owns yours, and
+   update it in the same change. If none owns it, write one first.
+2. `.agents/prd/CONTEXT.md` is the glossary. Never invent a word it already has.
+3. Write the failing test first, and watch it fail for the right reason. It asserts what a reviewer
+   or an agent can observe — never an internal call, an intermediate value, or a private function.
+4. Then the code. Then `pnpm check`.
 
-1. Read `.agents/prd/000-overview.md`.
-2. Read `.agents/prd/CONTEXT.md`. Never invent a word for something the glossary already names.
-3. Read the PRD that owns the behavior.
-4. Read the linked GitHub issue and `.agents/adr/` files when implementation scope or durable
-   decisions matter.
-5. Write the failing test first. It asserts what a reviewer or an agent can observe — never an
-   internal call, an intermediate value, or a private function.
-
-Keep the split clean:
-
-- `.agents/prd/` — behavior contracts.
-- GitHub issues — implementation work items.
-- `.agents/adr/` — durable technical decisions.
+`.agents/prd/` holds behavior contracts, `.agents/adr/` durable decisions, GitHub issues the work.
 
 ## Commands
 
 ```bash
-npm install -g --allow-scripts=pnpm pnpm@next-12   # corepack cannot install pnpm 12 yet
-pnpm install
-pnpm check          # typecheck, lint, style rules, build, tests
-pnpm build          # bundle the CLI into dist/main.js, which is what an install runs
-pnpm typecheck
-pnpm lint           # oxlint, custom rules included, then proves each rule fires
-pnpm test
-pnpm pr-summary        # the `## What changed` block for this branch, from its change intents
-pnpm shot --keys "enter text:l" --label "a layer opened"   # a real screenshot of the terminal
-pnpm review            # the terminal, on this repo
-pnpm simulate          # the terminal, on a synthetic repo (--probe for headless)
+pnpm install        # needs pnpm 12: npm i -g --allow-scripts=pnpm pnpm@next-12
+pnpm check          # typecheck, lint, build, tests — run before saying it is done
+pnpm review         # the terminal, on this repo
+pnpm simulate       # the terminal, on a synthetic repo (--probe for headless)
+pnpm pr-summary     # the `## What changed` block for this branch
+pnpm shot --keys "enter text:l" --label "a layer opened"   # screenshot the terminal
 ```
 
-Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entry point in the
-repo passes it.
+Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entry point passes it.
 
-## Two rules the linter owns, and why
+## Rules the linter enforces
 
-- **No comments in `src/`.** `// ARRANGE`, `// ACT`, `// ASSERT` in `*.test.ts` are the only
-  exceptions. A comment explaining code is a defect report against the code.
-- **No import may reach past another module's `index.ts`.** This is what lets two agents work in
-  two modules of one worktree without colliding.
+- **No comments in `src/`.** Only `// ARRANGE`, `// ACT`, `// ASSERT`, only in `*.test.ts`. A
+  comment explaining code is a defect report against the code.
+- **No import reaches past another module's `index.ts`.** This is what lets two agents work in two
+  modules of one worktree without colliding.
+- **No unit tests.** Assert on outcomes through the driver (ADR-003).
+- **No constructor parameter properties.** Node strips types rather than compiling them, so the
+  syntax never runs even though `tsc` and vitest both accept it.
 
-Both are oxlint rules, in the plugin at `tools/oxlint-adiff.ts`, alongside a third rule `tsc`
-cannot see: Node runs TypeScript by stripping types, so syntax that needs emit, such as constructor
-parameter properties, never runs even though `tsc` and vitest both accept it.
+`tools/oxlint-adiff.ts` owns them, and `pnpm lint` proves each rule still fires before it checks
+the code. `.agents/EFFECT.md` is the full contract.
 
-`.agents/EFFECT.md` is the whole contract, and `pnpm lint` proves every custom rule still fires
-before it checks the code.
-
-## Release notes
+## Shipping
 
 A change a reviewer would notice needs a change intent in `.changeset/`; a refactor, a test or a
-doc does not. `.claude/skills/release-notes/SKILL.md` is the format, the PR template, and the rule
-that nothing private ever reaches a public PR. `node scripts/changelog.ts` regenerates
-`CHANGELOG.md` from every intent.
+doc does not. Read `.claude/skills/release-notes/SKILL.md` before writing one and before opening a
+PR — it holds the entry format, the PR template, and the rule that nothing private ever reaches a
+public PR.
 
-Screenshots need `cargo install --locked terminal-control` and
-`gh extension install drogers0/gh-image`, and are always captured against the synthetic repo that
-`pnpm simulate` builds — never against real work.
+## More
 
-## More Detail
-
-- Agent workflow: `.agents/OPERATING.md`
-- Release notes and PR descriptions: `.claude/skills/release-notes/SKILL.md`
-- PRD workflow: `.agents/prd/README.md`
-- Runtime overview for humans: `ARCHITECTURE.md`
-- What adiff is for: `.agents/prd/000-overview.md`
+| Need | Read |
+| --- | --- |
+| How to make a change here, in order | `.agents/OPERATING.md` |
+| What adiff is for | `.agents/prd/000-overview.md` |
+| How the code is laid out | `ARCHITECTURE.md` |
+| What an agent in a worktree should do | `skills/adiff/SKILL.md` |

@@ -32,7 +32,13 @@ If you are unsure, ask: would someone who upgraded notice? If no, no file.
 
 ## The shape of a change intent
 
-`.changeset/<name>.md`:
+`.changeset/<name>.md`. Name it the way you would name the test: the sentence, kebab-cased, no
+gerund — `a-file-with-an-accent.md`, not `keeping-a-file-with-an-accent.md`. The bump is `patch`
+until this reaches 1.0, whatever the kind says.
+
+**Do not copy a neighbouring file as a model.** Most of `.changeset/` predates this format and is
+free prose with a gerund name. The test only holds intents that have not shipped yet to the shape,
+which is why the old ones still pass. Follow this page, not the file next to yours.
 
 ```markdown
 ---
@@ -173,11 +179,14 @@ The repro. Then what the fix was.
 - The **title** is the entry sentence without the `kind(area):` prefix, and follows the same
   no-gerund rule.
 - **`## What changed` is generated, never typed.** `node scripts/pr-summary.ts` prints it from the
-  change intents on this branch. The PR and the changelog then cannot drift apart.
+  change intents on this branch. The PR and the changelog then cannot drift apart. Commit the
+  intent first — the summary is read from the diff against `origin/main`, so an uncommitted file
+  is not on the branch yet and the script will say there is nothing to paste.
 - **One `##` section per thing changed**, in the order the bullets list them, titled with the
   symptom rather than the fix. That is what a reader searching their own bug will match on.
 - A PR with **one entry and nothing to reproduce** is a title and a sentence. The template starts
-  earning its keep at two.
+  earning its keep at two. This is about the `##` sections, not about the pictures: a single-entry
+  PR that changes a screen still owes a before and an after.
 - A PR with **no change intent** — a refactor, a test, a doc — writes prose. `pnpm pr-summary`
   will tell you there is nothing to paste, and that is the correct answer, not a problem to fix.
 
