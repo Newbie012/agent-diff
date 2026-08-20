@@ -8,116 +8,334 @@
 
 ## 0.1.0-alpha.133
 
-- CHANGELOG.md reads newest first. Versions were ordered as words rather than as numbers, so alpha.9 sat between alpha.90 and alpha.89 and the newest release was nowhere near the top. The release pages were always right; only the generated file was wrong.
+### Fixed
+
+- **Changelog** — CHANGELOG.md reads newest first, ordering versions as numbers rather than as words.
+
+  <details><summary>What was wrong</summary>
+
+  alpha.9 sat between alpha.90 and alpha.89, and the newest release was nowhere near the top. The release pages were always right; only the generated file was wrong.
+
+  </details>
 
 ## 0.1.0-alpha.132
 
-- Five things the layers rail got wrong about where you are.
-  
-  Collapsing the layer you are reading took the cursor off the rail entirely — nothing said where you were, and the layer looked unstarted. A collapsed layer holding the cursor now carries it on its title row.
-  
-  After `r` picked up layers the agent had rewritten, the layer holding your file was collapsed, the rail had no cursor, and `l` did nothing at all, because both were still keyed to the layer index from before the reload.
-  
-  A first layer whose files are not in the diff — one bad path from the agent — opened the review at the *last* file of the reading order instead of the first.
-  
-  A file two layers both claim reported the position of its first appearance, so the counter read `file 1 of 3` at the end of the walk, and `]` looked dead on the press that moved between the two copies. The cursor bar was also drawn on that file in every layer naming it, so the rail could not say which layer you were reading.
-  
-  A layer whose spans name nothing in the diff drew a bare title with no explanation and lost its note. It now says what it was pointing at, and shows the note, since there is no file for the diff to carry it against.
+### Fixed
+
+- **Layers rail** — the cursor stays on the rail when you collapse the layer you are reading.
+
+  <details><summary>What was wrong</summary>
+
+  Collapsing took the cursor off the whole rail — nothing said where you were, and the layer read like one you had not started. A collapsed layer holding the cursor carries it on its title row now.
+
+  </details>
+
+- **Layers rail** — `r` picks up rewritten layers without leaving the rail cursorless and `l` dead.
+
+  <details><summary>What was wrong</summary>
+
+  After the agent rewrote the layers, the layer holding your file was collapsed, the rail had no cursor, and `l` did nothing at all, because both were still keyed to the layer index from before the reload. The index is recomputed from the file the cursor is on.
+
+  </details>
+
+- **Reading order** — a first layer naming no file in the diff opens the review at the first file, not the last.
+
+  <details><summary>What was wrong</summary>
+
+  One bad path from the agent was enough. Finding a place in the reading order looked for file 0 in layer 0, failed because layer 0 held no files, and fell back to the first appearance of diff-order file 0 — wherever the layers happened to put it. It lands on the first entry of the reading order now.
+
+  </details>
+
+- **Layers rail** — a file two layers both claim counts as two stops, so the counter follows `]`.
+
+  <details><summary>What was wrong</summary>
+
+  The counter de-duplicated the reading order and took the first match, so it read `file 1 of 3` at the end of the walk and `]` looked dead on the press between the two copies. The cursor bar is also limited to the layer being read, so the rail can say which copy you are on.
+
+  </details>
+
+- **Layers rail** — a layer whose spans name nothing in the diff says what it was pointing at, and keeps its note.
+
+  <details><summary>What was wrong</summary>
+
+  It drew a bare title with no files, no count and no note, while `adiff layers show` knew exactly what had happened. It says `nothing in this diff: pkg/ghost.ts` now. A note stays out of the rail everywhere else — the diff carries it there — but a layer with no file has nowhere else to put it.
+
+  </details>
 
 ## 0.1.0-alpha.131
 
-- A file whose content did not change says what did. Making a file executable, or renaming it, showed a diff pane containing a single bare line number and nothing else — no cursor, no explanation, and `j` did nothing because the pane had no rows. git reports both; adiff dropped the lines. It now says `mode changed, 100644 to 100755` or `renamed from pkg/gizmo.ts`, and shows the diff underneath when there is one.
-  
-  That bare line number was a patch with no rows being given one blank display row and numbering it. No patch can end up with no rows now, and a row that sits on no line of either side no longer borrows a number — which also cleans up the "no newline at end of file" marker.
+### Fixed
+
+- **Diff** — a file whose content did not change says what did — `mode changed, 100644 to 100755`, or `renamed from pkg/gizmo.ts`.
+
+  <details><summary>What was wrong</summary>
+
+  Making a file executable, or renaming it, showed a diff pane containing a single bare line number and nothing else — no cursor, no explanation, and `j` did nothing because the pane had no rows. git reports both; adiff dropped the lines. The diff is shown underneath when there is one.
+
+  That bare line number was a patch with no rows being given one blank display row and numbered. No patch can end up with no rows now, and a row that sits on no line of either side no longer borrows a number — which also cleans up the "no newline at end of file" marker.
+
+  </details>
 
 ## 0.1.0-alpha.130
 
-- The review opens with the file you are on visible in the file list. In a repo with enough files that folders start collapsed, the folder holding the opening file was collapsed too — so nothing in the rail was marked, and the only way to see where you were was to press `l`. With forty-five files across five folders, seventeen of twenty-seven rail rows sat empty while the current file was hidden.
+### Fixed
+
+- **File tree** — the review opens with the folder holding your file already open.
+
+  <details><summary>What was wrong</summary>
+
+  In a repo with enough files that folders start collapsed, the folder holding the opening file was collapsed too — so nothing in the rail was marked, and the only way to see where you were was to press `l`. With forty-five files across five folders, seventeen of twenty-seven rail rows sat empty while the current file was hidden.
+
+  </details>
 
 ## 0.1.0-alpha.129
 
-- One glyph per idea. Five marks were carrying twelve meanings: `✓` meant a reviewed file, a settled thread and a sent one — the last of which is the opposite of done; `○` meant "this line has a thread", "this thread is unread" and "this file is in the diff"; `•` drew the same idea as `○` differently; `·` was a bullet and a separator at once; and `▎` was the cursor everywhere except the file tree, which used a background tint instead.
-  
-  Now `▎` is the cursor row everywhere, `▾`/`▸` are disclosure only, `○ ◐ ●` is one three-state ring for a thread — waiting on the agent, answered, waiting on you — drawn identically in the diff gutter, the review panel, the file tree badge and the layers rail, `✓` means nothing left to do, and `·` is a separator. The file tree's badge counts only threads still open, so it stops promising work that is already settled. The diff no longer marks lines for a comment you removed. The Nerd Font file and folder icons are gone, and the two columns they took go to the path.
+### Fixed
+
+- **Marks** — one glyph per idea — `▎` is the cursor everywhere, `○ ◐ ●` is one three-state ring for a thread, `✓` means nothing left to do.
+
+  <details><summary>What was wrong</summary>
+
+  Five marks were carrying twelve meanings. `✓` meant a reviewed file, a settled thread and a sent one — the last of which is the opposite of done. `○` meant "this line has a thread", "this thread is unread" and "this file is in the diff". `•` drew the same idea as `○` differently, `·` was a bullet and a separator at once, and `▎` was the cursor everywhere except the file tree, which used a background tint instead.
+
+  The ring is drawn identically in the diff gutter, the review panel, the file tree badge and the layers rail: waiting on the agent, answered, waiting on you. `▾`/`▸` are disclosure only, and `·` is a separator.
+
+  </details>
+
+- **File tree** — the badge counts only threads still open, so it stops promising work that is already settled.
+
+- **File tree** — the Nerd Font file and folder icons are gone, and the two columns they took go to the path.
+
+- **Diff** — lines are no longer marked for a comment you removed.
 
 ## 0.1.0-alpha.128
 
-- A file whose name is not plain ASCII is in the review. git quotes such paths by default, adiff could not read the quoted form, and the file was dropped from the diff entirely — absent from the tree, absent from the count, unreachable by `]`, with nothing saying so. `layers set` reported it to the agent as vanished while it existed, and with layers set the same diff reported one more file than without.
-  
-  Two things introduced earlier today are also fixed. A layer whose files you have all read stopped saying so once `f` hid them — the tick reverted and the layer looked unstarted, because the tally counted the visible files rather than the layer's own. And the leftover layer could say "0 runs of changed lines the layers do not account for" while listing a file; it now says what is actually left over.
+### Fixed
+
+- **Diff** — a file whose name is not plain ASCII is in the review.
+
+  <details><summary>What was wrong</summary>
+
+  git quotes such paths by default, adiff could not read the quoted form, and the file was dropped from the diff entirely — absent from the tree, absent from the count, unreachable by `]`, with nothing saying so. `layers set` reported it to the agent as vanished while it existed, and with layers set the same diff reported one more file than without.
+
+  </details>
+
+- **Layers rail** — a layer whose files you have all read still says so after `f` hides them.
+
+  <details><summary>What was wrong</summary>
+
+  The tick reverted and the layer looked unstarted, because the tally counted the visible files rather than the layer's own.
+
+  </details>
+
+- **Layers** — the leftover layer no longer claims nothing is left over while listing a file.
+
+  <details><summary>What was wrong</summary>
+
+  It could say "0 runs of changed lines the layers do not account for" above a file it was listing. It says what is actually left over now.
+
+  </details>
 
 ## 0.1.0-alpha.127
 
-- The pinned scope keeps the innermost levels rather than the outermost. Deeply nested code pinned the four scopes furthest from the code — so at twelve levels of nesting you were told the class and never the function you were reading. It now pins the outermost one, for orientation, and the innermost ones, and marks the outermost with `⋯` when levels between were dropped.
+### Fixed
+
+- **Diff** — the pinned scope keeps the levels nearest the code rather than the ones furthest away.
+
+  <details><summary>What was wrong</summary>
+
+  Deeply nested code pinned the four scopes furthest from the code — so at twelve levels of nesting you were told the class and never the function you were reading. It pins the outermost one for orientation and the innermost ones for where you are, and marks the outermost with `⋯` when levels between were dropped.
+
+  </details>
 
 ## 0.1.0-alpha.126
 
-- A layer's note about a changed line sits above the change, not inside it. When a line is replaced, git shows the old and the new one after the other, and the note was drawn between them — so four rows of prose split the one pairing a diff exists to show, on the first screen of the review.
+### Fixed
+
+- **Layers** — a layer's note about a changed line sits above the change, not inside it.
+
+  <details><summary>What was wrong</summary>
+
+  When a line is replaced, git shows the old and the new one after the other, and the note was drawn between them — so four rows of prose split the one pairing a diff exists to show, on the first screen of the review.
+
+  </details>
 
 ## 0.1.0-alpha.125
 
-- A key that toggles something says which way it will go. `f hide read` read the same whether files were hidden or shown — and the filter survives a restart, so you could open a review with files missing and nothing on screen saying so. It now reads `f show read` while hiding. Same for `f hide settled`, and `X` offers `restore` when the thread under the cursor has been removed.
-  
-  `L` asks about the branch, not about the line the cursor happened to be on. The request landed as a comment card on an arbitrary import, so the agent was told to write a reading order in a thread about a line that had nothing to do with it. It is anchored to the start of the diff and says up front that it is about the branch.
-  
-  Every changed file has a place in the layers rail. A file with no changed lines — a binary one, say — belonged to no layer and never reached the leftover layer either, so the rail listed seven of eight files, the two rails disagreed about the count, and `]` could never reach the eighth.
-  
-  `→ N columns cut off` counted three columns that were not cut, and did not name the key that pans.
+### Fixed
+
+- **Footer** — a key that toggles something says which way it will go.
+
+  <details><summary>What was wrong</summary>
+
+  `f hide read` read the same whether files were hidden or shown — and the filter survives a restart, so you could open a review with files missing and nothing on screen saying so. It reads `f show read` while hiding now. Same for `f hide settled`, and `X` offers `restore` when the thread under the cursor has been removed.
+
+  </details>
+
+- **Layers** — `L` asks for a reading order about the branch, not about the line the cursor happened to be on.
+
+  <details><summary>What was wrong</summary>
+
+  The request landed as a comment card on an arbitrary import, so the agent was told to write a reading order in a thread about a line that had nothing to do with it. It is anchored to the start of the diff now, and says up front that it is about the branch.
+
+  </details>
+
+- **Layers rail** — every changed file has a place in the rail, including one with no changed lines.
+
+  <details><summary>What was wrong</summary>
+
+  A binary file, say, belonged to no layer and never reached the leftover layer either, so the rail listed seven of eight files, the two rails disagreed about the count, and `]` could never reach the eighth.
+
+  </details>
+
+- **Footer** — `→ N columns cut off` counts only columns that are cut, and names the key that pans.
 
 ## 0.1.0-alpha.124
 
-- `draft send` keeps the comments the forge did not take. A send the forge only partly accepted deleted every draft it had asked about and reported success, so comments the pull request never received were gone from disk. Only drafts the forge names back are cleared; the rest stay held, the answer says how many landed and how many are still waiting, and sending again sends only those. A reply adiff cannot read confirms nothing rather than everything.
-  
-  Two sends at once post one review. They used to race, each read the whole set, and each post it, so the pull request got two identical reviews. A send now holds a lock across the whole cycle, and a second one finds nothing left to send.
+### Fixed
+
+- **Comment delivery** — `draft send` keeps the comments the forge did not take.
+
+  <details><summary>What was wrong</summary>
+
+  A send the forge only partly accepted deleted every draft it had asked about and reported success, so comments the pull request never received were gone from disk. Only drafts the forge names back are cleared; the rest stay held, the answer says how many landed and how many are still waiting, and sending again sends only those. A reply adiff cannot read confirms nothing rather than everything.
+
+  </details>
+
+- **Comment delivery** — two sends at once post one review, not two identical ones.
+
+  <details><summary>What was wrong</summary>
+
+  They used to race, each reading the whole set and each posting it. A send now holds a lock across the whole cycle, and a second one finds nothing left to send.
+
+  </details>
 
 ## 0.1.0-alpha.123
 
-- A change you can only see in the whitespace is now visible. Adding a trailing space or turning spaces into a tab showed a removed line and an added line that read identically, with nothing to tell them apart. Trailing spaces and tabs on a changed line are marked. Copying still takes the bytes that are in the file.
+### Fixed
+
+- **Diff** — a change you can only see in the whitespace is marked.
+
+  <details><summary>What was wrong</summary>
+
+  Adding a trailing space, or turning spaces into a tab, showed a removed line and an added line that read identically. Trailing spaces and tabs on a changed line are marked now. Copying still takes the bytes that are in the file.
+
+  </details>
 
 ## 0.1.0-alpha.122
 
-- A file with no newline at the end says so. git reports it and adiff dropped the line, so the change to a file's last byte showed as two lines that read identically with nothing to tell them apart.
-  
-  The lock around a review's state is patient enough for a loaded machine. Four writers arriving at once on a busy box could exhaust its retries and lose a write.
+### Fixed
 
-## 0.1.0-alpha.121
+- **Diff** — a file with no newline at the end says so.
 
-- Nothing about what adiff does changes. The test suite stopped repeating two setups 350 times, stopped reaching into functions no reviewer or agent can see, and stopped leaking `PATH` and a stub HTTP server between tests in the same worker. One existing test was writing to a store key nothing reads and passing anyway; it now derives the key from the store.
+  <details><summary>What was wrong</summary>
+
+  git reports it and adiff dropped the line, so a change to a file's last byte showed as two lines that read identically with nothing to tell them apart.
+
+  </details>
+
+- **Store** — the lock around a review's state is patient enough for a loaded machine.
+
+  <details><summary>What was wrong</summary>
+
+  Four writers arriving at once on a busy box could exhaust its retries and lose a write.
+
+  </details>
 
 ## 0.1.0-alpha.120
 
-- Copying a selection that crosses a collapsed gap no longer puts adiff's own `⋯ 103 lines hidden` marker on the clipboard as if it were source. `y` also stops discarding a selection you made because the cursor happens to be resting on a comment — with a selection active it copies the selection.
-  
-  The two numbers on screen say what they count. The footer now reads `4 lines selected` and the toast `2 lines copied`, which is honest about the difference: a change shows both its old and its new line, and copy takes the one you are keeping.
+### Fixed
+
+- **Diff** — copying across a collapsed gap no longer puts adiff's own `⋯ 103 lines hidden` marker on the clipboard.
+
+- **Diff** — `y` copies the selection you made even when the cursor is resting on a comment.
+
+- **Footer** — the two numbers on screen say what they count — `4 lines selected` against `2 lines copied`.
+
+  <details><summary>Why they differ</summary>
+
+  A change shows both its old and its new line, and copy takes the one you are keeping.
+
+  </details>
 
 ## 0.1.0-alpha.119
 
-- A gap says what the keys do to it. `⋯ 26 lines hidden · press l` did not say that `l` reveals ten at a time, so on a large gap it looked like nothing was happening, and it never mentioned `F`, which opens the whole file at once. It now reads `⋯ 26 lines hidden · l opens 10, F opens all`, and when the gap is smaller than one press it says `l opens them`.
+### Fixed
+
+- **Diff** — a collapsed gap says what its keys do — `⋯ 26 lines hidden · l opens 10, F opens all`.
+
+  <details><summary>What was wrong</summary>
+
+  The old text did not say that `l` reveals ten at a time, so on a large gap it looked like nothing was happening, and it never mentioned `F`, which opens the whole file at once. A gap smaller than one press now says `l opens them`.
+
+  </details>
 
 ## 0.1.0-alpha.118
 
-- One word per idea. A comment you take back was called "remove" by the key, "Withdrawn" by the review panel and `remove`/`restore` by the command line — three words for one act. The terminal now says what the command line says.
-  
-  `unread` meant two different things in two answers: on a branch it counted comments the agent had not answered, and on a thread it counted answers the reviewer had not read. `adiff branch list` now calls its one `unanswered`, which is what the screen already labelled it.
+### Fixed
+
+- **Review panel** — a comment you take back is called removed everywhere.
+
+  <details><summary>What was wrong</summary>
+
+  The key called it "remove", the review panel called it "Withdrawn" and the command line called it `remove`/`restore` — three words for one act. The terminal now says what the command line says.
+
+  </details>
+
+- **CLI** — `adiff branch list` calls comments the agent has not answered `unanswered`.
+
+  <details><summary>What was wrong</summary>
+
+  `unread` meant two different things in two answers: on a branch it counted comments the agent had not answered, and on a thread it counted answers the reviewer had not read. `unanswered` is what the screen already labelled it.
+
+  </details>
 
 ## 0.1.0-alpha.117
 
-- A binary file says it is binary instead of drawing an empty pane. git reports it as changed and adiff listed it in the file tree, but opening it showed a pane with nothing in it — indistinguishable from a rendering failure.
+### Fixed
+
+- **Diff** — a binary file says it is binary instead of drawing an empty pane.
+
+  <details><summary>What was wrong</summary>
+
+  git reports it as changed and adiff listed it in the file tree, but opening it showed a pane with nothing in it — indistinguishable from a rendering failure.
+
+  </details>
 
 ## 0.1.0-alpha.116
 
-- `g`, `G` and the page keys move whatever pane has focus. With the file list or the review panel focused they moved the diff cursor instead — invisibly, since you were not looking at the diff — so the only way through a long list was one row at a time. Sixty presses to get from the bottom of a forty-layer rail to the top.
-  
-  Hiding reviewed files now works while reading layers. `f` was honoured by the file tree and ignored by the layers rail, so the same key did something in one rail and nothing in the other, and the header count disagreed with what you could see.
-  
-  A comment on a line that is hidden inside a collapsed gap can be reached from the review panel. It used to say the comment was outside the diff while the file it belongs to was open on screen; it now opens the gaps and goes there.
+### Fixed
+
+- **Keys** — `g`, `G` and the page keys move the pane you are looking at.
+
+  <details><summary>What was wrong</summary>
+
+  With the file list or the review panel focused they moved the diff cursor instead — invisibly, since you were not looking at the diff — so the only way through a long list was one row at a time. Sixty presses from the bottom of a forty-layer rail to the top.
+
+  </details>
+
+- **Layers rail** — `f` hides files already reviewed while you read layers, as it already did in the file tree.
+
+  <details><summary>What was wrong</summary>
+
+  The same key did something in one rail and nothing in the other, and the header count disagreed with what was on screen.
+
+  </details>
+
+- **Review panel** — a comment on a line hidden inside a collapsed gap can be reached.
+
+  <details><summary>What was wrong</summary>
+
+  It said the comment was outside the diff while the file it belongs to was open on screen. It now opens the gaps and goes there.
+
+  </details>
 
 ## 0.1.0-alpha.115
 
 - Caches that outlived the process now live inside the layer that owns them, so a reload after the agent commits reads the real base rather than one remembered from earlier. The store's rename guard was set before the rename it guards, so a second reader could take the path the file had just left; it is a proper cache now, and a second reader waits.
-  
+
   Child processes are killed when the work that started them is interrupted. Leaving the review used to leave `gh` running behind it, and a cancelled upgrade could orphan a long install.
-  
+
   A truncated session file no longer crashes the terminal on launch, the store encodes what it writes through the same schema it decodes what it reads with, and several closed unions became switches so that adding a case fails the build rather than falling through.
 
 ## 0.1.0-alpha.114
@@ -127,15 +345,15 @@
 ## 0.1.0-alpha.113
 
 - The reply box shows the thread you are answering. It used to quote code from wherever the diff cursor happened to be — often a different file — and never showed your comment or the agent's answer, so you replied to a question you could not see. It now shows the conversation, and names the range rather than only its last line.
-  
+
   The header says when a line runs off the right of the pane. Code was cut with no marker of any kind, so two lines that differ only past the edge looked identical.
 
 ## 0.1.0-alpha.112
 
 - The review panel says what state a thread is in. A question the agent asked back — the one thing that stops the review until you answer — was filed under "Answered" with the same mark as an ordinary answer. It now has a section of its own at the top, and settled threads have one at the bottom instead of sitting in place with one glyph missing. When there are more threads than fit, the panel says how many are above and below rather than ending mid-list.
-  
+
   The box a comment is written in stays on screen. Past about seven hundred characters at 80x24 it grew through the pane border, the send hint and the footer, and you carried on typing with the caret off the bottom of the terminal.
-  
+
   `a` says the terminal is too narrow for the review panel every time, not only the first — it used to toggle an invisible flag and look dead. A path that is not a git repository says so, instead of "nothing to review". The key sheet no longer says "4 of them" while drawing three. And the key sheet and the command palette answer to the words a reviewer would actually type: `resolve` finds settle, `search` finds find, `shortcuts` finds the key sheet.
 
 ## 0.1.0-alpha.111
@@ -145,11 +363,11 @@
 ## 0.1.0-alpha.110
 
 - A comment now quotes only the lines it says it is about. A selection that crossed a change stored the old and the new version of every changed line in its snippet while naming only the new side, so the agent was handed code that is not at those line numbers in either version of the file. `--side old` was worse: it silently became a new-side comment on a different line.
-  
+
   Two writes to one review at the same moment both land. Settling in the terminal while the agent answered from the worktree lost one of them and reported success for both; at twelve at once, five of twelve survived.
-  
+
   `draft send` no longer throws away a draft written while it was sending, reports what the forge actually took rather than what it was handed, and posts a range as a range instead of a comment on its last line.
-  
+
   The key sheet names every key a command answers to, so `j` and `k` are findable, and it can be searched by key as well as by name. The footer says how to move before anything else, keeps the highest-ranked keys when the terminal is narrow rather than the last ones, and always keeps the two ways out.
 
 ## 0.1.0-alpha.109
@@ -159,15 +377,15 @@
 - The two counters in the header no longer look like the same number. `2/14  3/14 reviewed` put a position and a progress fraction two spaces apart in one colour, with different denominators when a file sat in more than one layer. They now read `file 2 of 14` and `3 reviewed`.
 
 - An option value that begins with two dashes is kept rather than thrown away. `--body "--force is risky here"` used to store the word `true` and report success, so the comment the reviewer wrote was silently replaced. Options can also be written as `--name=value`.
-  
+
   adiff now refuses what it used to swallow: an option a command does not take, a `--side` that is neither `old` nor `new`, a line number that is not a whole number, and a `--fields` name the answer does not carry. Each refusal names what was given and what is allowed. `--fields` itself is now listed by `adiff describe`, and the nine failures that used to report "Unexpected failure, try again" — an unreachable forge, a git command that failed, a store file that could not be read — say what actually went wrong and that retrying will not help.
 
 - Four things a bug bash of the review terminal turned up.
-  
+
   Copying a selection that crosses a change put both versions of every changed line on the clipboard, so the paste was code that existed in neither version of the file. It now copies the version being kept, and still copies deleted lines when that is all you picked.
-  
+
   A comment you were part way through writing is no longer thrown away when the box closes. Escape or ctrl+c keeps it, and reopening on the same lines brings it back. A comment of nothing but spaces is refused with a message instead of reaching the agent as an empty thread.
-  
+
   A terminal too narrow to draw the review in used to leave it blank for good, with no way back short of restarting. It says it needs more room, and comes back when the terminal does.
 
 - Wrapped lines follow the pane when it grows. Hiding the rails with `z` widened the diff from 66 columns to 148 and the text kept breaking at 62, so the one key that buys the most room did nothing for anyone reading with wrapping on.

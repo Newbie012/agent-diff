@@ -56,9 +56,16 @@ parameter properties, never runs even though `tsc` and vitest both accept it.
 `.agents/EFFECT.md` is the whole contract, and `pnpm lint` proves every custom rule still fires
 before it checks the code.
 
+## Release notes
+
+A change a reviewer would notice needs a change intent in `.changeset/`; a refactor, a test or a
+doc does not. `.claude/skills/release-notes/SKILL.md` is the format, and
+`node scripts/changelog.ts` regenerates `CHANGELOG.md` from every intent.
+
 ## More Detail
 
 - Agent workflow: `.agents/OPERATING.md`
+- Release notes and PR descriptions: `.claude/skills/release-notes/SKILL.md`
 - PRD workflow: `.agents/prd/README.md`
 - Runtime overview for humans: `ARCHITECTURE.md`
 - What adiff is for: `.agents/prd/000-overview.md`
