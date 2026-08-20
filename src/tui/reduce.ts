@@ -17,7 +17,6 @@ import {
   selectionRange,
   layerAfter,
   layerFile,
-  layerFiles,
   layerHolding,
   placeIn,
   readingOrder,
@@ -660,6 +659,18 @@ const laidOver = (
   rail: told.layers.length === 0 ? "tree" : anew ? "layers" : state.rail,
 })
 
+const onLayerHolding = (state: TuiState): TuiState => {
+  if (!onLayers(state)) return state
+  const layer = layerHolding(state, state.patchIndex)
+  return {
+    ...state,
+    layerIndex: layer,
+    openLayers: state.openLayers.includes(layer)
+      ? state.openLayers
+      : [...state.openLayers, layer],
+  }
+}
+
 export const withLayers = (
   state: TuiState,
   told: { layers: TuiState["layers"]; stale: boolean; summary?: string },
@@ -667,8 +678,11 @@ export const withLayers = (
   const layers = told.layers
   const anew = state.layers.length === 0
   const opened = laidOver(state, told, anew)
-  if (layers.length === 0 || !anew) return opened
-  return { ...opened, patchIndex: layerFiles(opened, 0)[0] ?? opened.patchIndex, cursor: 0, top: 0 }
+  if (layers.length === 0) return opened
+  if (!anew) return onLayerHolding(opened)
+  const first = readingOrder(opened)[0]
+  if (first === undefined) return opened
+  return { ...opened, layerIndex: first.layer, patchIndex: first.file, cursor: 0, top: 0 }
 }
 
 export const withPulls = (
@@ -704,7 +718,7 @@ export const restoredTo = (
   if (patch === undefined) return state
   const cursor = line === undefined ? 0 : rowAtSourceLine(patch, line)
   const top = clamp(cursor - Math.max(0, offset), 0, Math.max(0, patch.rows.length - 1))
-  return withCursorVisible({ ...state, patchIndex: index, cursor, top })
+  return withCursorVisible(onLayerHolding({ ...state, patchIndex: index, cursor, top }))
 }
 
 export const openedAt = (state: TuiState, patchIndex: number, line: number): TuiState => {

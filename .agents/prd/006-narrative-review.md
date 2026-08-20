@@ -94,6 +94,28 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   reviewed against how many it covers, and each file says whether it is one of them. A reading
   order that cannot show progress through itself is a table of contents, not a plan.
 
+- **The rail always says where the reviewer is.** Exactly one row of the rail carries the cursor:
+  the file being read, in the layer it is being read in. A layer folded shut carries the cursor on
+  its title row instead, because a rail that shows nothing reads as a review that has not started.
+  A file two layers both claim is marked in the layer the reviewer is standing in, and not in the
+  other, so the rail can say which of the two is being read.
+
+- **Reading the branch again lands the rail on the file being read.** The layers can be rewritten
+  between one reading and the next, so the layer a file belongs to is worked out from the layers
+  that just arrived, never from the position the old ones gave it. The layer holding the file opens.
+
+- **A layers opens at the first file of its reading order.** Not at the first file of the diff, and
+  not wherever that file happens to sit in the order. A first layer that names nothing the branch
+  changed, or that is prose only, is skipped over rather than landed on.
+
+- **The file counter counts stops on the walk.** A file named by two layers is two stops, and the
+  counter says which one the reviewer is on, so pressing next always moves the count by one.
+
+- **A layer with nothing left in the diff says so, and keeps its note.** A layer whose spans name
+  only paths the branch does not change shows, under its title, that there is nothing in this diff
+  and which paths it pointed at, followed by its note. The note has nowhere else to go: with no
+  file to scope to, the diff can never show it.
+
 - **What the reviewer chose to look at survives a reload.** Reading the branch again put the rail
   back on the layers, so a reviewer who had switched to the files lost that every time they pressed
   reload. Which of the two the rail is showing is the reviewer's choice, and only the layers
@@ -183,6 +205,13 @@ surface in `src/testing/layers.test.ts`, the terminal in `src/testing/layers-rai
   with no line number, and switching to the file tree leaves the diff plain.
 - A comment written on a line below a prose block comes back from `comment take` against that
   file and line.
+- A layer folded shut with the cursor inside it carries the cursor on its title row.
+- Reading the branch again after the layers were rewritten leaves the cursor on the layer that now
+  holds the file being read.
+- A layers whose first layer names nothing in the diff opens at the first file of the reading order.
+- A file two layers both claim counts as two stops of the walk, and only the layer being read is
+  marked.
+- A layer whose spans name nothing in the diff says so in the rail and shows its note.
 
 ## Out of Scope
 
