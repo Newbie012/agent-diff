@@ -446,6 +446,10 @@
 
 - An agent can answer a comment, and a reviewer can settle the thread.
 
+## 0.1.0-alpha.119
+
+- A gap says what the keys do to it. `⋯ 26 lines hidden · press l` did not say that `l` reveals ten at a time, so on a large gap it looked like nothing was happening, and it never mentioned `F`, which opens the whole file at once. It now reads `⋯ 26 lines hidden · l opens 10, F opens all`, and when the gap is smaller than one press it says `l opens them`.
+
 ## 0.1.0-alpha.118
 
 - One word per idea. A comment you take back was called "remove" by the key, "Withdrawn" by the review panel and `remove`/`restore` by the command line — three words for one act. The terminal now says what the command line says.

@@ -123,6 +123,10 @@
   dir: ""
   intents:
     - one-word-per-idea
+"@eliya-oss/agent-diff@0.1.0-alpha.119":
+  dir: ""
+  intents:
+    - what-a-gap-offers
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:
