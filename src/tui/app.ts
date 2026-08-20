@@ -833,7 +833,7 @@ export class App {
 
   private copySelection(keep: boolean): void {
     const said = keep ? withNoticeHere : withNotice
-    const thread = threadAtStop(this.state)
+    const thread = this.state.selecting ? undefined : threadAtStop(this.state)
     if (thread !== undefined) {
       copyToClipboard(`${thread.body}\n`)
       this.commit(said(this.state, "comment copied"))
