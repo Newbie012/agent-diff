@@ -22,11 +22,12 @@ const matches = (entry: Command, query: string): boolean =>
 
 const closeness = (entry: Command, query: string): number => {
   const wanted = query.trim().toLowerCase()
-  if (wanted.length === 0) return 2
+  if (wanted.length === 0) return 3
   const title = entry.title.toLowerCase()
   if (title.startsWith(wanted)) return 0
-  if (title.includes(wanted)) return 1
-  return label(entry).includes(wanted) ? 2 : 3
+  if (entry.also.some((one) => one.toLowerCase() === wanted)) return 1
+  if (title.includes(wanted)) return 2
+  return label(entry).includes(wanted) ? 3 : 4
 }
 
 export const searchCommands = (screen: Screen, query: string): ReadonlyArray<Command> =>
@@ -35,4 +36,6 @@ export const searchCommands = (screen: Screen, query: string): ReadonlyArray<Com
     .toSorted((left, right) => closeness(left, query) - closeness(right, query))
 
 export const searchGlossary = (screen: Screen, query: string): ReadonlyArray<Command> =>
-  glossaryFor(screen).filter((entry) => matches(entry, query))
+  glossaryFor(screen)
+    .filter((entry) => matches(entry, query))
+    .toSorted((left, right) => closeness(left, query) - closeness(right, query))

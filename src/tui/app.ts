@@ -919,7 +919,11 @@ export class App {
         return
       }
       const landed = atFile({ ...this.state, screen: "review", matches: [], term: "" }, at)
-      this.commit({ ...landed, cursor: rowAtSourceLine(patch, match.line) })
+      const shown = selectedPatch(landed)
+      const showing = shown !== undefined && rowShowing(shown, match.line) !== undefined
+      const opened = showing ? landed : { ...landed, revealed: allRevealed(landed) }
+      const found = selectedPatch(opened) ?? patch
+      this.commit({ ...opened, cursor: rowAtSourceLine(found, match.line) })
       yield* this.loadSource()
     })
   }

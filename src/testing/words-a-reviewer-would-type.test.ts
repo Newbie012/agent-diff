@@ -23,7 +23,7 @@ describe("the words a reviewer would type", () => {
 
     // ASSERT
     expect(await looking(driver, "resolve")).toContain("Settle")
-    expect(await looking(driver, "search")).toContain("Find")
+    expect(await looking(driver, "search")).toContain("Search this branch")
     expect(await looking(driver, "shortcuts")).toContain("Keys")
   })
 })

@@ -74,7 +74,7 @@ describe("a branch the forge says has no pull request", () => {
 })
 
 describe("a forge that cannot answer", () => {
-  it("says the worktree list could not find out", async () => {
+  it("says the worktree list could not reach the forge", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -84,7 +84,7 @@ describe("a forge that cannot answer", () => {
     await driver.screen.open()
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("could not find out")
+    expect(await driver.screen.getFrame()).toContain("could not reach the forge")
   })
 
   it("keeps the key out of the footer, but still lists it under ?", async () => {
