@@ -73,7 +73,7 @@ describe("choosing which branch needs you", () => {
 
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
-    const row = rows.find((line) => line.includes("cdr-1-add-third"))
+    const row = rows.find((line) => line.includes("add-a-third-line"))
     expect(row).toContain("1 unanswe")
   })
 })
@@ -91,7 +91,7 @@ describe("coming back to the branch list", () => {
 
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
-    const row = rows.find((line) => line.includes("cdr-1-add-third"))
+    const row = rows.find((line) => line.includes("add-a-third-line"))
     expect(row).toContain("1 unanswe")
   })
 })

@@ -1,5 +1,7 @@
 import { TestDriver } from "../driver.ts"
 import { series } from "../state.ts"
+import { noteChecksWith } from "./checking.ts"
+import { tracing } from "./trace.ts"
 import { View } from "./view.ts"
 import type { Scenario, Step } from "./model.ts"
 
@@ -36,7 +38,18 @@ export class Review implements AsyncDisposable {
     return review
   }
 
+  private noteChecks(): void {
+    if (!tracing()) return
+    noteChecksWith((does, about) =>
+      this.driver.tracerHere().sawCheck(
+        about?.noun === undefined ? does : `${about.noun} ${does}`,
+        about?.where,
+      ),
+    )
+  }
+
   private async build(): Promise<void> {
+    this.noteChecks()
     const branch = await this.driver.branch.create(this.said.world.branch)
     const layers = this.said.world.layers
     if (layers !== undefined) await this.driver.app.runLayersSet(branch.worktree, layers)
@@ -44,12 +57,15 @@ export class Review implements AsyncDisposable {
     await series(this.said.steps, (step) => this.take(step))
   }
 
-  private take(step: Step): Promise<void> {
-    return series(step.keys, (token) => this.reach(token))
+  private async take(step: Step): Promise<void> {
+    const tracer = this.driver.tracerHere()
+    tracer.saying(step.does)
+    await series(step.keys, (token) => this.reach(token))
+    tracer.saying(undefined)
   }
 
   private async reach(token: string): Promise<void> {
-    if (token.startsWith("wait:")) return
+    if (/^(wait|until):/.test(token)) return
     const text = typed(token)
     if (text === undefined) {
       await this.driver.screen.pressKeys([bound(token)])

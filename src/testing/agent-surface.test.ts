@@ -84,10 +84,10 @@ describe("using adiff without reading its documentation", () => {
   it("keeps failures off stdout, so a caller can parse stdout unconditionally", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-real" })
+    await driver.branch.create({ name: "add-invitations-real" })
 
     // ACT
-    const result = await driver.app.runProgress("cdr-99-imaginary")
+    const result = await driver.app.runProgress("no-such-branch")
 
     // ASSERT
     expect(result.stdout).toBe("")
@@ -97,7 +97,7 @@ describe("using adiff without reading its documentation", () => {
   it("returns only the asked-for fields, so a caller pays for what it reads", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
 
     // ACT
     const result = await driver.app.runBranches(["--fields", "branch,files"])
@@ -105,7 +105,7 @@ describe("using adiff without reading its documentation", () => {
     // ASSERT
     expect(result.envelope).toEqual({
       ok: true,
-      branches: [{ branch: "cdr-1-add-third", files: 1 }],
+      branches: [{ branch: "add-a-third-line", files: 1 }],
     })
   })
 })

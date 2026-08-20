@@ -4,7 +4,7 @@ const step = (does: string, keys: ReadonlyArray<string>): Step => ({ does, keys 
 
 const press = (key: string): string => `text:${key}`
 
-const settle = (ms = 500): string => `wait:${ms}`
+const settle = (ms: number): string => `wait:${ms}`
 
 export const openTheBranch = (): Step => step("open the branch", ["enter"])
 
@@ -43,7 +43,7 @@ export const askForAReadingOrder = (): Step => step("ask for a reading order", [
 export const hideFilesAlreadyRead = (): Step => step("hide the files already read", [press("f")])
 
 export const leaveAComment = (said: string): Step =>
-  step(`leave a comment saying "${said}"`, [press("c"), settle(), `text:${said}`, settle(), "ctrl-s"])
+  step(`leave a comment saying "${said}"`, [press("c"), settle(1200), `text:${said}`, `until:${said}`, "ctrl-s"])
 
 export const openTheFolder = (): Step => step("open the folder", [press("l")])
 

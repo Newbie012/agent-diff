@@ -134,7 +134,7 @@ It splits the pane they are already looking at, so their next move is to look ri
 type. The answer says what happened:
 
 ```json
-{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api --branch cdr-1"}
+{"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api --branch add-invitations"}
 ```
 
 `opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,

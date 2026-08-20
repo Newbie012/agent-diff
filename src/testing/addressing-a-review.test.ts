@@ -7,7 +7,7 @@ describe("naming the review an agent is standing in", () => {
   it("lists comments by worktree, the way `comment take` was already addressed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
@@ -29,7 +29,7 @@ describe("naming the review an agent is standing in", () => {
   it("collects comments by repository and branch, the way a reviewer names them", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
@@ -58,7 +58,7 @@ describe("naming the review an agent is standing in", () => {
   it("answers a comment from the worktree and reads it back by branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
@@ -113,7 +113,7 @@ describe("taking a comment out of the review", () => {
   it("says a comment that was already sent came out of the sent record", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",

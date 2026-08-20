@@ -1,9 +1,13 @@
 import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { argv, exit, stderr, stdout } from "node:process"
-import { scenarioNamed } from "./scenario.ts"
+import { traceNamed } from "./scenario.ts"
+import { narrate } from "./lib/narrate.ts"
+import type { Beat, Where } from "./lib/narrate.ts"
+import type { Trace } from "../src/testing/scenario/index.ts"
 
 const SIM = "scripts/simulate.ts"
 const SCENARIO = "scripts/scenario.ts"
@@ -19,14 +23,19 @@ const number = (name: string, fallback: number): number => {
   return said === undefined ? fallback : Number(said)
 }
 
-const chosen = value("scenario") === undefined ? undefined : await scenarioNamed(value("scenario") as string)
+const pace = number("pace", 1000)
+const hold = number("hold", 1200)
+const traceAt = value("trace")
+const testName = value("test-name")
+const chosen =
+  traceAt === undefined || testName === undefined ? undefined : traceNamed(traceAt, testName)
 const cols = number("cols", chosen?.seat.width ?? 120)
 const rows = number("rows", chosen?.seat.height ?? 32)
 const keys =
   chosen === undefined
     ? (value("keys") ?? "").split(" ").filter((token) => token.length > 0)
     : chosen.steps.flatMap((step) => step.keys)
-const label = value("label") ?? chosen?.name ?? "after"
+const label = value("label") ?? chosen?.test ?? "after"
 const against = value("against")
 const wanted = value("wait-for") ?? "WORKTREE"
 const filming = argv.includes("--video")
@@ -62,7 +71,7 @@ const stillAt = (root: string, name: string): string => {
     "--settle-ms", "3000",
     "--deadline-ms", "40000",
     "--wait-for", wanted,
-    ...keys.filter((key) => !key.startsWith("wait:")).flatMap((key) => ["-s", key]),
+    ...keys.filter((key) => !/^(wait|until):/.test(key)).flatMap((key) => ["-s", key]),
     "--",
     "node", ...NODE, ...bootArgs(root),
   ])
@@ -70,12 +79,92 @@ const stillAt = (root: string, name: string): string => {
 }
 
 const bootArgs = (root: string): ReadonlyArray<string> =>
-  chosen === undefined ? [join(root, SIM)] : [join(root, SCENARIO), chosen.name]
+  chosen === undefined || traceAt === undefined || testName === undefined
+    ? [join(root, SIM)]
+    : [join(root, SCENARIO), traceAt, testName]
+
+const sendOne = (session: string, key: string): void => {
+  if (key.startsWith("wait:")) {
+    execFileSync("sleep", [String(Number(key.slice("wait:".length)) / 1000)])
+    return
+  }
+  if (key.startsWith("until:")) {
+    run("termctrl", ["wait", session, key.slice("until:".length), "--timeout", "20000"])
+    return
+  }
+  run("termctrl", ["send", session, "--pace-ms", "120", key])
+}
+
+const SHOWN: Readonly<Record<string, string>> = {
+  enter: "return",
+  escape: "esc",
+  tab: "tab",
+  "shift-tab": "shift tab",
+  up: "up",
+  down: "down",
+  left: "left",
+  right: "right",
+}
+
+const keyShown = (token: string): string | undefined => {
+  if (/^(wait|until):/.test(token)) return undefined
+  if (token.startsWith("text:")) {
+    const said = token.slice("text:".length)
+    return said.length === 1 ? said : "typing"
+  }
+  return SHOWN[token] ?? token.replace("ctrl-", "ctrl ")
+}
+
+type Marked = {
+  readonly kind: "step" | "check" | "key"
+  readonly does: string
+  readonly name: string
+  readonly where?: Where
+}
+
+const typedOut = (
+  session: string,
+  key: string,
+  tag: string,
+  marks: Array<Marked>,
+): void => {
+  const shown = keyShown(key)
+  if (shown !== undefined) {
+    run("termctrl", ["mark", session, tag])
+    marks.push({ kind: "key", does: shown, name: tag })
+  }
+  sendOne(session, key)
+}
+
+const played = (session: string, held: Trace | undefined): ReadonlyArray<Marked> => {
+  if (held === undefined) {
+    for (const key of keys) sendOne(session, key)
+    return []
+  }
+  const marks: Array<Marked> = []
+  for (const [at, moment] of held.moments.entries()) {
+    const name = `m${at}`
+    run("termctrl", ["mark", session, name])
+    marks.push({
+      kind: moment.kind,
+      does: moment.does,
+      name,
+      ...(moment.kind === "check" && moment.where !== undefined ? { where: moment.where } : {}),
+    })
+    if (moment.kind === "step") {
+      moment.keys.forEach((key, each) => typedOut(session, key, `${name}k${each}`, marks))
+      execFileSync("sleep", [String(pace / 1000)])
+      continue
+    }
+    execFileSync("sleep", [String(hold / 1000)])
+  }
+  return marks
+}
 
 const filmAt = (root: string, name: string): string => {
   const tape = join(shots, `${name}.termctrl`)
   const out = join(shots, `${name}.mp4`)
-  const session = `adiff-${name}`
+  const session = `adiff-${createHash("sha256").update(name).digest("hex").slice(0, 10)}`
   run("termctrl", [
     "start", session,
     "--record", tape,
@@ -84,18 +173,71 @@ const filmAt = (root: string, name: string): string => {
     "--",
     "node", ...NODE, ...bootArgs(root),
   ])
+  const plan = join(shots, `${name}.json`)
+  let marks: ReadonlyArray<Marked> = []
   try {
     run("termctrl", ["wait", session, wanted, "--timeout", "40000"])
-    for (const key of keys) {
-      if (key.startsWith("wait:")) execFileSync("sleep", [String(Number(key.slice(5)) / 1000)])
-      else run("termctrl", ["send", session, "--pace-ms", "120", key])
-    }
+    execFileSync("sleep", ["0.4"])
+    run("termctrl", ["mark", session, "ready"])
+    marks = played(session, chosen)
+    run("termctrl", ["mark", session, "done"])
   } finally {
     run("termctrl", ["stop", session])
   }
-  run("termctrl", ["video", tape, "-o", out, "--hide-cursor", "--tail-ms", "1200"])
+  writeFileSync(plan, JSON.stringify({ clips: [{ from: "ready", to: "done" }] }), "utf8")
+  const raw = join(shots, `${name}-raw.mp4`)
+  run("termctrl", [
+    "video", tape,
+    "-o", raw,
+    "--hide-cursor",
+    "--tail-ms", "1200",
+    "--padding", "0",
+    "--edit", plan,
+  ])
+  if (chosen === undefined || marks.length === 0) {
+    rmSync(tape, { force: true })
+    rmSync(plan, { force: true })
+    return raw
+  }
+  const clock = timesIn(tape)
+  const started = clock["ready"] ?? 0
+  const shut = clock["done"] ?? 0
+  const timeOf = (tag: string): number => ((clock[tag] ?? started) - started) / 1000
+
+  const endsAt = (mark: Marked, at: number): number => {
+    const after = marks.slice(at + 1)
+    const next = mark.kind === "key" ? after[0] : after.find((one) => one.kind !== "key")
+    return next === undefined ? (shut - started) / 1000 : timeOf(next.name)
+  }
+
+  const beatOf = (mark: Marked, at: number): Beat => {
+    const held: Beat = {
+      kind: mark.kind,
+      does: mark.does,
+      from: timeOf(mark.name),
+      to: endsAt(mark, at),
+    }
+    return mark.where === undefined ? held : { ...held, where: mark.where }
+  }
+  const beats = marks.map(beatOf)
+  const at = chosen.test.lastIndexOf(" > ")
+  narrate(raw, out, {
+    seat: { cols, rows },
+    asks: at === -1 ? chosen.test : chosen.test.slice(0, at),
+    proves: at === -1 ? "" : chosen.test.slice(at + 3),
+    beats,
+    lead: 2.5,
+  })
   rmSync(tape, { force: true })
+  rmSync(plan, { force: true })
+  rmSync(raw, { force: true })
   return out
+}
+
+const timesIn = (tape: string): Readonly<Record<string, number>> => {
+  const said = run("termctrl", ["markers", tape, "--json"])
+  const found = JSON.parse(said) as ReadonlyArray<{ at_ms: number; name: string }>
+  return Object.fromEntries(found.map((one) => [one.name, one.at_ms]))
 }
 
 const atBase = (commit: string, name: string): string => {

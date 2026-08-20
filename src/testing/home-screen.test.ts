@@ -38,13 +38,13 @@ describe("the screen you land on", () => {
   it("splits what was added from what was taken away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create(oneFile)
+    const created = await driver.branch.create(oneFile)
 
     // ACT
     await driver.screen.open()
 
     // ASSERT
-    const row = (await driver.screen.getFrame()).split("\n").find((line) => line.includes("cdr-1")) ?? ""
+    const row = (await driver.screen.getFrame()).split("\n").find((line) => line.includes(created.name)) ?? ""
     expect(row).toContain("+1")
     expect(row).toContain("-0")
   })

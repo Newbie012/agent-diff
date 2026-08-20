@@ -171,6 +171,7 @@ export class AppTestDriver {
   }
 
   runLayersSet(worktree: string, layers: LayersInput | string): Promise<CliResult> {
+    if (typeof layers !== "string") this.state.tracer.sawLayers(layers)
     const document = typeof layers === "string" ? layers : JSON.stringify(layers)
     return this.runWith(["layers", "set", "--worktree", worktree, "--json", "-"], document)
   }

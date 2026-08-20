@@ -5,7 +5,7 @@ describe("reviewing a branch", () => {
   it("lists only branches that have something to review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
 
     // ACT
     const result = await driver.app.runBranches()
@@ -14,7 +14,7 @@ describe("reviewing a branch", () => {
     expect(result.code).toBe(0)
     expect(result.envelope).toMatchObject({
       ok: true,
-      branches: [{ branch: "cdr-1-add-third", files: 1, added: 2, removed: 1 }],
+      branches: [{ branch: "add-a-third-line", files: 1, added: 2, removed: 1 }],
     })
   })
 
@@ -135,11 +135,11 @@ describe("reviewing a branch", () => {
   it("names the branches it knows when asked for one that does not exist", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-2-real" })
+    await driver.branch.create({ name: "add-invite-emails-real" })
 
     // ACT
     const result = await driver.app.runComment({
-      branch: "cdr-99-imaginary",
+      branch: "no-such-branch",
       file: "src/api.ts",
       start: 1,
       end: 1,
@@ -150,7 +150,7 @@ describe("reviewing a branch", () => {
     expect(result.code).toBe(3)
     expect(result.envelope).toMatchObject({
       ok: false,
-      error: { type: "UnknownBranch", known: expect.arrayContaining(["cdr-2-real"]) },
+      error: { type: "UnknownBranch", known: expect.arrayContaining(["add-invite-emails-real"]) },
     })
   })
 

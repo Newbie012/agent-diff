@@ -1,13 +1,34 @@
-import { describe, expect, test } from "@effect/vitest"
+import { describe, test } from "@effect/vitest"
 import {
+  expect,
   hideTheFileList,
   hideTheReviewPanel,
+  leaveAComment,
+  openTheBranch,
+  scenario,
   moveBackAPane,
   reviewing,
   showTheFileList,
   showTheReviewPanel,
 } from "../../scenario/index.ts"
-import { aReviewWithAComment, aReviewWithNoComments } from "./focus.scenario.ts"
+
+const oneChangedFile = {
+  files: [
+    { path: "src/one.ts", before: ["const a = 1"], after: ["const a = 1", "const one = 2"] },
+  ],
+}
+
+const aReviewWithAComment = scenario({
+  name: "a review with a comment",
+  world: { branch: oneChangedFile },
+  steps: [openTheBranch(), leaveAComment("worth a second look")],
+})
+
+const aReviewWithNoComments = scenario({
+  name: "a review with no comments",
+  world: { branch: oneChangedFile },
+  steps: [openTheBranch()],
+})
 
 describe("when the review panel is opened", () => {
   test("then the keys are already on the comments", async () => {

@@ -33,7 +33,7 @@ describe("how the chrome reads", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.listForegroundsOn("cdr-1-add-third  src/api.ts")).toHaveLength(2)
+    expect(await driver.screen.listForegroundsOn("add-a-third-line  src/api.ts")).toHaveLength(2)
   })
 })
 

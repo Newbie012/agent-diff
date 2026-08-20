@@ -23,7 +23,7 @@ describe("hearing about a new version without being nagged", () => {
   it("says one quiet line in the footer when a newer version was seen last time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
     await remember(driver, { checkedAt: new Date().toISOString(), latest: "9.9.9" })
 
     // ACT
@@ -36,7 +36,7 @@ describe("hearing about a new version without being nagged", () => {
   it("says nothing when the version it saw is the one running", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
     const manifest = await import("../../package.json", { with: { type: "json" } })
     await remember(driver, {
       checkedAt: new Date().toISOString(),
@@ -53,7 +53,7 @@ describe("hearing about a new version without being nagged", () => {
   it("mentions a version once, not on every run", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
     await remember(driver, { checkedAt: new Date().toISOString(), latest: "9.9.9" })
     await driver.screen.open({ upgrades: true })
 
@@ -67,7 +67,7 @@ describe("hearing about a new version without being nagged", () => {
   it("writes down that it mentioned it, where a person would find it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
     await remember(driver, { checkedAt: new Date().toISOString(), latest: "9.9.9" })
 
     // ACT
@@ -82,7 +82,7 @@ describe("hearing about a new version without being nagged", () => {
   it("stays quiet, and touches nothing, when the check is turned off", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
     await remember(driver, { checkedAt: AGES_AGO, latest: "9.9.9" })
 
     // ACT

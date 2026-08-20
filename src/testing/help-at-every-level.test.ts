@@ -181,7 +181,7 @@ describe("knowing where the comments came from", () => {
   it("reports the branch a take collected for, so the next command can be built", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",

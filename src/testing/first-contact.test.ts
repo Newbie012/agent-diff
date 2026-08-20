@@ -45,7 +45,7 @@ describe("collecting comments that are not there yet", () => {
   it("names what to do next when nothing is waiting", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
 
     // ACT
     const result = await driver.app.runTake(branch.worktree)
@@ -60,7 +60,7 @@ describe("collecting comments that are not there yet", () => {
   it("says nothing extra once a comment is waiting", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create({ name: "cdr-1-add-third" })
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/api.ts",
@@ -81,7 +81,7 @@ describe("pointing a command at something that is not a worktree", () => {
   it("explains the path rather than naming a command the caller did not run", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create({ name: "cdr-1-add-third" })
+    await driver.branch.create({ name: "add-a-third-line" })
 
     // ACT
     const result = await driver.app.runAnswer({

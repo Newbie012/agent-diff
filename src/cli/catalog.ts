@@ -124,7 +124,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     safety: "read",
     options: [repo, opening, baseOf],
     dataKey: "",
-    example: "adiff review open --repo . --branch cdr-1",
+    example: "adiff review open --repo . --branch add-invitations",
   },
   {
     name: "review pane",
@@ -163,7 +163,7 @@ const commands: ReadonlyArray<CommandSpec> = [
       },
     ],
     dataKey: "base",
-    example: "adiff base set --repo . --branch cdr-2 --base cdr-1",
+    example: "adiff base set --repo . --branch add-invite-emails --base add-invitations",
   },
   {
     name: "base clear",
@@ -173,7 +173,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     safety: "write",
     options: [...addressing],
     dataKey: "base",
-    example: "adiff base clear --repo . --branch cdr-2",
+    example: "adiff base clear --repo . --branch add-invite-emails",
   },
   {
     name: "review progress",
@@ -183,7 +183,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     safety: "read",
     options: [...based],
     dataKey: "reviewed",
-    example: "adiff review progress --repo . --branch cdr-1",
+    example: "adiff review progress --repo . --branch add-invitations",
   },
   {
     name: "comment send",
@@ -194,7 +194,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     options: [...addressing, ...range],
     dataKey: "batch",
     example:
-      'adiff comment send --repo . --branch cdr-1 --file src/api.ts --start 4 --end 5 --body "why"',
+      'adiff comment send --repo . --branch add-invitations --file src/api.ts --start 4 --end 5 --body "why"',
   },
   {
     name: "comment reply",
@@ -213,7 +213,7 @@ const commands: ReadonlyArray<CommandSpec> = [
       { name: "body", required: true, value: "text", about: "What to tell the agent" },
     ],
     dataKey: "batch",
-    example: 'adiff comment reply --repo . --branch cdr-1 --to c1 --body "the other one"',
+    example: 'adiff comment reply --repo . --branch add-invitations --to c1 --body "the other one"',
   },
   {
     name: "comment take",
@@ -366,7 +366,7 @@ const commands: ReadonlyArray<CommandSpec> = [
       { name: "id", required: true, value: "id", about: "The comment to settle" },
     ],
     dataKey: "settled",
-    example: "adiff comment resolve --repo . --branch cdr-1 --id c1",
+    example: "adiff comment resolve --repo . --branch add-invitations --id c1",
   },
   {
     name: "comment remove",
@@ -379,7 +379,7 @@ const commands: ReadonlyArray<CommandSpec> = [
       { name: "id", required: true, value: "id", about: "The comment to withdraw" },
     ],
     dataKey: "removed",
-    example: "adiff comment remove --repo . --branch cdr-1 --id c1",
+    example: "adiff comment remove --repo . --branch add-invitations --id c1",
   },
   {
     name: "comment restore",
@@ -392,7 +392,7 @@ const commands: ReadonlyArray<CommandSpec> = [
       { name: "id", required: true, value: "id", about: "The comment to restore" },
     ],
     dataKey: "restored",
-    example: "adiff comment restore --repo . --branch cdr-1 --id c1",
+    example: "adiff comment restore --repo . --branch add-invitations --id c1",
   },
   {
     name: "config list",

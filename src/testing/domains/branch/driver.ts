@@ -21,6 +21,7 @@ export class BranchTestDriver {
 
   async create(options: CreateBranchOptions = {}): Promise<CreatedBranch> {
     const model = generateBranchTestModel(options)
+    this.state.tracer.sawWorld(model)
     await this.commitBaseline(model)
     const worktree = join(dirname(this.state.repo), model.name)
     await this.state.git(this.state.repo, ["worktree", "add", "-q", "-b", model.name, worktree])
