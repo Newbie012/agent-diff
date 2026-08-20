@@ -1,5 +1,6 @@
 export type Preference = {
   readonly name: string
+  readonly title: string
   readonly about: string
   readonly byDefault: boolean
 }
@@ -7,37 +8,44 @@ export type Preference = {
 export const preferences: ReadonlyArray<Preference> = [
   {
     name: "wrap",
-    about: "Wrap long lines instead of cutting them at the edge",
+    title: "Wrap long lines",
+    about: "Long lines wrap instead of running off the edge.",
     byDefault: false,
   },
   {
     name: "sticky",
-    about: "Keep the heading of what you are reading in view while you scroll",
+    title: "Keep the heading in view",
+    about: "The class or function you are inside stays pinned as you scroll.",
     byDefault: true,
   },
   {
     name: "panel",
-    about: "Show the review panel beside the diff",
+    title: "Show the review panel",
+    about: "Comments sit in their own pane beside the diff.",
     byDefault: true,
   },
   {
     name: "hideReviewed",
-    about: "Leave files you have marked reviewed out of the file list",
+    title: "Hide files already read",
+    about: "The file list shows only what you have not read yet.",
     byDefault: false,
   },
   {
     name: "hideSettled",
-    about: "Leave threads you have settled out of the review panel",
+    title: "Hide threads already settled",
+    about: "The review panel shows only threads still open.",
     byDefault: false,
   },
   {
     name: "newestFirst",
-    about: "Read the review newest first, rather than oldest first",
+    title: "Read the newest comment first",
+    about: "The newest comment sits at the top of the panel.",
     byDefault: true,
   },
   {
     name: "hold",
-    about: "Hold comments until you send them together, rather than sending each as it is written",
+    title: "Hold comments until you send them",
+    about: "Comments wait until you send them together, rather than going one at a time.",
     byDefault: false,
   },
 ]

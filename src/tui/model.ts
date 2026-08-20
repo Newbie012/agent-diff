@@ -1,5 +1,6 @@
 import { Option } from "effect"
 import { WHOLE_FILE } from "../domain/patch/index.ts"
+import { preferences } from "../domain/preferences/index.ts"
 
 export type Focus = "tree" | "diff" | "review"
 
@@ -52,6 +53,46 @@ export type Screen =
   | "report"
   | "search"
   | "keys"
+  | "settings"
+
+const HOLDS: Readonly<Record<string, keyof TuiState>> = {
+  wrap: "wrap",
+  sticky: "sticky",
+  panel: "panelOpen",
+  hideReviewed: "hideReviewed",
+  hideSettled: "hideSettled",
+  newestFirst: "newestFirst",
+  hold: "hold",
+}
+
+export const chosenNow = (state: TuiState): Readonly<Record<string, boolean>> =>
+  Object.fromEntries(
+    Object.entries(HOLDS).map(([name, held]) => [name, state[held] === true]),
+  )
+
+export const withChosen = (state: TuiState, name: string, value: boolean): TuiState => {
+  const held = HOLDS[name]
+  return held === undefined ? state : { ...state, [held]: value }
+}
+
+export type PreferenceRow = {
+  readonly name: string
+  readonly title: string
+  readonly about: string
+  readonly on: boolean
+  readonly here: boolean
+}
+
+export const preferenceRows = (state: TuiState): ReadonlyArray<PreferenceRow> => {
+  const held = chosenNow(state)
+  return preferences.map((one, at) => ({
+    name: one.name,
+    title: one.title,
+    about: one.about,
+    on: held[one.name] ?? one.byDefault,
+    here: at === state.settingsIndex,
+  }))
+}
 
 export type ForgeAnswer = "asking" | "answered" | "silent"
 
@@ -115,6 +156,7 @@ export type TuiState = {
   readonly scroll: number
   readonly railRows: number
   readonly railScroll: number
+  readonly settingsIndex: number
   readonly now: number
   readonly focusWas: Focus
 }
@@ -135,6 +177,7 @@ const nothingReviewed = {
   scroll: -1,
   railRows: 12,
   railScroll: -1,
+  settingsIndex: 0,
   now: 0,
   focusWas: "diff" as Focus,
 }

@@ -243,7 +243,14 @@ const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search"])
 
 const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
 
-const OVER: ReadonlySet<string> = new Set(["compose", "report", "keys", "palette", "search"])
+const OVER: ReadonlySet<string> = new Set([
+  "compose",
+  "report",
+  "keys",
+  "palette",
+  "search",
+  "settings",
+])
 
 export const overReview = (screen: TuiState["screen"]): boolean => OVER.has(screen)
 

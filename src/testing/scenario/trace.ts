@@ -23,6 +23,7 @@ export type Moment =
 
 export type Trace = {
   readonly test: string
+  readonly cannotReplay?: ReadonlyArray<string>
   readonly world: { readonly branch: Partial<BranchTestModel>; readonly layers?: LayersInput }
   readonly seat: Seat
   readonly steps: ReadonlyArray<Step>
@@ -30,6 +31,9 @@ export type Trace = {
 }
 
 const NAMED: Readonly<Record<string, string>> = {
+  BACKSPACE: "backspace",
+  "shift+UP": "shift-up",
+  "shift+DOWN": "shift-down",
   RETURN: "enter",
   ESCAPE: "escape",
   TAB: "tab",
@@ -59,11 +63,11 @@ const SPELT: Readonly<Record<string, string>> = {
 
 const lower = (said: string): string => `${said.charAt(0).toLowerCase()}${said.slice(1)}`
 
-export const saidFor = (keys: ReadonlyArray<string>): string => {
+export const saidFor = (keys: ReadonlyArray<string>, screen = "review"): string => {
   const spoken = keys.map((key) => {
     const wanted = SPELT[key] ?? key
     const found = commands.find(
-      (one) => one.keys.includes(wanted) && one.screens.includes("review"),
+      (one) => one.keys.includes(wanted) && one.screens.includes(screen as never),
     )
     return found === undefined ? undefined : lower(found.title)
   })
@@ -79,6 +83,7 @@ export class Tracer {
   private readonly steps: Array<Step> = []
   private readonly moments: Array<Moment> = []
   private naming: string | undefined
+  private readonly beyond: Array<string> = []
 
   sawWorld(branch: Partial<BranchTestModel>): void {
     this.world = { ...this.world, branch }
@@ -92,12 +97,16 @@ export class Tracer {
     this.seat = seat
   }
 
+  cannotReplay(what: string): void {
+    if (!this.beyond.includes(what)) this.beyond.push(what)
+  }
+
   saying(does: string | undefined): void {
     this.naming = does
   }
 
-  sawKeys(keys: ReadonlyArray<string>): void {
-    const step = { does: this.naming ?? saidFor(keys), keys: keys.map(asTermctrl) }
+  sawKeys(keys: ReadonlyArray<string>, screen?: string): void {
+    const step = { does: this.naming ?? saidFor(keys, screen), keys: keys.map(asTermctrl) }
     this.steps.push(step)
     this.tookStep(step)
   }
@@ -144,6 +153,7 @@ export class Tracer {
     if (path === undefined || path.length === 0 || this.steps.length === 0) return
     const held: Trace = {
       test,
+      ...(this.beyond.length === 0 ? {} : { cannotReplay: this.beyond }),
       world: this.world,
       seat: this.seat,
       steps: this.steps,

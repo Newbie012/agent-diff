@@ -58,9 +58,18 @@ try {
 }
 
 const added = onlyNamed === undefined ? addedTitles() : undefined
-const held = tracesIn(trace).filter(
+const wanted2 = tracesIn(trace).filter(
   (one) => added === undefined || [...added].some((title) => one.test.endsWith(title)),
 )
+
+const beyond = wanted2.filter((one) => (one.cannotReplay ?? []).length > 0)
+for (const one of beyond) {
+  stderr.write(
+    `  skipped ${one.test} — it drives adiff with ${(one.cannotReplay ?? []).join(" and ")}, which a recording cannot replay\n`,
+  )
+}
+
+const held = wanted2.filter((one) => (one.cannotReplay ?? []).length === 0)
 
 if (held.length === 0) {
   stdout.write("No test was added on this branch, so there is nothing to record.\n")

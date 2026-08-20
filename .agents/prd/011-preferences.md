@@ -3,9 +3,9 @@
 > The handful of choices a reviewer makes about how the review behaves, kept between sessions and
 > changed from the terminal, the file, or the command line.
 
-- **Status:** `draft`
+- **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-19
+- **Last updated:** 2026-08-21
 
 ## Problem Statement
 
