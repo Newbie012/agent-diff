@@ -131,6 +131,10 @@
   dir: ""
   intents:
     - neat-rocks-search
+"@eliya-oss/agent-diff@0.1.0-alpha.120":
+  dir: ""
+  intents:
+    - what-copy-takes
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:
