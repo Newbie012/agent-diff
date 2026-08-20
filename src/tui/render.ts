@@ -961,6 +961,8 @@ const layerLook = (state: TuiState, row: LayerRow): LayerLook => {
     case "count":
     case "gap":
       return { lead: TITLE_LEAD, mark: " ", paint: palette.faint }
+    case "note":
+      return { lead: FILE_LEAD, mark: " ", paint: palette.muted }
     case "title":
       return titleLook(state, row)
     default:

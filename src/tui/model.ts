@@ -25,7 +25,7 @@ import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
   readonly index: number
-  readonly kind: "title" | "dir" | "file" | "gap" | "count"
+  readonly kind: "title" | "dir" | "file" | "gap" | "count" | "note"
   readonly text: string
   readonly lead: boolean
   readonly fileIndex?: number
@@ -285,7 +285,12 @@ export const clip = (label: string, room: number): string =>
 
 const TITLE_ROWS = 2
 
-const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyArray<LayerRow> => {
+const titleRows = (
+  state: TuiState,
+  layerIndex: number,
+  room: number,
+  marked: boolean,
+): ReadonlyArray<LayerRow> => {
   const lines = wordWrapped(state.layers[layerIndex]?.title ?? "", room)
   const heldLines = lines.slice(0, TITLE_ROWS)
   const last = heldLines.at(-1) ?? ""
@@ -298,6 +303,7 @@ const titleRows = (state: TuiState, layerIndex: number, room: number): ReadonlyA
     kind: "title" as const,
     text,
     lead: at === 0,
+    here: at === 0 && marked,
   }))
 }
 
@@ -321,7 +327,7 @@ const fileRow = (state: TuiState, layerIndex: number, at: number, room: number):
     lead: false,
     fileIndex: at,
     reviewed: isReviewed(state, at),
-    here: at === state.patchIndex,
+    here: at === state.patchIndex && layerIndex === state.layerIndex,
   }
 }
 
@@ -377,15 +383,48 @@ const countRow = (state: TuiState, index: number, room: number): ReadonlyArray<L
   return [{ index, kind: "count", text: clip(said, room), lead: false }]
 }
 
+const NOTHING_LEFT = "nothing in this diff"
+
+const textRows = (
+  index: number,
+  text: string,
+  room: number,
+  kind: "count" | "note",
+): ReadonlyArray<LayerRow> =>
+  wrapped(text, room).map((line) => ({ index, kind, text: line, lead: false }))
+
+const emptyRows = (state: TuiState, index: number, room: number): ReadonlyArray<LayerRow> => {
+  const layer = state.layers[index]
+  if (layer === undefined) return []
+  const gone = layer.vanished
+  const said = gone.length === 0 ? NOTHING_LEFT : `${NOTHING_LEFT}: ${gone.join(", ")}`
+  return [...textRows(index, said, room, "count"), ...textRows(index, layer.note, room, "note")]
+}
+
 const layerBody = (
   state: TuiState,
   index: number,
   room: LayerRoom,
   shown: ReadonlySet<number>,
 ): ReadonlyArray<LayerRow> => {
+  if (layerRead(state, index).all === 0) return emptyRows(state, index, room.file)
   if (!layerOpen(state, index) || !shown.has(index)) return countRow(state, index, room.file)
   const rows = fileRows(state, index, room)
   return rows.length > 0 ? rows : countRow(state, index, room.file)
+}
+
+const holdsCursor = (state: TuiState, index: number): boolean =>
+  index === state.layerIndex && layerFiles(state, index).includes(state.patchIndex)
+
+const layerCard = (
+  state: TuiState,
+  index: number,
+  room: LayerRoom,
+  shown: ReadonlySet<number>,
+): ReadonlyArray<LayerRow> => {
+  const body = layerBody(state, index, room, shown)
+  const marked = holdsCursor(state, index) && !body.some((row) => row.here === true)
+  return [...titleRows(state, index, room.title, marked), ...body]
 }
 
 export const layerRows = (
@@ -395,8 +434,7 @@ export const layerRows = (
 ): ReadonlyArray<LayerRow> =>
   state.layers.flatMap((_, index) => [
     ...(index > 0 ? [{ index, kind: "gap" as const, text: "", lead: false }] : []),
-    ...titleRows(state, index, room.title),
-    ...layerBody(state, index, room, shown),
+    ...layerCard(state, index, room, shown),
   ])
 
 const nearFirst = (state: TuiState): ReadonlyArray<number> =>
@@ -973,8 +1011,8 @@ export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
       )
 
 export const filePlace = (state: TuiState): { readonly at: number; readonly of: number } => {
-  const order = [...new Set(fileOrder(state))]
-  const at = order.indexOf(state.patchIndex)
+  const order = readingOrder(state)
+  const at = placeIn(state)
   if (at === -1) return { at: state.patchIndex + 1, of: state.patches.length }
   return { at: at + 1, of: order.length }
 }

@@ -8,8 +8,19 @@ const files = [
   { path: "src/four.ts", before: ["const d = 1"], after: ["const d = 1", "const four = 2"] },
 ]
 
-const marked = (driver: TestDriver, branch: string, file: string): Promise<unknown> =>
-  driver.app.run(["file", "review", "--repo", driver.repoPath, "--branch", branch, "--file", file])
+const marked = async (driver: TestDriver, branch: string, file: string): Promise<number> => {
+  const result = await driver.app.run([
+    "file",
+    "review",
+    "--repo",
+    driver.repoPath,
+    "--branch",
+    branch,
+    "--file",
+    file,
+  ])
+  return result.code
+}
 
 describe("two writes to one review at the same moment", () => {
   it("keeps both of them", async () => {
@@ -18,7 +29,10 @@ describe("two writes to one review at the same moment", () => {
     const branch = await driver.branch.create({ files })
 
     // ACT
-    await Promise.all(files.map((one) => marked(driver, branch.name, one.path)))
+    const codes = await Promise.all(files.map((one) => marked(driver, branch.name, one.path)))
+
+    // ASSERT
+    expect(codes).toEqual(files.map(() => 0))
 
     // ASSERT
     const result = await driver.app.run([
