@@ -1380,7 +1380,6 @@ export class Screen {
     this.wheelOnSheet(this.keys)
     this.wheelOnSheet(this.palette)
     this.wheelOnRail(this.listPane)
-    this.wheelOnRail(this.list)
     this.view.listenTo({
       scroll: (delta) => {
         this.dragFrom = undefined

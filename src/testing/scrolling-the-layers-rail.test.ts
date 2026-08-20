@@ -40,6 +40,20 @@ describe("a wheel over the layers rail", () => {
     expect(after).toContain("part1")
   })
 
+  it("keeps working after a burst, rather than going dead", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await layered(driver)
+    await driver.screen.flickTree("down", 30)
+    const landed = fileIn(await driver.screen.getFrame())
+
+    // ACT
+    await driver.screen.scrollTree("down", 1)
+
+    // ASSERT
+    expect(fileIn(await driver.screen.getFrame())).not.toBe(landed)
+  })
+
   it("stops where the gesture stopped, rather than running on to the end", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
