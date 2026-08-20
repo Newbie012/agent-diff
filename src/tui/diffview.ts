@@ -380,6 +380,10 @@ export class DiffView {
     return this.wrapped ? 0 : Math.max(this.code.maxScrollX, this.pinned.maxScrollX)
   }
 
+  cutOff(): number {
+    return this.wrapped ? 0 : this.code.maxScrollX
+  }
+
   setPan(columns: number): void {
     const wanted = Math.max(0, Math.min(this.panLimit(), columns))
     if (wanted !== this.held) {

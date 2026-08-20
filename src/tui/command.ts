@@ -100,6 +100,9 @@ export type Offered = {
   readonly pull: boolean
   readonly pane: Pane
   readonly onLayers: boolean
+  readonly hidingRead: boolean
+  readonly hidingSettled: boolean
+  readonly onRemoved: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -740,8 +743,16 @@ export const displayKey = (key: string): string => {
   return GLYPHS[key] ?? key
 }
 
+const SWAPPED: Readonly<Record<string, (offered: Offered) => string>> = {
+  "rail.toggle": (offered) => (offered.onLayers ? "file tree" : "layers"),
+  "tree.winnow": (offered) => (offered.hidingRead ? "show read" : "hide read"),
+  "panel.winnow": (offered) => (offered.hidingSettled ? "show settled" : "hide settled"),
+  "thread.remove": (offered) => (offered.onRemoved ? "restore" : "remove"),
+}
+
 const hintOf = (entry: Command, offered: Offered): string => {
-  if (entry.action === "rail.toggle") return offered.onLayers ? "file tree" : "layers"
+  const swapped = SWAPPED[entry.action]
+  if (swapped !== undefined) return swapped(offered)
   return entry.counted ? `${entry.hint} ${offered.comments}` : entry.hint
 }
 

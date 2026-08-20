@@ -771,6 +771,9 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
 export const stopsAtRow = (state: TuiState, row: number): number =>
   1 + threadsAtRow(state, row).length
 
+export const threadHere = (state: TuiState): StagedComment | undefined =>
+  threadChosen(state) ?? threadAtStop(state) ?? threadAtRow(state, state.cursor)
+
 export const threadAtStop = (state: TuiState): StagedComment | undefined =>
   state.stop === 0 ? undefined : threadsAtRow(state, state.cursor)[state.stop - 1]
 

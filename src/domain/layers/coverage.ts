@@ -91,9 +91,25 @@ const missingSaid = (count: number): string =>
     ? "One run of changed lines the layers do not account for."
     : `${count} runs of changed lines the layers do not account for.`
 
+const unordered = (
+  patches: ReadonlyArray<Patch>,
+  layers: ReadonlyArray<Layer>,
+  missing: ReadonlyArray<Span>,
+): ReadonlyArray<Span> => {
+  const named = new Set([
+    ...spansOf(layers).map((span) => span.path),
+    ...missing.map((span) => span.path),
+  ])
+  return patches
+    .filter((patch) => !named.has(patch.path))
+    .map((patch) => ({ path: patch.path, start: 1, end: 1 }))
+}
+
 export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers): Layers => {
   const gap = coverage(patches, layers.layers)
-  if (gap.missing.length === 0) return layers
+  const left = unordered(patches, layers.layers, gap.missing)
+  const spans = [...gap.missing, ...left]
+  if (spans.length === 0) return layers
   const remainder: Layer = {
     title: REMAINDER_TITLE,
     blocks: [
@@ -101,7 +117,7 @@ export const withFullCoverage = (patches: ReadonlyArray<Patch>, layers: Layers):
         kind: "prose",
         markdown: missingSaid(gap.missing.length),
       },
-      ...gap.missing.map((span) => codeBlockOf(span)),
+      ...spans.map((span) => codeBlockOf(span)),
     ],
   }
   return { ...layers, layers: [...layers.layers, remainder] }
