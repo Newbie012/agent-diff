@@ -248,7 +248,7 @@ export class ScreenTestDriver {
   }
 
   async pressKeys(keys: ReadonlyArray<string>): Promise<void> {
-    this.state.tracer.sawKeys(keys)
+    this.state.tracer.sawKeys(keys, this.app?.shown()?.screen)
     const setup = this.active()
     for (const key of keys) {
       const chord = /^(ctrl|shift)\+(.+)$/.exec(key)
@@ -288,10 +288,12 @@ export class ScreenTestDriver {
   }
 
   async scroll(direction: Wheel, times = 1): Promise<void> {
+    this.state.tracer.cannotReplay("the wheel")
     await this.burst(Array.from({ length: times }, () => direction))
   }
 
   async scrollTree(direction: "up" | "down", times = 1): Promise<void> {
+    this.state.tracer.cannotReplay("the wheel")
     const setup = this.active()
     const y = Math.floor(setup.renderer.height / 2)
     await series(Array.from({ length: times }, (_, at) => at), () =>
@@ -303,6 +305,7 @@ export class ScreenTestDriver {
   }
 
   async panWith(direction: Wheel, times: number): Promise<void> {
+    this.state.tracer.cannotReplay("the wheel")
     const setup = this.active()
     const x = Math.floor(setup.renderer.width / 2) + 6
     const y = Math.floor(setup.renderer.height / 2)
@@ -324,6 +327,7 @@ export class ScreenTestDriver {
   }
 
   async flickTree(direction: "up" | "down", times: number): Promise<void> {
+    this.state.tracer.cannotReplay("the wheel")
     const setup = this.active()
     const y = Math.floor(setup.renderer.height / 2)
     await Promise.all(
@@ -335,6 +339,7 @@ export class ScreenTestDriver {
   }
 
   async burst(wheel: ReadonlyArray<Wheel>): Promise<number> {
+    this.state.tracer.cannotReplay("the wheel")
     const setup = this.active()
     const x = Math.floor(WIDTH / 2) + 10
     const y = Math.floor(HEIGHT / 2)
@@ -385,6 +390,7 @@ export class ScreenTestDriver {
   }
 
   async dragAcrossDiff(y: number, fromX: number, toX: number): Promise<void> {
+    this.state.tracer.cannotReplay("the mouse")
     const setup = this.active()
     await setup.mockMouse.drag(fromX, y, toX, y)
     await this.app?.settled()
@@ -400,6 +406,7 @@ export class ScreenTestDriver {
   }
 
   async pressEscape(): Promise<void> {
+    this.state.tracer.sawKeys(["ESCAPE"], this.app?.shown()?.screen)
     const setup = this.active()
     const before = this.keysSeen
     setup.mockInput.pressEscape()
@@ -409,6 +416,7 @@ export class ScreenTestDriver {
   }
 
   async hoverAt(x: number, y: number): Promise<void> {
+    this.state.tracer.cannotReplay("the mouse")
     const setup = this.active()
     await setup.mockMouse.moveTo(x, y)
     await this.app?.settled()
@@ -416,6 +424,7 @@ export class ScreenTestDriver {
   }
 
   async pressMeta(key: string): Promise<void> {
+    this.state.tracer.cannotReplay("a meta key")
     const setup = this.active()
     setup.mockInput.pressKey(key, { meta: true })
     await this.app?.settled()
@@ -533,6 +542,7 @@ export class ScreenTestDriver {
   }
 
   async pressTab(): Promise<void> {
+    this.state.tracer.sawKeys(["TAB"], this.app?.shown()?.screen)
     const setup = this.active()
     setup.mockInput.pressTab({})
     await this.app?.settled()
@@ -558,6 +568,7 @@ export class ScreenTestDriver {
   }
 
   async pressShiftArrow(way: "up" | "down"): Promise<void> {
+    this.state.tracer.sawKeys([way === "down" ? "shift+DOWN" : "shift+UP"])
     const setup = this.active()
     setup.mockInput.pressKey(way === "down" ? "ARROW_DOWN" : "ARROW_UP", { shift: true })
     await this.app?.settled()
@@ -565,6 +576,7 @@ export class ScreenTestDriver {
   }
 
   async pressShiftTab(): Promise<void> {
+    this.state.tracer.sawKeys(["shift+tab"], this.app?.shown()?.screen)
     const setup = this.active()
     setup.mockInput.pressTab({ shift: true })
     await this.app?.settled()
