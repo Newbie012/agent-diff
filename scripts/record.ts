@@ -18,8 +18,10 @@ const value = (name: string): string | undefined => {
 
 const onlyNamed = value("test")
 
+const base = value("base") ?? "origin/main"
+
 const changedTests = (): ReadonlyArray<string> =>
-  git("diff", "--name-only", "origin/main...HEAD")
+  git("diff", "--name-only", `${base}...HEAD`)
     .split("\n")
     .filter((path) => path.endsWith(".test.ts"))
 
@@ -27,7 +29,7 @@ const TITLE = /^\+\s*(?:test|it)\(\s*(?<quote>["'`])(?<title>.+?)\k<quote>/
 
 const addedTitles = (): ReadonlySet<string> =>
   new Set(
-    git("diff", "origin/main...HEAD", "--", "*.test.ts")
+    git("diff", `${base}...HEAD`, "--", "*.test.ts")
       .split("\n")
       .flatMap((line) => {
         const found = TITLE.exec(line)?.groups?.["title"]
