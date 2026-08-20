@@ -1060,7 +1060,7 @@ export class App {
       yield* back ? this.restoring(branch, id) : this.removing(branch, id)
       const sent = yield* this.loadSent(branch)
       const kept = { ...this.state, opened: this.state.opened.filter((one) => one !== id) }
-      const said = back ? "brought back" : "withdrawn, it is under Withdrawn in the review"
+      const said = back ? "restored" : "removed, it is under Removed in the review"
       this.commit(withNotice(this.staying(withSent(kept, sent), id, was), said))
     })
   }

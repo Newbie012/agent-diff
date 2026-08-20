@@ -150,11 +150,11 @@ describe("a comment the agent took but never answered", () => {
     await driver.app.runTake(branch.worktree)
 
     // ACT
-    const listed = await driver.app.runBranches(["branch", "unread"])
+    const listed = await driver.app.runBranches(["branch", "unanswered"])
 
     // ASSERT
     expect(listed.envelope).toMatchObject({
-      branches: [{ branch: branch.name, unread: 1 }],
+      branches: [{ branch: branch.name, unanswered: 1 }],
     })
   })
 })
