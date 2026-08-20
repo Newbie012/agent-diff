@@ -40,6 +40,7 @@ import {
   wrapped,
   selectedLineCount,
   snippetOf,
+  threadQuote,
   reviewedCount,
   reviewedCountIn,
   pullHere,
@@ -599,6 +600,15 @@ const makeCompose = (renderer: CliRenderer): BoxRenderable =>
     flexDirection: "column",
   })
 
+const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyArray<string> => {
+  const said = threadQuote(state, room)
+  if (said.length > 0) return said.slice(0, shownLines * 2).map((line) => clip(line, room))
+  const snippet = snippetOf(state, shownLines)
+  const more = selectedLineCount(state) - snippet.length
+  const tail = more > 0 ? [`     … ${more} more lines`] : []
+  return [...snippet, ...tail].map((line) => clip(line, room))
+}
+
 const clipHead = (label: string, room: number): string =>
   label.length > room ? `…${label.slice(label.length - Math.max(0, room - 1))}` : label
 
@@ -804,7 +814,7 @@ const headerParts = (
   state: TuiState,
   branch: string,
   path: string,
-  pan: number,
+  across: { readonly pan: number; readonly cutOff: number },
 ): ReadonlyArray<string> => [
   branch,
   path,
@@ -814,8 +824,17 @@ const headerParts = (
   contextLabel(state.context),
   state.layersStale ? "layers stale" : "",
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} ${hiddenLines(state) === 1 ? "line" : "lines"} hidden`,
-  pan === 0 ? "" : `→ ${pan} columns`,
+  panLabel(state, across),
 ]
+
+const panLabel = (
+  state: TuiState,
+  across: { readonly pan: number; readonly cutOff: number },
+): string => {
+  if (across.pan > 0) return `→ ${across.pan} columns`
+  if (state.wrap || across.cutOff === 0) return ""
+  return `→ ${across.cutOff} columns cut off`
+}
 
 const HEADER_GAP = 2
 const HEADER_PATH_MIN = 20
@@ -1414,7 +1433,7 @@ export class Screen {
       state,
       branch?.branch ?? "",
       path,
-      Math.min(state.pan, this.view.panLimit()),
+      { pan: Math.min(state.pan, this.view.panLimit()), cutOff: this.view.panLimit() },
     ).filter((part) => part.length > 0)
     const [name = "", ...rest] = headerFitted(parts, path, headerRoom(this.renderer.width))
     return t`${fg(palette.ink)(name)}  ${fg(palette.muted)(rest.join("  "))}`
@@ -1805,10 +1824,7 @@ export class Screen {
     if (state.screen !== "compose") return
     const room = composeRoom(this.renderer.width)
     const shownLines = Math.max(1, Math.min(SNIPPET_LINES, Math.floor(this.renderer.height / 6)))
-    const snippet = snippetOf(state, shownLines)
-    const more = selectedLineCount(state) - snippet.length
-    const tail = more > 0 ? [`     … ${more} more lines`] : []
-    const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
+    const quoted = quotedFor(state, shownLines, room.text)
     this.composeTitle.content = clip(composeTarget(state), room.text)
     this.composeQuoted.content = [...quoted, ""].join("\n")
     this.composeQuoted.height = quoted.length + 1
