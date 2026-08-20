@@ -23,19 +23,14 @@ const twoFiles = {
 const lit = async (driver: TestDriver): Promise<number> =>
   (await driver.screen.listForegroundsOfEach("╭")).filter((colour) => colour === ACCENT).length
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(twoFiles)
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("the pane a reviewer is in", () => {
   it("draws three panes, each in its own border", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
     // ACT
-    await opened(driver)
+    await driver.branch.create(twoFiles)
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ASSERT
     const corners = (await driver.screen.getFrame()).split("\n").find((row) => row.includes("╭"))
@@ -47,7 +42,8 @@ describe("the pane a reviewer is in", () => {
     await using driver = await TestDriver.create()
 
     // ACT
-    await opened(driver)
+    await driver.branch.create(twoFiles)
+    await driver.screen.open({ ...WIDE, review: true })
 
     // ASSERT
     expect(await lit(driver)).toBe(1)
@@ -56,7 +52,8 @@ describe("the pane a reviewer is in", () => {
   it("moves the lit border as the focus moves", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(twoFiles)
+    await driver.screen.open({ ...WIDE, review: true })
     const first = await driver.screen.listForegroundsOfEach("╭")
 
     // ACT

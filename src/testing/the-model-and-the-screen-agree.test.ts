@@ -7,17 +7,12 @@ const file = {
   files: [{ path: "src/long.ts", before: ["export function held() {"], after: ["export function held() {", ...body, "}"] }],
 }
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(file)
-  await driver.screen.open({ width: 110, height: 20 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("what the review believes and what it draws", () => {
   it("agree after the wheel has moved the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(file)
+    await driver.screen.open({ width: 110, height: 20, review: true })
 
     // ACT
     await driver.screen.scroll("down", 8)
@@ -31,7 +26,8 @@ describe("what the review believes and what it draws", () => {
   it("agree again after a key follows the wheel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(file)
+    await driver.screen.open({ width: 110, height: 20, review: true })
     await driver.screen.scroll("down", 8)
     const before = await driver.screen.paintedTop()
 

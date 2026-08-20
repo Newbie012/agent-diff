@@ -19,8 +19,7 @@ describe("scrolling sideways", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const before = firstCodeRow(await driver.screen.getFrame())
 
     // ACT
@@ -37,8 +36,7 @@ describe("scrolling down and sideways at once", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.burst(["down", "right", "down", "left", "down", "right"])

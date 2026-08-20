@@ -49,8 +49,7 @@ describe("navigating the files of a branch", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["h"])
@@ -82,8 +81,7 @@ describe("navigating the files of a branch", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["]"])

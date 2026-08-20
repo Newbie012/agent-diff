@@ -4,12 +4,6 @@ import { shapes } from "./shapes.ts"
 
 const spread = shapes.find((shape) => shape.name.includes("several folders"))
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create({ files: [...(spread?.files ?? [])] })
-  await driver.screen.open({ width: 120, height: 24 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 const walk = async (driver: TestDriver, key: string, times: number): Promise<void> => {
   await Array.from({ length: times }).reduce<Promise<void>>(
     (waiting) => waiting.then(() => driver.screen.pressKeys([key])),
@@ -21,7 +15,8 @@ describe("pressing on past the last file", () => {
   it("says there is no next file rather than doing nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files: [...(spread?.files ?? [])] })
+    await driver.screen.open({ width: 120, height: 24, review: true })
     await walk(driver, "]", (spread?.files.length ?? 1) - 1)
 
     // ACT
@@ -34,7 +29,8 @@ describe("pressing on past the last file", () => {
   it("says the same at the first file, going back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files: [...(spread?.files ?? [])] })
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ACT
     await driver.screen.pressKeys(["["])
@@ -46,7 +42,8 @@ describe("pressing on past the last file", () => {
   it("says nothing while there are still files to turn to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create({ files: [...(spread?.files ?? [])] })
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ACT
     await driver.screen.pressKeys(["]"])

@@ -11,16 +11,12 @@ const oneFile = {
   ],
 }
 
-const rowWith = (frame: string, text: string): string =>
-  frame.split("\n").find((line) => line.includes(text)) ?? ""
-
 describe("comments that have already gone to the agent", () => {
   it("stays in the diff after it is sent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
     await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("already said this")
@@ -40,12 +36,9 @@ describe("comments that have already gone to the agent", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("said this last time")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("said this last time")
     await driver.agent.listComments(branch.worktree)
     await driver.screen.pressEscape()
 
@@ -53,7 +46,7 @@ describe("comments that have already gone to the agent", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "said this last time")).not.toHaveLength(0)
+    expect(await driver.screen.rowWith("said this last time")).not.toHaveLength(0)
   })
 })
 
@@ -62,18 +55,15 @@ describe("walking past comments already sent", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j", "j"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("gone already")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("gone already")
     await driver.screen.pressKeys(["g"])
 
     // ACT
     await driver.screen.pressKeys(["n"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "const second = 2")).toContain("▎")
+    expect(await driver.screen.rowWith("const second = 2")).toContain("▎")
   })
 })

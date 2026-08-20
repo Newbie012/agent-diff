@@ -15,9 +15,7 @@ const footer = (frame: string): string =>
   frame.split("\n").find((row) => row.includes("comment") || row.includes("settle")) ?? ""
 
 const send = async (driver: TestDriver, body: string): Promise<void> => {
-  await driver.screen.pressKeys(["c"])
-  await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("s")
+  await driver.screen.writeComment(body)
 }
 
 describe("the chips the cursor earns", () => {
@@ -25,8 +23,7 @@ describe("the chips the cursor earns", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
     await send(driver, "a point worth settling")
 
@@ -44,8 +41,7 @@ describe("the chips the cursor earns", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
     await send(driver, "a point worth settling")
     await driver.screen.pressKeys(["j"])

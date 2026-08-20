@@ -28,8 +28,7 @@ const commentedElsewhere = async (driver: TestDriver): Promise<void> => {
     end: 2,
     body: "this one is off screen",
   })
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ ...WIDE, review: true })
   await driver.screen.pressKeys(["TAB"])
 }
 

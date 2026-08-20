@@ -48,8 +48,7 @@ const nameRows = (frame: string): ReadonlyArray<string> =>
 
 const openDeepBranch = async (driver: TestDriver): Promise<string> => {
   await driver.branch.create(deep)
-  await driver.screen.open({ width: WIDTH, height: HEIGHT })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: WIDTH, height: HEIGHT, review: true })
   return driver.screen.getFrame()
 }
 

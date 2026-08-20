@@ -20,8 +20,7 @@ describe("syntax highlighting while scrolling", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.scroll("down", 10)
@@ -36,8 +35,7 @@ describe("syntax highlighting while scrolling", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.scroll("down", 10)

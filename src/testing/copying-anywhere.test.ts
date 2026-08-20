@@ -18,8 +18,7 @@ describe("what a modal draws", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ACT
     await driver.screen.pressCtrl("p")
@@ -37,8 +36,7 @@ describe("the key sheet and the palette", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     await driver.screen.pressCtrl("p")
     const opened = await driver.screen.getFrame()
     const first = opened.split("\n").find((line) => line.includes("▶")) ?? ""

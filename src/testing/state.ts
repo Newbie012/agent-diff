@@ -14,6 +14,8 @@ export type DriverState = {
   readonly sessionPath: string | undefined
   readonly storeRoot: string
   readonly git: (cwd: string, args: ReadonlyArray<string>) => Promise<string>
+  readonly prependPath: (bin: string) => void
+  readonly onDispose: (undo: () => void | Promise<void>) => void
   readonly dispose: () => Promise<void>
 }
 
@@ -46,12 +48,30 @@ export const createDriverState = async (options: DriverOptions = {}): Promise<Dr
   await exec("git", ["init", "-q", "-b", "master", repo], { cwd: workspace })
   await series(IDENTITY, (args) => git(repo, args))
 
+  const undos: Array<() => void | Promise<void>> = []
+  const path = process.env["PATH"]
+
+  const restorePath = (): void => {
+    if (path === undefined) delete process.env["PATH"]
+    else process.env["PATH"] = path
+  }
+
   return {
     repo,
     workspace,
     sessionPath: options.remember === true ? join(workspace, "session.json") : undefined,
     storeRoot,
     git,
-    dispose: () => rm(workspace, { recursive: true, force: true }),
+    prependPath: (bin) => {
+      process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+    },
+    onDispose: (undo) => {
+      undos.push(undo)
+    },
+    dispose: async () => {
+      await series(undos.toReversed(), async (undo) => undo())
+      restorePath()
+      await rm(workspace, { recursive: true, force: true })
+    },
   }
 }

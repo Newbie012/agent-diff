@@ -31,8 +31,7 @@ describe("asking for more of the file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.typeText("+")
@@ -45,8 +44,7 @@ describe("asking for more of the file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.typeText("+")
 
     // ACT
@@ -60,8 +58,7 @@ describe("asking for more of the file", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(buried)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j", "j", "j", "j"])
     const before = await driver.screen.findUnderCursor()
     expect(before.join(" ")).toContain("changed")

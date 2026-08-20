@@ -13,20 +13,15 @@ const tall = {
   ],
 }
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(tall)
-  await driver.screen.open({ width: 120, height: 30 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 describe("putting the cursor on a line with the mouse", () => {
   it("does not start a selection", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(tall)
+    await driver.screen.open({ width: 120, height: 30, review: true })
 
     // ACT
-    await driver.screen.clickOnDiff(12)
+    await driver.screen.clickOnLine("const step6 = 6;")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -36,8 +31,9 @@ describe("putting the cursor on a line with the mouse", () => {
   it("leaves the diff where it is when the arrows move inside it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
-    await driver.screen.clickOnDiff(12)
+    await driver.branch.create(tall)
+    await driver.screen.open({ width: 120, height: 30, review: true })
+    await driver.screen.clickOnLine("const step6 = 6;")
     const before = await driver.screen.paintedTop()
     const landed = (await driver.screen.believes()).cursor
 
@@ -52,8 +48,9 @@ describe("putting the cursor on a line with the mouse", () => {
   it("still follows the cursor once it leaves the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
-    await driver.screen.clickOnDiff(12)
+    await driver.branch.create(tall)
+    await driver.screen.open({ width: 120, height: 30, review: true })
+    await driver.screen.clickOnLine("const step6 = 6;")
     const before = await driver.screen.paintedTop()
 
     // ACT

@@ -11,26 +11,21 @@ const oneFile = {
   ],
 }
 
-const footerOf = (frame: string): string => {
-  const lines = frame.split("\n").filter((line) => line.trim().length > 0)
-  return lines.at(-1) ?? ""
-}
-
 describe("the keys the footer carries", () => {
   it("names what the focused pane answers to, and nothing else", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open({ width: 150, height: 24 })
-    await driver.screen.pressKeys(["RETURN", "m"])
-    const onTheDiff = footerOf(await driver.screen.getFrame())
+    await driver.screen.open({ width: 150, height: 24, review: true })
+    await driver.screen.pressKeys(["m"])
+    const onTheDiff = await driver.screen.footer()
 
     // ACT
     await driver.screen.pressShiftTab()
-    const onTheTree = footerOf(await driver.screen.getFrame())
+    const onTheTree = await driver.screen.footer()
     await driver.screen.pressTab()
     await driver.screen.pressTab()
-    const onTheReview = footerOf(await driver.screen.getFrame())
+    const onTheReview = await driver.screen.footer()
 
     // ASSERT
     expect(onTheDiff).toContain("v select")

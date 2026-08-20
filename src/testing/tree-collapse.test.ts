@@ -29,8 +29,7 @@ describe("folding away parts of the tree", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoDirs)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["h"])
@@ -45,8 +44,7 @@ describe("folding away parts of the tree", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoDirs)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["h"])
@@ -59,8 +57,7 @@ describe("folding away parts of the tree", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoDirs)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["h"])
 
     // ACT
@@ -94,8 +91,7 @@ describe("folding a directory that shows as one row", () => {
     await driver.branch.create({
       files: [change("src/api/one.ts"), change("src/api/two.ts")],
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["h"])

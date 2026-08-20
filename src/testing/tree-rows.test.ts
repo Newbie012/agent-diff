@@ -21,8 +21,7 @@ describe("reading the file tree", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     const open = pane(await driver.screen.getFrame())
@@ -53,8 +52,8 @@ describe("reading the file tree", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("about this")
 
     // ACT

@@ -22,8 +22,7 @@ describe("a file that changed on disk after the review loaded", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const made = await driver.branch.create(branch)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const keyword = syntaxTheme.keyword.fg
     expect((await driver.screen.findForeground(keyword)).join(" ")).toContain("const")
 

@@ -47,8 +47,7 @@ describe("opening a file whose change is a long way down", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
 
     // ACT
     await driver.screen.pressKeys(["c"])

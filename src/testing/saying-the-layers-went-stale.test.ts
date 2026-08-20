@@ -31,8 +31,7 @@ describe("saying the layers went stale", () => {
     await driver.app.runLayersSet(created.worktree, layers)
     await driver.branch.setFile(created, "src/invitations.ts", [...client("resolve"), "const extra = 2"])
     await driver.branch.commitAll(created, "one more line")
-    await driver.screen.open({ width: 130, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 130, height: 30, review: true })
 
     // ACT
     await driver.screen.pressKeys(["s"])
@@ -48,8 +47,7 @@ describe("the key that swaps the rail", () => {
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)
     await driver.app.runLayersSet(created.worktree, layers)
-    await driver.screen.open({ width: 130, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 130, height: 30, review: true })
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("s file tree")

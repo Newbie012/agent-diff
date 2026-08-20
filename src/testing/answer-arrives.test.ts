@@ -25,8 +25,7 @@ const openOnComment = async (
   })
   const threads = await driver.app.runThreads(branch.name)
   const listed = threads.envelope as { readonly comments: ReadonlyArray<{ readonly id: string }> }
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ review: true })
   return { id: listed.comments[0]?.id ?? "", worktree: branch.worktree }
 }
 

@@ -16,8 +16,8 @@ describe("pasting into a draft", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("see: ")
 
     // ACT
@@ -31,8 +31,8 @@ describe("pasting into a draft", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
 
     // ACT
     await driver.screen.paste("middle")
@@ -46,8 +46,8 @@ describe("pasting into a draft", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
 
     // ACT
     await driver.screen.paste("first line\r\nsecond line")
@@ -64,8 +64,8 @@ describe("pasting into a draft", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
 
     // ACT
     await driver.screen.paste("\u001b[31mred\u001b[0m\u0007 alert")
@@ -80,8 +80,8 @@ describe("pasting into a draft", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ review: true })
+    await driver.screen.pressKeys(["c"])
 
     // ACT
     await driver.screen.paste("if (x) {\n\treturn 1\n}")
@@ -94,8 +94,7 @@ describe("pasting into a draft", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressCtrl("p")
 
     // ACT

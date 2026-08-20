@@ -13,8 +13,7 @@ describe("pointing at an action in the footer", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const rows = (await driver.screen.getFrame()).split("\n")
     const y = rows.findIndex((row) => row.includes("v select"))
     const before = rows[y] ?? ""
@@ -37,8 +36,7 @@ describe("what hovering an action looks like", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     const rows = (await driver.screen.getFrame()).split("\n")
     const y = rows.findIndex((row) => row.includes("v select"))
     const at = (rows[y] ?? "").indexOf("v select")

@@ -22,12 +22,9 @@ describe("what still holds when the diff wraps", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open({ width: 84, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 84, height: 24, review: true })
     await driver.screen.pressKeys(["j", "j"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("name the team first")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("name the team first")
 
     // ACT
     await driver.screen.pressKeys(["w"])
@@ -44,8 +41,7 @@ describe("what still holds when the diff wraps", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open({ width: 84, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 84, height: 24, review: true })
     await driver.screen.pressKeys(["w"])
 
     // ACT
@@ -65,8 +61,7 @@ describe("the gutter below the last line", () => {
     await driver.branch.create({
       files: [{ path: "src/api.ts", before: ["const a = 1"], after: ["const a = 1", "const b = 2"] }],
     })
-    await driver.screen.open({ width: 84, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 84, height: 20, review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])

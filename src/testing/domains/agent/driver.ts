@@ -1,7 +1,14 @@
-import { readdir, readFile } from "node:fs/promises"
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { Effect } from "effect"
-import { reportsDir, Store, storeAt, type Batch } from "../../../service/store/index.ts"
+import {
+  branchDir,
+  branchKeyOf,
+  reportsDir,
+  Store,
+  storeAt,
+  type Batch,
+} from "../../../service/store/index.ts"
 import type { Side } from "../../../domain/patch/index.ts"
 import type { DriverState } from "../../state.ts"
 
@@ -72,6 +79,13 @@ export class AgentTestDriver {
       })
     })
     await Effect.runPromise(write.pipe(Effect.provide(storeAt(this.state.storeRoot))))
+  }
+
+  async setStoreFile(worktree: string, file: string, text: string): Promise<void> {
+    const key = await Effect.runPromise(branchKeyOf(worktree))
+    const directory = branchDir(this.state.storeRoot, key)
+    await mkdir(directory, { recursive: true })
+    await writeFile(join(directory, file), text, "utf8")
   }
 
   async listBatches(worktree: string): Promise<ReadonlyArray<Batch>> {

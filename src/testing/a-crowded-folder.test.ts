@@ -16,8 +16,7 @@ describe("a folder with more files than the tree draws at once", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     expect(header(await driver.screen.getFrame())).toContain("module00.ts")
 
     // ACT
@@ -34,8 +33,7 @@ describe("a folder with more files than the tree draws at once", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     await driver.screen.pressKeys(["]", "]", "]"])
 
     // ACT

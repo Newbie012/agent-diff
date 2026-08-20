@@ -27,8 +27,7 @@ describe("taking a selection somewhere", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v", "j"])
 
     // ACT
@@ -42,8 +41,7 @@ describe("taking a selection somewhere", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v", "j"])
 
     // ACT
@@ -60,8 +58,7 @@ describe("searching the branch for what is selected", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v"])
 
     // ACT
@@ -80,8 +77,7 @@ describe("searching the branch for what is selected", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v"])
 
     // ACT
@@ -103,8 +99,7 @@ describe("searching the branch for what is selected", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
     await driver.screen.typeText(TERM)
@@ -121,8 +116,7 @@ describe("searching the branch for what is selected", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["]"])
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
@@ -140,8 +134,7 @@ describe("searching the branch for what is selected", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
     await driver.screen.typeText(TERM)
@@ -159,8 +152,7 @@ describe("searching the branch for what is selected", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["v"])
     await driver.screen.pressKeys(["/"])
     await driver.screen.typeText(TERM)
@@ -181,8 +173,7 @@ describe("searching the branch for what is selected", () => {
     await driver.branch.create({
       files: [{ path: "src/only.ts", before: ["const a = 1"], after: ["const a = 1", "const b = 2"] }],
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j", "v"])
 
     // ACT

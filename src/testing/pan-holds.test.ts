@@ -21,9 +21,6 @@ const buried = (mark: string): ReadonlyArray<string> => [
   long,
 ]
 
-const rowWith = (frame: string, text: string): string =>
-  frame.split("\n").find((line) => line.includes(text)) ?? ""
-
 describe("panning past the edge of a line", () => {
   it("holds a thread still while the code moves", async () => {
     // ARRANGE
@@ -36,8 +33,7 @@ describe("panning past the edge of a line", () => {
       end: 2,
       body: "why is this here",
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys([">", ">", ">"])
@@ -55,14 +51,13 @@ describe("panning past the edge of a line", () => {
       name: "resend-expired-invites",
       files: [{ path: "src/deep.ts", before: buried("settle"), after: buried("resolve") }],
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
-    expect(rowWith(await driver.screen.getFrame(), "opens")).toContain("27 lines hidden")
+    await driver.screen.open({ review: true })
+    expect(await driver.screen.rowWith("opens")).toContain("27 lines hidden")
 
     // ACT
     await driver.screen.pressKeys([">", ">", ">"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "opens")).toContain("27 lines hidden")
+    expect(await driver.screen.rowWith("opens")).toContain("27 lines hidden")
   })
 })

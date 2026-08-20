@@ -12,8 +12,7 @@ describe("a file adiff cannot show", () => {
     await driver.branch.commitAll(branch, "add a binary file")
 
     // ACT
-    await driver.screen.open({ width: 130, height: 26 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 130, height: 26, review: true })
     await driver.screen.pressKeys(["["])
 
     // ASSERT

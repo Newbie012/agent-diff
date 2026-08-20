@@ -20,8 +20,7 @@ const twoFiles = {
 }
 
 const openWide = async (driver: TestDriver): Promise<void> => {
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ ...WIDE, review: true })
 }
 
 describe("the review panel", () => {
@@ -60,8 +59,7 @@ describe("the review panel", () => {
     })
 
     // ACT
-    await driver.screen.open({ width: 100, height: 32 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 32, review: true })
 
     // ASSERT
     expect(await driver.screen.getFrame()).not.toContain("With the agent")

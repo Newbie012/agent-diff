@@ -64,8 +64,7 @@ const gapRows = (frame: string): ReadonlyArray<string> =>
 const openOnLayer = async (driver: TestDriver): Promise<string> => {
   const branch = await driver.branch.create(branchWithGaps)
   await driver.app.runLayersSet(branch.worktree, layers)
-  await driver.screen.open({ width: 80 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 80, review: true })
   await driver.screen.pressKeys(["w"])
   return branch.worktree
 }
@@ -115,9 +114,7 @@ describe("wrapping a layer that spans files at a narrow width", () => {
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("why is this kept")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("why is this kept")
 
     // ASSERT
     const comments = await driver.agent.listComments(worktree)

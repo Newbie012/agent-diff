@@ -17,16 +17,10 @@ const oneFile = {
   ],
 }
 
-const sendComment = async (driver: TestDriver, body: string): Promise<void> => {
-  await driver.screen.pressKeys(["c"])
-  await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("s")
-}
-
 const onTheThread = async (driver: TestDriver, body: string): Promise<void> => {
   await driver.screen.pressKeys(["RETURN"])
   await driver.screen.pressKeys(["j"])
-  await sendComment(driver, body)
+  await driver.screen.writeComment(body)
   await driver.screen.pressKeys(["j"])
 }
 
@@ -66,12 +60,11 @@ describe("removing a comment from the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await sendComment(driver, "the first point")
+    await driver.screen.writeComment("the first point")
     await driver.screen.pressKeys(["j", "j"])
-    await sendComment(driver, "the second point")
+    await driver.screen.writeComment("the second point")
     await driver.screen.pressKeys(["j"])
 
     // ACT
@@ -87,8 +80,7 @@ describe("removing a comment from the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["X"])

@@ -28,8 +28,7 @@ describe("seeing what a layer covers", () => {
         },
       ],
     })
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["l"])

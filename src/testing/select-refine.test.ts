@@ -23,8 +23,7 @@ const file = { files: [{ path: "src/api.ts", before, after }] }
 
 const open = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(file)
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ review: true })
 }
 
 describe("selecting a change", () => {
@@ -74,15 +73,12 @@ describe("selecting a change", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(file)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
     await driver.screen.pressKeys(["V"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("these two belong together")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("these two belong together")
 
     // ASSERT
     const comments = await driver.agent.listComments(branch.worktree)

@@ -16,8 +16,7 @@ describe("holding shift with the arrows", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     const before = await driver.screen.getFrame()
 
     // ACT
@@ -33,8 +32,7 @@ describe("holding shift with the arrows", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     await driver.screen.pressShiftArrow("down")
 
     // ACT
@@ -48,8 +46,8 @@ describe("holding shift with the arrows", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN", "v", "j"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
+    await driver.screen.pressKeys(["v", "j"])
 
     // ACT
     await driver.screen.releaseShift()
@@ -62,8 +60,7 @@ describe("holding shift with the arrows", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
-    await driver.screen.open({ width: 120, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 20, review: true })
     await driver.screen.pressShiftArrow("down")
 
     // ACT

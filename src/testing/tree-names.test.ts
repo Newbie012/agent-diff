@@ -69,7 +69,7 @@ describe("telling the files apart", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "pages")).toContain("/pages")
+    expect(await driver.screen.rowWith("pages")).toContain("/pages")
   })
 
   it("still fits the pane at eighty columns", async () => {
@@ -78,8 +78,7 @@ describe("telling the files apart", () => {
     await driver.branch.create(deep)
 
     // ACT
-    await driver.screen.open({ width: 80, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, height: 30, review: true })
 
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")

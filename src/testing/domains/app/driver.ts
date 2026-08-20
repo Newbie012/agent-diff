@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { createServer } from "node:http"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
@@ -121,7 +122,21 @@ export class AppTestDriver {
       .join("\n")
     const path = join(bin, "gh")
     await writeFile(path, `${script}\n`, { mode: 0o755 })
-    process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+    this.state.prependPath(bin)
+  }
+
+  async setRegistry(tags: Readonly<Record<string, string>>): Promise<string> {
+    const server = createServer((_, response) => {
+      response.writeHead(200, { "content-type": "application/json" })
+      response.end(JSON.stringify(tags))
+    })
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
+    this.state.onDispose(
+      () => new Promise<void>((resolve) => server.close(() => resolve())),
+    )
+    const address = server.address()
+    const port = typeof address === "object" && address !== null ? address.port : 0
+    return `http://127.0.0.1:${port}/dist-tags`
   }
 
   async installedBy(
@@ -146,7 +161,7 @@ export class AppTestDriver {
     await mkdir(bin, { recursive: true })
     const path = join(bin, "gh")
     await writeFile(path, "#!/bin/sh\nexit 1\n", { mode: 0o755 })
-    process.env["PATH"] = `${bin}:${process.env["PATH"] ?? ""}`
+    this.state.prependPath(bin)
   }
 
   async listForgeRequests(): Promise<ReadonlyArray<string>> {

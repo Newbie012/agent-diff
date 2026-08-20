@@ -17,8 +17,7 @@ describe("seeing what changed", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(mixed)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["j", "j", "j"])

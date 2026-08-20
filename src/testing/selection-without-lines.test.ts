@@ -19,8 +19,7 @@ describe("a selection that reaches over a row of hidden lines", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
-    await driver.screen.open({ width: 100, height: 32 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 32, review: true })
     await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["v", "j", "j", "j"])
 
@@ -35,8 +34,7 @@ describe("a selection that reaches over a row of hidden lines", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
-    await driver.screen.open({ width: 100, height: 32 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 32, review: true })
     await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["v", "j", "j", "j"])
 
@@ -55,8 +53,7 @@ describe("a selection that reaches over a row of hidden lines", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
-    await driver.screen.open({ width: 100, height: 32 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 32, review: true })
     await driver.screen.pressKeys(["k"])
 
     // ACT

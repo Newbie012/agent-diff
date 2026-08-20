@@ -11,8 +11,7 @@ describe("an arrow pressed after the wheel", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/small.ts", before: [], after: body }] })
-    await driver.screen.open({ width: 100, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 20, review: true })
     await driver.screen.scroll("down", 20)
     const before = firstRow(await driver.screen.getFrame())
 

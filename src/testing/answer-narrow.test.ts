@@ -39,8 +39,7 @@ describe("an answered thread in a narrow terminal", () => {
     })
 
     // ACT
-    await driver.screen.open({ width: 80, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, height: 30, review: true })
 
     // ASSERT
     const frame = await driver.screen.getFrame()

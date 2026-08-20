@@ -41,8 +41,7 @@ describe("a file whose comment fills the screen", () => {
       end: 3,
       body: essay,
     })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     const before = lastRow(await driver.screen.getFrame())
 
     // ACT

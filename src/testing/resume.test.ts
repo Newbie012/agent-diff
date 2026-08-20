@@ -13,8 +13,7 @@ describe("picking up where the terminal was closed", () => {
     // ARRANGE
     await using driver = await TestDriver.create({ remember: true })
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["]"])
     expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
 

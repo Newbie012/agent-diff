@@ -21,8 +21,7 @@ const commentedThenGone = async (driver: TestDriver) => {
     body: "about a file that leaves",
   })
   await driver.branch.setFile(branch, "src/gone.ts", ["const g = 1"])
-  await driver.screen.open(WIDE)
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ ...WIDE, review: true })
   await driver.screen.pressKeys(["TAB"])
   return branch
 }

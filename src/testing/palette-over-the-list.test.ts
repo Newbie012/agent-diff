@@ -11,21 +11,14 @@ const one = {
   ],
 }
 
-const say = async (driver: TestDriver, body: string): Promise<void> => {
-  await driver.screen.pressKeys(["c"])
-  await driver.screen.typeText(body)
-  await driver.screen.pressCtrl("s")
-}
-
 describe("finding a command from the review list", () => {
   it("opens the palette over the list", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(one)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await say(driver, "worth a look")
+    await driver.screen.writeComment("worth a look")
 
     // ACT
     await driver.screen.pressCtrl("p")
@@ -40,10 +33,9 @@ describe("finding a command from the review list", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(one)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
-    await say(driver, "worth a look")
+    await driver.screen.writeComment("worth a look")
     await driver.screen.pressCtrl("p")
 
     // ACT

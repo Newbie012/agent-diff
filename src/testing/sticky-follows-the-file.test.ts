@@ -26,8 +26,7 @@ describe("the pinned scope", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(cssThenTsx)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j", "j"])
     const onCss = await driver.screen.getFrame()
 

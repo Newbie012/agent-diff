@@ -16,8 +16,7 @@ describe("panning a line wider than the pane", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wideFile)
-    await driver.screen.open({ width: 100, height: 20 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 100, height: 20, review: true })
     expect(await driver.screen.getFrame()).not.toContain(tail)
 
     // ACT

@@ -16,8 +16,7 @@ describe("knowing which line you are on", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(numbered)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["j", "j"])
@@ -32,8 +31,7 @@ describe("knowing which line you are on", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(numbered)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["j", "v", "j", "j"])

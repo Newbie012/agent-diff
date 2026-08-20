@@ -23,8 +23,7 @@ describe("what opening a branch asks git for", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     driver.screen.forgetDiffs()
 
     // ACT
@@ -59,8 +58,8 @@ describe("what opening a branch asks git for", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN", "c"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
+    await driver.screen.pressKeys(["c"])
     await driver.screen.typeText("why is this here")
     driver.screen.forgetDiffs()
 
@@ -75,8 +74,7 @@ describe("what opening a branch asks git for", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
     await driver.screen.pressEscape()
     driver.screen.forgetDiffs()
 

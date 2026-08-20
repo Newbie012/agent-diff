@@ -18,8 +18,7 @@ describe("the words a reviewer would type", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 150, height: 34 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 150, height: 34, review: true })
 
     // ASSERT
     expect(await looking(driver, "resolve")).toContain("Settle")

@@ -15,8 +15,8 @@ const oneFile = {
 
 const reported = async (driver: TestDriver, minimal: boolean): Promise<string> => {
   await driver.branch.create(oneFile)
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN", "j"])
+  await driver.screen.open({ review: true })
+  await driver.screen.pressKeys(["j"])
   await driver.screen.pressKeys(["n"])
   await driver.screen.pressCtrl("b")
   await driver.screen.typeText("something went wrong")

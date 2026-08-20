@@ -31,8 +31,7 @@ describe("moving around a long diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])
@@ -45,8 +44,7 @@ describe("moving around a long diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["G"])
 
     // ACT
@@ -60,8 +58,7 @@ describe("moving around a long diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["}", "}"])

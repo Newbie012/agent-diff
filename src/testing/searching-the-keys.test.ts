@@ -13,8 +13,7 @@ const oneFile = {
 
 const openSheet = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(oneFile)
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ review: true })
   await driver.screen.pressKeys(["?"])
 }
 

@@ -53,8 +53,7 @@ describe("the preferences adiff keeps", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ACT
     await driver.screen.pressKeys(["S"])
@@ -70,8 +69,7 @@ describe("the preferences adiff keeps", () => {
     await driver.app.runConfigSet("wrap", true)
 
     // ACT
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ASSERT
     expect((await driver.screen.believes()).wrap).toBe(true)

@@ -11,11 +11,6 @@ const oneFile = {
   ],
 }
 
-const footerOf = (frame: string): string => {
-  const lines = frame.split("\n").filter((line) => line.trim().length > 0)
-  return lines.at(-1) ?? ""
-}
-
 describe("what the footer is for", () => {
   it("keeps rare actions out of the way", async () => {
     // ARRANGE
@@ -27,7 +22,7 @@ describe("what the footer is for", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    const footer = footerOf(await driver.screen.getFrame())
+    const footer = await driver.screen.footer()
     expect(footer).not.toContain("bug")
     expect(footer).not.toContain("hunk")
     expect(footer).not.toContain("pane")
@@ -43,6 +38,6 @@ describe("what the footer is for", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("? keys")
+    expect(await driver.screen.footer()).toContain("? keys")
   })
 })

@@ -48,7 +48,6 @@ export {
   askLatest,
   findUpgrade,
   newer,
-  routeOf,
   runUpgrade,
   sayDone,
   sayFound,

@@ -27,8 +27,7 @@ describe("a layer that spans several files", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
     await driver.app.runLayersSet(branch.worktree, backwards)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("src/ui.tsx")

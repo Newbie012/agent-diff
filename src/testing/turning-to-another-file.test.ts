@@ -13,8 +13,7 @@ const twoFiles = {
 
 const open = async (driver: TestDriver): Promise<void> => {
   await driver.branch.create(twoFiles)
-  await driver.screen.open({ width: 100, height: 20 })
-  await driver.screen.pressKeys(["RETURN"])
+  await driver.screen.open({ width: 100, height: 20, review: true })
 }
 
 describe("turning to another file", () => {

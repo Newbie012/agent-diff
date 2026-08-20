@@ -21,8 +21,7 @@ describe("picking up work the agent did while you read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     expect(await driver.screen.getFrame()).not.toContain("answered the comment")
 
     // ACT
@@ -42,8 +41,7 @@ describe("picking up work the agent did while you read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["]"])
     const before = await driver.screen.getFrame()
     expect(before).toContain("src/ui.tsx  file 2 of 2")
@@ -65,8 +63,7 @@ describe("picking up work the agent did while you read", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["r"])

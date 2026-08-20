@@ -12,8 +12,8 @@ const oneFile = {
 }
 
 const openCompose = async (driver: TestDriver): Promise<void> => {
-  await driver.screen.open()
-  await driver.screen.pressKeys(["RETURN", "c"])
+  await driver.screen.open({ review: true })
+  await driver.screen.pressKeys(["c"])
 }
 
 describe("typing a comment", () => {
@@ -50,8 +50,7 @@ describe("typing a comment", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressCtrl("p")
 
     // ACT

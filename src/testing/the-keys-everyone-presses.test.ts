@@ -16,19 +16,14 @@ const tall = {
 const PAGE_DOWN = "[6~"
 const PAGE_UP = "[5~"
 
-const opened = async (driver: TestDriver): Promise<void> => {
-  await driver.branch.create(tall)
-  await driver.screen.open({ width: 110, height: 24 })
-  await driver.screen.pressKeys(["RETURN"])
-}
-
 const cursor = async (driver: TestDriver): Promise<number> => (await driver.screen.believes()).cursor
 
 describe("the keys a reviewer presses without being told", () => {
   it("moves down a page on page down, the way ctrl+d does", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(tall)
+    await driver.screen.open({ width: 110, height: 24, review: true })
     const before = await cursor(driver)
 
     // ACT
@@ -41,7 +36,8 @@ describe("the keys a reviewer presses without being told", () => {
   it("moves back up on page up", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(tall)
+    await driver.screen.open({ width: 110, height: 24, review: true })
     await driver.screen.pressKeys([PAGE_DOWN, PAGE_DOWN])
     const before = await cursor(driver)
 
@@ -55,7 +51,8 @@ describe("the keys a reviewer presses without being told", () => {
   it("goes to the end of the file on end, and back to the top on home", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await opened(driver)
+    await driver.branch.create(tall)
+    await driver.screen.open({ width: 110, height: 24, review: true })
 
     // ACT
     await driver.screen.pressKeys(["END"])

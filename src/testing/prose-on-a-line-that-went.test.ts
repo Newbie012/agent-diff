@@ -48,8 +48,7 @@ describe("prose about code the branch deleted", () => {
     })
 
     // ACT
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -75,8 +74,7 @@ describe("prose about code the branch deleted", () => {
     })
 
     // ACT
-    await driver.screen.open({ width: 120, height: 24 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 120, height: 24, review: true })
 
     // ASSERT
     expect(inTheDiff(await driver.screen.getFrame(), "These three were only used")).toBe(true)

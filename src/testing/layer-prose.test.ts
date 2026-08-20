@@ -97,14 +97,11 @@ describe("reading a layer's argument beside the code it describes", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)
     await driver.app.runLayersSet(branch.worktree, explained)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("why read it back here")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("why read it back here")
 
     // ASSERT
     const [comment] = await driver.agent.listComments(branch.worktree)
@@ -118,8 +115,7 @@ describe("reading a layer's argument beside the code it describes", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(grown)
     await driver.app.runLayersSet(branch.worktree, explained)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["s"])

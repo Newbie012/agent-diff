@@ -24,14 +24,11 @@ describe("how a comment sits in the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText("short one")
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment("short one")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -45,14 +42,11 @@ describe("how a comment sits in the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText(long)
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment(long)
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -67,14 +61,11 @@ describe("how a comment sits in the diff", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     await driver.screen.pressKeys(["j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
-    await driver.screen.typeText(long)
-    await driver.screen.pressCtrl("s")
+    await driver.screen.writeComment(long)
 
     // ASSERT
     const frame = await driver.screen.getFrame()

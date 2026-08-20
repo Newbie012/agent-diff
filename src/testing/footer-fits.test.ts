@@ -11,9 +11,6 @@ const oneFile = {
   ],
 }
 
-const footerOf = (frame: string): string =>
-  frame.split("\n").findLast((row) => row.includes("esc back") || row.includes("move")) ?? ""
-
 describe("the footer on a narrow terminal", () => {
   it("keeps the way out visible", async () => {
     // ARRANGE
@@ -21,11 +18,10 @@ describe("the footer on a narrow terminal", () => {
     await driver.branch.create(oneFile)
 
     // ACT
-    await driver.screen.open({ width: 80 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, review: true })
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame())).toContain("esc back")
+    expect(await driver.screen.footer()).toContain("esc back")
   })
 
   it("drops a whole chip rather than half of one", async () => {
@@ -34,11 +30,10 @@ describe("the footer on a narrow terminal", () => {
     await driver.branch.create(oneFile)
 
     // ACT
-    await driver.screen.open({ width: 88 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 88, review: true })
 
     // ASSERT
-    const footer = footerOf(await driver.screen.getFrame()).trim()
+    const footer = (await driver.screen.footer()).trim()
     const labels = ["reload", "settle", "layers", "reviewed", "select", "comment", "back", "line"]
     const first = footer.split(/\s{2,}/)[0] ?? ""
     expect(labels).not.toContain(first)
@@ -50,10 +45,9 @@ describe("the footer on a narrow terminal", () => {
     await driver.branch.create(oneFile)
 
     // ACT
-    await driver.screen.open({ width: 80 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 80, review: true })
 
     // ASSERT
-    expect(footerOf(await driver.screen.getFrame()).trimEnd().length).toBeLessThanOrEqual(80)
+    expect((await driver.screen.footer()).trimEnd().length).toBeLessThanOrEqual(80)
   })
 })

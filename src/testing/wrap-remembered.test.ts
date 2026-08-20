@@ -24,8 +24,7 @@ describe("keeping a reader's wrapping preference", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     await driver.screen.pressKeys(["w"])
     expect(runOn(await driver.screen.getFrame())).toBe(true)
 
@@ -43,8 +42,7 @@ describe("keeping a reader's wrapping preference", () => {
     await driver.branch.create(wide)
 
     // ACT
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
 
     // ASSERT
     expect(runOn(await driver.screen.getFrame())).toBe(false)
@@ -54,8 +52,7 @@ describe("keeping a reader's wrapping preference", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
-    await driver.screen.open({ width: 72 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 72, review: true })
     await driver.screen.pressKeys(["w"])
     await driver.screen.pressKeys(["w"])
 

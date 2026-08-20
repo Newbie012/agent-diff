@@ -90,8 +90,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
     await driver.app.runLayersSet(branch.worktree, layers)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
     expect(await driver.screen.getFrame()).toContain("src/model.ts")
 
     // ACT
@@ -109,8 +108,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
     await driver.app.runLayersSet(branch.worktree, layers)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["s"])
@@ -143,8 +141,7 @@ describe("walking a review by the argument instead of the filesystem", () => {
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(threeFiles)
     await driver.app.runLayersSet(branch.worktree, noted)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ASSERT
     const open = paneOf(await driver.screen.getFrame())

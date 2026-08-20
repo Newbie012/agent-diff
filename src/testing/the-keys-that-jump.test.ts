@@ -17,8 +17,7 @@ describe("the keys that jump", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 140, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 140, height: 30, review: true })
     await driver.screen.pressKeys(["shift+tab"])
     const started = fileIn(await driver.screen.getFrame())
 
@@ -41,8 +40,7 @@ describe("the keys that jump", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
-    await driver.screen.open({ width: 140, height: 30 })
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ width: 140, height: 30, review: true })
     const started = fileIn(await driver.screen.getFrame())
 
     // ACT

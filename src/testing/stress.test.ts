@@ -27,8 +27,7 @@ describe("a branch big enough to be real", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(hugeFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G"])
@@ -44,8 +43,7 @@ describe("a branch big enough to be real", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(manyFiles)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.pressKeys(["G", "g", "}", "{", "h", "l", "TAB", "TAB", "m", "M"])
@@ -60,8 +58,7 @@ describe("a branch big enough to be real", () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(hugeFile)
-    await driver.screen.open()
-    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.open({ review: true })
 
     // ACT
     await driver.screen.typeText("+")
