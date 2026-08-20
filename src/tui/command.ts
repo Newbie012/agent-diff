@@ -74,6 +74,7 @@ export type Command = {
   readonly keys: ReadonlyArray<string>
   readonly screens: ReadonlyArray<Screen>
   readonly hint: string
+  readonly also: ReadonlyArray<string>
   readonly listed: boolean
   readonly whenComments: boolean
   readonly counted: boolean
@@ -104,6 +105,7 @@ export type Offered = {
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
   category: "Reading",
   hint: "",
+  also: [],
   listed: true,
   whenComments: false,
   counted: false,
@@ -292,6 +294,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "panel.toggle",
+    also: ["comments", "threads", "conversation"],
     title: "Show or hide the review panel",
     category: "Comments",
     keys: ["a"],
@@ -300,6 +303,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "nav.zoom",
+    also: ["fullscreen", "maximise", "wide"],
     title: "Hide the file list and the review panel",
     category: "Reading",
     keys: ["z", "\\"],
@@ -357,6 +361,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "search.open",
+    also: ["search", "find", "grep", "look for", "where is"],
     category: "Selecting",
     title: "Find the selection elsewhere",
     keys: ["/"],
@@ -402,6 +407,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "wrap.toggle",
+    also: ["wrap", "soft wrap", "long lines"],
     title: "Wrap long lines",
     category: "Reading",
     keys: ["w"],
@@ -439,6 +445,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.settle",
+    also: ["resolve", "close", "done", "accept"],
     panes: ["diff", "review"],
     title: "Settle the thread here",
     category: "Comments",
@@ -459,6 +466,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.reply",
+    also: ["respond", "answer", "write back"],
     panes: ["review", "diff"],
     hint: "reply",
     rank: 1,
@@ -470,6 +478,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.remove",
+    also: ["delete", "withdraw", "retract", "undo"],
     panes: ["review"],
     hint: "remove",
     rank: 2,
@@ -511,6 +520,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "layers.ask",
+    also: ["reading order", "plan", "walkthrough"],
     title: "Ask the agent for a reading order",
     category: "Files",
     keys: ["L"],
@@ -518,6 +528,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "rail.toggle",
+    also: ["sidebar", "outline", "toc"],
     panes: ["tree", "diff"],
     title: "Switch between layers and files",
     category: "Files",
@@ -529,6 +540,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "tree.collapse",
+    also: ["fold", "hide", "shrink"],
     title: "Close the folder, layer, gap, or settled thread",
     category: "Files",
     keys: ["h"],
@@ -536,6 +548,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "tree.expand",
+    also: ["expand", "unfold", "show more", "open"],
     title: "Open the folder, layer, gap, or settled thread",
     category: "Files",
     keys: ["l"],
@@ -543,6 +556,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "file.vouch",
+    also: ["done", "approve", "tick", "check off"],
     panes: ["tree", "diff"],
     title: "Mark reviewed",
     category: "Files",
@@ -570,6 +584,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "compose.open",
+    also: ["write", "note", "feedback", "say"],
     panes: ["diff"],
     category: "Comments",
     title: "Comment on the selection",
@@ -604,6 +619,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "palette.open",
+    also: ["commands", "actions", "what can i do"],
     title: "Find a command",
     category: "App",
     keys: ["ctrl+p"],
@@ -630,6 +646,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "keys.open",
+    also: ["help", "shortcuts", "bindings", "keys"],
     title: "List every key",
     category: "App",
     keys: ["?"],

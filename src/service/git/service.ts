@@ -1,7 +1,7 @@
 import { readFile, realpath } from "node:fs/promises"
 import { join, resolve } from "node:path"
 import { Context, Effect, Layer, Option } from "effect"
-import { FileUnreadable } from "./error.ts"
+import { FileUnreadable, NotARepository } from "./error.ts"
 import type { DiffStat, Worktree } from "./model.ts"
 import { gitOrEmpty } from "./run.ts"
 
@@ -13,7 +13,7 @@ const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "ma
 const STAT = /(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/
 
 type Shape = {
-  readonly worktrees: (repo: string) => Effect.Effect<ReadonlyArray<Worktree>>
+  readonly worktrees: (repo: string) => Effect.Effect<ReadonlyArray<Worktree>, NotARepository>
   readonly repoOf: (worktree: string) => Effect.Effect<string>
   readonly diff: (worktree: Worktree, context: number, only?: string) => Effect.Effect<string>
   readonly stat: (worktree: Worktree) => Effect.Effect<DiffStat>
@@ -162,6 +162,7 @@ const seenAs = Effect.fn("Git.seenAs")(function* (entry: Entry, base: string, op
 
 const listWorktrees = Effect.fn("Git.worktrees")(function* (repo: string) {
   const porcelain = yield* gitOrEmpty(repo, ["worktree", "list", "--porcelain"])
+  if (porcelain.trim().length === 0) return yield* new NotARepository({ path: repo })
   const base = yield* defaultBranch(repo)
   const entries = readEntries(porcelain)
   const opened = yield* settled(repo)

@@ -775,7 +775,14 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
 
-export type PanelSection = "with" | "answered"
+export type PanelSection = "asked" | "with" | "answered" | "settled"
+
+export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
+  "asked",
+  "with",
+  "answered",
+  "settled",
+]
 
 export type PanelEntry = {
   readonly section: PanelSection
@@ -797,8 +804,10 @@ const spokeLast = (comment: StagedComment): "reviewer" | "agent" | undefined =>
   comment.turns?.at(-1)?.voice
 
 const sectionOf = (comment: StagedComment): PanelSection => {
-  if (spokeLast(comment) === "reviewer" && comment.settled !== true) return "with"
-  return answersIn(comment) > 0 || comment.settled === true ? "answered" : "with"
+  if (comment.settled === true) return "settled"
+  if (comment.asks === true) return "asked"
+  if (spokeLast(comment) === "reviewer") return "with"
+  return answersIn(comment) > 0 ? "answered" : "with"
 }
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
@@ -820,7 +829,7 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
     const found = delivered.filter((entry) => entry.section === section)
     return state.newestFirst ? found.toReversed() : found
   }
-  return [...ordered("with"), ...ordered("answered")]
+  return PANEL_SECTIONS.flatMap((section) => ordered(section))
 }
 
 export const panelEntry = (state: TuiState): PanelEntry | undefined =>

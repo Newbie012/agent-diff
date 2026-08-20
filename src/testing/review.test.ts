@@ -37,6 +37,7 @@ describe("reviewing a branch", () => {
     const comments = await driver.agent.listComments(branch.worktree)
     expect(comments).toEqual([
       {
+        id: expect.any(String),
         body: "third is unused outside this sum",
         file: "src/api.ts",
         side: "new",

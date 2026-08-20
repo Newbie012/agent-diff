@@ -217,7 +217,7 @@ const focusStepped = (state: TuiState, delta: number): TuiState["focus"] => {
 }
 
 const togglePanel = (state: TuiState): TuiState => {
-  if (!state.panelOpen && !panelFits(state)) {
+  if (!panelFits(state)) {
     return withNotice(state, "the terminal is too narrow for the review panel")
   }
   const panelOpen = !state.panelOpen

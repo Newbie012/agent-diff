@@ -6,6 +6,7 @@ import type { Side } from "../../../domain/patch/index.ts"
 import type { DriverState } from "../../state.ts"
 
 export type DeliveredComment = {
+  readonly id: string
   readonly body: string
   readonly file: string
   readonly side: string
@@ -85,6 +86,7 @@ export class AgentTestDriver {
     const batches = await this.listBatches(worktree)
     return batches.flatMap((batch) =>
       batch.comments.map((comment) => ({
+        id: comment.id,
         body: comment.body,
         file: comment.anchor.path,
         side: comment.anchor.side,
