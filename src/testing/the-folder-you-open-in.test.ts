@@ -7,9 +7,10 @@ const change = (path: string) => ({
   after: ["const held = 0", "const one = 1"],
 })
 
-const files = Array.from({ length: 5 }, (_, dir) =>
-  Array.from({ length: 9 }, (_, at) => change(`mod${dir}/unit${dir}${at}.ts`)),
-).flat()
+const inFolder = (dir: number): ReadonlyArray<ReturnType<typeof change>> =>
+  Array.from({ length: 9 }, (_, at) => change(`mod${dir}/unit${dir}${at}.ts`))
+
+const files = [0, 1, 2, 3, 4].flatMap((dir) => inFolder(dir))
 
 const railOf = (frame: string): string =>
   frame
