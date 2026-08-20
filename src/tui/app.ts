@@ -130,6 +130,8 @@ import { upgradeHint } from "./upgrade.ts"
 
 const LEAVING_MS = 3000
 const LOOK_MS = 110
+const AGE_TICK_MS = 30_000
+
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
 
@@ -310,6 +312,7 @@ export class App {
   private leaving: number | undefined
   private looking: ReturnType<typeof setTimeout> | undefined
   private rolling = false
+  private ticking: ReturnType<typeof setInterval> | undefined
   private grewWithShift = false
   private readonly keys: Array<string> = []
   private readonly trail: Array<string> = []
@@ -348,6 +351,8 @@ export class App {
     renderer.on("destroy", () => this.stopWatching())
     renderer.on("destroy", () => this.stopFading())
     renderer.on("destroy", () => this.stopLooking())
+    renderer.on("destroy", () => this.stopTicking())
+    this.startTicking()
     renderer.on("destroy", () => this.stopLighting())
     renderer.on("destroy", () => void getTreeSitterClient().destroy())
     renderer.on("destroy", () => this.stopPainting())
@@ -622,6 +627,20 @@ export class App {
     const fiber = this.lighting
     this.lighting = undefined
     if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
+  }
+
+  private startTicking(): void {
+    this.commit({ ...this.state, now: Date.now() })
+    this.ticking = setInterval(() => {
+      this.commit({ ...this.state, now: Date.now() })
+    }, AGE_TICK_MS)
+    this.ticking.unref?.()
+  }
+
+  private stopTicking(): void {
+    if (this.ticking === undefined) return
+    clearInterval(this.ticking)
+    this.ticking = undefined
   }
 
   private stopFading(): void {

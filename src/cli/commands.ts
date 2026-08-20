@@ -305,6 +305,7 @@ type Reading = {
   readonly head: string
   readonly shown: ReadonlySet<string>
   readonly read: Readonly<Record<string, number>>
+  readonly taken: Readonly<Record<string, string>>
 }
 
 type Spun = {
@@ -328,12 +329,13 @@ const sentOf = (
   replies: ReadonlyArray<PendingComment>,
   reading: Reading,
 ) => {
-  const { spoken, settled, removed, head, shown, read } = reading
+  const { spoken, settled, removed, head, shown, read, taken } = reading
   const ids = new Set([comment.id, ...replies.map((reply) => reply.id)])
   const said = spoken.filter((entry) => ids.has(entry.comment))
   const seen = [...ids].reduce((total, id) => total + (read[id] ?? 0), 0)
   const spun = spunOf(replies, said)
   const last = spun.at(-1)
+  const takenAt = [...ids].flatMap((id) => taken[id] ?? []).toSorted().at(-1)
   return {
     id: comment.id,
     file: comment.file,
@@ -347,6 +349,7 @@ const sentOf = (
     outside: !shown.has(comment.file),
     unread: Math.max(0, said.length - seen),
     asks: last?.voice === "agent" && last.asks,
+    ...(takenAt === undefined ? {} : { takenAt }),
     answers: said.map(bodyOf),
     turns: spun.map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn),
   }
@@ -367,6 +370,7 @@ export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading)
     head: worktree.head,
     shown,
     read: current.read,
+    taken: current.taken ?? {},
   }
   const under = (comment: PendingComment): ReadonlyArray<PendingComment> =>
     replies.filter((reply) => reply.replyTo === comment.id)
@@ -542,7 +546,9 @@ const threadBefore = (
 export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* realOf(worktree)
-  const owed = flatten(yield* store.take(resolved, new Date().toISOString()))
+  const at = new Date().toISOString()
+  yield* Effect.ignore(store.noteWatching(resolved, at))
+  const owed = flatten(yield* store.take(resolved, at))
   if (owed.every((one) => one.replyTo === undefined)) return owed
   const held = flatten(yield* store.inbox(resolved))
   const spoken = yield* store.answers(resolved)
@@ -567,12 +573,6 @@ export const branchAt = Effect.fn("Cli.branchAt")(function* (worktree: string) {
   return yield* store.branchAt(resolved)
 })
 
-export const noteListening = Effect.fn("Cli.noteListening")(function* (worktree: string) {
-  const store = yield* Store
-  const resolved = yield* realOf(worktree)
-  yield* Effect.ignore(store.noteWatching(resolved, new Date().toISOString()))
-})
-
 export const awaitComments = (
   worktree: string,
   deadline: number,
@@ -581,8 +581,7 @@ export const awaitComments = (
   StoreUnreadable | StoreUnwritable | UnknownWorktree,
   Store
 > =>
-  noteListening(worktree).pipe(
-    Effect.flatMap(() => takeComments(worktree)),
+  takeComments(worktree).pipe(
     Effect.flatMap((comments) =>
       comments.length > 0 || Date.now() >= deadline
         ? Effect.succeed(comments)

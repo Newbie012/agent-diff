@@ -159,6 +159,7 @@ export const answerComment = Effect.fn("Cli.answerComment")(function* (request: 
     asks: request.asks,
     at: request.at,
   })
+  yield* Effect.ignore(store.noteWatching(worktree.path, request.at))
   const answers = yield* store.answers(worktree.path)
   return { answered: answers.filter((entry) => entry.comment === request.id).length }
 })

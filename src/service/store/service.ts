@@ -489,11 +489,9 @@ const watchOps = (root: string, adopted: Keys) => {
   ) {
     const key = yield* keyIn(adopted, worktreePath)
     const path = watchPath(root, key)
-    const before = yield* Effect.orElseSucceed(watching(worktreePath), () => Option.none<Watching>())
-    const since = Option.match(before, { onNone: () => at, onSome: (one) => one.since })
     yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
-      try: () => writeFile(path, JSON.stringify({ lookedAt: at, since }), "utf8"),
+      try: () => writeFile(path, JSON.stringify({ lookedAt: at }), "utf8"),
       catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
     })
   })

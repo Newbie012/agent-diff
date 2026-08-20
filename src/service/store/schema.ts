@@ -74,7 +74,6 @@ export const Settings = Schema.Struct({
 
 export const Watching = Schema.Struct({
   lookedAt: Schema.String,
-  since: Schema.String,
 })
 
 export const UpgradeCheck = Schema.Struct({

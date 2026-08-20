@@ -28,7 +28,7 @@ describe("where a thread is filed in the review", () => {
     // ASSERT
     const panel = panelOf(await driver.screen.getFrame())
     expect(panel).toContain("Waiting on you")
-    expect(panel).not.toContain("With the agent")
+    expect(panel).not.toContain("Not picked up")
   })
 
   it("gives a settled thread a section of its own", async () => {
