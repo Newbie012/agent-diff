@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-04
+- **Last updated:** 2026-08-20
 
 ## Problem Statement
 
@@ -118,9 +118,11 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   there for the same reason it offers it on a thread in the diff.
 - **Settling a thread leaves the cursor where the reviewer was.** Reading the review again after a
   settle rebuilds the list from the top, and the panel went with it, so settling the second of
-  three threads put the reviewer back on the first. Where they were is what they were reading. If
-  the settled thread is still listed the cursor stays on it; if it has gone, the cursor keeps its
-  place in the list and the next thread comes to it.
+  three threads put the reviewer back on the first. Where they were is what they were reading, so
+  the cursor keeps its place in the list and the next thread comes to it. It does not follow the
+  thread it just settled: a settled thread is listed under Settled, below everything still open, so
+  following it walked the reviewer to the bottom of their own review and made settling a column of
+  threads a trip back to the top for each one. Removing a thread keeps the place the same way.
 
 - **A thread is one stop, not one per row.** Wrapped over several rows and carrying answers, a
   thread can run to eight; stepping through each of them costs keystrokes for nothing, because

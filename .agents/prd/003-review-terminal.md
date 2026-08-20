@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-09
+- **Last updated:** 2026-08-20
 
 ## Problem Statement
 
@@ -80,7 +80,9 @@ Three screens, and the keys each answers to:
   start in the middle and jump to the left pane, then across to the right, which is an order no one
   can predict from looking at the screen. It follows the panes left to right now, and the reverse
   key exists because a cycle you can only go forward through makes overshooting cost two more
-  presses. A pane that is not on the screen is not in the cycle.
+  presses. A pane that is not on the screen is not in the cycle, and `tab` never brings one back:
+  a reader who hid the file list with `t` asked for the room, and having `tab` hand it back took
+  the room away on the way to the pane they were reaching for.
 
 - **Each pane is drawn in its own border, and the focused one is lit.** One frame around everything
   with rules between the panes drew the seams but never said which side of them the keys were going

@@ -33,6 +33,11 @@ const threads = async (driver: TestDriver): Promise<string> => {
   return branch.name
 }
 
+type Thread = { readonly body: string; readonly state: string }
+
+const threadsOf = (result: { readonly envelope: unknown }): ReadonlyArray<Thread> =>
+  (result.envelope as { comments: ReadonlyArray<Thread> }).comments
+
 const focusedThread = async (driver: TestDriver): Promise<string> =>
   (await driver.screen.paintedWith(palette.selection)).join(" ")
 
@@ -60,7 +65,7 @@ describe("where the review panel leaves the cursor", () => {
     expect(await focusedThread(driver)).toContain("the first point")
   })
 
-  it("keeps the settled thread under the cursor when settled threads are shown", async () => {
+  it("brings the next thread to the cursor when settled threads are shown", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const name = await threads(driver)
@@ -72,6 +77,22 @@ describe("where the review panel leaves the cursor", () => {
     await driver.screen.pressKeys(["d"])
 
     // ASSERT
-    expect(await focusedThread(driver)).toContain("the second point")
+    expect(await focusedThread(driver)).toContain("the first point")
+  })
+
+  it("settles three threads in a row without walking back up", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const name = await threads(driver)
+    await driver.screen.open({ width: 140, height: 26, branch: name })
+    await panelFocused(driver)
+
+    // ACT
+    await driver.screen.pressKeys(["d", "d", "d"])
+
+    // ASSERT
+    const listed = await driver.app.runThreads(name, ["body", "state"])
+    const settled = threadsOf(listed).filter((thread) => thread.state === "done")
+    expect(settled.map((thread) => thread.body)).toHaveLength(3)
   })
 })

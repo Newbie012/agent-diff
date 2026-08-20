@@ -244,8 +244,14 @@ const PANEL_FAR = 10_000
 
 const PANES: ReadonlyArray<TuiState["focus"]> = ["tree", "diff", "review"]
 
+const paneShown = (state: TuiState, pane: TuiState["focus"]): boolean => {
+  if (pane === "review") return panelShown(state)
+  if (pane === "tree") return state.navOpen
+  return true
+}
+
 const panesShown = (state: TuiState): ReadonlyArray<TuiState["focus"]> =>
-  PANES.filter((pane) => pane !== "review" || panelShown(state))
+  PANES.filter((pane) => paneShown(state, pane))
 
 const focusStepped = (state: TuiState, delta: number): TuiState["focus"] => {
   const shown = panesShown(state)
@@ -522,8 +528,8 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "compose.open": openCompose,
   "compose.submit": (state) => state,
   "thread.reply": (state) => state,
-  "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1), navOpen: true }),
-  "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1), navOpen: true }),
+  "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1) }),
+  "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1) }),
   "panel.toggle": togglePanel,
   "nav.toggle": toggleNav,
   "nav.zoom": zoom,
