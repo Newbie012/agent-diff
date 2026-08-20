@@ -47,7 +47,8 @@ the code. `.agents/EFFECT.md` is the full contract.
 ## Shipping
 
 A change a reviewer would notice needs a change intent in `.changeset/`; a refactor, a test or a
-doc does not. Read `.claude/skills/release-notes/SKILL.md` before writing one and before opening a
+doc does not. A release consumes its intents and deletes them, so that directory holds only what
+has not shipped. Read `.claude/skills/release-notes/SKILL.md` before writing one and before opening a
 PR — it holds the entry format, the PR template, and the rule that nothing private ever reaches a
 public PR.
 

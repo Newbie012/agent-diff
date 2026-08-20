@@ -36,9 +36,10 @@ If you are unsure, ask: would someone who upgraded notice? If no, no file.
 gerund — `a-file-with-an-accent.md`, not `keeping-a-file-with-an-accent.md`. The bump is `patch`
 until this reaches 1.0, whatever the kind says.
 
-**Do not copy a neighbouring file as a model.** Most of `.changeset/` predates this format and is
-free prose with a gerund name. The test only holds intents that have not shipped yet to the shape,
-which is why the old ones still pass. Follow this page, not the file next to yours.
+`.changeset/` holds only what has not shipped yet, so it is usually empty or nearly so. A release
+collects the intents it consumed and deletes them — their words live on in `CHANGELOG.md`, and
+`.changeset/ledger.yaml` records which release took which. Do not go looking for a neighbouring
+file to copy; follow this page.
 
 ```markdown
 ---
