@@ -11,7 +11,7 @@ const subsequence = (haystack: string, needle: string): boolean => {
 }
 
 const label = (entry: Command): string =>
-  `${entry.category} ${entry.title} ${entry.keys.join(" ")}`.toLowerCase()
+  `${entry.category} ${entry.title} ${entry.keys.join(" ")} ${entry.also.join(" ")}`.toLowerCase()
 
 const matches = (entry: Command, query: string): boolean =>
   query

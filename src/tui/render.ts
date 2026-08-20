@@ -63,6 +63,7 @@ import {
   shownMatches,
   reviewWidth,
   type PanelEntry,
+  PANEL_SECTIONS,
   type PanelSection,
   type Spot,
   laidDraft,
@@ -89,7 +90,13 @@ const PALETTE_KEY = 11
 const PALETTE_TITLE = 60
 const PALETTE_GAP = 2
 const PALETTE_CHROME = 4
-const PENDING_CHROME = 3
+const PENDING_CHROME = 4
+
+const keysTitle = (found: number, shown: number): string => {
+  if (found === 0) return "No key matches"
+  if (found <= shown) return `Keys here, ${found} of them`
+  return `Keys here, ${found} of them — arrows for the rest`
+}
 const PALETTE_WIDTH = 76
 const PANEL_SHARE = 0.62
 const PANEL_MAX = 120
@@ -101,6 +108,7 @@ const PANE_CHROME = 3
 const PANE_EDGES = 2
 const PANE_INSET = 1
 const DIFF_FLOOR = 24
+const COMPOSE_EDGE = 4
 const CRAMPED = "adiff needs more room than this"
 const CRAMPED_ROWS = 4
 const DIFF_CHROME_MOST = 16
@@ -919,11 +927,13 @@ const layerPaint = (state: TuiState, row: LayerRow): string => {
 }
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
+  asked: "Waiting on you",
   with: "With the agent",
-  answered: "Answered",
+  answered: "Answered, not settled",
+  settled: "Settled",
 }
 
-const PANEL_ORDER: ReadonlyArray<PanelSection> = ["with", "answered"]
+const PANEL_ORDER = PANEL_SECTIONS
 const PANEL_LEAD = 3
 const PANEL_EMPTY = "No comment on this branch yet."
 
@@ -1044,7 +1054,25 @@ const panelSection = (
 
 const PULL_HINT = "answered, press r to pull"
 
-const panelText = (state: TuiState, room: number): StyledText => {
+const panelWindow = (
+  lines: ReadonlyArray<PanelLine>,
+  rows: number,
+): { readonly lines: ReadonlyArray<PanelLine>; readonly above: number; readonly below: number } => {
+  if (lines.length <= rows) return { lines, above: 0, below: 0 }
+  const room = Math.max(1, rows - 2)
+  const at = Math.max(0, lines.findIndex((line) => line.here === true))
+  const start = Math.max(0, Math.min(lines.length - room, at - Math.floor(room / 2)))
+  return {
+    lines: lines.slice(start, start + room),
+    above: start,
+    below: lines.length - (start + room),
+  }
+}
+
+const moreLine = (count: number, mark: string, room: number): ReadonlyArray<PanelLine> =>
+  count === 0 ? [] : [{ text: clip(` ${mark} ${count} more`, room), tone: palette.faint }]
+
+const panelText = (state: TuiState, room: number, rows: number): StyledText => {
   const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
   const fresh = placed.filter((one) => one.entry.fresh).length
   const unread = placed.filter((one) => one.entry.unread > 0).length
@@ -1054,8 +1082,15 @@ const panelText = (state: TuiState, room: number): StyledText => {
   const sections = PANEL_ORDER.flatMap((section) => panelSection(state, placed, section, room))
   const body = sections.slice(sections[0]?.text === "" ? 1 : 0)
   const lines = body.length === 0 ? [{ text: PANEL_EMPTY, tone: palette.muted }] : body
+  const window = panelWindow(lines, Math.max(1, rows - banner.length))
+  const shown = [
+    ...banner,
+    ...moreLine(window.above, "▲", room),
+    ...window.lines,
+    ...moreLine(window.below, "▼", room),
+  ]
   return new StyledText(
-    [...banner, ...lines].map((line) => {
+    shown.map((line) => {
       const drawn = fg(line.tone)(`${line.text.padEnd(room)}\n`)
       return line.here === true ? bg(restingOrHere(state.focus === "review"))(drawn) : drawn
     }),
@@ -1352,16 +1387,16 @@ export class Screen {
     }
     const rows = keyMatches(state)
     const room = panelWidth(this.renderer.width)
-    this.keysTitle.content =
-      rows.length === 0 ? "No key matches" : `Keys here, ${rows.length} of them`
     const keysRoom = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
       rows.length + PENDING_CHROME,
     )
+    const shown = Math.max(1, keysRoom - PENDING_CHROME)
+    this.keysTitle.content = keysTitle(rows.length, shown)
     this.keysChoices.content = listText(
       rows.map((entry) => commandRow(entry, room - MODAL_ROOM)),
       Math.min(state.paletteIndex, Math.max(0, rows.length - 1)),
-      keysRoom - PENDING_CHROME,
+      shown,
     )
     this.keys.height = keysRoom
     this.keys.width = room
@@ -1427,7 +1462,8 @@ export class Screen {
     this.panelPane.width = shown ? reviewWidth() : 0
     this.panelPane.paddingLeft = shown ? 1 : 0
     this.panelPane.paddingTop = 0
-    this.panel.content = shown ? panelText(state, reviewWidth() - PANE_CHROME) : ""
+    const rows = Math.max(1, this.panelPane.height - PANE_EDGES)
+    this.panel.content = shown ? panelText(state, reviewWidth() - PANE_CHROME, rows) : ""
   }
 
   private listText(state: TuiState): string | StyledText {
@@ -1702,7 +1738,8 @@ export class Screen {
     this.composeTitle.content = "Report a bug"
     this.composeQuoted.content = lead.join("\n")
     this.composeQuoted.height = lead.length
-    const written = this.fitBody(state, room.text)
+    const spare = this.renderer.height - lead.length - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - COMPOSE_EDGE
+    const written = this.fitBody(state, room.text, Math.max(1, spare))
     this.composeActions.content = reportActions(state.reportFull)
     this.compose.height = lead.length + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.width = room.box
@@ -1755,9 +1792,10 @@ export class Screen {
     }
   }
 
-  private fitBody(state: TuiState, room: number): number {
+  private fitBody(state: TuiState, room: number, most: number): number {
     if (this.composeBody.width !== room) this.composeBody.width = room
-    const rows = Math.max(1, laidDraft(state.draft, room).length)
+    const wanted = Math.max(1, laidDraft(state.draft, room).length)
+    const rows = Math.max(1, Math.min(most, wanted))
     if (this.composeBody.height !== rows) this.composeBody.height = rows
     return rows
   }
@@ -1766,14 +1804,17 @@ export class Screen {
     this.compose.visible = state.screen === "compose"
     if (state.screen !== "compose") return
     const room = composeRoom(this.renderer.width)
-    const snippet = snippetOf(state, SNIPPET_LINES)
+    const shownLines = Math.max(1, Math.min(SNIPPET_LINES, Math.floor(this.renderer.height / 6)))
+    const snippet = snippetOf(state, shownLines)
     const more = selectedLineCount(state) - snippet.length
     const tail = more > 0 ? [`     … ${more} more lines`] : []
     const quoted = [...snippet, ...tail].map((line) => clip(line, room.text))
     this.composeTitle.content = clip(composeTarget(state), room.text)
     this.composeQuoted.content = [...quoted, ""].join("\n")
     this.composeQuoted.height = quoted.length + 1
-    const written = this.fitBody(state, room.text)
+    const spare =
+      this.renderer.height - quoted.length - 1 - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - COMPOSE_EDGE
+    const written = this.fitBody(state, room.text, Math.max(1, spare))
     this.composeActions.content = actionsText()
     const height = quoted.length + 1 + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.height = height

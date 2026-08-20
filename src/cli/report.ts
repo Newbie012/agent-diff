@@ -91,7 +91,8 @@ const ADVICE: Readonly<Record<string, Advice>> = {
   },
   NotARepository: {
     exit: NOT_FOUND,
-    suggestion: "That path is not a git repository. Point --repo at one.",
+    suggestion:
+      "That path is not a git repository. Point --repo or --worktree at one, or run `adiff branch list` from inside the repository you mean.",
     retriable: false,
   },
   GitCommandFailed: {

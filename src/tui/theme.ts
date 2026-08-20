@@ -20,7 +20,7 @@ export const palette = {
   panel: "#0e1117",
   overlay: "#181c26",
   scrim: "#000000a0",
-  rule: "#262b37",
+  rule: "#3b4354",
 
   note: "#9aa7c7",
   cursor: "#232936",

@@ -61,6 +61,7 @@ describe("reviewing on the terminal", () => {
     const comments = await driver.agent.listComments(branch.worktree)
     expect(comments).toEqual([
       {
+        id: expect.any(String),
         body: "why add this",
         file: "src/api.ts",
         side: "new",
