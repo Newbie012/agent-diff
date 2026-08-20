@@ -219,6 +219,16 @@ const without = (
 ): Readonly<Record<string, string>> =>
   Object.fromEntries(Object.entries(entries).filter(([key]) => key !== id))
 
+export const restoreIn = Effect.fn("Cli.restoreIn")(function* (worktree: Worktree, id: string) {
+  const store = yield* Store
+  if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
+  yield* store.changeState(worktree.path, (was) => ({
+    ...was,
+    removed: without(was.removed, id),
+  }))
+  return { restored: id }
+})
+
 export const restoreComment = Effect.fn("Cli.restoreComment")(function* (
   repo: string,
   branch: string,

@@ -59,7 +59,7 @@ describe("removing a comment from the diff", () => {
     await driver.screen.pressKeys(["X"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("removed")
+    expect(await driver.screen.getFrame()).toContain("withdrawn")
   })
 
   it("leaves a thread that is not under the cursor alone", async () => {

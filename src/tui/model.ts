@@ -9,6 +9,7 @@ export type StagedComment = {
   readonly end: number
   readonly body: string
   readonly settled?: boolean
+  readonly removed?: boolean
   readonly stale?: boolean
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
@@ -510,7 +511,7 @@ export const treeWindow = (
 export const commentsOn = (state: TuiState, fileIndex: number): number => {
   const patch = state.patches[fileIndex]
   if (patch === undefined) return 0
-  return state.sent.filter((entry) => entry.file === patch.path).length
+  return state.sent.filter((entry) => entry.file === patch.path && entry.removed !== true).length
 }
 
 export const hiddenLines = (state: TuiState): number =>
@@ -757,6 +758,7 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
     (entry) =>
       entry.file === patch.path &&
       entry.id !== undefined &&
+      entry.removed !== true &&
       lineOnSide(here, entry.side) === entry.end,
   )
 }
@@ -775,6 +777,7 @@ export const threadAtRow = (state: TuiState, row: number): StagedComment | undef
     (entry) =>
       entry.file === patch.path &&
       entry.id !== undefined &&
+      entry.removed !== true &&
       lineOnSide(here, entry.side) === entry.end,
   )
 }
@@ -783,7 +786,7 @@ export const openCommentRows = (state: TuiState): ReadonlyArray<number> => {
   const patch = selectedPatch(state)
   if (patch === undefined) return []
   const open = state.sent.filter(
-    (entry) => entry.file === patch.path && entry.settled !== true,
+    (entry) => entry.file === patch.path && entry.settled !== true && entry.removed !== true,
   )
   return patch.rows
     .filter((row) => open.some((note) => lineOnSide(row, note.side) === note.end))
@@ -798,13 +801,14 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
 
-export type PanelSection = "asked" | "with" | "answered" | "settled"
+export type PanelSection = "asked" | "with" | "answered" | "settled" | "removed"
 
 export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
   "asked",
   "with",
   "answered",
   "settled",
+  "removed",
 ]
 
 export type PanelEntry = {
@@ -827,6 +831,7 @@ const spokeLast = (comment: StagedComment): "reviewer" | "agent" | undefined =>
   comment.turns?.at(-1)?.voice
 
 const sectionOf = (comment: StagedComment): PanelSection => {
+  if (comment.removed === true) return "removed"
   if (comment.settled === true) return "settled"
   if (comment.asks === true) return "asked"
   if (spokeLast(comment) === "reviewer") return "with"

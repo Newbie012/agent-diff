@@ -59,3 +59,34 @@ describe("where a thread is filed in the review", () => {
     expect(panelOf(await driver.screen.getFrame())).toContain("Settled")
   })
 })
+
+describe("a thread you withdrew", () => {
+  it("leaves the diff, stays in the review, and comes back with the same key", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 150, height: 34 })
+    await driver.screen.pressKeys(["RETURN"])
+    await driver.screen.pressKeys(["c"])
+    await driver.screen.typeText("on reflection, no")
+    await driver.screen.pressCtrl("s")
+
+    // ACT
+    await driver.screen.pressKeys(["shift+tab"])
+    await driver.screen.pressKeys(["X"])
+
+    // ASSERT
+    const gone = await driver.screen.getFrame()
+    expect(gone).toContain("Withdrawn")
+    expect(gone.split("Withdrawn")[0] ?? "").not.toContain("on reflection, no")
+
+    // ACT
+    await driver.screen.pressKeys(["shift+tab"])
+    await driver.screen.pressKeys(["X"])
+
+    // ASSERT
+    const back = await driver.screen.getFrame()
+    expect(back).not.toContain("Withdrawn")
+    expect(back).toContain("on reflection, no")
+  })
+})
