@@ -163,6 +163,10 @@
   dir: ""
   intents:
     - the-scope-you-are-in
+"@eliya-oss/agent-diff@0.1.0-alpha.128":
+  dir: ""
+  intents:
+    - a-file-with-an-accent
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:
