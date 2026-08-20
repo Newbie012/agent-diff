@@ -28,7 +28,8 @@ A recording narrates itself, so somebody who has never opened adiff can follow i
 
 - it opens on a title card carrying the test's `when` and `then`
 - each step is held for a second, with a band naming it in plain words — `open the branch`,
-  `leave a comment saying "worth a second look"`
+  `leave a comment saying "worth a second look"` — and a key cap in the corner showing the key as it
+  is pressed, so the caption, the key and what happens on screen line up
 - every `expect` stops the screen, rings the pane it is about, and says the claim as a sentence:
   `the review panel contains worth a second look`
 

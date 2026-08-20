@@ -9,7 +9,7 @@ export type Where = {
 }
 
 export type Beat = {
-  readonly kind: "step" | "check"
+  readonly kind: "step" | "check" | "key"
   readonly does: string
   readonly from: number
   readonly to: number
@@ -62,12 +62,34 @@ type Ink = {
   readonly colour: string
   readonly y: number
   readonly centred: boolean
+  readonly x?: number
 }
 
+const inkAt = (ink: Ink): string => (ink.centred ? "(w-tw)/2" : String(ink.x ?? 48))
+
 const text = (ink: Ink, when: string): string =>
-  `drawtext=fontfile=${FONT}:text='${clean(ink.said)}':fontcolor=${ink.colour}:fontsize=${ink.size}:x=${ink.centred ? "(w-tw)/2" : "48"}:y=${ink.y}:enable='${when}'`
+  `drawtext=fontfile=${FONT}:text='${clean(ink.said)}':fontcolor=${ink.colour}:fontsize=${ink.size}:x=${inkAt(ink)}:y=${ink.y}:enable='${when}'`
 
 const between = (beat: Beat): string => `between(t,${beat.from.toFixed(2)},${beat.to.toFixed(2)})`
+
+const keyCap = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> => {
+  const size = Math.round(tall / 30)
+  const pad = Math.round(size * 0.7)
+  const band = Math.round(size * 2.4)
+  const height = Math.round(size + pad * 2)
+  const width = Math.round(beat.does.length * size * 0.66 + pad * 2)
+  const x = wide - width - Math.round(size * 1.2)
+  const y = tall - band - height - Math.round(size * 0.7)
+  const when = between(beat)
+  return [
+    `drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x1b2233:t=fill:enable='${when}'`,
+    `drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x7aa2f7:t=3:enable='${when}'`,
+    text(
+      { said: beat.does, size, colour: "0xdbe4f3", y: y + pad, centred: false, x: x + pad },
+      when,
+    ),
+  ]
+}
 
 const stepBand = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> => {
   const size = Math.round(tall / 32)
@@ -156,7 +178,11 @@ export const narrate = (raw: string, out: string, said: Narration): void => {
   const filters = [
     ...titleCard(said, wide, tall),
     ...shifted.flatMap((beat) =>
-      beat.kind === "check" ? checkCard(beat, said.seat, wide, tall) : stepBand(beat, wide, tall),
+      beat.kind === "check"
+        ? checkCard(beat, said.seat, wide, tall)
+        : beat.kind === "key"
+          ? keyCap(beat, wide, tall)
+          : stepBand(beat, wide, tall),
     ),
   ]
   execFileSync(

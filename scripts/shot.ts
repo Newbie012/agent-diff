@@ -95,11 +95,45 @@ const sendOne = (session: string, key: string): void => {
   run("termctrl", ["send", session, "--pace-ms", "120", key])
 }
 
+const SHOWN: Readonly<Record<string, string>> = {
+  enter: "return",
+  escape: "esc",
+  tab: "tab",
+  "shift-tab": "shift tab",
+  up: "up",
+  down: "down",
+  left: "left",
+  right: "right",
+}
+
+const keyShown = (token: string): string | undefined => {
+  if (/^(wait|until):/.test(token)) return undefined
+  if (token.startsWith("text:")) {
+    const said = token.slice("text:".length)
+    return said.length === 1 ? said : "typing"
+  }
+  return SHOWN[token] ?? token.replace("ctrl-", "ctrl ")
+}
+
 type Marked = {
-  readonly kind: "step" | "check"
+  readonly kind: "step" | "check" | "key"
   readonly does: string
   readonly name: string
   readonly where?: Where
+}
+
+const typedOut = (
+  session: string,
+  key: string,
+  tag: string,
+  marks: Array<Marked>,
+): void => {
+  const shown = keyShown(key)
+  if (shown !== undefined) {
+    run("termctrl", ["mark", session, tag])
+    marks.push({ kind: "key", does: shown, name: tag })
+  }
+  sendOne(session, key)
 }
 
 const played = (session: string, held: Trace | undefined): ReadonlyArray<Marked> => {
@@ -118,7 +152,7 @@ const played = (session: string, held: Trace | undefined): ReadonlyArray<Marked>
       ...(moment.kind === "check" && moment.where !== undefined ? { where: moment.where } : {}),
     })
     if (moment.kind === "step") {
-      for (const key of moment.keys) sendOne(session, key)
+      moment.keys.forEach((key, each) => typedOut(session, key, `${name}k${each}`, marks))
       execFileSync("sleep", [String(pace / 1000)])
       continue
     }
@@ -168,10 +202,21 @@ const filmAt = (root: string, name: string): string => {
   const clock = timesIn(tape)
   const started = clock["ready"] ?? 0
   const shut = clock["done"] ?? 0
+  const timeOf = (tag: string): number => ((clock[tag] ?? started) - started) / 1000
+
+  const endsAt = (mark: Marked, at: number): number => {
+    const after = marks.slice(at + 1)
+    const next = mark.kind === "key" ? after[0] : after.find((one) => one.kind !== "key")
+    return next === undefined ? (shut - started) / 1000 : timeOf(next.name)
+  }
+
   const beatOf = (mark: Marked, at: number): Beat => {
-    const from = ((clock[mark.name] ?? started) - started) / 1000
-    const to = ((clock[marks[at + 1]?.name ?? "done"] ?? shut) - started) / 1000
-    const held: Beat = { kind: mark.kind, does: mark.does, from, to }
+    const held: Beat = {
+      kind: mark.kind,
+      does: mark.does,
+      from: timeOf(mark.name),
+      to: endsAt(mark, at),
+    }
     return mark.where === undefined ? held : { ...held, where: mark.where }
   }
   const beats = marks.map(beatOf)
