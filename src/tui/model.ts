@@ -17,7 +17,7 @@ export type StagedComment = {
   readonly unread?: number
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
-import { shownOf, type Reveal } from "./gaps.ts"
+import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, Match, ReportedLayer } from "../cli/index.ts"
 import type { ProseAnchor } from "../domain/layers/index.ts"
@@ -668,15 +668,18 @@ export const pickedText = (state: TuiState): string | undefined => {
   return taken.length === 0 ? undefined : taken
 }
 
-export const selectedLines = (state: TuiState): ReadonlyArray<string> => {
-  const patch = selectedPatch(state)
-  if (patch === undefined) return []
+const takenRows = (state: TuiState): ReadonlyArray<Patch["rows"][number]> => {
+  const shown = shownOf(state)
+  if (shown === undefined) return []
   const [from, to] = selectionRange(state)
-  const rows = patch.rows.slice(from, to + 1)
-  const onlyGone = rows.every((row) => row.kind === "removed")
-  const taken = onlyGone ? rows : rows.filter((row) => row.kind !== "removed")
-  return taken.map((row) => row.text)
+  const gaps = gapRowSet(shown)
+  const rows = shown.patch.rows.slice(from, to + 1).filter((row) => !gaps.has(row.index))
+  const onlyGone = rows.length > 0 && rows.every((row) => row.kind === "removed")
+  return onlyGone ? rows : rows.filter((row) => row.kind !== "removed")
 }
+
+export const selectedLines = (state: TuiState): ReadonlyArray<string> =>
+  takenRows(state).map((row) => row.text)
 
 export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
   const wanted = state.query.trim().toLowerCase()
@@ -693,7 +696,7 @@ export const selectionReadout = (state: TuiState): string => {
   const patch = selectedPatch(state)
   if (patch === undefined || !state.selecting) return ""
   const lines = selectedRows(state).length
-  return `${patch.path}  ${lines} ${lines === 1 ? "line" : "lines"}`
+  return `${patch.path}  ${lines} ${lines === 1 ? "line" : "lines"} selected`
 }
 
 export { WHOLE_FILE }
