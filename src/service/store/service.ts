@@ -60,6 +60,10 @@ type Shape = {
     worktreePath: string,
     drafts: ReadonlyArray<StoredDraft>,
   ) => Effect.Effect<void, StoreUnwritable>
+  readonly whileHoldingDrafts: <A, E, R>(
+    worktreePath: string,
+    work: Effect.Effect<A, E, R>,
+  ) => Effect.Effect<A, E | StoreUnwritable, R>
   readonly take: (
     worktreePath: string,
   ) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable | StoreUnwritable>
@@ -341,30 +345,6 @@ const answerOps = (root: string, adopted: Keys) => {
   return { answer, answers }
 }
 
-const draftsOps = (root: string, adopted: Keys) => {
-  const drafts = Effect.fn("Store.drafts")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
-    const path = draftsPath(root, key)
-    const raw = yield* readOptional(path)
-    if (Option.isNone(raw)) return [] as ReadonlyArray<StoredDraft>
-    const value = yield* jsonOf(path, raw.value)
-    const held = yield* asDrafts(path, value)
-    return held.drafts
-  })
-
-  const saveDrafts = Effect.fn("Store.saveDrafts")(function* (
-    worktreePath: string,
-    next: ReadonlyArray<StoredDraft>,
-  ) {
-    const key = yield* keyIn(adopted, worktreePath)
-    const path = draftsPath(root, key)
-    yield* ensureDir(branchDir(root, key))
-    yield* writeDrafts(path, { version: DRAFTS_VERSION, drafts: next })
-  })
-
-  return { drafts, saveDrafts }
-}
-
 const layersOps = (root: string, adopted: Keys) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
     const key = yield* keyIn(adopted, worktreePath)
@@ -408,9 +388,14 @@ const inboxOps = (root: string, adopted: Keys) => {
   return { submit, inbox }
 }
 
-const LOCK_TRIES = 240
-const LOCK_WAIT_MS = 25
-const LOCK_STALE_MS = 15_000
+type Waiting = {
+  readonly tries: number
+  readonly waitMs: number
+  readonly staleMs: number
+}
+
+const STATE_LOCK: Waiting = { tries: 240, waitMs: 25, staleMs: 15_000 }
+const DRAFTS_LOCK: Waiting = { tries: 600, waitMs: 50, staleMs: 30_000 }
 
 const held = (path: string): Effect.Effect<void, StoreUnwritable> =>
   Effect.tryPromise({
@@ -418,29 +403,74 @@ const held = (path: string): Effect.Effect<void, StoreUnwritable> =>
     catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
   })
 
-const stale = (path: string): Effect.Effect<boolean> =>
+const stale = (path: string, waiting: Waiting): Effect.Effect<boolean> =>
   Effect.promise(() =>
     stat(path).then(
-      (found) => Date.now() - found.mtimeMs > LOCK_STALE_MS,
+      (found) => Date.now() - found.mtimeMs > waiting.staleMs,
       () => false,
     ),
   )
 
-const stolen = (path: string, cause: StoreUnwritable): Effect.Effect<void, StoreUnwritable> =>
-  Effect.flatMap(stale(path), (old) =>
+const stolen = (
+  path: string,
+  waiting: Waiting,
+  cause: StoreUnwritable,
+): Effect.Effect<void, StoreUnwritable> =>
+  Effect.flatMap(stale(path, waiting), (old) =>
     old
       ? Effect.flatMap(Effect.promise(() => rm(path, { force: true })), () => held(path))
       : Effect.fail(cause),
   )
 
-const taken = (path: string): Effect.Effect<void, StoreUnwritable> =>
+const taken = (path: string, waiting: Waiting): Effect.Effect<void, StoreUnwritable> =>
   Effect.retry(
-    held(path).pipe(Effect.catchTag("StoreUnwritable", (cause) => stolen(path, cause))),
-    { times: LOCK_TRIES, schedule: Schedule.spaced(LOCK_WAIT_MS) },
+    held(path).pipe(Effect.catchTag("StoreUnwritable", (cause) => stolen(path, waiting, cause))),
+    { times: waiting.tries, schedule: Schedule.spaced(waiting.waitMs) },
   )
 
 const freed = (path: string): Effect.Effect<void> =>
   Effect.promise(() => rm(path, { force: true }))
+
+const alone = <A, E, R>(
+  path: string,
+  waiting: Waiting,
+  work: Effect.Effect<A, E, R>,
+): Effect.Effect<A, E | StoreUnwritable, R> =>
+  Effect.acquireUseRelease(taken(path, waiting), () => work, () => freed(path))
+
+const draftsOps = (root: string, adopted: Keys) => {
+  const drafts = Effect.fn("Store.drafts")(function* (worktreePath: string) {
+    const key = yield* keyIn(adopted, worktreePath)
+    const path = draftsPath(root, key)
+    const raw = yield* readOptional(path)
+    if (Option.isNone(raw)) return [] as ReadonlyArray<StoredDraft>
+    const value = yield* jsonOf(path, raw.value)
+    const stored = yield* asDrafts(path, value)
+    return stored.drafts
+  })
+
+  const saveDrafts = Effect.fn("Store.saveDrafts")(function* (
+    worktreePath: string,
+    next: ReadonlyArray<StoredDraft>,
+  ) {
+    const key = yield* keyIn(adopted, worktreePath)
+    const path = draftsPath(root, key)
+    yield* ensureDir(branchDir(root, key))
+    yield* writeDrafts(path, { version: DRAFTS_VERSION, drafts: next })
+  })
+
+  const whileHoldingDrafts = <A, E, R>(
+    worktreePath: string,
+    work: Effect.Effect<A, E, R>,
+  ): Effect.Effect<A, E | StoreUnwritable, R> =>
+    Effect.gen(function* () {
+      const key = yield* keyIn(adopted, worktreePath)
+      yield* ensureDir(branchDir(root, key))
+      return yield* alone(`${draftsPath(root, key)}.lock`, DRAFTS_LOCK, work)
+    }).pipe(Effect.withSpan("Store.whileHoldingDrafts"))
+
+  return { drafts, saveDrafts, whileHoldingDrafts }
+}
 
 const stateOps = (root: string, adopted: Keys) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
@@ -469,8 +499,7 @@ const stateOps = (root: string, adopted: Keys) => {
   ) {
     const key = yield* keyIn(adopted, worktreePath)
     yield* ensureDir(branchDir(root, key))
-    const lock = `${statePath(root, key)}.lock`
-    yield* Effect.acquireUseRelease(taken(lock), () => under(worktreePath, change), () => freed(lock))
+    yield* alone(`${statePath(root, key)}.lock`, STATE_LOCK, under(worktreePath, change))
   })
 
   const under = Effect.fn("Store.under")(function* (

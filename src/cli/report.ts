@@ -134,6 +134,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "Nothing is being held for this review. Write a comment on the pull request first; `adiff draft list` reports what is waiting.",
     retriable: false,
   },
+  PartlySent: {
+    exit: FAILED,
+    suggestion:
+      "The forge confirmed some of the comments and said nothing about the rest. What it confirmed is on the pull request; what it did not is still held, listed under kept. Run the same send again to send only those.",
+    retriable: true,
+  },
   PullMoved: {
     exit: FAILED,
     suggestion:

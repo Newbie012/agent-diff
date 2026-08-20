@@ -83,6 +83,15 @@ export class NothingDrafted extends Data.TaggedError("NothingDrafted")<{
   readonly branch: string
 }> {}
 
+export class PartlySent extends Data.TaggedError("PartlySent")<{
+  readonly branch: string
+  readonly url: string
+  readonly sent: number
+  readonly held: number
+  readonly landed: ReadonlyArray<string>
+  readonly kept: ReadonlyArray<string>
+}> {}
+
 export class PullMoved extends Data.TaggedError("PullMoved")<{
   readonly branch: string
   readonly was: string
