@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process"
+import { spawn, type StdioOptions } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { Effect } from "effect"
 import manifest from "../../package.json" with { type: "json" }
@@ -132,21 +132,49 @@ export const findUpgrade: Effect.Effect<UpgradeFound> = Effect.gen(function* () 
 export const willUpgrade = (found: UpgradeFound, check: boolean): boolean =>
   !check && found.current !== true && RUNNABLE.has(found.route)
 
-export const runUpgrade = (found: UpgradeFound, quiet: boolean): Effect.Effect<boolean> =>
-  Effect.callback<boolean>((resume) => {
+type Spawned = {
+  readonly command: string
+  readonly args: ReadonlyArray<string>
+  readonly timeout: number
+  readonly stdio: StdioOptions
+}
+
+const ranChild = <A>(
+  spec: Spawned,
+  done: (code: number | null, said: string) => A,
+  broke: A,
+): Effect.Effect<A> =>
+  Effect.callback<A>((resume) => {
+    let said = ""
     let answered = false
-    const settle = (worked: boolean): void => {
+    const settle = (value: A): void => {
       if (answered) return
       answered = true
-      resume(Effect.succeed(worked))
+      resume(Effect.succeed(value))
     }
-    const child = spawn("/bin/sh", ["-c", found.command], {
+    const child = spawn(spec.command, [...spec.args], {
+      timeout: spec.timeout,
+      stdio: spec.stdio,
+    })
+    child.stdout?.on("data", (chunk: Buffer) => {
+      said += chunk.toString("utf8")
+    })
+    child.on("error", () => settle(broke))
+    child.on("close", (code) => settle(done(code, said)))
+    return Effect.sync(() => void child.kill())
+  })
+
+export const runUpgrade = (found: UpgradeFound, quiet: boolean): Effect.Effect<boolean> =>
+  ranChild(
+    {
+      command: "/bin/sh",
+      args: ["-c", found.command],
       timeout: RUN_MS,
       stdio: quiet ? "ignore" : ["ignore", "inherit", "inherit"],
-    })
-    child.on("error", () => settle(false))
-    child.on("close", (code) => settle(code === 0))
-  }).pipe(Effect.withSpan("Cli.runUpgrade"))
+    },
+    (code) => code === 0,
+    false,
+  ).pipe(Effect.withSpan("Cli.runUpgrade"))
 
 const statusOf = (found: UpgradeFound): string => {
   if (!found.checked)
@@ -181,25 +209,16 @@ const attempted = (found: UpgradeFound, ran: boolean): string => {
 
 const REFRESH_MS = 10_000
 
-export const refreshSkills: Effect.Effect<ReadonlyArray<string>> =
-  Effect.callback<ReadonlyArray<string>>((resume) => {
-    let said = ""
-    let answered = false
-    const settle = (paths: ReadonlyArray<string>): void => {
-      if (answered) return
-      answered = true
-      resume(Effect.succeed(paths))
-    }
-    const child = spawn("adiff", ["skill", "refresh", "--json"], {
-      timeout: REFRESH_MS,
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-    child.stdout?.on("data", (chunk: Buffer) => {
-      said += chunk.toString("utf8")
-    })
-    child.on("error", () => settle([]))
-    child.on("close", (code) => settle(code === 0 ? updatedIn(said) : []))
-  }).pipe(Effect.withSpan("Cli.refreshedSkill"))
+export const refreshSkills: Effect.Effect<ReadonlyArray<string>> = ranChild(
+  {
+    command: "adiff",
+    args: ["skill", "refresh", "--json"],
+    timeout: REFRESH_MS,
+    stdio: ["ignore", "pipe", "ignore"],
+  },
+  (code, said): ReadonlyArray<string> => (code === 0 ? updatedIn(said) : []),
+  [],
+).pipe(Effect.withSpan("Cli.refreshedSkill"))
 
 type Changed = { readonly changes?: ReadonlyArray<{ path?: string; action?: string }> }
 

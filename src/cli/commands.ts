@@ -29,8 +29,15 @@ import {
   UnknownFile,
   UnknownPreference,
   UnknownPreferenceValue,
+  UnknownWorktree,
   UnselectableRange,
 } from "./error.ts"
+
+const realOf = (worktree: string): Effect.Effect<string, UnknownWorktree> =>
+  Effect.tryPromise({
+    try: () => realpath(worktree),
+    catch: () => new UnknownWorktree({ worktree, known: [] }),
+  })
 
 const CONTEXT = 3
 const POLL = "500 millis"
@@ -534,7 +541,7 @@ const threadBefore = (
 
 export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
   const store = yield* Store
-  const resolved = yield* Effect.promise(() => realpath(worktree))
+  const resolved = yield* realOf(worktree)
   const owed = flatten(yield* store.take(resolved))
   if (owed.every((one) => one.replyTo === undefined)) return owed
   const held = flatten(yield* store.inbox(resolved))
@@ -556,14 +563,18 @@ export const worktreeOf = Effect.fn("Cli.worktreeOf")(function* (repo: string, b
 
 export const branchAt = Effect.fn("Cli.branchAt")(function* (worktree: string) {
   const store = yield* Store
-  const resolved = yield* Effect.promise(() => realpath(worktree))
+  const resolved = yield* realOf(worktree)
   return yield* store.branchAt(resolved)
 })
 
 export const awaitComments = (
   worktree: string,
   deadline: number,
-): Effect.Effect<ReadonlyArray<PendingComment>, StoreUnreadable | StoreUnwritable, Store> =>
+): Effect.Effect<
+  ReadonlyArray<PendingComment>,
+  StoreUnreadable | StoreUnwritable | UnknownWorktree,
+  Store
+> =>
   takeComments(worktree).pipe(
     Effect.flatMap((comments) =>
       comments.length > 0 || Date.now() >= deadline
