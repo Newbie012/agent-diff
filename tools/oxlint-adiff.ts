@@ -218,9 +218,9 @@ const titleOf = (node) => {
 const faultIn = (said, lead) => {
   if (!said.startsWith(lead)) return `a title here opens "${lead}…"`
   const hollow = HOLLOW.exec(said)
-  if (hollow !== null) return `"${hollow[0]}" says nothing on its own — name what it is about`
+  if (hollow !== null) return `"${hollow[0]}" leaves out the noun it stands for; name it`
   const bare = NO_SUBJECT.exec(said)
-  return bare === null ? undefined : `"${bare[1]}" stands where the subject should be — name it`
+  return bare === null ? undefined : `"${bare[1]}" stands where the subject should be; name it`
 }
 
 const testTitle = {
