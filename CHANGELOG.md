@@ -446,6 +446,10 @@
 
 - An agent can answer a comment, and a reviewer can settle the thread.
 
+## 0.1.0-alpha.111
+
+- Removes code nothing called any more, and gives each duplicated constant one home. Nothing about what adiff does changes.
+
 ## 0.1.0-alpha.110
 
 - A comment now quotes only the lines it says it is about. A selection that crossed a change stored the old and the new version of every changed line in its snippet while naming only the new side, so the agent was handed code that is not at those line numbers in either version of the file. `--side old` was worse: it silently became a new-side comment on a different line.
