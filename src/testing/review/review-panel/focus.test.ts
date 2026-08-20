@@ -1,5 +1,6 @@
-import { describe, expect, test } from "@effect/vitest"
+import { describe, test } from "@effect/vitest"
 import {
+  expect,
   hideTheFileList,
   hideTheReviewPanel,
   leaveAComment,

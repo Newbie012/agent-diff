@@ -1,5 +1,7 @@
 import { TestDriver } from "../driver.ts"
 import { series } from "../state.ts"
+import { noteChecksWith } from "./checking.ts"
+import { tracing } from "./trace.ts"
 import { View } from "./view.ts"
 import type { Scenario, Step } from "./model.ts"
 
@@ -36,7 +38,13 @@ export class Review implements AsyncDisposable {
     return review
   }
 
+  private noteChecks(): void {
+    if (!tracing()) return
+    noteChecksWith((does) => this.driver.tracerHere().sawCheck(does))
+  }
+
   private async build(): Promise<void> {
+    this.noteChecks()
     const branch = await this.driver.branch.create(this.said.world.branch)
     const layers = this.said.world.layers
     if (layers !== undefined) await this.driver.app.runLayersSet(branch.worktree, layers)

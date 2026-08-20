@@ -24,6 +24,14 @@ Paste that under the body.
 
 `pnpm record --test <path>` records one file instead of the whole branch.
 
+Each step is held for a second so the video can be followed, and each `expect` becomes a captioned
+clip: the caption says what was being checked, in the words the assertion used — `is review panel`,
+`contains worth a second look`. A viewer sees the claim and the screen that satisfies it at the same
+time. `--pace <ms>` and `--hold <ms>` change the two timings.
+
+For the caption to appear, the test must take `expect` from the testing barrel rather than from
+vitest directly. A test that does not still records; it just has no captions.
+
 The recording is driven by the test's own trace, so it cannot show something the test does not do. If
 a test fails, nothing is recorded — a green run is the precondition, not a claim to make in prose.
 

@@ -33,6 +33,10 @@ export class TestDriver implements AsyncDisposable {
     this.screen = new ScreenTestDriver(state)
   }
 
+  tracerHere(): DriverState["tracer"] {
+    return this.state.tracer
+  }
+
   static async create(options: DriverOptions = {}): Promise<TestDriver> {
     return new TestDriver(await createDriverState(options))
   }
