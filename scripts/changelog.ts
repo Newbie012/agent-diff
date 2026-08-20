@@ -1,8 +1,10 @@
-import { readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { argv, exit, stdout } from "node:process"
-import { bodyOf, indent, LEDGER, intentNames, readingOf, sectionsIn } from "./lib/intents.ts"
+import { bodyOf, indent, INTENTS, LEDGER, intentNames, readingOf, sectionsIn } from "./lib/intents.ts"
 
 const OUT = "CHANGELOG.md"
+const TOP = "# Changelog"
 
 type Release = {
   readonly version: string
@@ -47,6 +49,27 @@ const compare = (one: Release, two: Release): number => {
   return one.version.localeCompare(two.version)
 }
 
+const kept = (): string => (existsSync(OUT) ? readFileSync(OUT, "utf8") : `${TOP}\n`)
+
+const versionsIn = (text: string): ReadonlySet<string> =>
+  new Set(
+    text
+      .split("\n")
+      .filter((line) => line.startsWith("## "))
+      .map((line) => line.slice(3).trim()),
+  )
+
+const sectionIn = (text: string, version: string): string | undefined => {
+  const lines = text.split("\n")
+  const opens = lines.findIndex((line) => line.trim() === `## ${version}`)
+  if (opens === -1) return undefined
+  const shuts = lines.findIndex((line, at) => at > opens && line.startsWith("## "))
+  return lines
+    .slice(opens + 1, shuts === -1 ? undefined : shuts)
+    .join("\n")
+    .trim()
+}
+
 const entryFor = (release: Release, have: ReadonlySet<string>): string | undefined => {
   const readings = release.intents
     .filter((intent) => have.has(intent))
@@ -63,11 +86,19 @@ const entryFor = (release: Release, have: ReadonlySet<string>): string | undefin
   return `## ${release.version}\n\n${said.join("\n\n")}\n`
 }
 
-const wanted = argv[2]
 const releases = releasesIn(readFileSync(LEDGER, "utf8")).toSorted(compare)
 const have = intentNames()
+const held = kept()
+const written = versionsIn(held)
+
+const wanted = argv[2]
 
 if (wanted !== undefined) {
+  const already = sectionIn(held, wanted)
+  if (already !== undefined) {
+    stdout.write(`${already}\n`)
+    exit(0)
+  }
   const one = releases.find((release) => release.version === wanted)
   const entry = one === undefined ? undefined : entryFor(one, have)
   if (entry === undefined) {
@@ -78,10 +109,26 @@ if (wanted !== undefined) {
   exit(0)
 }
 
-const entries = releases.flatMap((release) => {
+const fresh = releases.flatMap((release) => {
+  if (written.has(release.version)) return []
   const entry = entryFor(release, have)
   return entry === undefined ? [] : [entry]
 })
 
-writeFileSync(OUT, `# Changelog\n\n${entries.join("\n")}`, "utf8")
-stdout.write(`${OUT}: ${entries.length} releases\n`)
+const body = held.startsWith(TOP) ? held.slice(TOP.length).trimStart() : held.trimStart()
+const whole = `${TOP}\n\n${[...fresh, body].filter((part) => part.length > 0).join("\n")}`
+
+writeFileSync(OUT, whole.endsWith("\n") ? whole : `${whole}\n`, "utf8")
+
+const now = versionsIn(readFileSync(OUT, "utf8"))
+
+const spent = releases
+  .filter((release) => now.has(release.version))
+  .flatMap((release) => release.intents)
+  .filter((intent) => have.has(intent))
+
+for (const intent of spent) rmSync(join(INTENTS, `${intent}.md`), { force: true })
+
+stdout.write(
+  `${OUT}: ${fresh.length} new, ${now.size} total. ${spent.length} spent change intents removed.\n`,
+)
