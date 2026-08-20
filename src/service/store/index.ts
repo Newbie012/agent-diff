@@ -1,5 +1,5 @@
 export { branchKeyOf, Store, storeAt } from "./service.ts"
 export { StoreUnreadable, StoreUnwritable } from "./error.ts"
-export { branchDir, defaultRoot, inboxPath, outboxPath, reportPath, draftsPath, reportsDir, settingsPath, slugOf, statePath, layersPath, upgradePath } from "./paths.ts"
+export { branchDir, defaultRoot, inboxPath, outboxPath, reportPath, draftsPath, reportsDir, watchPath, settingsPath, slugOf, statePath, layersPath, upgradePath } from "./paths.ts"
 export { emptyBranchState } from "./model.ts"
-export type { Batch, BranchState, Settings, StoredAnswer, StoredComment, StoredDraft, StoredLayers, UpgradeCheck } from "./model.ts"
+export type { Batch, BranchState, Settings, StoredAnswer, StoredComment, StoredDraft, Watching, StoredLayers, UpgradeCheck } from "./model.ts"

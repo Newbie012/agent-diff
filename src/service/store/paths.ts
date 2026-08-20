@@ -19,6 +19,9 @@ export const outboxPath = (root: string, worktreePath: string): string =>
 export const statePath = (root: string, worktreePath: string): string =>
   join(branchDir(root, worktreePath), "state.json")
 
+export const watchPath = (root: string, worktreePath: string): string =>
+  join(branchDir(root, worktreePath), "watch.json")
+
 export const draftsPath = (root: string, worktreePath: string): string =>
   join(branchDir(root, worktreePath), "drafts.json")
 

@@ -53,6 +53,7 @@ const Counts = Schema.Record(Schema.String, Schema.Int)
 const noStamps = Schema.withDecodingDefaultKey<typeof Stamps>(Effect.succeed({}))
 
 export const BranchState = Schema.Struct({
+  taken: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   vouches: Stamps.pipe(noStamps),
   consumed: Schema.Int.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   settled: Stamps.pipe(noStamps),
@@ -69,6 +70,11 @@ export const Settings = Schema.Struct({
   hideSettled: Schema.optionalKey(Schema.Boolean),
   newestFirst: Schema.optionalKey(Schema.Boolean),
   hold: Schema.optionalKey(Schema.Boolean),
+})
+
+export const Watching = Schema.Struct({
+  lookedAt: Schema.String,
+  since: Schema.String,
 })
 
 export const UpgradeCheck = Schema.Struct({

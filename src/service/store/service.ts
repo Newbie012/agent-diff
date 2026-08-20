@@ -10,6 +10,7 @@ import {
   type StoredComment,
   type Settings,
   type StoredDraft,
+  type Watching,
   type StoredLayers,
   type UpgradeCheck,
 } from "./model.ts"
@@ -23,6 +24,7 @@ import {
   settingsPath,
   statePath,
   draftsPath,
+  watchPath,
   layersPath,
   upgradePath,
 } from "./paths.ts"
@@ -66,7 +68,18 @@ type Shape = {
   ) => Effect.Effect<A, E | StoreUnwritable, R>
   readonly take: (
     worktreePath: string,
+    at: string,
   ) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable | StoreUnwritable>
+  readonly owed: (
+    worktreePath: string,
+  ) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable>
+  readonly watching: (
+    worktreePath: string,
+  ) => Effect.Effect<Option.Option<Watching>, StoreUnreadable>
+  readonly noteWatching: (
+    worktreePath: string,
+    at: string,
+  ) => Effect.Effect<void, StoreUnwritable>
   readonly answer: (
     worktreePath: string,
     answer: StoredAnswer,
@@ -151,6 +164,7 @@ const asAnswer = decoded(Wire.StoredAnswer)
 const asState = decoded(Wire.BranchState)
 const asLayers = decoded(Wire.StoredLayers)
 const asDrafts = decoded(Wire.Drafts)
+const asWatching = decoded(Wire.Watching)
 
 const linesOf = (raw: string): ReadonlyArray<string> =>
   raw.split("\n").filter((line) => line.trim().length > 0)
@@ -183,11 +197,25 @@ const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw:
 })
 
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
+type Changer = (
+  worktreePath: string,
+  change: (was: BranchState) => BranchState,
+) => Effect.Effect<void, StoreUnreadable | StoreUnwritable>
 type Inbox = (worktreePath: string) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable>
 type Spoken = (worktreePath: string) => Effect.Effect<ReadonlyArray<StoredAnswer>, StoreUnreadable>
 
-const cursorOps = (state: Reader, inbox: Inbox, spoken: Spoken) => {
-  const take = Effect.fn("Store.take")(function* (worktreePath: string) {
+const idsIn = (batches: ReadonlyArray<Batch>): ReadonlyArray<string> =>
+  batches.flatMap((batch) => batch.comments.map((one) => one.id))
+
+const takes =
+  (ids: ReadonlyArray<string>, at: string) =>
+  (was: BranchState): BranchState => ({
+    ...was,
+    taken: { ...Object.fromEntries(ids.map((id) => [id, at])), ...was.taken },
+  })
+
+const cursorOps = (state: Reader, inbox: Inbox, spoken: Spoken, changeState: Changer) => {
+  const owedIn = Effect.fn("Store.owedIn")(function* (worktreePath: string) {
     const batches = yield* inbox(worktreePath)
     const current = yield* state(worktreePath)
     const answered = new Set((yield* spoken(worktreePath)).map((entry) => entry.comment))
@@ -201,7 +229,14 @@ const cursorOps = (state: Reader, inbox: Inbox, spoken: Spoken) => {
     })
   })
 
-  return { take }
+  const take = Effect.fn("Store.take")(function* (worktreePath: string, at: string) {
+    const batches = yield* owedIn(worktreePath)
+    const ids = idsIn(batches)
+    if (ids.length > 0) yield* changeState(worktreePath, takes(ids, at))
+    return batches
+  })
+
+  return { take, owed: owedIn }
 }
 
 const settingsOps = (root: string) => {
@@ -438,6 +473,34 @@ const alone = <A, E, R>(
 ): Effect.Effect<A, E | StoreUnwritable, R> =>
   Effect.acquireUseRelease(taken(path, waiting), () => work, () => freed(path))
 
+const watchOps = (root: string, adopted: Keys) => {
+  const watching = Effect.fn("Store.watching")(function* (worktreePath: string) {
+    const key = yield* keyIn(adopted, worktreePath)
+    const path = watchPath(root, key)
+    const raw = yield* readOptional(path)
+    if (Option.isNone(raw)) return Option.none<Watching>()
+    const value = yield* jsonOf(path, raw.value)
+    return Option.some(yield* asWatching(path, value))
+  })
+
+  const noteWatching = Effect.fn("Store.noteWatching")(function* (
+    worktreePath: string,
+    at: string,
+  ) {
+    const key = yield* keyIn(adopted, worktreePath)
+    const path = watchPath(root, key)
+    const before = yield* Effect.orElseSucceed(watching(worktreePath), () => Option.none<Watching>())
+    const since = Option.match(before, { onNone: () => at, onSome: (one) => one.since })
+    yield* ensureDir(branchDir(root, key))
+    yield* Effect.tryPromise({
+      try: () => writeFile(path, JSON.stringify({ lookedAt: at, since }), "utf8"),
+      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
+    })
+  })
+
+  return { watching, noteWatching }
+}
+
 const draftsOps = (root: string, adopted: Keys) => {
   const drafts = Effect.fn("Store.drafts")(function* (worktreePath: string) {
     const key = yield* keyIn(adopted, worktreePath)
@@ -516,7 +579,7 @@ const makeStore = (root: string, adopted: Keys): Shape => {
   const { submit, inbox } = inboxOps(root, adopted)
   const { state, saveState, changeState } = stateOps(root, adopted)
   const talk = answerOps(root, adopted)
-  const cursors = cursorOps(state, inbox, talk.answers)
+  const cursors = cursorOps(state, inbox, talk.answers, changeState)
   return {
     root,
     branchAt: (worktreePath: string) => Effect.promise(() => headOf(worktreePath)),
@@ -530,6 +593,7 @@ const makeStore = (root: string, adopted: Keys): Shape => {
     ...upgradeOps(root),
     ...talk,
     ...layersOps(root, adopted),
+    ...watchOps(root, adopted),
     ...draftsOps(root, adopted),
     ...cursors,
   }

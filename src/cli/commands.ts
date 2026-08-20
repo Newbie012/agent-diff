@@ -151,7 +151,7 @@ const findPatch = (patches: ReadonlyArray<Patch>, file: string): Option.Option<P
 
 const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
-  const owed = yield* store.take(worktree.path)
+  const owed = yield* store.owed(worktree.path)
   const told = yield* store.layers(worktree.path)
   return {
     unanswered: owed.reduce((total, batch) => total + batch.comments.length, 0),
@@ -542,7 +542,7 @@ const threadBefore = (
 export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* realOf(worktree)
-  const owed = flatten(yield* store.take(resolved))
+  const owed = flatten(yield* store.take(resolved, new Date().toISOString()))
   if (owed.every((one) => one.replyTo === undefined)) return owed
   const held = flatten(yield* store.inbox(resolved))
   const spoken = yield* store.answers(resolved)
@@ -567,6 +567,12 @@ export const branchAt = Effect.fn("Cli.branchAt")(function* (worktree: string) {
   return yield* store.branchAt(resolved)
 })
 
+export const noteListening = Effect.fn("Cli.noteListening")(function* (worktree: string) {
+  const store = yield* Store
+  const resolved = yield* realOf(worktree)
+  yield* Effect.ignore(store.noteWatching(resolved, new Date().toISOString()))
+})
+
 export const awaitComments = (
   worktree: string,
   deadline: number,
@@ -575,7 +581,8 @@ export const awaitComments = (
   StoreUnreadable | StoreUnwritable | UnknownWorktree,
   Store
 > =>
-  takeComments(worktree).pipe(
+  noteListening(worktree).pipe(
+    Effect.flatMap(() => takeComments(worktree)),
     Effect.flatMap((comments) =>
       comments.length > 0 || Date.now() >= deadline
         ? Effect.succeed(comments)
