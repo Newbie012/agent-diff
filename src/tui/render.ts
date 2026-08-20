@@ -24,11 +24,10 @@ import { gapRowSet, shownOf } from "./gaps.ts"
 import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
   composeTarget,
-  commentsOn,
   filePlace,
   hiddenLines,
   isReviewed,
-  markedRows,
+  markedStands,
   newLineAt,
   onLayers,
   railWindow,
@@ -50,6 +49,8 @@ import {
   selectionRange,
   threadChosen,
   threadHere,
+  threadStand,
+  threadsOn,
   treeWindow,
   tooSmall,
   treeWidth,
@@ -72,7 +73,7 @@ import {
   laidDraft,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
-import { marks } from "./marks.ts"
+import { marks, standMark } from "./marks.ts"
 import { palette } from "./theme.ts"
 
 const ROW_HEIGHT = 1
@@ -444,7 +445,7 @@ const listText = (
   const shown = windowed(rows, at, Math.max(1, height))
   const drawn = shown.rows.map((row, index) => {
     const here = shown.from + index === at
-    const text = `${here ? "▶ " : "  "}${row}`.padEnd(LIST_LEAD)
+    const text = `${here ? marks().cursor : " "} ${row}`.padEnd(LIST_LEAD)
     return here ? bg(palette.selection)(fg(palette.ink)(`${text}\n`)) : fg(palette.ink)(`${text}\n`)
   })
   return new StyledText(drawn)
@@ -639,11 +640,11 @@ const INDENT_MAX = 3
 const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
   const indent = " ".repeat(Math.min(row.depth, INDENT_MAX))
   if (row.kind === "file") {
-    const lead = `${indent}  ${marks().file} `
+    const lead = `${indent}  `
     return `${lead}${clipMiddle(row.name, Math.max(4, room - lead.length))}`
   }
   const shut = state.closed.includes(row.path)
-  const lead = `${indent}${shut ? "▸" : "▾"} ${shut ? marks().folder : marks().folderOpen} `
+  const lead = `${indent}${shut ? marks().shut : marks().open} `
   return `${lead}${clipPath(row.name, Math.max(4, room - lead.length))}`
 }
 
@@ -865,14 +866,15 @@ const fallbackScope = (state: TuiState, top: number): ReadonlyArray<string> => {
 }
 
 const treeMarks = (state: TuiState, row: TreeRow): string => {
-  const seen = row.fileIndex !== undefined && isReviewed(state, row.fileIndex) ? marks().reviewed : " "
-  return ` ${seen}`
+  const seen = row.fileIndex !== undefined && isReviewed(state, row.fileIndex) ? marks().done : " "
+  const here = row.fileIndex !== undefined && row.fileIndex === state.patchIndex
+  return `${here ? marks().cursor : " "}${seen}`
 }
 
 const treeTail = (state: TuiState, row: TreeRow): string => {
   if (row.fileIndex === undefined) return "  "
-  const comments = commentsOn(state, row.fileIndex)
-  return comments > 0 ? `${comments}${marks().tally}`.padStart(3) : "   "
+  const threads = threadsOn(state, row.fileIndex)
+  return threads.open > 0 ? `${threads.open}${standMark(threads.stand)}`.padStart(3) : "   "
 }
 
 const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
@@ -927,8 +929,8 @@ const titlePaint = (state: TuiState, layerIndex: number): string => {
 
 const titleMark = (state: TuiState, row: LayerRow): string => {
   if (!row.lead) return " "
-  if (layerDone(state, row.index)) return marks().reviewed
-  if (leftOver(state, row.index)) return "·"
+  if (layerDone(state, row.index)) return marks().done
+  if (leftOver(state, row.index)) return "0"
   return `${row.index + 1}`
 }
 
@@ -938,16 +940,22 @@ const titleLook = (state: TuiState, row: LayerRow): LayerLook => ({
   paint: titlePaint(state, row.index),
 })
 
-const fileLook = (row: LayerRow): LayerLook => ({
+const fileMark = (state: TuiState, row: LayerRow): string => {
+  const threads = row.fileIndex === undefined ? undefined : threadsOn(state, row.fileIndex)
+  if (threads !== undefined && threads.open > 0) return standMark(threads.stand)
+  return row.reviewed === true ? marks().done : " "
+}
+
+const fileLook = (state: TuiState, row: LayerRow): LayerLook => ({
   lead: FILE_LEAD,
-  mark: row.reviewed === true ? marks().reviewed : " ",
+  mark: fileMark(state, row),
   paint: row.reviewed === true ? palette.added : palette.ink,
 })
 
 const layerLook = (state: TuiState, row: LayerRow): LayerLook => {
   switch (row.kind) {
     case "file":
-      return fileLook(row)
+      return fileLook(state, row)
     case "dir":
       return { lead: DIR_LEAD, mark: " ", paint: palette.faint }
     case "count":
@@ -961,7 +969,7 @@ const layerLook = (state: TuiState, row: LayerRow): LayerLook => {
 }
 
 const layerGutter = (row: LayerRow, look: LayerLook): string => {
-  const here = row.here === true ? "▎" : " "
+  const here = row.here === true ? marks().cursor : " "
   return `${here}${look.mark.padStart(GUTTER - 1)}`
 }
 
@@ -1013,8 +1021,10 @@ type Found = {
   readonly around: ReadonlyArray<string>
 }
 
+const CHANGED_MARK = "*"
+
 const fileRow = (match: Found, room: number): Block => {
-  const lead = match.changed ? marks().comment : " "
+  const lead = match.changed ? CHANGED_MARK : " "
   const said = ` ${lead} ${clipHead(match.path, Math.max(8, room - 3))}`
   return {
     rows: 1,
@@ -1043,7 +1053,7 @@ const aroundRow = (line: string, at: number, room: number): TextChunk => {
   const numbered = /^\s*(\d+) ?(.*)$/.exec(line)
   const number = Number(numbered?.[1] ?? 0)
   const text = numbered?.[2] ?? line
-  const mark = number === at ? "▸" : " "
+  const mark = number === at ? marks().cursor : " "
   const said = `  ${mark} ${String(number).padStart(5)}  ${text}`
   return fg(number === at ? palette.ink : palette.faint)(clip(said, room).padEnd(room))
 }
@@ -1076,7 +1086,7 @@ type Placed = { readonly entry: PanelEntry; readonly at: number }
 
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
-  const lead = ` ${entry.fresh || entry.unread > 0 ? marks().comment : " "} `
+  const lead = ` ${standMark(threadStand(entry.comment))} `
   const here = placed.at === state.panelIndex
   return [
     { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
@@ -1801,7 +1811,7 @@ export class Screen {
 
   private paintGutter(state: TuiState, top: number, height: number): void {
     const [from, to] = selectionRange(state)
-    const marked = markedRows(state)
+    const marked = markedStands(state)
     const drawn = this.view.drawn()
     const bare = (visual: number): boolean =>
       visual >= drawn || !this.view.carries(visual) || this.view.isRunOn(visual)
@@ -1810,7 +1820,8 @@ export class Screen {
       const onCode = this.view.stopAt(visual) === 0
       const standing = row === state.cursor && this.view.stopAt(visual) === state.stop
       const within = onCode && inRange(state, row, from, to)
-      return `${standing || within ? marks().cursor : " "}${onCode && marked.has(row) ? marks().comment : " "}`
+      const stand = onCode ? marked.get(row) : undefined
+      return `${standing || within ? marks().cursor : " "}${stand === undefined ? " " : standMark(stand)}`
     }
     const rows = Array.from({ length: height }, (_, index) =>
       bare(top + index) ? "  " : held(top + index),

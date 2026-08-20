@@ -1,88 +1,37 @@
+export type ThreadStand = "waiting" | "answered" | "asked" | "settled" | "gone"
+
 export type MarkSet = {
-  readonly comment: string
+  readonly waiting: string
+  readonly answered: string
+  readonly asked: string
+  readonly done: string
   readonly sent: string
   readonly rule: string
   readonly cursor: string
-  readonly tally: string
-  readonly reviewed: string
-  readonly folder: string
-  readonly folderOpen: string
-  readonly file: string
+  readonly shut: string
+  readonly open: string
   readonly space: string
   readonly tab: string
 }
 
-const ring: MarkSet = {
-  comment: "○",
-  sent: "✓",
-  rule: "│",
+const shared = {
+  done: "✓",
+  sent: "→",
   cursor: "▎",
-  tally: "•",
-  reviewed: "✓",
-  folder: "",
-  folderOpen: "",
-  file: "",
+  shut: "▸",
+  open: "▾",
   space: "·",
   tab: "→",
-}
+} as const
 
-const plain: MarkSet = { ...ring, folder: "▸", folderOpen: "▾", file: "·" }
+const ring: MarkSet = { ...shared, waiting: "○", answered: "◐", asked: "●", rule: "│" }
 
 const sets: Readonly<Record<string, MarkSet>> = {
   ring,
-  bubble: {
-    comment: "◗",
-    sent: "◖",
-    rule: "┃",
-    cursor: "▌",
-    tally: "◗",
-    reviewed: "✓",
-    folder: "",
-    folderOpen: "",
-    file: "",
-    space: "·",
-    tab: "→",
-  },
-  quote: {
-    comment: "❞",
-    sent: "✓",
-    rule: "┊",
-    cursor: "▎",
-    tally: "❞",
-    reviewed: "✓",
-    folder: "",
-    folderOpen: "",
-    file: "",
-    space: "·",
-    tab: "→",
-  },
-  diamond: {
-    comment: "◆",
-    sent: "◈",
-    rule: "╎",
-    cursor: "▎",
-    tally: "◆",
-    reviewed: "✓",
-    folder: "",
-    folderOpen: "",
-    file: "",
-    space: "·",
-    tab: "→",
-  },
-  dot: {
-    comment: "●",
-    sent: "✓",
-    rule: "▏",
-    cursor: "▎",
-    tally: "•",
-    reviewed: "✓",
-    folder: "",
-    folderOpen: "",
-    file: "",
-    space: "·",
-    tab: "→",
-  },
-  plain,
+  bubble: { ...shared, waiting: "◌", answered: "◑", asked: "◗", rule: "┃", cursor: "▌" },
+  quote: { ...shared, waiting: "❞", answered: "❠", asked: "❝", rule: "┊" },
+  diamond: { ...shared, waiting: "◇", answered: "◈", asked: "◆", rule: "╎" },
+  dot: { ...shared, waiting: "○", answered: "◉", asked: "●", rule: "▏" },
 }
 
 export const markSetNames: ReadonlyArray<string> = Object.keys(sets)
@@ -94,5 +43,18 @@ export const useMarks = (name: string): void => {
 }
 
 export const marks = (): MarkSet => chosen
+
+const STAND_KEY: Readonly<Record<ThreadStand, keyof MarkSet | undefined>> = {
+  waiting: "waiting",
+  answered: "answered",
+  asked: "asked",
+  settled: "done",
+  gone: undefined,
+}
+
+export const standMark = (stand: ThreadStand): string => {
+  const key = STAND_KEY[stand]
+  return key === undefined ? " " : chosen[key]
+}
 
 useMarks(process.env["ADIFF_MARKS"] ?? "ring")
