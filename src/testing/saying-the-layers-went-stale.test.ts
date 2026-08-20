@@ -37,7 +37,7 @@ describe("saying the layers went stale", () => {
     await driver.screen.pressKeys(["s"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("layers stale")
+    expect(await driver.screen.getFrame()).toContain("layers stale · L for a new one")
   })
 })
 
@@ -57,5 +57,37 @@ describe("the key that swaps the rail", () => {
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("s layers")
+  })
+})
+
+describe("the key that asks for a new reading order", () => {
+  it("is offered in the footer while the one you have is stale", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const created = await driver.branch.create(branch)
+    await driver.app.runLayersSet(created.worktree, layers)
+    await driver.branch.setFile(created, "src/invitations.ts", [...client("resolve"), "const extra = 2"])
+    await driver.branch.commitAll(created, "one more line")
+
+    // ACT
+    await driver.screen.open({ width: 150, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("L new order")
+  })
+
+  it("is not offered while the reading order still describes the branch", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const created = await driver.branch.create(branch)
+    await driver.app.runLayersSet(created.worktree, layers)
+
+    // ACT
+    await driver.screen.open({ width: 150, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).not.toContain("L new order")
   })
 })

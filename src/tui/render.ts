@@ -928,7 +928,7 @@ const headerParts = (
   pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
   state.vouched.length === 0 ? "" : reviewedCount(state),
   contextLabel(state.context),
-  state.layersStale ? "layers stale" : "",
+  state.layersStale ? "layers stale · L for a new one" : "",
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} ${hiddenLines(state) === 1 ? "line" : "lines"} hidden`,
   panLabel(state, across),
 ]
@@ -1491,6 +1491,7 @@ export class Screen {
       reviewed: reviewedCountIn(state),
       pull: pullHere(state).length > 0,
       pane: state.screen === "review" ? state.focus : "diff",
+      stale: state.layersStale,
       onLayers: onLayers(state),
       hidingRead: state.hideReviewed,
       hidingSettled: state.hideSettled,
