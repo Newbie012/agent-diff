@@ -103,6 +103,10 @@
   dir: ""
   intents:
     - the-thread-you-are-answering
+"@eliya-oss/agent-diff@0.1.0-alpha.114":
+  dir: ""
+  intents:
+    - bringing-a-comment-back
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:

@@ -446,6 +446,10 @@
 
 - An agent can answer a comment, and a reviewer can settle the thread.
 
+## 0.1.0-alpha.114
+
+- A comment you withdrew can be brought back from the terminal. `X` used to be a one-key destructive action with no confirm, no undo and no trace — the thread vanished from the diff, from the review panel and from the file counts, and the only way back was a CLI command the message named but the terminal could not run. A withdrawn thread now sits under "Withdrawn" in the review, out of the diff, and `X` on it brings it back.
+
 ## 0.1.0-alpha.113
 
 - The reply box shows the thread you are answering. It used to quote code from wherever the diff cursor happened to be — often a different file — and never showed your comment or the agent's answer, so you replied to a question you could not see. It now shows the conversation, and names the range rather than only its last line.
