@@ -1054,7 +1054,7 @@ export class App {
       yield* this.settling(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
       const held = withSent({ ...this.state, opened: this.state.opened.filter((one) => one !== id) }, sent)
-      this.commit(withNotice(this.staying(held, id, was), "settled"))
+      this.commit(withNotice(this.staying(held, was), "settled"))
     })
   }
 
@@ -1070,11 +1070,9 @@ export class App {
     })
   }
 
-  private staying(state: TuiState, id: string, was: number): TuiState {
-    const entries = panelEntries(state)
-    const last = Math.max(0, entries.length - 1)
-    const at = entries.findIndex((entry) => entry.comment.id === id)
-    return { ...state, panelIndex: Math.min(at === -1 ? was : at, last) }
+  private staying(state: TuiState, was: number): TuiState {
+    const last = Math.max(0, panelEntries(state).length - 1)
+    return { ...state, panelIndex: Math.min(was, last) }
   }
 
   private removeHere(): Work {
@@ -1097,7 +1095,7 @@ export class App {
       const sent = yield* this.loadSent(branch)
       const kept = { ...this.state, opened: this.state.opened.filter((one) => one !== id) }
       const said = back ? "restored" : "removed, it is under Removed in the review"
-      this.commit(withNotice(this.staying(withSent(kept, sent), id, was), said))
+      this.commit(withNotice(this.staying(withSent(kept, sent), was), said))
     })
   }
 
