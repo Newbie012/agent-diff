@@ -1,0 +1,162 @@
+import { execFileSync } from "node:child_process"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { argv, exit, stderr, stdout } from "node:process"
+
+const SIM = "scripts/simulate.ts"
+const NODE = ["--experimental-ffi", "--disable-warning=ExperimentalWarning"]
+
+const value = (name: string): string | undefined => {
+  const at = argv.indexOf(`--${name}`)
+  return at === -1 ? undefined : argv[at + 1]
+}
+
+const number = (name: string, fallback: number): number => {
+  const said = value(name)
+  return said === undefined ? fallback : Number(said)
+}
+
+const cols = number("cols", 120)
+const rows = number("rows", 32)
+const keys = (value("keys") ?? "").split(" ").filter((token) => token.length > 0)
+const label = value("label") ?? "after"
+const against = value("against")
+const wanted = value("wait-for") ?? "WORKTREE"
+const filming = argv.includes("--video")
+const keeping = argv.includes("--keep")
+
+const run = (command: string, args: ReadonlyArray<string>): string =>
+  execFileSync(command, [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] }).trim()
+
+const git = (...args: ReadonlyArray<string>): string => run("git", args)
+
+try {
+  run("which", ["termctrl"])
+} catch {
+  stderr.write(
+    "termctrl is not on PATH. Install it with `cargo install --locked terminal-control`, then run this again.\n",
+  )
+  exit(1)
+}
+
+const slug = label.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+const shots = "shots"
+mkdirSync(shots, { recursive: true })
+
+const stillAt = (root: string, name: string): string => {
+  const out = join(shots, `${name}.png`)
+  run("termctrl", [
+    "save",
+    "--format", "png",
+    "--out", out,
+    "--cols", String(cols),
+    "--rows", String(rows),
+    "--hide-cursor",
+    "--settle-ms", "3000",
+    "--deadline-ms", "40000",
+    "--wait-for", wanted,
+    ...keys.flatMap((key) => ["-s", key]),
+    "--",
+    "node", ...NODE, join(root, SIM),
+  ])
+  return out
+}
+
+const filmAt = (root: string, name: string): string => {
+  const tape = join(shots, `${name}.termctrl`)
+  const out = join(shots, `${name}.mp4`)
+  const session = `adiff-${name}`
+  run("termctrl", [
+    "start", session,
+    "--record", tape,
+    "--cols", String(cols),
+    "--rows", String(rows),
+    "--",
+    "node", ...NODE, join(root, SIM),
+  ])
+  try {
+    run("termctrl", ["wait", session, wanted, "--timeout", "40000"])
+    for (const key of keys) run("termctrl", ["send", session, "--pace-ms", "120", key])
+  } finally {
+    run("termctrl", ["stop", session])
+  }
+  run("termctrl", ["video", tape, "-o", out, "--hide-cursor", "--tail-ms", "1200"])
+  rmSync(tape, { force: true })
+  return out
+}
+
+const atBase = (commit: string, name: string): string => {
+  const root = git("rev-parse", "--show-toplevel")
+  const where = mkdtempSync(join(tmpdir(), "adiff-shot-"))
+  const tree = join(where, "tree")
+  try {
+    git("worktree", "add", "--detach", tree, commit)
+    symlinkSync(join(root, "node_modules"), join(tree, "node_modules"))
+    return stillAt(tree, name)
+  } finally {
+    git("worktree", "remove", "--force", tree)
+    rmSync(where, { recursive: true, force: true })
+  }
+}
+
+const uploaded = (path: string): string => {
+  const said = run("gh", ["image", "--repo", run("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]), path])
+  const found = /\((?<url>https:\/\/github\.com\/user-attachments\/assets\/[^)]+)\)/.exec(said)
+  if (found?.groups?.["url"] === undefined) {
+    stderr.write(
+      `gh image did not return a user-attachments URL. It said:\n${said}\nRun \`gh image check-token\`, and install it with \`gh extension install drogers0/gh-image\` if it is missing.\n`,
+    )
+    exit(1)
+  }
+  return found.groups["url"]
+}
+
+const here = git("rev-parse", "--show-toplevel")
+
+if (filming) {
+  const film = filmAt(here, slug)
+  stdout.write(`\n${uploaded(film)}\n`)
+  if (!keeping) rmSync(film, { force: true })
+  exit(0)
+}
+
+const after = stillAt(here, `${slug}-after`)
+
+if (against === undefined) {
+  stdout.write(`\n![${label}](${uploaded(after)})\n`)
+  if (!keeping) rmSync(after, { force: true })
+  exit(0)
+}
+
+const before = atBase(git("merge-base", "HEAD", against), `${slug}-before`)
+
+if (readFileSync(before).equals(readFileSync(after))) {
+  stderr.write(
+    `The screen at the merge base is pixel-identical to the one here, so these keys do not reach what this branch changed. Press the keys that get to it, or leave the before and after out.\n`,
+  )
+  if (!keeping) {
+    rmSync(before, { force: true })
+    rmSync(after, { force: true })
+  }
+  exit(1)
+}
+
+stdout.write(
+  [
+    "",
+    "<table>",
+    "<tr><th>Before</th><th>After</th></tr>",
+    "<tr>",
+    `<td><img src="${uploaded(before)}" alt="before"></td>`,
+    `<td><img src="${uploaded(after)}" alt="after"></td>`,
+    "</tr>",
+    "</table>",
+    "",
+  ].join("\n"),
+)
+
+if (!keeping) {
+  rmSync(before, { force: true })
+  rmSync(after, { force: true })
+}

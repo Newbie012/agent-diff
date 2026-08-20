@@ -33,7 +33,9 @@
     "watch": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/watch.ts",
     "serve": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/serve.ts",
     "play": "node --watch --watch-path=src --watch-path=scripts --experimental-ffi --disable-warning=ExperimentalWarning scripts/play.ts",
-    "prepare": "effect-tsgo patch --oxlint"
+    "prepare": "effect-tsgo patch --oxlint",
+    "shot": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/shot.ts",
+    "pr-summary": "node scripts/pr-summary.ts"
   },
   "engines": {
     "node": ">=22"

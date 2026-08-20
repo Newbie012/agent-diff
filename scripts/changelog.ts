@@ -1,9 +1,7 @@
-import { readdirSync, readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { readFileSync, writeFileSync } from "node:fs"
 import { argv, exit, stdout } from "node:process"
+import { bodyOf, indent, LEDGER, intentNames, readingOf, sectionsIn } from "./lib/intents.ts"
 
-const LEDGER = ".changeset/ledger.yaml"
-const INTENTS = ".changeset"
 const OUT = "CHANGELOG.md"
 
 type Release = {
@@ -49,86 +47,6 @@ const compare = (one: Release, two: Release): number => {
   return one.version.localeCompare(two.version)
 }
 
-const bodyOf = (intent: string): string | undefined => {
-  const path = join(INTENTS, `${intent}.md`)
-  const raw = readFileSync(path, "utf8")
-  const parts = raw.split("---")
-  const said = (parts.length > 2 ? parts.slice(2).join("---") : raw).trim()
-  return said.length === 0 ? undefined : said
-}
-
-type Entry = {
-  readonly kind: string
-  readonly area: string
-  readonly said: string
-  readonly detail: string
-}
-
-const SECTIONS = [
-  ["breaking", "Breaking"],
-  ["feat", "Added"],
-  ["fix", "Fixed"],
-  ["perf", "Performance"],
-] as const
-
-const HEAD = /^(?<kind>breaking|feat|fix|perf)\((?<area>[^)]+)\): (?<said>.+)$/
-
-const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`
-
-const indent = (text: string): string =>
-  text
-    .split("\n")
-    .map((line) => (line.trim().length === 0 ? "" : `  ${line}`))
-    .join("\n")
-
-type Read = {
-  readonly typed: ReadonlyArray<Entry>
-  readonly loose: string
-}
-
-const readingOf = (body: string): Read => {
-  const typed: Array<{ kind: string; area: string; said: string; detail: Array<string> }> = []
-  const loose: Array<string> = []
-  for (const line of body.split("\n")) {
-    const found = HEAD.exec(line)?.groups
-    if (found !== undefined) {
-      typed.push({
-        kind: found["kind"] ?? "",
-        area: found["area"] ?? "",
-        said: found["said"] ?? "",
-        detail: [],
-      })
-      continue
-    }
-    const held = typed.at(-1)
-    if (held === undefined) loose.push(line)
-    else held.detail.push(line)
-  }
-  return {
-    typed: typed.map((held) => ({
-      kind: held.kind,
-      area: held.area,
-      said: held.said,
-      detail: held.detail.join("\n").trim(),
-    })),
-    loose: loose.join("\n").trim(),
-  }
-}
-
-const bulletFor = (entry: Entry): string => {
-  const said = `- **${capital(entry.area)}** — ${entry.said}`
-  return entry.detail.length === 0 ? said : `${said}\n\n${indent(entry.detail)}`
-}
-
-const sectionsIn = (typed: ReadonlyArray<Entry>): ReadonlyArray<string> =>
-  SECTIONS.flatMap(([kind, title]) => {
-    const mine = typed.filter((entry) => entry.kind === kind)
-    return mine.length === 0 ? [] : [`### ${title}\n\n${mine.map(bulletFor).join("\n\n")}`]
-  })
-
-const known = (): ReadonlySet<string> =>
-  new Set(readdirSync(INTENTS).filter((name) => name.endsWith(".md")).map((name) => name.slice(0, -3)))
-
 const entryFor = (release: Release, have: ReadonlySet<string>): string | undefined => {
   const readings = release.intents
     .filter((intent) => have.has(intent))
@@ -136,17 +54,18 @@ const entryFor = (release: Release, have: ReadonlySet<string>): string | undefin
       const body = bodyOf(intent)
       return body === undefined ? [] : [readingOf(body)]
     })
-  const loose = readings
-    .flatMap((reading) => (reading.loose.length === 0 ? [] : [`- ${indent(reading.loose).trim()}`]))
+  const loose = readings.flatMap((reading) =>
+    reading.loose.length === 0 ? [] : [`- ${indent(reading.loose).trim()}`],
+  )
   const typed = readings.flatMap((reading) => reading.typed)
-  const said = [...loose, ...sectionsIn(typed)]
+  const said = [...loose, ...sectionsIn(typed, true)]
   if (said.length === 0) return undefined
   return `## ${release.version}\n\n${said.join("\n\n")}\n`
 }
 
 const wanted = argv[2]
 const releases = releasesIn(readFileSync(LEDGER, "utf8")).toSorted(compare)
-const have = known()
+const have = intentNames()
 
 if (wanted !== undefined) {
   const one = releases.find((release) => release.version === wanted)

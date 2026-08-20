@@ -713,7 +713,7 @@ header, so a reviewer inside a diff knows the branch has one without going back 
 - Editing code from the terminal.
 - Reading a branch that is not a worktree of the repo adiff was pointed at.
 - Resizing behavior beyond what the layout engine provides.
-- Reading [layers](CONTEXT.md#layers) — see [PRD 006](006-layers-review.md).
+- Reading [layers](CONTEXT.md#layers) — see [PRD 006](006-narrative-review.md).
 
 ## Further Notes
 
