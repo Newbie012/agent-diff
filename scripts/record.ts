@@ -23,6 +23,18 @@ const changedTests = (): ReadonlyArray<string> =>
     .split("\n")
     .filter((path) => path.endsWith(".test.ts"))
 
+const TITLE = /^\+\s*(?:test|it)\(\s*(?<quote>["'`])(?<title>.+?)\k<quote>/
+
+const addedTitles = (): ReadonlySet<string> =>
+  new Set(
+    git("diff", "origin/main...HEAD", "--", "*.test.ts")
+      .split("\n")
+      .flatMap((line) => {
+        const found = TITLE.exec(line)?.groups?.["title"]
+        return found === undefined ? [] : [found]
+      }),
+  )
+
 const wanted = onlyNamed === undefined ? changedTests() : [onlyNamed]
 
 if (wanted.length === 0) {
@@ -45,7 +57,16 @@ try {
   exit(1)
 }
 
-const held = tracesIn(trace)
+const added = onlyNamed === undefined ? addedTitles() : undefined
+const held = tracesIn(trace).filter(
+  (one) => added === undefined || [...added].some((title) => one.test.endsWith(title)),
+)
+
+if (held.length === 0) {
+  stdout.write("No test was added on this branch, so there is nothing to record.\n")
+  rmSync(where, { recursive: true, force: true })
+  exit(0)
+}
 const filmed: Array<{ readonly test: string; readonly url: string }> = []
 
 for (const one of held) {

@@ -350,16 +350,9 @@ export class App {
     Effect.runSync(options.display.onAsked((text) => this.askedBack(text)))
     renderer.keyInput.on("keypress", (key) => this.dispatch(key))
     renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
-    renderer.on("destroy", () => this.stopWatching())
-    renderer.on("destroy", () => this.stopFading())
-    renderer.on("destroy", () => this.stopLooking())
-    renderer.on("destroy", () => this.stopTicking())
+    renderer.on("destroy", () => this.letGoOfEverything())
     this.startTicking()
-    renderer.on("destroy", () => this.stopLighting())
-    renderer.on("destroy", () => this.stopSourcing())
-    renderer.on("destroy", () => void getTreeSitterClient().destroy())
-    renderer.on("destroy", () => this.stopPainting())
-    renderer.on("destroy", () => this.stopConsuming())
+
     renderer.on("frame", () => this.syncGeometry())
     renderer.on("resize", () => this.resized())
     renderer.setFrameCallback(() => Effect.runPromise(this.applying()))
@@ -1364,6 +1357,18 @@ export class App {
       this.stopSourcing()
       this.sourcing = yield* Effect.forkDetach(this.loadSource())
     })
+  }
+
+  private letGoOfEverything(): void {
+    this.stopWatching()
+    this.stopFading()
+    this.stopLooking()
+    this.stopTicking()
+    this.stopLighting()
+    this.stopSourcing()
+    this.stopPainting()
+    this.stopConsuming()
+    void getTreeSitterClient().destroy()
   }
 
   private stopSourcing(): void {
