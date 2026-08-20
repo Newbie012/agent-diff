@@ -11,7 +11,7 @@ import {
 import { Option } from "effect"
 import { lineOn, type Patch, type Row, type RowKind } from "../domain/patch/index.ts"
 import { marks } from "./marks.ts"
-import type { Picked } from "./model.ts"
+import { sinceThen, type Picked } from "./model.ts"
 import { palette, syntaxTheme } from "./theme.ts"
 
 export type LinePaint = { readonly gutter: RGBA; readonly content: RGBA }
@@ -34,6 +34,8 @@ export type Note = {
   readonly asks: boolean
   readonly answers: ReadonlyArray<string>
   readonly turns: ReadonlyArray<{ readonly voice: "reviewer" | "agent"; readonly body: string }>
+  readonly takenAt: string | undefined
+  readonly now?: number
 }
 
 type Display = {
@@ -707,7 +709,8 @@ const headOf = (note: Note): string => {
   if (note.asks) return `${marks().asked} asked back${moved}`
   if (note.turns.at(-1)?.voice === "reviewer") return `${marks().waiting} replied${moved}`
   if (note.answers.length > 0) return `${marks().answered} answered${moved}`
-  return `${marks().sent} sent${moved}`
+  if (note.takenAt === undefined) return `${marks().sent} sent${moved}`
+  return `${marks().waiting} picked up ${sinceThen(note.takenAt, note.now)}${moved}`
 }
 
 const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {

@@ -663,13 +663,16 @@ const notesOf = (
   comments: ReadonlyArray<StagedComment>,
   path: string,
   sent: boolean,
-  opened: ReadonlyArray<string> = [],
+  shown: { readonly opened: ReadonlyArray<string>; readonly now: number } = {
+    opened: [],
+    now: Date.now(),
+  },
 ): ReadonlyArray<Note> =>
   comments
     .filter((entry) => entry.file === path)
     .map((entry) => ({
       id: entry.id ?? "",
-      folded: entry.settled === true && !(entry.id !== undefined && opened.includes(entry.id)),
+      folded: entry.settled === true && !(entry.id !== undefined && shown.opened.includes(entry.id)),
       side: entry.side,
       line: entry.end,
       body: entry.body,
@@ -679,10 +682,12 @@ const notesOf = (
       asks: entry.asks === true,
       answers: entry.answers ?? [],
       turns: entry.turns ?? [],
+      takenAt: entry.takenAt,
+      now: shown.now,
     }))
 
 const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> =>
-  notesOf(stillThere(state.sent), path, true, state.opened)
+  notesOf(stillThere(state.sent), path, true, { opened: state.opened, now: state.now })
 
 const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<TextChunk>> => {
   const chips: Array<ReadonlyArray<TextChunk>> = []
@@ -988,7 +993,8 @@ const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   asked: "Waiting on you",
-  with: "With the agent",
+  filed: "Not picked up",
+  with: "Picked up, no answer",
   answered: "Answered, not settled",
   settled: "Settled",
   removed: "Removed",

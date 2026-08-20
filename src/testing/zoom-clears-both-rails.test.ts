@@ -32,14 +32,14 @@ describe("giving the diff the whole window", () => {
     await using driver = await TestDriver.create()
     await commented(driver)
     const before = await driver.screen.getFrame()
-    expect(before).toContain("With the agent")
+    expect(before).toContain("Not picked up")
     expect(before).toContain("api.ts")
 
     // ACT
     await driver.screen.pressKeys(["z"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("With the agent")
+    expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
   it("brings both back when zoomed a second time", async () => {
@@ -52,7 +52,7 @@ describe("giving the diff the whole window", () => {
     await driver.screen.pressKeys(["z"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("With the agent")
+    expect(await driver.screen.getFrame()).toContain("Not picked up")
   })
 
   it("leaves the panel shut if the reader had shut it themselves", async () => {
@@ -60,13 +60,13 @@ describe("giving the diff the whole window", () => {
     await using driver = await TestDriver.create()
     await commented(driver)
     await driver.screen.pressKeys(["a"])
-    expect(await driver.screen.getFrame()).not.toContain("With the agent")
+    expect(await driver.screen.getFrame()).not.toContain("Not picked up")
 
     // ACT
     await driver.screen.pressKeys(["z", "z"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("With the agent")
+    expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
   it("names the key that hides the panel", async () => {

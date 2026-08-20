@@ -41,7 +41,7 @@ describe("the review panel", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("With the agent")
+    expect(frame).toContain("Not picked up")
     expect(frame).toContain("src/api.ts:2")
     expect(frame).toContain("why this one")
   })
@@ -62,7 +62,7 @@ describe("the review panel", () => {
     await driver.screen.open({ width: 100, height: 32, review: true })
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("With the agent")
+    expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
   it("gives the columns back when the reviewer hides it", async () => {
@@ -82,7 +82,7 @@ describe("the review panel", () => {
     await driver.screen.pressKeys(["a"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).not.toContain("With the agent")
+    expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
   it("lists every comment the agent is holding", async () => {
@@ -109,7 +109,7 @@ describe("the review panel", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("With the agent")
+    expect(frame).toContain("Not picked up")
     expect(frame).toContain("still mine")
     expect(frame).toContain("already handed over")
   })

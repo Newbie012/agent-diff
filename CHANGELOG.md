@@ -1,22 +1,52 @@
 # Changelog
 
+## 0.1.0-alpha.135
+
+### Added
+
+- **Changelog** — a release note groups what changed under Breaking, Added, Fixed and Performance, and names the part of adiff each entry is about.
+
+  <details><summary>What it looked like before</summary>
+
+  A release was a run of paragraphs. Five fixes in one pull request arrived as one story, with no way to tell a fix from a new behaviour, or to find the part of adiff a line was about without reading all of it.
+
+  </details>
+
+### Fixed
+
+- **Review panel** — a thread says whether the agent has actually picked your comment up.
+
+  <details><summary>What was wrong</summary>
+
+  Everything unanswered was filed under "With the agent", which claimed custody adiff had no way to know about. `comment take` returned everything still owed an answer and left no trace, so a comment sent a second ago, one an agent had been working on for ten minutes, and one on a branch where no agent has ever run were the same thing on screen. Threads sit under "Not picked up" until something collects them, and "Picked up, no answer" after.
+
+  </details>
+
+- **Diff** — a thread head says how long ago the comment was picked up.
+
+  <details><summary>What was wrong</summary>
+
+  Every unanswered thread read `sent`. A comment an agent collected and then went away without answering — the case worth noticing — looked exactly like one written a second ago. It reads `picked up 40m ago` now.
+
+  </details>
+
 ## 0.1.0-alpha.134
 
 ### Fixed
 
-- **Layers rail** — a wheel over the rail still moves a file at a time, but stops when you do.
+- **Layers rail** — a wheel still moves a file at a time, but stops when you do.
 
   <details><summary>What was wrong</summary>
 
-  Each tick was queued behind a file load, so a trackpad flick left a backlog that carried on walking the review long after the gesture ended. Ticks that arrive while a move is still loading are dropped rather than queued.
+  Each tick was queued as its own task behind a file load, so a trackpad flick left a backlog that carried on walking the review long after the gesture ended. A tick that arrives while a move is still loading is dropped rather than queued. The file tree keeps every tick, since moving that list loads nothing.
 
   </details>
 
-- **Layers rail** — the rail's three levels step in evenly, and a directory too long for the rail is shortened rather than cut off.
+- **Layers rail** — titles, directories and file names step in evenly, the way the file tree already did.
 
   <details><summary>What was wrong</summary>
 
-  A directory sat one column left of the layer title above it and two right of the file names below it — three ragged edges. The file tree already lined its levels up; the rail does now too.
+  A directory sat one column left of the layer title above it and two right of the file names below it — three ragged edges rather than a hierarchy. A directory too wide for the rail was also hard-cut at the pane edge, because the shortener could return something longer than the room it was given.
 
   </details>
 
