@@ -10,7 +10,7 @@ const files = [
 ]
 
 const rowsOf = (frame: string): ReadonlyArray<string> =>
-  frame.split("\n").map((line) => (line.split("││")[1] ?? "").split("│")[0] ?? "")
+  frame.split("\n").map((line) => line.split("││")[1] ?? "")
 
 describe("a layer's note about a replaced line", () => {
   it("sits above the pair, not between the two halves of it", async () => {
