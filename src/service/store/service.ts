@@ -1,6 +1,6 @@
 import { mkdir, readFile, appendFile, rename, rm, stat, writeFile } from "node:fs/promises"
 import { join, resolve } from "node:path"
-import { Context, Effect, Layer, Option, Schedule, Schema } from "effect"
+import { Cache, Context, Effect, Layer, Option, Schedule, Schema } from "effect"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
 import {
   emptyBranchState,
@@ -102,6 +102,44 @@ const decoded = <A, I>(schema: Schema.Codec<A, I>) => {
     Effect.mapError(decode(value), damaged(path))
 }
 
+const unwritable = (path: string) => (reason: unknown) =>
+  new StoreUnwritable({ path, reason: String(reason) })
+
+const wrote = (path: string, body: string): Effect.Effect<void, StoreUnwritable> =>
+  Effect.tryPromise({ try: () => writeFile(path, body, "utf8"), catch: unwritable(path) })
+
+const added = (path: string, body: string): Effect.Effect<void, StoreUnwritable> =>
+  Effect.tryPromise({ try: () => appendFile(path, `${body}\n`, "utf8"), catch: unwritable(path) })
+
+const INDENT = 2
+const DRAFTS_VERSION = 1
+
+const encoded = <A, I>(schema: Schema.Codec<A, I>) => {
+  const encode = Schema.encodeEffect(schema)
+  return (path: string, value: A): Effect.Effect<I, StoreUnwritable> =>
+    Effect.mapError(encode(value), unwritable(path))
+}
+
+const writes = <A, I>(schema: Schema.Codec<A, I>, space?: number) => {
+  const encode = encoded(schema)
+  return (path: string, value: A): Effect.Effect<void, StoreUnwritable> =>
+    Effect.flatMap(encode(path, value), (wire) => wrote(path, JSON.stringify(wire, undefined, space)))
+}
+
+const appends = <A, I>(schema: Schema.Codec<A, I>) => {
+  const encode = encoded(schema)
+  return (path: string, value: A): Effect.Effect<void, StoreUnwritable> =>
+    Effect.flatMap(encode(path, value), (wire) => added(path, JSON.stringify(wire)))
+}
+
+const writeSettings = writes(Wire.Settings)
+const writeUpgradeCheck = writes(Wire.UpgradeCheck, INDENT)
+const writeState = writes(Wire.BranchState, INDENT)
+const writeLayers = writes(Wire.StoredLayers, INDENT)
+const writeDrafts = writes(Wire.Drafts, INDENT)
+const writeBatch = appends(Wire.Batch)
+const writeAnswer = appends(Wire.StoredAnswer)
+
 const asSettings = decoded(Wire.Settings)
 const asUpgradeCheck = decoded(Wire.UpgradeCheck)
 const asBatch = decoded(Wire.Batch)
@@ -133,15 +171,11 @@ const parseUpgradeCheck = Effect.fn("Store.parseUpgradeCheck")(function* (path: 
 })
 
 const parseState = Effect.fn("Store.parseState")(function* (path: string, raw: string) {
-  const value = yield* jsonOf(path, raw)
-  const held = yield* asState(path, value)
-  return { ...emptyBranchState, ...held } satisfies BranchState
+  return yield* asState(path, yield* jsonOf(path, raw))
 })
 
 const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw: string) {
-  const value = yield* jsonOf(path, raw)
-  const held = yield* asLayers(path, value)
-  return { ...held, parent: held.parent } satisfies StoredLayers
+  return yield* asLayers(path, yield* jsonOf(path, raw))
 })
 
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
@@ -179,10 +213,7 @@ const settingsOps = (root: string) => {
   const saveSettings = Effect.fn("Store.saveSettings")(function* (next: Settings) {
     const path = settingsPath(root)
     yield* ensureDir(root)
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, JSON.stringify(next), "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeSettings(path, next)
   })
 
   return { settings, saveSettings }
@@ -201,10 +232,7 @@ const upgradeOps = (root: string) => {
   const saveUpgradeCheck = Effect.fn("Store.saveUpgradeCheck")(function* (next: UpgradeCheck) {
     const path = upgradePath(root)
     yield* ensureDir(root)
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeUpgradeCheck(path, next)
   })
 
   return { upgradeCheck, saveUpgradeCheck }
@@ -214,10 +242,7 @@ const reportOps = (root: string) =>
   Effect.fn("Store.saveReport")(function* (stamp: string, text: string) {
     const path = reportPath(root, stamp)
     yield* ensureDir(reportsDir(root))
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, text, "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* wrote(path, text)
     return path
   })
 
@@ -265,43 +290,46 @@ const there = (path: string): Promise<boolean> =>
     () => false,
   )
 
-const adopted = new Set<string>()
-
 const moved = (from: string, to: string): Promise<void> =>
   rename(from, to).catch(() => undefined)
 
 const adopt = Effect.fn("Store.adopt")(function* (root: string, key: string, was: string) {
   const here = branchDir(root, key)
-  if (yield* Effect.promise(() => there(here))) return key
+  if (yield* Effect.promise(() => there(here))) return
   const older = branchDir(root, was)
-  if (!(yield* Effect.promise(() => there(older)))) return key
+  if (!(yield* Effect.promise(() => there(older)))) return
   yield* Effect.promise(() => moved(older, here))
-  return key
 })
 
-const keyIn = (root: string, worktreePath: string): Effect.Effect<string> =>
-  Effect.gen(function* () {
-    const key = yield* keyOf(worktreePath)
-    const mark = `${root}#${key}`
-    if (adopted.has(mark)) return key
-    adopted.add(mark)
+const SPLIT = "\u0000"
+
+const ADOPT_SIZE = 256
+
+const adopting = (root: string) =>
+  Effect.fn("Store.adopting")(function* (mark: string) {
+    const [key = "", worktreePath = ""] = mark.split(SPLIT)
     const was = yield* wasKeyOf(worktreePath)
-    return key === was ? key : yield* adopt(root, key, was)
+    if (key !== was) yield* adopt(root, key, was)
+    return key
   })
 
-const answerOps = (root: string) => {
+type Keys = Cache.Cache<string, string>
+
+const keyIn = (adopted: Keys, worktreePath: string): Effect.Effect<string> =>
+  Effect.flatMap(keyOf(worktreePath), (key) =>
+    Cache.get(adopted, `${key}${SPLIT}${worktreePath}`),
+  )
+
+const answerOps = (root: string, adopted: Keys) => {
   const answer = Effect.fn("Store.answer")(function* (worktreePath: string, entry: StoredAnswer) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = outboxPath(root, key)
     yield* ensureDir(branchDir(root, key))
-    yield* Effect.tryPromise({
-      try: () => appendFile(path, `${JSON.stringify(entry)}\n`, "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeAnswer(path, entry)
   })
 
   const answers = Effect.fn("Store.answers")(function* (worktreePath: string) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = outboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -313,9 +341,9 @@ const answerOps = (root: string) => {
   return { answer, answers }
 }
 
-const draftsOps = (root: string) => {
+const draftsOps = (root: string, adopted: Keys) => {
   const drafts = Effect.fn("Store.drafts")(function* (worktreePath: string) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = draftsPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return [] as ReadonlyArray<StoredDraft>
@@ -328,22 +356,18 @@ const draftsOps = (root: string) => {
     worktreePath: string,
     next: ReadonlyArray<StoredDraft>,
   ) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = draftsPath(root, key)
     yield* ensureDir(branchDir(root, key))
-    const body = JSON.stringify({ version: 1, drafts: next }, undefined, 2)
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, body, "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeDrafts(path, { version: DRAFTS_VERSION, drafts: next })
   })
 
   return { drafts, saveDrafts }
 }
 
-const layersOps = (root: string) => {
+const layersOps = (root: string, adopted: Keys) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = layersPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return Option.none<StoredLayers>()
@@ -354,31 +378,25 @@ const layersOps = (root: string) => {
     worktreePath: string,
     next: StoredLayers,
   ) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = layersPath(root, key)
     yield* ensureDir(branchDir(root, key))
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeLayers(path, next)
   })
 
   return { layers, saveLayers }
 }
 
-const inboxOps = (root: string) => {
+const inboxOps = (root: string, adopted: Keys) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = inboxPath(root, key)
     yield* ensureDir(branchDir(root, key))
-    yield* Effect.tryPromise({
-      try: () => appendFile(path, `${JSON.stringify(batch)}\n`, "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeBatch(path, batch)
   })
 
   const inbox = Effect.fn("Store.inbox")(function* (worktreePath: string) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = inboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -424,9 +442,9 @@ const taken = (path: string): Effect.Effect<void, StoreUnwritable> =>
 const freed = (path: string): Effect.Effect<void> =>
   Effect.promise(() => rm(path, { force: true }))
 
-const stateOps = (root: string) => {
+const stateOps = (root: string, adopted: Keys) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = statePath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -439,20 +457,17 @@ const stateOps = (root: string) => {
     worktreePath: string,
     next: BranchState,
   ) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     const path = statePath(root, key)
     yield* ensureDir(branchDir(root, key))
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, JSON.stringify(next, undefined, 2), "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* writeState(path, next)
   })
 
   const changeState = Effect.fn("Store.changeState")(function* (
     worktreePath: string,
     change: (was: BranchState) => BranchState,
   ) {
-    const key = yield* keyIn(root, worktreePath)
+    const key = yield* keyIn(adopted, worktreePath)
     yield* ensureDir(branchDir(root, key))
     const lock = `${statePath(root, key)}.lock`
     yield* Effect.acquireUseRelease(taken(lock), () => under(worktreePath, change), () => freed(lock))
@@ -468,10 +483,10 @@ const stateOps = (root: string) => {
   return { state, saveState, changeState }
 }
 
-const makeStore = (root: string): Shape => {
-  const { submit, inbox } = inboxOps(root)
-  const { state, saveState, changeState } = stateOps(root)
-  const talk = answerOps(root)
+const makeStore = (root: string, adopted: Keys): Shape => {
+  const { submit, inbox } = inboxOps(root, adopted)
+  const { state, saveState, changeState } = stateOps(root, adopted)
+  const talk = answerOps(root, adopted)
   const cursors = cursorOps(state, inbox, talk.answers)
   return {
     root,
@@ -485,10 +500,15 @@ const makeStore = (root: string): Shape => {
     ...settingsOps(root),
     ...upgradeOps(root),
     ...talk,
-    ...layersOps(root),
-    ...draftsOps(root),
+    ...layersOps(root, adopted),
+    ...draftsOps(root, adopted),
     ...cursors,
   }
 }
 
-export const storeAt = (root: string): Layer.Layer<Store> => Layer.succeed(Store)(makeStore(root))
+const madeStore = Effect.fn("Store.make")(function* (root: string) {
+  const adopted = yield* Cache.make({ capacity: ADOPT_SIZE, lookup: adopting(root) })
+  return makeStore(root, adopted)
+})
+
+export const storeAt = (root: string): Layer.Layer<Store> => Layer.effect(Store)(madeStore(root))

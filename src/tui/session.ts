@@ -1,24 +1,23 @@
 import { readFile, writeFile } from "node:fs/promises"
-import { Effect, Option } from "effect"
+import { Effect, Option, Schema } from "effect"
 import type { TuiState } from "./model.ts"
 
-export type Session = {
-  readonly branchIndex: number
-  readonly patchIndex: number
-  readonly cursor: number
-  readonly top: number
-}
+const zero = Schema.withDecodingDefaultKey<typeof Schema.Number>(Effect.succeed(0))
 
-const parse = (raw: string): Option.Option<Session> => {
-  const parsed = JSON.parse(raw) as Partial<Session>
-  if (typeof parsed.branchIndex !== "number") return Option.none()
-  return Option.some({
-    branchIndex: parsed.branchIndex,
-    patchIndex: parsed.patchIndex ?? 0,
-    cursor: parsed.cursor ?? 0,
-    top: parsed.top ?? 0,
-  })
-}
+const Held = Schema.Struct({
+  branchIndex: Schema.Number,
+  patchIndex: Schema.Number.pipe(zero),
+  cursor: Schema.Number.pipe(zero),
+  top: Schema.Number.pipe(zero),
+})
+
+export type Session = typeof Held.Type
+
+const decode = Schema.decodeUnknownOption(Held)
+
+const jsonOf = Option.liftThrowable((raw: string): unknown => JSON.parse(raw))
+
+const parse = (raw: string): Option.Option<Session> => Option.flatMap(jsonOf(raw), decode)
 
 const saved = (path: string, session: Session): Promise<void> =>
   writeFile(path, JSON.stringify(session), "utf8").catch(() => undefined)

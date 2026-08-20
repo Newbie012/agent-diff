@@ -1,5 +1,5 @@
-import { execFile } from "node:child_process"
-import { Context, Effect, Layer, Schema } from "effect"
+import { execFile, type ChildProcess } from "node:child_process"
+import { absurd, Context, Effect, Layer, Schema } from "effect"
 import { ForgeUnavailable } from "./error.ts"
 
 export type PullState = "open" | "draft" | "merged" | "closed"
@@ -49,16 +49,29 @@ const Row = Schema.Struct({
 
 const decode = Schema.decodeUnknownEffect(Schema.Array(Row))
 
+const SAID: ReadonlyArray<"OPEN" | "MERGED" | "CLOSED"> = ["OPEN", "MERGED", "CLOSED"]
+
 const stateOf = (row: typeof Row.Type): PullState => {
-  if (row.isDraft && row.state === "OPEN") return "draft"
-  if (row.state === "MERGED") return "merged"
-  if (row.state === "CLOSED") return "closed"
-  return "open"
+  const said = SAID.find((known) => known === row.state)
+  switch (said) {
+    case "OPEN":
+      return row.isDraft ? "draft" : "open"
+    case "MERGED":
+      return "merged"
+    case "CLOSED":
+      return "closed"
+    case undefined:
+      return "open"
+    default:
+      return absurd(said)
+  }
 }
+
+const ended = (child: ChildProcess): Effect.Effect<void> => Effect.sync(() => void child.kill())
 
 const ask = (repo: string): Effect.Effect<string, ForgeUnavailable> =>
   Effect.callback<string, ForgeUnavailable>((resume) => {
-    execFile(
+    const child = execFile(
       "gh",
       ["pr", "list", "--state", "all", "--limit", LIMIT, "--json", FIELDS],
       { cwd: repo, timeout: TIMEOUT_MS, encoding: "utf8" },
@@ -67,11 +80,12 @@ const ask = (repo: string): Effect.Effect<string, ForgeUnavailable> =>
         resume(Effect.fail(new ForgeUnavailable({ repo, reason: error.message })))
       },
     )
+    return ended(child)
   })
 
 const show = (repo: string, branch: string): Effect.Effect<void, ForgeUnavailable> =>
   Effect.callback<void, ForgeUnavailable>((resume) => {
-    execFile(
+    const child = execFile(
       "gh",
       ["pr", "view", branch, "--web"],
       { cwd: repo, timeout: TIMEOUT_MS, encoding: "utf8" },
@@ -80,6 +94,7 @@ const show = (repo: string, branch: string): Effect.Effect<void, ForgeUnavailabl
         resume(Effect.fail(new ForgeUnavailable({ repo, reason: error.message })))
       },
     )
+    return ended(child)
   })
 
 const read = Effect.fn("Forge.read")(function* (repo: string, raw: string) {
@@ -132,6 +147,7 @@ const gh = (
     if (input !== undefined) {
       child.stdin?.end(input)
     }
+    return ended(child)
   })
 
 const named = Effect.fn("Forge.named")(function* (repo: string, branch: string) {

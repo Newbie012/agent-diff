@@ -15,6 +15,7 @@ import {
   type KeyBinding,
   type TextChunk,
 } from "@opentui/core"
+import { absurd } from "effect"
 import { displayKey, hintsFor, takesText, type Command } from "./command.ts"
 import { REMAINDER_TITLE } from "../domain/layers/index.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
@@ -893,6 +894,8 @@ const staleBanner = (room: number): string =>
     .map((line) => ` ${line}`)
     .join("\n")
 
+type Screened = TuiState["screen"]
+
 const layerRoom = (pane: number): LayerRoom => {
   const whole = Math.max(8, pane - PANE_CHROME)
   return {
@@ -902,31 +905,10 @@ const layerRoom = (pane: number): LayerRoom => {
   }
 }
 
-const layerMark = (state: TuiState, row: LayerRow): string => {
-  if (row.kind === "file") return row.reviewed === true ? marks().reviewed : " "
-  if (row.kind !== "title" || !row.lead) return " "
-  if (layerDone(state, row.index)) return marks().reviewed
-  if (leftOver(state, row.index)) return "·"
-  return `${row.index + 1}`
-}
-
-const layerLead = (row: LayerRow): number => {
-  if (row.kind === "file") return FILE_LEAD
-  if (row.kind === "dir") return DIR_LEAD
-  return TITLE_LEAD
-}
-
-const layerGutter = (state: TuiState, row: LayerRow): string => {
-  const here = row.here === true ? "▎" : " "
-  return `${here}${layerMark(state, row).padStart(GUTTER - 1)}`
-}
-
-const layerText = (state: TuiState, row: LayerRow, room: LayerRoom): string => {
-  if (row.kind === "gap") return ""
-  const lead = layerLead(row) - GUTTER
-  return `${layerGutter(state, row)}${" ".repeat(lead)}${row.text}`.padEnd(
-    room.title + TITLE_LEAD,
-  )
+type LayerLook = {
+  readonly lead: number
+  readonly mark: string
+  readonly paint: string
 }
 
 const litRow = (row: LayerRow, state: TuiState, drawn: TextChunk): TextChunk =>
@@ -942,11 +924,52 @@ const titlePaint = (state: TuiState, layerIndex: number): string => {
   return here ? palette.ink : palette.muted
 }
 
-const layerPaint = (state: TuiState, row: LayerRow): string => {
-  if (row.kind === "file") return row.reviewed === true ? palette.added : palette.ink
-  if (row.kind === "dir" || row.kind === "count") return palette.faint
-  return titlePaint(state, row.index)
+const titleMark = (state: TuiState, row: LayerRow): string => {
+  if (!row.lead) return " "
+  if (layerDone(state, row.index)) return marks().reviewed
+  if (leftOver(state, row.index)) return "·"
+  return `${row.index + 1}`
 }
+
+const titleLook = (state: TuiState, row: LayerRow): LayerLook => ({
+  lead: TITLE_LEAD,
+  mark: titleMark(state, row),
+  paint: titlePaint(state, row.index),
+})
+
+const fileLook = (row: LayerRow): LayerLook => ({
+  lead: FILE_LEAD,
+  mark: row.reviewed === true ? marks().reviewed : " ",
+  paint: row.reviewed === true ? palette.added : palette.ink,
+})
+
+const layerLook = (state: TuiState, row: LayerRow): LayerLook => {
+  switch (row.kind) {
+    case "file":
+      return fileLook(row)
+    case "dir":
+      return { lead: DIR_LEAD, mark: " ", paint: palette.faint }
+    case "count":
+    case "gap":
+      return { lead: TITLE_LEAD, mark: " ", paint: palette.faint }
+    case "title":
+      return titleLook(state, row)
+    default:
+      return absurd(row.kind)
+  }
+}
+
+const layerGutter = (row: LayerRow, look: LayerLook): string => {
+  const here = row.here === true ? "▎" : " "
+  return `${here}${look.mark.padStart(GUTTER - 1)}`
+}
+
+const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
+  row.kind === "gap"
+    ? ""
+    : `${layerGutter(row, look)}${" ".repeat(look.lead - GUTTER)}${row.text}`.padEnd(
+        room.title + TITLE_LEAD,
+      )
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   asked: "Waiting on you",
@@ -1302,10 +1325,22 @@ export class Screen {
     return this.composeBody
   }
 
-  asking(screen: TuiState["screen"]): TextareaRenderable | undefined {
-    if (screen === "palette") return this.paletteQuery
-    if (screen === "search") return this.foundQuery
-    return screen === "keys" ? this.keysQuery : undefined
+  asking(screen: Screened): TextareaRenderable | undefined {
+    switch (screen) {
+      case "palette":
+        return this.paletteQuery
+      case "search":
+        return this.foundQuery
+      case "keys":
+        return this.keysQuery
+      case "branches":
+      case "review":
+      case "compose":
+      case "report":
+        return undefined
+      default:
+        return absurd(screen)
+    }
   }
 
   railRows(): number {
@@ -1532,8 +1567,9 @@ export class Screen {
     row: LayerRow,
     room: LayerRoom,
   ): ReadonlyArray<TextChunk> {
-    const drawn = layerText(state, row, room)
-    const body = fg(layerPaint(state, row))(`${drawn.slice(1)}\n`)
+    const look = layerLook(state, row)
+    const drawn = layerText(row, look, room)
+    const body = fg(look.paint)(`${drawn.slice(1)}\n`)
     const mark = fg(row.here === true ? palette.marker : palette.faint)(drawn.slice(0, 1))
     return [mark, litRow(row, state, body)]
   }

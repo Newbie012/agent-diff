@@ -57,9 +57,10 @@ const selfInvocation = (repo: string, branch: string | undefined): ReadonlyArray
 
 const ran = (binary: string, args: ReadonlyArray<string>): Effect.Effect<boolean> =>
   Effect.callback<boolean>((resume) => {
-    execFile(binary, [...args], { timeout: TIMEOUT_MS }, (cause) =>
+    const child = execFile(binary, [...args], { timeout: TIMEOUT_MS }, (cause) =>
       resume(Effect.succeed(cause === null)),
     )
+    return Effect.sync(() => void child.kill())
   })
 
 const split = Effect.fn("Cli.split")(function* (
