@@ -118,17 +118,19 @@ const blockFor = (one: { readonly test: string; readonly url: string }): string 
   ].join("\n")
 }
 
-const grouped = (): string => {
-  const seen = new Set<string>()
-  return filmed
-    .map((one) => {
-      const at = one.test.lastIndexOf(splitOn)
-      const when = at === -1 ? one.test : one.test.slice(0, at)
-      const first = !seen.has(when)
-      seen.add(when)
-      return first ? blockFor(one) : blockFor(one).split("\n").slice(2).join("\n")
-    })
-    .join("\n\n")
+const whenOf = (one: { readonly test: string }): string => {
+  const at = one.test.lastIndexOf(splitOn)
+  return at === -1 ? one.test : one.test.slice(0, at)
 }
+
+const grouped = (): string =>
+  [...new Set(filmed.map(whenOf))]
+    .map((when) =>
+      filmed
+        .filter((one) => whenOf(one) === when)
+        .map((one, at) => (at === 0 ? blockFor(one) : blockFor(one).split("\n").slice(2).join("\n")))
+        .join("\n\n"),
+    )
+    .join("\n\n")
 
 stdout.write(`## Recorded tests\n\n${grouped()}\n`)
