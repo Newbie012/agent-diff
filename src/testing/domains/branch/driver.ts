@@ -79,6 +79,12 @@ export class BranchTestDriver {
     await rm(join(root, file.path), { force: true })
   }
 
+  async setRaw(branch: CreatedBranch, path: string, text: string): Promise<void> {
+    const absolute = join(branch.worktree, path)
+    await mkdir(dirname(absolute), { recursive: true })
+    await writeFile(absolute, text, "utf8")
+  }
+
   async setBinary(branch: CreatedBranch, path: string, bytes: number): Promise<void> {
     const absolute = join(branch.worktree, path)
     await mkdir(dirname(absolute), { recursive: true })

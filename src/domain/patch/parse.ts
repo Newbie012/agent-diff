@@ -4,6 +4,8 @@ import type { Hunk, Patch, Row, RowKind } from "./model.ts"
 const FILE_MARKER = "diff --git "
 const HUNK_MARKER = "@@"
 const BINARY_MARKER = "Binary files "
+const NO_NEWLINE_MARKER = "\\ No newline at end of file"
+const NO_NEWLINE_SAID = "no newline at end of file"
 const BINARY_SAID = "binary file, adiff cannot show what changed in it"
 const BLOB_MARKER = "index "
 const OLD_PATH_MARKER = "--- "
@@ -74,7 +76,23 @@ const appendRow = (draft: Draft, kind: RowKind, text: string): void => {
   draft.hunks.at(-1)?.rows.push(row)
 }
 
+const appendMarker = (draft: Draft, text: string): void => {
+  const row: Row = {
+    index: draft.rows.length,
+    kind: "context",
+    oldLine: Option.none(),
+    newLine: Option.none(),
+    text,
+  }
+  draft.rows.push(row)
+  draft.hunks.at(-1)?.rows.push(row)
+}
+
 const readBody = (draft: Draft, line: string): void => {
+  if (line.startsWith(NO_NEWLINE_MARKER)) {
+    appendMarker(draft, NO_NEWLINE_SAID)
+    return
+  }
   const kind = SIGNS[line.slice(0, 1)]
   if (kind !== undefined) appendRow(draft, kind, line.slice(1))
 }
