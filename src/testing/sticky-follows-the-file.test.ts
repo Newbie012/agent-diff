@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const cssThenTsx = {
@@ -21,8 +21,8 @@ const cssThenTsx = {
   ],
 }
 
-describe("the pinned scope", () => {
-  it("does not keep the scope of the file before it", async () => {
+describe("when the reviewer moves to another file", () => {
+  test("then the pin drops the scope of the file before it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(cssThenTsx)

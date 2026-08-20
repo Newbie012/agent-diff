@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Handed = { readonly id: string }
@@ -6,8 +6,8 @@ type Handed = { readonly id: string }
 const idOf = (result: { readonly envelope: unknown }): string =>
   (result.envelope as { comments: ReadonlyArray<Handed> }).comments[0]?.id ?? ""
 
-describe("handing review comments to the agent", () => {
-  it("gives the agent every comment written since it last looked", async () => {
+describe("when review comments are handed to the agent", () => {
+  test("then the agent gets every comment written since it last looked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -29,7 +29,7 @@ describe("handing review comments to the agent", () => {
     })
   })
 
-  it("keeps handing a comment over until it is answered", async () => {
+  test("then a comment is handed over again until it is answered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -49,7 +49,7 @@ describe("handing review comments to the agent", () => {
     expect(result.envelope).toMatchObject({ ok: true, comments: [{ body: "why third" }] })
   })
 
-  it("stops handing a comment over once it is answered", async () => {
+  test("then an answered comment stops being handed over", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -76,7 +76,7 @@ describe("handing review comments to the agent", () => {
     })
   })
 
-  it("hands over a comment written after the agent caught up", async () => {
+  test("then a comment written after the agent caught up is handed over", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -108,7 +108,7 @@ describe("handing review comments to the agent", () => {
     expect(result.envelope).toMatchObject({ ok: true, comments: [{ body: "second" }] })
   })
 
-  it("still remembers which files were marked reviewed after the agent takes comments", async () => {
+  test("then the files marked reviewed survive the agent taking comments", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()

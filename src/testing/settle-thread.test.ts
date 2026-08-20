@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -18,8 +18,8 @@ const openOnThread = async (driver: TestDriver, body = "why this one"): Promise<
   await driver.screen.open({ review: true })
 }
 
-describe("settling a thread from the terminal", () => {
-  it("settles the thread the cursor is on", async () => {
+describe("when a thread is settled from the terminal", () => {
+  test("then the thread under the cursor settles", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)
@@ -33,7 +33,7 @@ describe("settling a thread from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("settled")
   })
 
-  it("offers the key once the cursor reaches the thread", async () => {
+  test("then the key is offered once the cursor reaches the thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)
@@ -47,7 +47,7 @@ describe("settling a thread from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("d settle")
   })
 
-  it("names the key among the ones the screen answers to", async () => {
+  test("then the key sheet names the key", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)
@@ -62,7 +62,7 @@ describe("settling a thread from the terminal", () => {
     expect(row).toContain("d")
   })
 
-  it("says so when the cursor is on no thread", async () => {
+  test("then the footer reports no thread under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)
@@ -74,7 +74,7 @@ describe("settling a thread from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("no thread here")
   })
 
-  it("keeps a settled thread out of the way of n", async () => {
+  test("then n skips the settled thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openOnThread(driver)

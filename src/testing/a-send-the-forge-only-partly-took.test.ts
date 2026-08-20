@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -42,8 +42,8 @@ const listed = async (driver: TestDriver, branch: string): Promise<ReadonlyArray
 const sent = (driver: TestDriver, branch: string): Promise<{ readonly code: number; readonly stdout: string; readonly stderr: string }> =>
   driver.app.run(["draft", "send", "--repo", driver.repoPath, "--branch", branch])
 
-describe("a send the forge only partly took", () => {
-  it("keeps the comments the forge never confirmed", async () => {
+describe("when the forge only partly takes a send", () => {
+  test("then the comments the forge never confirmed are kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -66,7 +66,7 @@ describe("a send the forge only partly took", () => {
     ])
   })
 
-  it("says how many landed and how many are still held", async () => {
+  test("then the output counts what landed and what is still held", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -92,7 +92,7 @@ describe("a send the forge only partly took", () => {
     expect(said.error.kept).toHaveLength(2)
   })
 
-  it("sends only what did not go the second time", async () => {
+  test("then a second send carries only what did not go", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -119,7 +119,7 @@ describe("a send the forge only partly took", () => {
     expect(await listed(driver, created.name)).toHaveLength(0)
   })
 
-  it("keeps every draft when it cannot tell what the forge took", async () => {
+  test("then every draft is kept when adiff cannot tell what the forge took", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -19,8 +19,8 @@ const twoFiles = {
 const cursorRow = (frame: string): string =>
   frame.split("\n").find((line) => line.includes("▎")) ?? ""
 
-describe("keys arriving faster than the work they start", () => {
-  it("applies a key to the state the key before it left", async () => {
+describe("when keys arrive faster than the work they start", () => {
+  test("then each key applies to the state the key before it left", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -35,7 +35,7 @@ describe("keys arriving faster than the work they start", () => {
     expect(cursorRow(frame)).toContain("const e = 5")
   })
 
-  it("keeps a burst in the order it was pressed", async () => {
+  test("then the burst keeps the order it was pressed in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

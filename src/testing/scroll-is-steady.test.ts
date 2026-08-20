@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const deep = Array.from({ length: 60 }, (_, at) =>
@@ -29,8 +29,8 @@ const diffRows = (frame: string): ReadonlyArray<string> => {
     .filter((line) => line.trim().length > 0)
 }
 
-describe("the pinned scope", () => {
-  it("names the scope the hunk sits in", async () => {
+describe("when a scope is pinned above the diff", () => {
+  test("then the pin names the scope the hunk sits in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(indented)
@@ -43,7 +43,7 @@ describe("the pinned scope", () => {
     expect(diffRows(await driver.screen.getFrame())[0]).toContain("export const outer")
   })
 
-  it("lets go of it when the view reaches the top of the file", async () => {
+  test("then the pin lets go at the top of the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(indented)

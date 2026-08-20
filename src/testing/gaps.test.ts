@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number, from: number): ReadonlyArray<string> =>
@@ -14,8 +14,8 @@ const spread = {
   files: [{ path: "src/spread.ts", before: twoHunks("before"), after: twoHunks("after") }],
 }
 
-describe("knowing that lines were skipped", () => {
-  it("says how many lines the diff is not showing", async () => {
+describe("when the diff skips lines", () => {
+  test("then the diff counts the lines it is not showing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
@@ -29,7 +29,7 @@ describe("knowing that lines were skipped", () => {
     expect(frame).toMatch(/34 lines hidden/)
   })
 
-  it("stops saying it once the context is wide enough", async () => {
+  test("then the count goes once the context is wide enough", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)

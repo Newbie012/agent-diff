@@ -1,10 +1,10 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = ["const first = 1;", "const second = 2;", "const third = 3;"]
 
-describe("copying from the diff", () => {
-  it("takes the line the cursor is on when nothing is selected", async () => {
+describe("when the reviewer copies from the diff", () => {
+  test("then the line the cursor is on is copied", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/small.ts", before: [], after: body }] })
@@ -19,7 +19,7 @@ describe("copying from the diff", () => {
     expect(await driver.screen.getFrame()).toContain("1 line copied")
   })
 
-  it("takes what was dragged over as soon as the drag ends", async () => {
+  test("then what was dragged over is copied as the drag ends", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/small.ts", before: [], after: body }] })
@@ -33,7 +33,7 @@ describe("copying from the diff", () => {
     expect(await driver.screen.getFrame()).toContain("lines copied")
   })
 
-  it("takes the answer when the cursor is on one", async () => {
+  test("then the answer under the cursor is copied", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({

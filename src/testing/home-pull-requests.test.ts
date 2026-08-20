@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -7,8 +7,8 @@ const oneFile = {
 
 const homeRows = (frame: string): ReadonlyArray<string> => frame.split("\n")
 
-describe("knowing whether a branch already has a pull request", () => {
-  it("says which state the pull request is in", async () => {
+describe("when the worktree list is drawn", () => {
+  test("then the list shows the state of the pull request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -22,7 +22,7 @@ describe("knowing whether a branch already has a pull request", () => {
     expect(row).toContain("open")
   })
 
-  it("tells a draft from one that is ready", async () => {
+  test("then a draft reads differently from one that is ready", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -36,7 +36,7 @@ describe("knowing whether a branch already has a pull request", () => {
     expect(row).toContain("draft")
   })
 
-  it("says merged for work that already landed", async () => {
+  test("then work that already landed reads as merged", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -50,7 +50,7 @@ describe("knowing whether a branch already has a pull request", () => {
     expect(row).toContain("merged")
   })
 
-  it("leaves the column empty when nothing can answer", async () => {
+  test("then the column is empty when nothing can answer", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -65,7 +65,7 @@ describe("knowing whether a branch already has a pull request", () => {
     expect(frame).not.toContain("merged")
   })
 
-  it("draws the worktree list before the answer arrives", async () => {
+  test("then the worktree list draws before the answer arrives", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

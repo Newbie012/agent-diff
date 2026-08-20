@@ -1,12 +1,12 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
   { path: "src/one.ts", before: ["const a = 1"], after: ["const a = 1", "const one = 2"] },
 ]
 
-describe("asking the agent for a reading order", () => {
-  it("hands the agent the request when the branch has no layers", async () => {
+describe("when the agent is asked for a reading order", () => {
+  test("then the agent gets the request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -21,7 +21,7 @@ describe("asking the agent for a reading order", () => {
     expect(taken.map((one) => one.body).join("\n")).toContain("adiff layers set")
   })
 
-  it("says the order is stale when it is, so the agent reads the diff again", async () => {
+  test("then the order is reported stale", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -24,8 +24,8 @@ const pane = (frame: string): string =>
     .map((line) => line.slice(0, 38))
     .join("\n")
 
-describe("folding away parts of the tree", () => {
-  it("collapses the directory the current file lives in", async () => {
+describe("when parts of the tree are folded away", () => {
+  test("then the directory the current file lives in collapses", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoDirs)
@@ -40,7 +40,7 @@ describe("folding away parts of the tree", () => {
     expect(shown).not.toContain("one.ts")
   })
 
-  it("leaves other directories alone", async () => {
+  test("then the other directories are left alone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoDirs)
@@ -53,7 +53,7 @@ describe("folding away parts of the tree", () => {
     expect(pane(await driver.screen.getFrame())).toContain("panel.tsx")
   })
 
-  it("opens it again", async () => {
+  test("then the directory opens again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoDirs)
@@ -67,7 +67,7 @@ describe("folding away parts of the tree", () => {
     expect(pane(await driver.screen.getFrame())).toContain("one.ts")
   })
 
-  it("starts a crowded directory closed, so the tree opens readable", async () => {
+  test("then a crowded directory starts closed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wide)
@@ -84,8 +84,8 @@ describe("folding away parts of the tree", () => {
   })
 })
 
-describe("folding a directory that shows as one row", () => {
-  it("hides the files under a chain-compressed directory", async () => {
+describe("when a chain-compressed directory is folded", () => {
+  test("then the files under it are hidden", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

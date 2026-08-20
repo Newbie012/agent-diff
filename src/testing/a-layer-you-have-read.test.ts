@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const change = (path: string) => ({
@@ -15,8 +15,8 @@ const railOf = (frame: string): string =>
     .map((line) => line.split("│")[1] ?? "")
     .join("\n")
 
-describe("a layer you have read every file of", () => {
-  it("still says so once those files are hidden", async () => {
+describe("when every file of a layer has been read", () => {
+  test("then the rail keeps the layer marked read once its files are hidden", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

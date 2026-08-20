@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number): ReadonlyArray<string> =>
@@ -14,8 +14,8 @@ const branch = {
   files: [{ path: "src/invitations.ts", before: buried("settle"), after: buried("resolve") }],
 }
 
-describe("a selection that reaches over a row of hidden lines", () => {
-  it("names the lines it will actually comment on", async () => {
+describe("when a selection reaches over a row of hidden lines", () => {
+  test("then adiff names the lines the comment will land on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
@@ -30,7 +30,7 @@ describe("a selection that reaches over a row of hidden lines", () => {
     expect(await driver.screen.getFrame()).toContain("Comment on src/invitations.ts:22-24")
   })
 
-  it("quotes code, not the instruction on the row of hidden lines", async () => {
+  test("then the quote carries code rather than the hidden-lines row", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
@@ -49,7 +49,7 @@ describe("a selection that reaches over a row of hidden lines", () => {
     expect(panel.some((line) => line.includes("const kept21"))).toBe(true)
   })
 
-  it("counts the lines it holds, not the rows it covers", async () => {
+  test("then the count is of lines held, not rows covered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)

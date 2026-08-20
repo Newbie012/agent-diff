@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const NARROW = 80
@@ -33,8 +33,8 @@ const tour = async (driver: TestDriver): Promise<ReadonlyArray<string>> => {
   return [home, review, zoomed, commands]
 }
 
-describe("fitting the terminal it is given", () => {
-  it("draws nothing past the edge of an eighty column window", async () => {
+describe("when adiff is given a terminal to fit", () => {
+  test("then nothing draws past the edge at eighty columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wordy)
@@ -47,7 +47,7 @@ describe("fitting the terminal it is given", () => {
     expect(shots.flatMap((frame) => spilling(frame, NARROW))).toEqual([])
   })
 
-  it("draws nothing past the edge of a hundred and twenty column window", async () => {
+  test("then nothing draws past the edge at a hundred and twenty columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wordy)

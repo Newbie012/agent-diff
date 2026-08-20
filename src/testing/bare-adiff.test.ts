@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("running adiff with nothing after it", () => {
-  it("still explains itself when nothing is watching", async () => {
+describe("when adiff runs with nothing after it", () => {
+  test("then adiff explains itself even with nothing watching", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -14,7 +14,7 @@ describe("running adiff with nothing after it", () => {
     expect(answer.code).toBe(0)
   })
 
-  it("still answers --help the same way", async () => {
+  test("then --help answers the same way", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

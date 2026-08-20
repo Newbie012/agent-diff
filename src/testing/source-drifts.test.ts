@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { syntaxTheme } from "../tui/index.ts"
 
@@ -17,8 +17,8 @@ const branch = {
   ],
 }
 
-describe("a file that changed on disk after the review loaded", () => {
-  it("stops colouring rows whose source line no longer matches", async () => {
+describe("when a file changes on disk after the review loaded", () => {
+  test("then rows whose source line no longer matches stop being coloured", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const made = await driver.branch.create(branch)

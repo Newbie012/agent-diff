@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("asking a command what it does", () => {
-  it("explains the command rather than reporting a missing option", async () => {
+describe("when a command is asked what it does", () => {
+  test("then adiff explains the command", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -17,7 +17,7 @@ describe("asking a command what it does", () => {
     expect(result.stdout).toContain("Naming the review is required")
   })
 
-  it("shows the example, the fields flag, and which of its own options are required", async () => {
+  test("then the example, the fields flag and the required options show", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -32,7 +32,7 @@ describe("asking a command what it does", () => {
     expect(reply.stdout).toContain("(required)")
   })
 
-  it("answers wherever the flag lands on a line already being typed", async () => {
+  test("then the flag answers wherever it lands on the line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -45,7 +45,7 @@ describe("asking a command what it does", () => {
     expect(result.stdout.startsWith("{")).toBe(false)
   })
 
-  it("takes the short flag too", async () => {
+  test("then the short flag answers too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -58,8 +58,8 @@ describe("asking a command what it does", () => {
   })
 })
 
-describe("asking a noun what it can do", () => {
-  it("lists that noun's verbs instead of refusing the name", async () => {
+describe("when a noun is asked what it can do", () => {
+  test("then the noun's verbs are listed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -75,8 +75,8 @@ describe("asking a noun what it can do", () => {
   })
 })
 
-describe("the list a person reads first", () => {
-  it("groups the commands by the part of the loop they belong to", async () => {
+describe("when the command list is read", () => {
+  test("then the commands are grouped by the part of the loop they belong to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -89,7 +89,7 @@ describe("the list a person reads first", () => {
     expect(result.stdout).toContain("adiff <command> --help")
   })
 
-  it("says what it is when given flags and no command at all", async () => {
+  test("then the output names what adiff is when given flags and no command", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -103,8 +103,8 @@ describe("the list a person reads first", () => {
   })
 })
 
-describe("getting the name slightly wrong", () => {
-  it("names the command that was probably meant", async () => {
+describe("when a command name is slightly wrong", () => {
+  test("then adiff names the command that was probably meant", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -121,7 +121,7 @@ describe("getting the name slightly wrong", () => {
     expect(suggestion).toContain("adiff comment send --help")
   })
 
-  it("names a noun's verbs when the noun exists but the verb is missing", async () => {
+  test("then adiff names the noun's verbs when the verb is missing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -138,8 +138,8 @@ describe("getting the name slightly wrong", () => {
   })
 })
 
-describe("leaving out an option a command needs", () => {
-  it("names the command that wanted it and how it should have been typed", async () => {
+describe("when a command is missing an option it needs", () => {
+  test("then adiff names the command and how it should have been typed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -158,8 +158,8 @@ describe("leaving out an option a command needs", () => {
   })
 })
 
-describe("the catalog an agent reads", () => {
-  it("says which part of the loop each command belongs to", async () => {
+describe("when an agent reads the catalog", () => {
+  test("then each command names the part of the loop it belongs to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -177,8 +177,8 @@ describe("the catalog an agent reads", () => {
   })
 })
 
-describe("knowing where the comments came from", () => {
-  it("reports the branch a take collected for, so the next command can be built", async () => {
+describe("when a take reports where the comments came from", () => {
+  test("then the take reports the branch it collected for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })

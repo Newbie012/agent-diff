@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = (name: string) => ({
@@ -12,8 +12,8 @@ const oneFile = (name: string) => ({
   ],
 })
 
-describe("opening the review on a branch", () => {
-  it("lands on the branch's diff rather than the worktree list", async () => {
+describe("when the review opens on a branch", () => {
+  test("then adiff lands on the branch's diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile("first-branch"))
@@ -28,7 +28,7 @@ describe("opening the review on a branch", () => {
     expect(frame).toContain(wanted.name)
   })
 
-  it("opens on the list when the branch is not one of them", async () => {
+  test("then adiff opens on the list when the branch is not there", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile("first-branch"))

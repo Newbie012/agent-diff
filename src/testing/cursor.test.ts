@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const numbered = {
@@ -11,8 +11,8 @@ const numbered = {
   ],
 }
 
-describe("knowing which line you are on", () => {
-  it("highlights the line the cursor is on, and only that line", async () => {
+describe("when the cursor sits on a line", () => {
+  test("then only the line the cursor is on is highlighted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(numbered)
@@ -27,7 +27,7 @@ describe("knowing which line you are on", () => {
     expect(highlighted[0]).toContain("const two = 2")
   })
 
-  it("highlights every line of a selection", async () => {
+  test("then every line of a selection is highlighted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(numbered)

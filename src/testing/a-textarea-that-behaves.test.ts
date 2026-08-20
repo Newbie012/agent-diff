@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -21,8 +21,8 @@ const compose = async (driver: TestDriver, text: string): Promise<void> => {
 const written = (frame: string, mark: string): string =>
   frame.split("\n").find((line) => line.includes(mark)) ?? ""
 
-describe("the box a comment is written in", () => {
-  it("draws the caret without moving the words around it", async () => {
+describe("when a comment is being typed", () => {
+  test("then the caret draws without moving the words around it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await compose(driver, "alpha bravo charlie")
@@ -35,7 +35,7 @@ describe("the box a comment is written in", () => {
     expect(written(await driver.screen.getFrame(), "alpha bravo charlie")).toBe(ended)
   })
 
-  it("keeps every space that was typed", async () => {
+  test("then every space that was typed is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -46,7 +46,7 @@ describe("the box a comment is written in", () => {
     expect(await driver.screen.getFrame()).toContain("two  spaces here")
   })
 
-  it("walks up and down the lines it wrapped", async () => {
+  test("then the arrows walk up and down the wrapped lines", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await compose(driver, "one two three four five six seven eight nine ten eleven twelve thirteen")

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
@@ -15,8 +15,8 @@ const tall = {
   ],
 }
 
-describe("syntax highlighting while scrolling", () => {
-  it("keeps code highlighted after the view moves", async () => {
+describe("when the view scrolls", () => {
+  test("then the code stays highlighted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -31,7 +31,7 @@ describe("syntax highlighting while scrolling", () => {
     expect(driver.screen.renderCrashes()).toEqual([])
   })
 
-  it("keeps the washes after the view moves", async () => {
+  test("then the added and removed washes stay", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)

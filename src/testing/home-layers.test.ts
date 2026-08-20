@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -8,8 +8,8 @@ const oneFile = {
 const rowWith = (frame: string, text: string): string =>
   frame.split("\n").find((line) => line.includes(text)) ?? ""
 
-describe("worktrees that carry a reading order", () => {
-  it("marks the ones with a layers and leaves the others alone", async () => {
+describe("when a worktree carries a reading order", () => {
+  test("then the worktree with layers is marked and the others are not", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const told = await driver.branch.create(oneFile)

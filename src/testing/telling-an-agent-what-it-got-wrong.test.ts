@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -23,8 +23,8 @@ const refused = async (driver: TestDriver, document: unknown): Promise<string> =
   return `${result.stdout}${result.stderr}`
 }
 
-describe("telling an agent what its layers document got wrong", () => {
-  it("names the layer that has no title", async () => {
+describe("when an agent publishes a broken reading order", () => {
+  test("then adiff names the layer with no title", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -41,7 +41,7 @@ describe("telling an agent what its layers document got wrong", () => {
     expect(said).toContain("title")
   })
 
-  it("refuses a span that ends before it starts, and says which file", async () => {
+  test("then adiff refuses a span that ends before it starts and names the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -55,7 +55,7 @@ describe("telling an agent what its layers document got wrong", () => {
     expect(said).toContain("before it starts")
   })
 
-  it("refuses a span that starts before line one", async () => {
+  test("then adiff refuses a span that starts before line one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -68,7 +68,7 @@ describe("telling an agent what its layers document got wrong", () => {
     expect(said).toContain("lines count from 1")
   })
 
-  it("takes a path written with a leading dot slash as the same file", async () => {
+  test("then a path with a leading dot slash reads as the same file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -86,7 +86,7 @@ describe("telling an agent what its layers document got wrong", () => {
     expect(report.layers[0]?.vanished).toEqual([])
   })
 
-  it("keeps both the spans and the blocks a layer was given", async () => {
+  test("then both the spans and the blocks a layer was given are kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -108,7 +108,7 @@ describe("telling an agent what its layers document got wrong", () => {
     expect(reportIn(shown.stdout).layers[0]?.files).toEqual(["src/one.ts", "src/two.ts"])
   })
 
-  it("says how much of the diff each layer covers on its own", async () => {
+  test("then each layer reports how much of the diff it covers", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

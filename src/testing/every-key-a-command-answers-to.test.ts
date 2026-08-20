@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -11,8 +11,8 @@ const opened = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["?"])
 }
 
-describe("the key sheet", () => {
-  it("names every key a command answers to, not only the first", async () => {
+describe("when the key sheet is read", () => {
+  test("then every key a command answers to is named", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -24,7 +24,7 @@ describe("the key sheet", () => {
     expect(await driver.screen.rowWith("Next line")).toContain("j")
   })
 
-  it("finds a command by the key it is on", async () => {
+  test("then a command is found by the key it is on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)

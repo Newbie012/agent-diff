@@ -1,6 +1,6 @@
 import { rename } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Handed = { readonly body: string }
@@ -8,8 +8,8 @@ type Handed = { readonly body: string }
 const bodiesOf = (result: { readonly envelope: unknown }): ReadonlyArray<string> =>
   (result.envelope as { comments: ReadonlyArray<Handed> }).comments.map((entry) => entry.body)
 
-describe("a review that outlives where it was written", () => {
-  it("follows the branch when the worktree moves", async () => {
+describe("when the worktree a review was written in moves", () => {
+  test("then the review follows the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -29,7 +29,7 @@ describe("a review that outlives where it was written", () => {
     expect(bodiesOf(await driver.app.runTake(moved))).toEqual(["written before the move"])
   })
 
-  it("keeps two branches of one repo apart", async () => {
+  test("then two branches of one repository keep their reviews apart", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const one = await driver.branch.create({ name: "one" })

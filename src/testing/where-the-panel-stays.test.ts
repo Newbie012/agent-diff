@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
@@ -45,8 +45,8 @@ const panelFocused = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["TAB"])
 }
 
-describe("where the review panel leaves the cursor", () => {
-  it("does not jump to the first thread when one is settled", async () => {
+describe("when a thread is settled from the review panel", () => {
+  test("then the cursor stays off the first thread", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const name = await threads(driver)
@@ -65,7 +65,7 @@ describe("where the review panel leaves the cursor", () => {
     expect(await focusedThread(driver)).toContain("the first point")
   })
 
-  it("brings the next thread to the cursor when settled threads are shown", async () => {
+  test("then the next thread comes to the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const name = await threads(driver)
@@ -80,7 +80,7 @@ describe("where the review panel leaves the cursor", () => {
     expect(await focusedThread(driver)).toContain("the first point")
   })
 
-  it("settles three threads in a row without walking back up", async () => {
+  test("then three threads settle in a row without walking back up", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const name = await threads(driver)

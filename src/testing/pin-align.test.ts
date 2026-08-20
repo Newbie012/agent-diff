@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const layers = (count: number, mark: string): ReadonlyArray<string> =>
@@ -13,8 +13,8 @@ const shaped = (mark: string): ReadonlyArray<string> => [
 
 const file = { files: [{ path: "src/client.ts", before: shaped("settle"), after: shaped("resolve") }] }
 
-describe("the pinned line sits over the code it names", () => {
-  it("starts in the same column as the code below it", async () => {
+describe("when a scope is pinned above the code", () => {
+  test("then the pinned line starts in the same column as the code below", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)

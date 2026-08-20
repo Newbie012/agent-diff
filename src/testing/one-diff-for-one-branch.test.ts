@@ -1,11 +1,11 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { shapes } from "./shapes.ts"
 
 const many = shapes.find((shape) => shape.files.length > 4) ?? shapes[0]
 
-describe("what opening a branch asks git for", () => {
-  it("reads its diff once, however much the review wants to know", async () => {
+describe("when a branch is opened", () => {
+  test("then the diff is read once, however much the review asks", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })
@@ -19,7 +19,7 @@ describe("what opening a branch asks git for", () => {
     expect(driver.screen.diffsRun()).toBe(1)
   })
 
-  it("asks git for nothing at all when a file is marked reviewed", async () => {
+  test("then marking a file reviewed asks git for nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })
@@ -33,7 +33,7 @@ describe("what opening a branch asks git for", () => {
     expect(driver.screen.diffsRun()).toBe(0)
   })
 
-  it("asks git for nothing when a thread is settled or removed", async () => {
+  test("then settling or removing a thread asks git for nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: [...(many?.files ?? [])] })
@@ -54,7 +54,7 @@ describe("what opening a branch asks git for", () => {
     expect(driver.screen.diffsRun()).toBe(0)
   })
 
-  it("reads one file, not the branch, when a comment is sent", async () => {
+  test("then sending a comment reads one file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })
@@ -70,7 +70,7 @@ describe("what opening a branch asks git for", () => {
     expect(driver.screen.diffsRun()).toBe(1)
   })
 
-  it("reads it once more when the branch is opened again", async () => {
+  test("then opening the branch again reads the diff once more", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(many?.files ?? [])] })

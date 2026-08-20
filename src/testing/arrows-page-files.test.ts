@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = {
@@ -10,8 +10,8 @@ const files = {
 
 const header = (frame: string): string => frame.split("\n")[0] ?? ""
 
-describe("the left and right arrows", () => {
-  it("walk between files, the way the brackets do", async () => {
+describe("when the left and right arrows are pressed", () => {
+  test("then the arrows walk between files like the brackets", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(files)

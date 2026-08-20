@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -7,8 +7,8 @@ const files = [
 
 const panelOf = (frame: string): string => frame
 
-describe("where a thread is filed in the review", () => {
-  it("puts a question the agent asked back where it cannot be missed", async () => {
+describe("when a thread is filed in the review", () => {
+  test("then a question the agent asked is filed where it cannot be missed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -31,7 +31,7 @@ describe("where a thread is filed in the review", () => {
     expect(panel).not.toContain("Not picked up")
   })
 
-  it("gives a settled thread a section of its own", async () => {
+  test("then a settled thread gets a section of its own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -54,8 +54,8 @@ describe("where a thread is filed in the review", () => {
   })
 })
 
-describe("a thread you removed", () => {
-  it("leaves the diff, stays in the review, and comes back with the same key", async () => {
+describe("when a thread is removed", () => {
+  test("then the thread leaves the diff, stays in the review, and comes back with the same key", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

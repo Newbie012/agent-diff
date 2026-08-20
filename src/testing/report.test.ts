@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("reporting a bug from inside the terminal", () => {
-  it("writes down what the reviewer said", async () => {
+describe("when a bug is reported from inside the terminal", () => {
+  test("then the report carries what the reviewer said", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -30,7 +30,7 @@ describe("reporting a bug from inside the terminal", () => {
     expect(reports[0]).toContain("the cursor jumps two lines when I press j")
   })
 
-  it("attaches what was happening, so it can be reproduced", async () => {
+  test("then the report attaches what was happening", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -50,7 +50,7 @@ describe("reporting a bug from inside the terminal", () => {
     expect(report).toContain("const first = 1")
   })
 
-  it("refuses a report with nothing in it", async () => {
+  test("then adiff refuses a report with nothing in it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -64,7 +64,7 @@ describe("reporting a bug from inside the terminal", () => {
     expect(await driver.agent.listReports()).toHaveLength(0)
   })
 
-  it("writes nothing when the report is abandoned", async () => {
+  test("then an abandoned report writes nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

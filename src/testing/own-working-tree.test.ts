@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -10,8 +10,8 @@ const oneFile = {
 const rowFor = (frame: string, name: string): string =>
   frame.split("\n").find((line) => line.includes(name)) ?? ""
 
-describe("reviewing the repository's own working tree", () => {
-  it("marks it apart from the worktrees an agent prepared", async () => {
+describe("when the repository's own working tree is reviewed", () => {
+  test("then the working tree is marked apart from the agent's worktrees", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })
@@ -26,7 +26,7 @@ describe("reviewing the repository's own working tree", () => {
     expect(rowFor(frame, "add-teammate-invitations")).not.toContain("here")
   })
 
-  it("lists it once it carries work of its own", async () => {
+  test("then the working tree is listed once it carries work of its own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })
@@ -40,7 +40,7 @@ describe("reviewing the repository's own working tree", () => {
     expect(branches.map((entry) => entry.branch)).toContain("master")
   })
 
-  it("says why the list is empty when nothing differs", async () => {
+  test("then the empty list carries its reason", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -51,7 +51,7 @@ describe("reviewing the repository's own working tree", () => {
     expect(await driver.screen.getFrame()).toContain("nothing to review")
   })
 
-  it("hands a comment on its uncommitted work to the agent", async () => {
+  test("then a comment on uncommitted work reaches the agent", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ ...oneFile, name: "add-teammate-invitations" })

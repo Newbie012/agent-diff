@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -15,8 +15,8 @@ const pane = (frame: string): string =>
     .map((line) => line.slice(0, 32))
     .join("\n")
 
-describe("marking a file reviewed from the terminal", () => {
-  it("marks the file the cursor is on, and says so in the tree", async () => {
+describe("when a file is marked reviewed from the terminal", () => {
+  test("then the file under the cursor is marked, in the tree too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -29,7 +29,7 @@ describe("marking a file reviewed from the terminal", () => {
     expect(pane(await driver.screen.getFrame())).toContain("✓")
   })
 
-  it("counts reviewed files in the header, so progress is visible without counting", async () => {
+  test("then the header counts the reviewed files", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -42,7 +42,7 @@ describe("marking a file reviewed from the terminal", () => {
     expect(await driver.screen.getFrame()).toContain("1 reviewed")
   })
 
-  it("un-marks a file that was marked, because reviewers change their mind", async () => {
+  test("then marking again takes the mark back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -57,7 +57,7 @@ describe("marking a file reviewed from the terminal", () => {
     expect(frame.split("\n")[0]).not.toContain("reviewed")
   })
 
-  it("survives leaving the branch and coming back", async () => {
+  test("then the mark survives leaving the branch and coming back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -13,8 +13,8 @@ const oneFile = {
 
 const rowsOf = (frame: string, at: number): string => frame.split("\n")[at] ?? ""
 
-describe("what a modal draws", () => {
-  it("is text the reviewer can select, not a widget that hides it", async () => {
+describe("when a modal is open", () => {
+  test("then the modal draws text the reviewer can select", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -33,8 +33,8 @@ describe("what a modal draws", () => {
 
 const sheetPick = (line: string): boolean => line.includes("┃") && line.includes("▎")
 
-describe("the key sheet and the palette", () => {
-  it("still moves through its rows with the arrows", async () => {
+describe("when the key sheet or the palette is open", () => {
+  test("then the arrows still move through the rows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

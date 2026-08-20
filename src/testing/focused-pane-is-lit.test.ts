@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 130, height: 18 }
@@ -23,8 +23,8 @@ const twoFiles = {
 const lit = async (driver: TestDriver): Promise<number> =>
   (await driver.screen.listForegroundsOfEach("╭")).filter((colour) => colour === ACCENT).length
 
-describe("the pane a reviewer is in", () => {
-  it("draws three panes, each in its own border", async () => {
+describe("when the panes are drawn", () => {
+  test("then three panes draw, each in its own border", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -37,7 +37,7 @@ describe("the pane a reviewer is in", () => {
     expect(corners?.match(/╭/g)).toHaveLength(3)
   })
 
-  it("lights exactly one border at a time", async () => {
+  test("then exactly one border is lit", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -49,7 +49,7 @@ describe("the pane a reviewer is in", () => {
     expect(await lit(driver)).toBe(1)
   })
 
-  it("moves the lit border as the focus moves", async () => {
+  test("then the lit border moves with the focus", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

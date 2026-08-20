@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -19,8 +19,8 @@ const ESC = ""
 
 const kitty = (key: number, shifted: number): string => `${ESC}[${key}:${shifted};2u`
 
-describe("the keys a terminal reports as shifted", () => {
-  it("opens the key sheet on question mark, not the search", async () => {
+describe("when the terminal reports a key as shifted", () => {
+  test("then question mark opens the key sheet", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -35,7 +35,7 @@ describe("the keys a terminal reports as shifted", () => {
     expect(frame).not.toContain("elsewhere")
   })
 
-  it("widens the context on plus, which is shift and equals", async () => {
+  test("then plus widens the context", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)

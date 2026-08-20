@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const scope =
@@ -23,8 +23,8 @@ const rowsOf = (frame: string): ReadonlyArray<string> => frame.split("\n")
 const pinnedRow = (frame: string): string =>
   rowsOf(frame).find((row) => row.includes("issueInvitation")) ?? ""
 
-describe("reading a pinned scope wider than the pane", () => {
-  it("pans the pinned line even when the code below it is narrow", async () => {
+describe("when a pinned scope is wider than the pane", () => {
+  test("then the pinned line pans even where the code below is narrow", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
@@ -42,7 +42,7 @@ describe("reading a pinned scope wider than the pane", () => {
     expect(driver.screen.renderCrashes()).toEqual([])
   })
 
-  it("stops counting columns once nothing is left to reveal", async () => {
+  test("then panning stops once nothing is left to reveal", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
@@ -60,8 +60,8 @@ describe("reading a pinned scope wider than the pane", () => {
   })
 })
 
-describe("the pinned scope under the other modes", () => {
-  it("leaves the pinned line alone while wrapping is on", async () => {
+describe("when wrapping or a wide terminal changes the pinned scope", () => {
+  test("then wrapping leaves the pinned line alone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)
@@ -77,7 +77,7 @@ describe("the pinned scope under the other modes", () => {
     expect(pinnedRow(frame)).toContain("issueInvitation")
   })
 
-  it("reveals the pinned line at eighty columns", async () => {
+  test("then eighty columns reveal the pinned line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(narrow)

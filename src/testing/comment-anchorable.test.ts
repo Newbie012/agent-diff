@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number): ReadonlyArray<string> =>
@@ -14,8 +14,8 @@ const branch = {
   files: [{ path: "src/invitations.ts", before: buried("settle"), after: buried("resolve") }],
 }
 
-describe("writing a comment where there is no line", () => {
-  it("refuses on a row of hidden lines and says why", async () => {
+describe("when a comment is written where there is no line", () => {
+  test("then a row of hidden lines is refused, with the reason", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
@@ -31,7 +31,7 @@ describe("writing a comment where there is no line", () => {
     expect(frame).toContain("no line here to comment on")
   })
 
-  it("still opens on a line of code", async () => {
+  test("then the compose box still opens on a line of code", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(branch)
@@ -44,7 +44,7 @@ describe("writing a comment where there is no line", () => {
     expect(await driver.screen.getFrame()).toContain("Comment on src/invitations.ts:22")
   })
 
-  it("leaves nothing behind when it refuses", async () => {
+  test("then a refusal leaves no draft behind", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)

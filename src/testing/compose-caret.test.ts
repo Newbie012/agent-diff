@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -20,8 +20,8 @@ const composing = async (driver: TestDriver): Promise<void> => {
 
 const typing = (text: string): ReadonlyArray<string> => text.split("")
 
-describe("writing a comment", () => {
-  it("puts what is typed next where the caret stands", async () => {
+describe("when a comment is being typed", () => {
+  test("then what is typed next lands where the caret stands", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver)
@@ -36,7 +36,7 @@ describe("writing a comment", () => {
     expect(await driver.screen.caretOffset()).toBe(3)
   })
 
-  it("deletes behind the caret rather than at the end", async () => {
+  test("then backspace deletes behind the caret", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver)
@@ -50,7 +50,7 @@ describe("writing a comment", () => {
     expect(await driver.screen.caretOffset()).toBe(1)
   })
 
-  it("moves a whole word at a time", async () => {
+  test("then the caret moves a whole word at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver)
@@ -65,7 +65,7 @@ describe("writing a comment", () => {
     expect(await driver.screen.caretOffset()).toBe(6)
   })
 
-  it("sends what was written, not the caret", async () => {
+  test("then the comment sends what was written", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver)

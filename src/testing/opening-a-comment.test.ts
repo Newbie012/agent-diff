@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 150, height: 24 }
@@ -13,8 +13,8 @@ const twoFiles = {
   ],
 }
 
-describe("opening a comment from the review panel", () => {
-  it("brings the diff to the line the comment is on", async () => {
+describe("when a comment is opened from the review panel", () => {
+  test("then the diff comes to the line the comment is on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

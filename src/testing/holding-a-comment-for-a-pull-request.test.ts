@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -43,8 +43,8 @@ const listed = async (driver: TestDriver, branch: string): Promise<ReadonlyArray
   return parsed.drafts
 }
 
-describe("holding a comment for a pull request", () => {
-  it("keeps a draft rather than handing it to the agent", async () => {
+describe("when a comment is held for a pull request", () => {
+  test("then the comment is kept as a draft", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -59,7 +59,7 @@ describe("holding a comment for a pull request", () => {
     expect(await driver.agent.listComments(created.worktree)).toHaveLength(0)
   })
 
-  it("keeps drafts in the order they were written", async () => {
+  test("then the drafts keep the order they were written in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -73,7 +73,7 @@ describe("holding a comment for a pull request", () => {
     expect(drafts.map((one) => one.body)).toEqual(["the first point", "the second point"])
   })
 
-  it("rewrites a draft before it goes", async () => {
+  test("then a draft can be rewritten before it goes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -100,7 +100,7 @@ describe("holding a comment for a pull request", () => {
     ])
   })
 
-  it("throws a draft away rather than sending it", async () => {
+  test("then a draft can be thrown away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -123,7 +123,7 @@ describe("holding a comment for a pull request", () => {
     expect(await listed(driver, created.name)).toHaveLength(0)
   })
 
-  it("says which draft it does not know", async () => {
+  test("then adiff names the draft it does not know", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -145,7 +145,7 @@ describe("holding a comment for a pull request", () => {
     expect(`${result.stdout}${result.stderr}`).toContain("draft list")
   })
 
-  it("still has the drafts after everything has been restarted", async () => {
+  test("then the drafts survive a restart", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -159,8 +159,8 @@ describe("holding a comment for a pull request", () => {
   })
 })
 
-describe("sending the held comments to the pull request", () => {
-  it("makes one review carrying every draft, against its own file and line", async () => {
+describe("when the held comments are sent to the pull request", () => {
+  test("then one review carries every draft against its own file and line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -191,7 +191,7 @@ describe("sending the held comments to the pull request", () => {
     expect(await listed(driver, created.name)).toHaveLength(0)
   })
 
-  it("refuses when the pull request has moved, and keeps every draft", async () => {
+  test("then adiff refuses on a moved pull request and keeps every draft", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -215,7 +215,7 @@ describe("sending the held comments to the pull request", () => {
     expect(await driver.forge.posted()).toBeUndefined()
   })
 
-  it("refuses when the forge cannot be reached, and keeps every draft", async () => {
+  test("then adiff refuses when the forge cannot be reached and keeps every draft", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -238,7 +238,7 @@ describe("sending the held comments to the pull request", () => {
     expect(await listed(driver, created.name)).toHaveLength(1)
   })
 
-  it("says so when there is nothing held to send", async () => {
+  test("then the output reports nothing held to send", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -261,8 +261,8 @@ describe("sending the held comments to the pull request", () => {
   })
 })
 
-describe("what a sent review carries", () => {
-  it("posts a range as a range, not as its last line", async () => {
+describe("when a sent review carries a range", () => {
+  test("then the range posts as a range", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({

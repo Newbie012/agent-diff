@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -6,8 +6,8 @@ const files = [
   { path: "pkg/résumé.ts", before: ["const c = 1"], after: ["const c = 1", "const d = 2"] },
 ]
 
-describe("a file whose name is not plain ASCII", () => {
-  it("is in the review like any other", async () => {
+describe("when a file's name is not plain ASCII", () => {
+  test("then the file is in the review like any other", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -21,7 +21,7 @@ describe("a file whose name is not plain ASCII", () => {
     expect(frame).toContain("résumé.ts")
   })
 
-  it("is reported by the command surface too", async () => {
+  test("then the command surface reports the file too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

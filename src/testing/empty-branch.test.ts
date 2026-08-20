@@ -1,5 +1,5 @@
 import { rm } from "node:fs/promises"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -8,8 +8,8 @@ const oneFile = {
   ],
 }
 
-describe("a branch with nothing left to read", () => {
-  it("says so rather than counting a file out of none", async () => {
+describe("when a branch has nothing left to read", () => {
+  test("then the header reads as fully read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

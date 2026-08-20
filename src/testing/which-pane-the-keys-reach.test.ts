@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
@@ -7,8 +7,8 @@ const files = [
   { path: "src/two.ts", before: ["const b = 1"], after: ["const b = 1", "const two = 2"] },
 ]
 
-describe("which pane the keys will reach", () => {
-  it("lights the file list brighter when it is the focused one", async () => {
+describe("when the file list has the keys", () => {
+  test("then the file list is lit brighter", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -24,7 +24,7 @@ describe("which pane the keys will reach", () => {
     expect(lit.join(" ")).toContain("one.ts")
   })
 
-  it("says which file is current whether or not the list is focused", async () => {
+  test("then the current file is named either way", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

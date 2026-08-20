@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Handed = { readonly id: string; readonly body: string }
@@ -12,8 +12,8 @@ const bodiesOf = (result: { readonly envelope: unknown }): ReadonlyArray<string>
 const idFor = (result: { readonly envelope: unknown }, body: string): string =>
   handedOf(result).find((comment) => comment.body === body)?.id ?? ""
 
-describe("a comment the agent took but never answered", () => {
-  it("comes back on the next take", async () => {
+describe("when the agent takes a comment and never answers it", () => {
+  test("then the comment comes back on the next take", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -33,7 +33,7 @@ describe("a comment the agent took but never answered", () => {
     expect(bodiesOf(again)).toEqual(["dropped on the floor"])
   })
 
-  it("comes back alongside the ones written after it", async () => {
+  test("then the comment comes back alongside the ones written after it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -62,7 +62,7 @@ describe("a comment the agent took but never answered", () => {
     ])
   })
 
-  it("goes once the agent answers only that one", async () => {
+  test("then answering only that comment retires it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -93,7 +93,7 @@ describe("a comment the agent took but never answered", () => {
     expect(bodiesOf(await driver.app.runTake(branch.worktree))).toEqual(["leave me"])
   })
 
-  it("stops coming back once the reviewer settles it", async () => {
+  test("then settling stops the comment coming back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -113,7 +113,7 @@ describe("a comment the agent took but never answered", () => {
     expect(bodiesOf(await driver.app.runTake(branch.worktree))).toEqual([])
   })
 
-  it("stops coming back once the reviewer removes it", async () => {
+  test("then removing stops the comment coming back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -136,7 +136,7 @@ describe("a comment the agent took but never answered", () => {
     expect(bodiesOf(await driver.app.runTake(branch.worktree))).toEqual([])
   })
 
-  it("is counted on the branch the reviewer is looking at", async () => {
+  test("then the comment is counted on the branch being read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()

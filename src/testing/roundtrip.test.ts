@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
@@ -49,9 +49,9 @@ const pairs: ReadonlyArray<Pair> = [
   { name: "mark and unmark", go: ["m"], back: ["m"] },
 ]
 
-describe("every reversible action reverses", () => {
+describe("when a reversible action is reversed", () => {
   for (const pair of pairs) {
-    it(pair.name, async () => {
+    test(pair.name, async () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       await driver.branch.create(branch)

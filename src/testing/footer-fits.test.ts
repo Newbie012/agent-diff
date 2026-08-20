@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("the footer on a narrow terminal", () => {
-  it("keeps the way out visible", async () => {
+describe("when the terminal is narrow", () => {
+  test("then the footer keeps the way out visible", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -24,7 +24,7 @@ describe("the footer on a narrow terminal", () => {
     expect(await driver.screen.footer()).toContain("esc back")
   })
 
-  it("drops a whole chip rather than half of one", async () => {
+  test("then the footer drops a whole chip rather than half of one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -39,7 +39,7 @@ describe("the footer on a narrow terminal", () => {
     expect(labels).not.toContain(first)
   })
 
-  it("fits inside the terminal", async () => {
+  test("then the footer fits inside the terminal", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

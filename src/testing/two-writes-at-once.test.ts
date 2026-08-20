@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -22,8 +22,8 @@ const marked = async (driver: TestDriver, branch: string, file: string): Promise
   return result.code
 }
 
-describe("two writes to one review at the same moment", () => {
-  it("keeps both of them", async () => {
+describe("when two writes reach one review at the same moment", () => {
+  test("then both writes are kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -24,8 +24,8 @@ const spoken = (frame: string): string =>
     .join(" ")
     .replace(/\s+/g, " ")
 
-describe("an answered thread in a narrow terminal", () => {
-  it("wraps the answer inside the pane", async () => {
+describe("when an answered thread is read in a narrow terminal", () => {
+  test("then the answer wraps inside the pane", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

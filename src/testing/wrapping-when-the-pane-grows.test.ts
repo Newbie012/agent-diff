@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const long =
@@ -10,8 +10,8 @@ const partsOf = (frame: string): number =>
   frame.split("\n").filter((line) => /baseUrl|timeoutMs|retries|pageSize|backoffMs/.test(line))
     .length
 
-describe("wrapping when the pane grows", () => {
-  it("wraps to the wider pane after the rails are hidden", async () => {
+describe("when the pane grows", () => {
+  test("then the diff wraps to the wider pane", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

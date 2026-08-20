@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const many = {
@@ -11,8 +11,8 @@ const many = {
 
 const header = (frame: string): string => frame.split("\n")[0] ?? ""
 
-describe("a folder with more files than the tree draws at once", () => {
-  it("still walks between them, opening the folder as it goes", async () => {
+describe("when a folder holds more files than the tree draws at once", () => {
+  test("then walking reaches every file, opening the folder on the way", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)
@@ -29,7 +29,7 @@ describe("a folder with more files than the tree draws at once", () => {
     expect(frame).toContain("module02.ts")
   })
 
-  it("comes back the way it went", async () => {
+  test("then walking back reaches the same files in reverse", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(many)

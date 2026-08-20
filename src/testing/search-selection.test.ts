@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const TERM = "seatsLeft"
@@ -22,8 +22,8 @@ const changed = {
 const rowsWith = (frame: string, text: string): ReadonlyArray<string> =>
   frame.split("\n").filter((line) => line.includes(text))
 
-describe("taking a selection somewhere", () => {
-  it("says how many lines went to the clipboard", async () => {
+describe("when a selection is copied", () => {
+  test("then the footer counts the lines that went to the clipboard", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -37,7 +37,7 @@ describe("taking a selection somewhere", () => {
     expect(await driver.screen.getFrame()).toContain("2 lines copied")
   })
 
-  it("clears the selection once it is copied", async () => {
+  test("then the selection clears once it is copied", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -53,8 +53,8 @@ describe("taking a selection somewhere", () => {
   })
 })
 
-describe("searching the branch for what is selected", () => {
-  it("lists every place the selected text appears", async () => {
+describe("when the branch is searched for the selected text", () => {
+  test("then every place the text appears is listed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -73,7 +73,7 @@ describe("searching the branch for what is selected", () => {
     expect(rowsWith(frame, "src/invite.ts")).not.toHaveLength(0)
   })
 
-  it("puts the files this branch changes above the ones it does not", async () => {
+  test("then the files this branch changes are listed first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -95,7 +95,7 @@ describe("searching the branch for what is selected", () => {
     expect(outside).toBeGreaterThan(inDiff)
   })
 
-  it("shows the lines around the match without leaving the list", async () => {
+  test("then the lines around a match show without leaving the list", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -112,7 +112,7 @@ describe("searching the branch for what is selected", () => {
     expect(await driver.screen.getFrame()).toContain("export const invite")
   })
 
-  it("opens the file the match sits in when the branch changes it", async () => {
+  test("then a match in a changed file opens that file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -130,7 +130,7 @@ describe("searching the branch for what is selected", () => {
     expect(await driver.screen.getFrame()).toContain("src/seats.ts")
   })
 
-  it("says a match outside the diff has no file to open", async () => {
+  test("then a match outside the diff is marked as having no file to open", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -148,7 +148,7 @@ describe("searching the branch for what is selected", () => {
     expect(await driver.screen.getFrame()).toContain("not changed on this branch")
   })
 
-  it("returns the reader to where they were reading", async () => {
+  test("then the reader returns to where they were reading", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(changed)
@@ -167,7 +167,7 @@ describe("searching the branch for what is selected", () => {
     expect(frame).not.toContain("places")
   })
 
-  it("says so when nothing matches", async () => {
+  test("then the list reports nothing matches", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

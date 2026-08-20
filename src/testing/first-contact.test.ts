@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("meeting adiff with nothing installed and nothing read", () => {
-  it("teaches the loop rather than naming two commands", async () => {
+describe("when an agent meets adiff with nothing read", () => {
+  test("then adiff teaches the loop", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -17,7 +17,7 @@ describe("meeting adiff with nothing installed and nothing read", () => {
     expect(result.stdout).toContain("layers set")
   })
 
-  it("says a caller can ask about one command instead of the whole catalog", async () => {
+  test("then the output offers to describe one command on its own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -28,7 +28,7 @@ describe("meeting adiff with nothing installed and nothing read", () => {
     expect(result.stdout).toContain("describe --command")
   })
 
-  it("costs a tenth of the catalog to ask about one command", async () => {
+  test("then asking about one command costs a tenth of the catalog", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -41,8 +41,8 @@ describe("meeting adiff with nothing installed and nothing read", () => {
   })
 })
 
-describe("collecting comments that are not there yet", () => {
-  it("names what to do next when nothing is waiting", async () => {
+describe("when comments are collected and none are waiting", () => {
+  test("then adiff names what to do next", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })
@@ -57,7 +57,7 @@ describe("collecting comments that are not there yet", () => {
     expect(hint).toContain("comment answer")
   })
 
-  it("says nothing extra once a comment is waiting", async () => {
+  test("then the output carries nothing extra once a comment is waiting", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ name: "add-a-third-line" })
@@ -77,8 +77,8 @@ describe("collecting comments that are not there yet", () => {
   })
 })
 
-describe("pointing a command at something that is not a worktree", () => {
-  it("explains the path rather than naming a command the caller did not run", async () => {
+describe("when a command is pointed at something that is not a worktree", () => {
+  test("then adiff explains the path it was given", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -98,8 +98,8 @@ describe("pointing a command at something that is not a worktree", () => {
   })
 })
 
-describe("publishing a reading order without being told its shape", () => {
-  it("carries the document's shape in the command's own description", async () => {
+describe("when a reading order is published", () => {
+  test("then the command's description carries the document's shape", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

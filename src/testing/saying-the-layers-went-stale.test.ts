@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number): ReadonlyArray<string> =>
@@ -23,8 +23,8 @@ const layers = {
   ],
 }
 
-describe("saying the layers went stale", () => {
-  it("says so from the file tree, not only from the layers rail", async () => {
+describe("when the layers go stale", () => {
+  test("then the file tree carries the stale mark too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)
@@ -41,8 +41,8 @@ describe("saying the layers went stale", () => {
   })
 })
 
-describe("the key that swaps the rail", () => {
-  it("names what it would switch to, not what you are looking at", async () => {
+describe("when the footer offers the key that swaps the rail", () => {
+  test("then the key names what it would switch to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)
@@ -60,8 +60,8 @@ describe("the key that swaps the rail", () => {
   })
 })
 
-describe("the key that asks for a new reading order", () => {
-  it("is offered in the footer while the one you have is stale", async () => {
+describe("when the footer offers the key that asks for a new reading order", () => {
+  test("then the key is offered while the reading order is stale", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)
@@ -77,7 +77,7 @@ describe("the key that asks for a new reading order", () => {
     expect(await driver.screen.getFrame()).toContain("L new order")
   })
 
-  it("is not offered while the reading order still describes the branch", async () => {
+  test("then the key is absent while the reading order still describes the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create(branch)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("a store file that cannot be trusted", () => {
-  it("reports a damaged state file instead of failing unexpectedly", async () => {
+describe("when a store file cannot be trusted", () => {
+  test("then adiff reports a damaged state file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -29,7 +29,7 @@ describe("a store file that cannot be trusted", () => {
     expect(result.code).toBe(1)
   })
 
-  it("reports a state file holding the wrong shape", async () => {
+  test("then adiff reports a state file holding the wrong shape", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -45,7 +45,7 @@ describe("a store file that cannot be trusted", () => {
     })
   })
 
-  it("reports a comment the agent cannot read", async () => {
+  test("then adiff reports a comment the agent cannot read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -61,7 +61,7 @@ describe("a store file that cannot be trusted", () => {
     })
   })
 
-  it("still reads a store nobody has damaged", async () => {
+  test("then an undamaged store still reads", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

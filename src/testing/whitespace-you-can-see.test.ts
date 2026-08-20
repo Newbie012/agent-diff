@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("a change you can only see in the whitespace", () => {
-  it("marks trailing spaces so the two lines are not identical", async () => {
+describe("when a change is only in the whitespace", () => {
+  test("then trailing spaces are marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({
@@ -26,7 +26,7 @@ describe("a change you can only see in the whitespace", () => {
     expect(rows.some((row) => row.includes("\u00b7"))).toBe(true)
   })
 
-  it("marks a trailing tab", async () => {
+  test("then a trailing tab is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

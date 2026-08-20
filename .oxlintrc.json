@@ -97,6 +97,14 @@
     },
     {
       "files": [
+        "src/**/*.test.ts"
+      ],
+      "rules": {
+        "adiff/test-title": "error"
+      }
+    },
+    {
+      "files": [
         "src/main.ts",
         "src/cli/**/*.ts",
         "src/domain/**/*.ts",

@@ -13,6 +13,7 @@
     "adiff/import-order": "error",
     "adiff/span-name": "error",
     "adiff/service-tag": "error",
-    "adiff/effect-not-promises": "error"
+    "adiff/effect-not-promises": "error",
+    "adiff/test-title": "error"
   }
 }

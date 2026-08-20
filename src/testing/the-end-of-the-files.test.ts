@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { shapes } from "./shapes.ts"
 
@@ -11,8 +11,8 @@ const walk = async (driver: TestDriver, key: string, times: number): Promise<voi
   )
 }
 
-describe("pressing on past the last file", () => {
-  it("says there is no next file rather than doing nothing", async () => {
+describe("when the reviewer presses on past the last file", () => {
+  test("then the footer reports no next file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
@@ -26,7 +26,7 @@ describe("pressing on past the last file", () => {
     expect(await driver.screen.getFrame()).toContain("last file")
   })
 
-  it("says the same at the first file, going back", async () => {
+  test("then the footer reports no previous file at the first one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
@@ -39,7 +39,7 @@ describe("pressing on past the last file", () => {
     expect(await driver.screen.getFrame()).toContain("first file")
   })
 
-  it("says nothing while there are still files to turn to", async () => {
+  test("then the footer stays quiet while there are files to turn to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })

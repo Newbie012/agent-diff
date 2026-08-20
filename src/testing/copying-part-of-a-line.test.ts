@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const line = "const alpha = 'bravo charlie';"
@@ -9,8 +9,8 @@ const whereIs = (frame: string, text: string): { row: number; column: number } =
   return { row, column: (rows[row] ?? "").indexOf(text) }
 }
 
-describe("dragging across part of one line", () => {
-  it("copies the characters covered, not the whole line", async () => {
+describe("when a drag crosses part of one line", () => {
+  test("then only the characters covered are copied", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/api.ts", before: [], after: [line] }] })

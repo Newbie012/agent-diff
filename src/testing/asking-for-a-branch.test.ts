@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("opening on a branch that is named", () => {
-  it("says so when no worktree here is on it", async () => {
+describe("when adiff opens on a named branch", () => {
+  test("then the output reports no worktree here is on that branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

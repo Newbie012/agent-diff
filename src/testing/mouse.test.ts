@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const lines = (count: number, mark: string): ReadonlyArray<string> =>
@@ -19,8 +19,8 @@ const body = (frame: string): string => {
   return rows.slice(0, Math.max(0, rows.length - 3)).join("\n")
 }
 
-describe("using the mouse", () => {
-  it("scrolls the diff with the wheel", async () => {
+describe("when the mouse is used", () => {
+  test("then the wheel scrolls the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -36,7 +36,7 @@ describe("using the mouse", () => {
     expect(driver.screen.renderCrashes()).toEqual([])
   })
 
-  it("comes back to exactly where it started when scrolled back up", async () => {
+  test("then scrolling back up returns to exactly where it started", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -52,7 +52,7 @@ describe("using the mouse", () => {
     expect(body(await driver.screen.getFrame())).toBe(start)
   })
 
-  it("does nothing when scrolling up at the top", async () => {
+  test("then scrolling up at the top does nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -66,7 +66,7 @@ describe("using the mouse", () => {
     expect(body(await driver.screen.getFrame())).toBe(start)
   })
 
-  it("selects a range by dragging over it", async () => {
+  test("then dragging selects a range", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)

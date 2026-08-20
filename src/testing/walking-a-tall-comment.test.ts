@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 30 }, (_, at) => `const line${at} = ${at};`)
@@ -22,8 +22,8 @@ const open = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ width: 100, height: 24, review: true })
 }
 
-describe("a comment taller than the pane", () => {
-  it("is read a page at a time rather than skipped", async () => {
+describe("when a comment is taller than the pane", () => {
+  test("then the comment is read a page at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -40,7 +40,7 @@ describe("a comment taller than the pane", () => {
     expect(frame).toContain("Paragraph")
   })
 
-  it("carries on to the line below once it has been read", async () => {
+  test("then the cursor carries on to the line below once the comment is read", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)

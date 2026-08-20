@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { series } from "./state.ts"
 import { TestDriver } from "./index.ts"
 
@@ -35,8 +35,8 @@ const three = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ ...WIDE, review: true })
 }
 
-describe("the order of the review panel", () => {
-  it("puts the newest comment at the top", async () => {
+describe("when the review panel is ordered", () => {
+  test("then the newest comment is at the top", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -47,7 +47,7 @@ describe("the order of the review panel", () => {
     expect(order(await driver.screen.getFrame())[0]).toBe("third one")
   })
 
-  it("turns the order around when asked", async () => {
+  test("then the order turns around when asked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await three(driver)

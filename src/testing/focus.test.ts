@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -14,8 +14,8 @@ const WITHOUT_LIST = 2
 const rules = (frame: string): number =>
   Math.max(...frame.split("\n").map((line) => line.split("│").length - 1))
 
-describe("moving between the file list and the diff", () => {
-  it("separates the two panes with a rule", async () => {
+describe("when the keys move between the file list and the diff", () => {
+  test("then a rule separates the two panes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -28,7 +28,7 @@ describe("moving between the file list and the diff", () => {
     expect(rules(await driver.screen.getFrame())).toBe(WITH_LIST)
   })
 
-  it("moves between files when the list has focus", async () => {
+  test("then the keys move between files with the list focused", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -41,7 +41,7 @@ describe("moving between the file list and the diff", () => {
     expect(await driver.screen.getFrame()).toContain("src/ui.ts")
   })
 
-  it("moves the cursor when the diff has focus", async () => {
+  test("then the keys move the cursor with the diff focused", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -55,7 +55,7 @@ describe("moving between the file list and the diff", () => {
     expect(cursor.join(" ")).toContain("const b = 2")
   })
 
-  it("hides the list entirely when zoomed", async () => {
+  test("then zooming hides the list entirely", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -70,7 +70,7 @@ describe("moving between the file list and the diff", () => {
     expect(rules(await driver.screen.getFrame())).toBe(WITHOUT_LIST)
   })
 
-  it("brings the list back when zoomed a second time", async () => {
+  test("then zooming again brings the list back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -84,7 +84,7 @@ describe("moving between the file list and the diff", () => {
     expect(rules(await driver.screen.getFrame())).toBe(WITH_LIST)
   })
 
-  it("zooms with the backslash key too", async () => {
+  test("then backslash zooms too", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

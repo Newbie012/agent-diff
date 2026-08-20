@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -52,8 +52,8 @@ type Report = {
 
 const layersOf = (envelope: unknown): Report => (envelope as { layers: Report }).layers
 
-describe("reading a diff in the order the agent built it", () => {
-  it("hands the reviewer the layers the agent wrote, in the agent's order", async () => {
+describe("when a diff is read in the order the agent built it", () => {
+  test("then the reviewer gets the layers in the agent's order", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -75,7 +75,7 @@ describe("reading a diff in the order the agent built it", () => {
     expect(layers.uncovered).toEqual([])
   })
 
-  it("reports the hunks no layer claims, so a layers cannot hide code", async () => {
+  test("then the hunks no layer claims are reported", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -92,7 +92,7 @@ describe("reading a diff in the order the agent built it", () => {
     expect(shown.uncovered.map((span) => span.path)).toEqual(["src/api.ts"])
   })
 
-  it("supersedes the layers it replaces instead of losing the earlier version", async () => {
+  test("then a new reading order supersedes the one it replaces", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -108,7 +108,7 @@ describe("reading a diff in the order the agent built it", () => {
     expect(layers.stale).toBe(false)
   })
 
-  it("says a layers is stale once the branch moves past the commit it describes", async () => {
+  test("then a reading order reads stale once the branch moves past it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -122,7 +122,7 @@ describe("reading a diff in the order the agent built it", () => {
     expect(layers.stale).toBe(true)
   })
 
-  it("returns only the asked-for fields, so a caller pays for what it reads", async () => {
+  test("then only the asked-for fields come back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -135,7 +135,7 @@ describe("reading a diff in the order the agent built it", () => {
     expect(result.envelope).toEqual({ ok: true, layers: { covered: 2, total: 2 } })
   })
 
-  it("says there is no layers rather than pretending the diff has one", async () => {
+  test("then the output reports no reading order", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -149,7 +149,7 @@ describe("reading a diff in the order the agent built it", () => {
     expect(result.envelope).toMatchObject({ ok: false, error: { type: "NoLayers" } })
   })
 
-  it("refuses a layers whose layers say nothing, and says what a layers looks like", async () => {
+  test("then an empty reading order is refused, with the shape one takes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -165,7 +165,7 @@ describe("reading a diff in the order the agent built it", () => {
     })
   })
 
-  it("names the files a layer points at that the branch no longer changes", async () => {
+  test("then the files a layer points at that the branch no longer changes are named", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)

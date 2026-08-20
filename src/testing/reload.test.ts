@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -16,8 +16,8 @@ const twoFiles = {
   ],
 }
 
-describe("picking up work the agent did while you read", () => {
-  it("shows the newest lines without leaving the review", async () => {
+describe("when the agent works while the reviewer reads", () => {
+  test("then the newest lines show without leaving the review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -37,7 +37,7 @@ describe("picking up work the agent did while you read", () => {
     expect(await driver.screen.getFrame()).toContain("answered the comment")
   })
 
-  it("keeps the reader on the same file and line", async () => {
+  test("then the reader stays on the same file and line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -59,7 +59,7 @@ describe("picking up work the agent did while you read", () => {
     expect(await driver.screen.getFrame()).toContain("src/ui.tsx  file 2 of 2")
   })
 
-  it("says it read the branch again", async () => {
+  test("then the footer reports the branch was read again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

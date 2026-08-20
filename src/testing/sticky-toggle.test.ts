@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = [
@@ -23,8 +23,8 @@ const pinned = (frame: string): boolean => {
   return row.includes(SCOPE) && !numbered(row)
 }
 
-describe("the scope pinned above the diff", () => {
-  it("goes away on S, comes back on S, and is remembered", async () => {
+describe("when the pinned scope is toggled", () => {
+  test("then S hides the pin, S brings it back, and the choice is remembered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/mapper.ts", before: [], after: body }] })

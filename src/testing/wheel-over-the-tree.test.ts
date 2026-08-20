@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const rail = (frame: string): ReadonlyArray<string> =>
@@ -20,8 +20,8 @@ const openTree = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ width: 120, height: 20, review: true })
 }
 
-describe("the wheel over the file tree", () => {
-  it("moves the list without leaving the file", async () => {
+describe("when the wheel turns over the file tree", () => {
+  test("then the list moves and the file stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openTree(driver)
@@ -37,7 +37,7 @@ describe("the wheel over the file tree", () => {
     expect(after.split("\n")[0]).toContain("file00.ts")
   })
 
-  it("comes back to where it started", async () => {
+  test("then the list comes back to where it started", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openTree(driver)

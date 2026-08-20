@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
@@ -38,8 +38,8 @@ const gapRows = (frame: string): ReadonlyArray<string> =>
 const hiddenCounts = (frame: string): ReadonlyArray<number> =>
   gapRows(frame).map((line) => Number(/(\d+) lines hidden/.exec(line)?.[1] ?? -1))
 
-describe("opening the lines a diff leaves out", () => {
-  it("says on the row itself how many lines the gap is holding back", async () => {
+describe("when the lines a diff leaves out are opened", () => {
+  test("then the gap row counts the lines it holds back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -53,7 +53,7 @@ describe("opening the lines a diff leaves out", () => {
     expect(hiddenCounts(await driver.screen.getFrame())).toEqual([27])
   })
 
-  it("brings back the lines next to the change when the gap is opened", async () => {
+  test("then the lines next to the change come back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -71,7 +71,7 @@ describe("opening the lines a diff leaves out", () => {
     expect(hiddenCounts(frame)).toEqual([17])
   })
 
-  it("keeps opening the same gap until it runs out, then drops the row", async () => {
+  test("then the gap opens until it runs out and the row goes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -87,7 +87,7 @@ describe("opening the lines a diff leaves out", () => {
     expect(frame).toContain("kept0")
   })
 
-  it("closes the gap again", async () => {
+  test("then the gap closes again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -103,7 +103,7 @@ describe("opening the lines a diff leaves out", () => {
     expect(await driver.screen.getFrame()).not.toContain("kept20")
   })
 
-  it("leaves every other gap counting what it counted before", async () => {
+  test("then every other gap counts what it counted before", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(spread)
@@ -118,7 +118,7 @@ describe("opening the lines a diff leaves out", () => {
     expect(hiddenCounts(await driver.screen.getFrame())).toEqual([7, 14])
   })
 
-  it("still folds the file tree when the cursor is not on a gap", async () => {
+  test("then the file tree still folds off a gap", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(nested)
@@ -139,8 +139,8 @@ describe("opening the lines a diff leaves out", () => {
   })
 })
 
-describe("how a gap row reads", () => {
-  it("sets the row apart from the code around it", async () => {
+describe("when a gap row is drawn", () => {
+  test("then the gap row is set apart from the code", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -155,7 +155,7 @@ describe("how a gap row reads", () => {
     expect(banded.join(" ")).toContain("27 lines hidden")
   })
 
-  it("gives the row no line number of its own", async () => {
+  test("then the gap row carries no line number", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -170,8 +170,8 @@ describe("how a gap row reads", () => {
   })
 })
 
-describe("commenting on a line a gap gave back", () => {
-  it("anchors the comment to the file line the opened row names", async () => {
+describe("when a comment is written on a line a gap gave back", () => {
+  test("then the comment anchors to the file line the row names", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(deep)

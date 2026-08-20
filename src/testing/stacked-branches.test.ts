@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Row = { readonly branch: string; readonly files: number; readonly base: string; readonly basis: string }
@@ -27,8 +27,8 @@ const stack = async (driver: TestDriver) => {
   return { a, b }
 }
 
-describe("a branch stacked on another branch", () => {
-  it("reports only the work it adds", async () => {
+describe("when a branch is stacked on another branch", () => {
+  test("then only the work the branch adds is reported", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { a } = await stack(driver)
@@ -42,7 +42,7 @@ describe("a branch stacked on another branch", () => {
     expect(a.name).toBe("a-first")
   })
 
-  it("names the branch it picked as the base", async () => {
+  test("then adiff names the branch it picked as the base", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await stack(driver)
@@ -54,7 +54,7 @@ describe("a branch stacked on another branch", () => {
     expect(rowFor(listed, "b-second")).toMatchObject({ base: "a-first", basis: "stacked" })
   })
 
-  it("leaves the branch at the bottom of the stack on the default", async () => {
+  test("then the branch at the bottom of the stack keeps the default base", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await stack(driver)
@@ -66,7 +66,7 @@ describe("a branch stacked on another branch", () => {
     expect(rowFor(listed, "a-first")?.basis).toBe("default")
   })
 
-  it("widens back to the default when asked for one", async () => {
+  test("then asking for the default base widens the diff back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { b } = await stack(driver)
@@ -88,8 +88,8 @@ describe("a branch stacked on another branch", () => {
   })
 })
 
-describe("changing the base under a review", () => {
-  it("keeps a comment written before the base changed", async () => {
+describe("when the base changes under a review", () => {
+  test("then a comment written before the base changed is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { b } = await stack(driver)
@@ -110,7 +110,7 @@ describe("changing the base under a review", () => {
     expect(threads.envelope).toMatchObject({ comments: [{ body: "still mine", outside: false }] })
   })
 
-  it("reports a comment the narrower base leaves out rather than dropping it", async () => {
+  test("then a comment the narrower base leaves out is still reported", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { b } = await stack(driver)

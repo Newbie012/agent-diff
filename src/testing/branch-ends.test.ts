@@ -1,11 +1,11 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const cursorRow = (frame: string): string =>
   frame.split("\n").find((row) => row.includes("▎")) ?? ""
 
-describe("reaching the ends of the worktree list", () => {
-  it("goes to the last worktree and back to the first", async () => {
+describe("when the cursor reaches the ends of the worktree list", () => {
+  test("then the cursor wraps to the last worktree and back to the first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -8,8 +8,8 @@ const files = [
 const said = (result: { stdout: string; stderr: string }): string =>
   `${result.stdout}${result.stderr}`
 
-describe("what an option is allowed to say", () => {
-  it("keeps a comment body that begins with two dashes", async () => {
+describe("when an option is given a value", () => {
+  test("then a comment body beginning with two dashes is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -37,7 +37,7 @@ describe("what an option is allowed to say", () => {
     expect(delivered[0]?.body).toBe("--force is risky here")
   })
 
-  it("refuses a side that is neither old nor new", async () => {
+  test("then adiff refuses a side that is neither old nor new", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -68,7 +68,7 @@ describe("what an option is allowed to say", () => {
     expect(said(result)).toContain("new")
   })
 
-  it("refuses an option it does not take, and names the ones it does", async () => {
+  test("then adiff refuses an unknown option and names the ones it takes", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -82,7 +82,7 @@ describe("what an option is allowed to say", () => {
     expect(said(result)).toContain("repo")
   })
 
-  it("refuses a field the answer does not carry, and names the ones it does", async () => {
+  test("then adiff refuses an unknown field and names the ones the answer carries", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -103,7 +103,7 @@ describe("what an option is allowed to say", () => {
     expect(said(result)).toContain("branch")
   })
 
-  it("keeps a field the answer does carry", async () => {
+  test("then a field the answer carries is kept", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -124,7 +124,7 @@ describe("what an option is allowed to say", () => {
     expect(Object.keys(parsed.branches[0] ?? {})).toEqual(["branch"])
   })
 
-  it("says a line number is not a whole number, rather than that it is missing", async () => {
+  test("then the output reports a line number that is not a whole number", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
@@ -153,7 +153,7 @@ describe("what an option is allowed to say", () => {
     expect(said(result)).not.toContain("MissingOption")
   })
 
-  it("takes a value written with an equals sign", async () => {
+  test("then a value written with an equals sign is taken", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const longFile = {
@@ -20,8 +20,8 @@ const topLineOf = (frame: string): string => {
   return ""
 }
 
-describe("reading the branch again", () => {
-  it("leaves the reader looking at the same lines", async () => {
+describe("when the branch is read again", () => {
+  test("then the reader is left looking at the same lines", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(longFile)

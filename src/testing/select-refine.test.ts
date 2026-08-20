@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const before = [
@@ -26,8 +26,8 @@ const open = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ review: true })
 }
 
-describe("selecting a change", () => {
-  it("takes the whole change under the cursor", async () => {
+describe("when a change is selected", () => {
+  test("then the whole change under the cursor is taken", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -40,7 +40,7 @@ describe("selecting a change", () => {
     expect(await driver.screen.getFrame()).toContain("src/api.ts  4 lines")
   })
 
-  it("says so when the cursor sits on an unchanged line", async () => {
+  test("then the footer reports the cursor is on an unchanged line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -52,7 +52,7 @@ describe("selecting a change", () => {
     expect(await driver.screen.getFrame()).toContain("no change under the cursor")
   })
 
-  it("grows from the other end after o", async () => {
+  test("then o grows the selection from the other end", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await open(driver)
@@ -69,7 +69,7 @@ describe("selecting a change", () => {
     expect(await driver.screen.getFrame()).toContain("src/api.ts  3 lines")
   })
 
-  it("anchors a comment to the change it selected", async () => {
+  test("then a comment anchors to the change that was selected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(file)

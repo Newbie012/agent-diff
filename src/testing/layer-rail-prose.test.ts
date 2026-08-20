@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -44,8 +44,8 @@ const railRows = (frame: string, room: number): ReadonlyArray<string> =>
 const rowWith = (rows: ReadonlyArray<string>, text: string): number =>
   rows.findIndex((line) => line.includes(text))
 
-describe("reading a layer's blocks", () => {
-  it("leaves the prose to the diff, and lists the files it spans in the rail", async () => {
+describe("when a layer's blocks are read", () => {
+  test("then the rail lists the files and leaves the prose to the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(across)
@@ -64,7 +64,7 @@ describe("reading a layer's blocks", () => {
     expect(rowWith(rail, "notes.md")).toBeGreaterThan(0)
   })
 
-  it("groups each file under the directory it sits in", async () => {
+  test("then each file is grouped under the directory it sits in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(across)

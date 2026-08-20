@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const deep = {
@@ -23,8 +23,8 @@ const listing = (frame: string): string =>
     .map((row) => row.split("\u2502")[1] ?? "")
     .join("\n")
 
-describe("closing the folders a file sits in", () => {
-  it("closes the folder the file is in first", async () => {
+describe("when the folders a file sits in are closed", () => {
+  test("then the folder the file is in closes first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -40,7 +40,7 @@ describe("closing the folders a file sits in", () => {
     expect(frame).toContain("hooks")
   })
 
-  it("closes the folder above it on the next press", async () => {
+  test("then the folder above closes on the next press", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -55,7 +55,7 @@ describe("closing the folders a file sits in", () => {
     expect(frame).toContain("web/src")
   })
 
-  it("stops once the outermost folder it can close is shut", async () => {
+  test("then closing stops at the outermost folder", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -70,7 +70,7 @@ describe("closing the folders a file sits in", () => {
     expect(frame).not.toContain("pages")
   })
 
-  it("opens the outermost closed folder first, so the way back in is the way out", async () => {
+  test("then the outermost closed folder opens first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)

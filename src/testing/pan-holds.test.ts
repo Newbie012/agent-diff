@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const long =
@@ -21,8 +21,8 @@ const buried = (mark: string): ReadonlyArray<string> => [
   long,
 ]
 
-describe("panning past the edge of a line", () => {
-  it("holds a thread still while the code moves", async () => {
+describe("when the code pans past the edge of a line", () => {
+  test("then a thread holds still while the code moves", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(wide)
@@ -44,7 +44,7 @@ describe("panning past the edge of a line", () => {
     expect(frame).not.toContain("const invitation = `a team")
   })
 
-  it("holds a gap row still while the code moves", async () => {
+  test("then a gap row holds still while the code moves", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

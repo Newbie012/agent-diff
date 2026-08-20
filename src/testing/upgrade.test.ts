@@ -1,10 +1,10 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const NOWHERE = "http://127.0.0.1:1/dist-tags"
 
-describe("what adiff upgrade does for the person who ran it", () => {
-  it("says it is up to date, in one line, and runs nothing", async () => {
+describe("when a person runs adiff upgrade", () => {
+  test("then the output reads up to date in one line and nothing runs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -20,7 +20,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.envelope).toBeUndefined()
   })
 
-  it("upgrades, shows the installer working, and ends on the version now installed", async () => {
+  test("then adiff upgrades, shows the installer working, and ends on the version now installed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -36,7 +36,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout.trim().split("\n").at(-1)).toBe("adiff 9.9.9 is installed now.")
   })
 
-  it("says the upgrade did not work, instead of claiming it did, and exits 1", async () => {
+  test("then the output reports the upgrade failed and the exit code is 1", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -51,7 +51,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout).not.toContain("is installed now")
   })
 
-  it("names the compressed asset, so a download is a quarter of the binary", async () => {
+  test("then adiff names the compressed asset", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -68,7 +68,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout).toContain("tar -xzO")
   })
 
-  it("explains a binary it cannot rewrite while it runs, and upgrades nothing", async () => {
+  test("then adiff explains a binary it cannot rewrite while it runs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -84,7 +84,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout).not.toContain("ran with")
   })
 
-  it("will not pull a checkout for you, and says what to run instead", async () => {
+  test("then a checkout is left alone and the output names what to run", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -98,7 +98,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout).toContain("git")
   })
 
-  it("upgrades even when the registry never answered, since that is what was asked for", async () => {
+  test("then adiff upgrades even when the registry never answered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const install = await driver.app.installedBy("bun")
@@ -113,7 +113,7 @@ describe("what adiff upgrade does for the person who ran it", () => {
     expect(result.stdout).toContain("adiff --version")
   })
 
-  it("still takes --run, which asked for what now happens anyway", async () => {
+  test("then adiff still takes --run", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -132,8 +132,8 @@ describe("what adiff upgrade does for the person who ran it", () => {
   })
 })
 
-describe("adiff upgrade --check", () => {
-  it("names the newer build and the command, and runs nothing", async () => {
+describe("when adiff upgrade --check runs", () => {
+  test("then the output names the newer build and the command, and nothing runs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -153,7 +153,7 @@ describe("adiff upgrade --check", () => {
     expect(result.stdout).not.toContain("ran with")
   })
 
-  it("exits 0 on a route adiff cannot upgrade, because the report is the answer", async () => {
+  test("then the exit code is 0 on a route adiff cannot upgrade", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -171,8 +171,8 @@ describe("adiff upgrade --check", () => {
   })
 })
 
-describe("adiff upgrade --json", () => {
-  it("upgrades and keeps the installer's output off stdout", async () => {
+describe("when adiff upgrade --json runs", () => {
+  test("then the upgrade runs and the installer's output stays off stdout", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -192,7 +192,7 @@ describe("adiff upgrade --json", () => {
     expect(String(upgrade["note"])).toContain("adiff 9.9.9 is installed now.")
   })
 
-  it("names the route it found and the one command that updates it", async () => {
+  test("then the output names the route it found and the command that updates it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -209,7 +209,7 @@ describe("adiff upgrade --json", () => {
     expect(String(upgrade["command"]).length).toBeGreaterThan(0)
   })
 
-  it("says it is current when the registry names the version it is running", async () => {
+  test("then the output reads current when the registry names the running version", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -222,7 +222,7 @@ describe("adiff upgrade --json", () => {
     expect(result.envelope).toMatchObject({ ok: true, upgrade: { current: true } })
   })
 
-  it("puts what happened in the note, not generic advice", async () => {
+  test("then the note carries what happened", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -236,7 +236,7 @@ describe("adiff upgrade --json", () => {
     expect(upgrade.note).toBe(`adiff ${manifest.default.version} is the newest build.`)
   })
 
-  it("answers offline rather than failing, saying it could not tell", async () => {
+  test("then the output answers offline, reporting it could not tell", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -252,7 +252,7 @@ describe("adiff upgrade --json", () => {
     expect(String(upgrade["note"])).toContain("The registry did not answer")
   })
 
-  it("returns only the asked-for fields, so a caller pays for what it reads", async () => {
+  test("then only the asked-for fields come back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -265,7 +265,7 @@ describe("adiff upgrade --json", () => {
     expect(result.envelope).toEqual({ ok: true, upgrade: { route: "source" } })
   })
 
-  it("keeps the envelope contract when nothing was upgraded, and still exits 0", async () => {
+  test("then the envelope holds when nothing was upgraded, and it exits 0", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })

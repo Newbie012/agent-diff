@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("a file adiff cannot show", () => {
-  it("says a binary file is binary instead of drawing nothing", async () => {
+describe("when a binary file is opened", () => {
+  test("then the diff marks the file as binary", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({
@@ -20,8 +20,8 @@ describe("a file adiff cannot show", () => {
   })
 })
 
-describe("a file with no newline at the end", () => {
-  it("says so, rather than showing two lines that look the same", async () => {
+describe("when a file has no newline at the end", () => {
+  test("then the diff marks the missing newline", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({

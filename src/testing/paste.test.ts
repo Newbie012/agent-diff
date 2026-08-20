@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("pasting into a draft", () => {
-  it("lands the whole paste at the caret", async () => {
+describe("when text is pasted into a draft", () => {
+  test("then the whole paste lands at the caret", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -27,7 +27,7 @@ describe("pasting into a draft", () => {
     expect(await driver.screen.getFrame()).toContain("see: the log said EACCES")
   })
 
-  it("puts the caret after what was pasted", async () => {
+  test("then the caret sits after what was pasted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -42,7 +42,7 @@ describe("pasting into a draft", () => {
     expect(await driver.screen.getFrame()).toContain("middle!")
   })
 
-  it("keeps the line breaks in a pasted block", async () => {
+  test("then a pasted block keeps its line breaks", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -60,7 +60,7 @@ describe("pasting into a draft", () => {
     expect(lines.some((line) => line.includes("second line"))).toBe(true)
   })
 
-  it("strips what a terminal can smuggle in", async () => {
+  test("then what a terminal can smuggle in is stripped", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -76,7 +76,7 @@ describe("pasting into a draft", () => {
     expect(frame).not.toContain("31m")
   })
 
-  it("gives a pasted tab a width", async () => {
+  test("then a pasted tab has a width", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -90,7 +90,7 @@ describe("pasting into a draft", () => {
     expect(await driver.screen.getFrame()).toContain("  return 1")
   })
 
-  it("keeps the palette query on one line", async () => {
+  test("then the palette query stays on one line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

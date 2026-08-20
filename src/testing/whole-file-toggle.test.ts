@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const around = Array.from({ length: 40 }, (_, at) => `const far${at} = ${at}`)
@@ -20,8 +20,8 @@ const opened = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["k"])
 }
 
-describe("showing the whole file", () => {
-  it("opens the file the change sits in with one key", async () => {
+describe("when the whole file is shown", () => {
+  test("then one key opens the file the change sits in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -36,7 +36,7 @@ describe("showing the whole file", () => {
     expect(frame).toContain("whole file")
   })
 
-  it("gives the diff back when pressed again", async () => {
+  test("then pressing again gives the diff back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -51,7 +51,7 @@ describe("showing the whole file", () => {
     expect(frame).not.toContain("whole file")
   })
 
-  it("goes back to the width the reader had chosen", async () => {
+  test("then the context returns to the width the reader chose", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)

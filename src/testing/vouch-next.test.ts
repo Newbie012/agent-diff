@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const threeFiles = {
@@ -9,8 +9,8 @@ const threeFiles = {
   ],
 }
 
-describe("working through a branch file by file", () => {
-  it("marks the file and moves to the next one still unreviewed", async () => {
+describe("when a branch is worked through file by file", () => {
+  test("then the file is marked and the next unreviewed one opens", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)
@@ -25,7 +25,7 @@ describe("working through a branch file by file", () => {
     expect(frame).toContain("1 reviewed")
   })
 
-  it("skips files already reviewed rather than stopping on them", async () => {
+  test("then files already reviewed are skipped", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)
@@ -43,7 +43,7 @@ describe("working through a branch file by file", () => {
     expect(frame).toContain("2 reviewed")
   })
 
-  it("says the branch is done when the last file is marked", async () => {
+  test("then the branch reads as done once the last file is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(threeFiles)

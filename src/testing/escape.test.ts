@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -8,8 +8,8 @@ const twoFiles = {
   ],
 }
 
-describe("backing out of what you are doing", () => {
-  it("clears a selection without leaving the file", async () => {
+describe("when the reviewer backs out", () => {
+  test("then escape clears the selection and stays in the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -25,7 +25,7 @@ describe("backing out of what you are doing", () => {
     expect(frame).toContain("file 1 of 2")
   })
 
-  it("leaves the review only on a second press", async () => {
+  test("then escape leaves the review only on a second press", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -40,7 +40,7 @@ describe("backing out of what you are doing", () => {
     expect(await driver.screen.getFrame()).toContain("worktree")
   })
 
-  it("treats q as back while reviewing, so a review is never lost to a stray key", async () => {
+  test("then q goes back rather than quitting the review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

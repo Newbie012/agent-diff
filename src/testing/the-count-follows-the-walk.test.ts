@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { shapes } from "./shapes.ts"
 
@@ -10,8 +10,8 @@ const place = (frame: string): string =>
     .find((part) => /^file \d+ of \d+$/.test(part.trim()))
     ?.trim() ?? ""
 
-describe("the count in the header", () => {
-  it("steps by one every time the reviewer turns to the next file", async () => {
+describe("when the header counts the files", () => {
+  test("then the count steps by one on every turn to the next file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
@@ -30,7 +30,7 @@ describe("the count in the header", () => {
     expect(walked).toEqual(Array.from({ length: many }, (_, at) => `file ${at + 1} of ${many}`))
   })
 
-  it("counts what can be walked to, not what is folded away", async () => {
+  test("then the count is of what can be walked to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
@@ -47,8 +47,8 @@ describe("the count in the header", () => {
   })
 })
 
-describe("where a branch named on the command line opens", () => {
-  it("opens at the top of the walk, not wherever git listed first", async () => {
+describe("when a branch is named on the command line", () => {
+  test("then adiff opens at the top of the walk", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files: [...(spread?.files ?? [])] })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number): ReadonlyArray<string> =>
@@ -40,8 +40,8 @@ const staleRail = async (driver: TestDriver, width: number): Promise<string> => 
   return driver.screen.getFrame()
 }
 
-describe("the rail on a stale layer set", () => {
-  it("says the whole sentence at a hundred columns", async () => {
+describe("when the rail carries a stale layer set", () => {
+  test("then the whole sentence shows at a hundred columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -52,7 +52,7 @@ describe("the rail on a stale layer set", () => {
     expect(railText(frame)).toContain("stale, the branch moved on")
   })
 
-  it("keeps a title's words whole where the rail is narrow", async () => {
+  test("then a title's words stay whole where the rail is narrow", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -65,7 +65,7 @@ describe("the rail on a stale layer set", () => {
     expect(rail).not.toMatch(/invitatio ns/)
   })
 
-  it("says only that it is stale where the rail is narrow", async () => {
+  test("then a narrow rail carries only the stale mark", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

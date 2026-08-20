@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -16,8 +16,8 @@ const told: LayersInput = {
   ],
 }
 
-describe("layers that describe an older commit", () => {
-  it("says a new revision is needed", async () => {
+describe("when layers describe an older commit", () => {
+  test("then the rail asks for a new revision", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(one)
@@ -34,7 +34,7 @@ describe("layers that describe an older commit", () => {
     expect(body.layers.advice).toContain("new revision")
   })
 
-  it("says nothing when the layers still describe the branch", async () => {
+  test("then the rail carries no such note while the layers describe the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(one)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("what the footer is for", () => {
-  it("keeps rare actions out of the way", async () => {
+describe("when the footer is drawn", () => {
+  test("then rare actions stay out of the footer", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -28,7 +28,7 @@ describe("what the footer is for", () => {
     expect(footer).not.toContain("pane")
   })
 
-  it("always offers the way to everything else", async () => {
+  test("then the footer always offers the way to everything else", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

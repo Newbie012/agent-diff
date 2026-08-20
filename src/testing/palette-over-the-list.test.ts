@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const one = {
@@ -11,8 +11,8 @@ const one = {
   ],
 }
 
-describe("finding a command from the review list", () => {
-  it("opens the palette over the list", async () => {
+describe("when the palette is opened from the review list", () => {
+  test("then the palette opens over the list", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(one)
@@ -29,7 +29,7 @@ describe("finding a command from the review list", () => {
     expect(frame).toContain("Next line")
   })
 
-  it("comes back to the list when dismissed", async () => {
+  test("then dismissing the palette comes back to the list", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(one)

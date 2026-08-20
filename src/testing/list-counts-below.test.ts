@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const spread = (count: number) =>
@@ -17,8 +17,8 @@ const opened = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["TAB", "l", "l", "l", "l", "l", "l"])
 }
 
-describe("the count under the file list", () => {
-  it("says how many rows are still below", async () => {
+describe("when the file list runs past the pane", () => {
+  test("then the count reads how many rows are below", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -29,7 +29,7 @@ describe("the count under the file list", () => {
     expect(holdingBack(await driver.screen.getFrame())).toMatch(/^… \d+ more$/)
   })
 
-  it("stops counting once nothing is below", async () => {
+  test("then the count goes once nothing is below", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)

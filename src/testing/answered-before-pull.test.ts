@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 160, height: 32 }
@@ -30,8 +30,8 @@ const openOnTwo = async (
   return { ids: listed.comments.map((comment) => comment.id), worktree: branch.worktree }
 }
 
-describe("knowing what was answered before pulling it", () => {
-  it("names the comment the agent answered, not only how many", async () => {
+describe("when answers are waiting to be pulled", () => {
+  test("then adiff names the comment the agent answered", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { ids, worktree } = await openOnTwo(driver)
@@ -49,7 +49,7 @@ describe("knowing what was answered before pulling it", () => {
     expect(frame).toContain("press r")
   })
 
-  it("still leaves the diff alone until the reviewer pulls", async () => {
+  test("then the diff is unchanged until the reviewer pulls", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { ids, worktree } = await openOnTwo(driver)
@@ -66,7 +66,7 @@ describe("knowing what was answered before pulling it", () => {
     expect(await driver.screen.getFrame()).not.toContain("Dropped it")
   })
 
-  it("keeps saying so after a notice has come and gone", async () => {
+  test("then the comment is named again after a notice has come and gone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { ids, worktree } = await openOnTwo(driver)

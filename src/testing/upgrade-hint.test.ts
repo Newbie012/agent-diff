@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const AGES_AGO = "2020-01-01T00:00:00.000Z"
@@ -19,8 +19,8 @@ const recalled = async (driver: TestDriver): Promise<Record<string, unknown>> =>
     unknown
   >
 
-describe("hearing about a new version without being nagged", () => {
-  it("says one quiet line in the footer when a newer version was seen last time", async () => {
+describe("when a newer version has been seen", () => {
+  test("then the footer carries one quiet line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -33,7 +33,7 @@ describe("hearing about a new version without being nagged", () => {
     expect(await driver.screen.getFrame()).toContain("9.9.9")
   })
 
-  it("says nothing when the version it saw is the one running", async () => {
+  test("then the footer stays empty when the version it saw is the one running", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -50,7 +50,7 @@ describe("hearing about a new version without being nagged", () => {
     expect(await driver.screen.getFrame()).not.toContain("adiff upgrade")
   })
 
-  it("mentions a version once, not on every run", async () => {
+  test("then a version is mentioned once", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -64,7 +64,7 @@ describe("hearing about a new version without being nagged", () => {
     expect(await driver.screen.getFrame()).not.toContain("9.9.9")
   })
 
-  it("writes down that it mentioned it, where a person would find it", async () => {
+  test("then adiff writes down that it mentioned the version, where a person would find it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -79,7 +79,7 @@ describe("hearing about a new version without being nagged", () => {
     expect(String(held["note"])).toContain("ADIFF_NO_UPGRADE_CHECK")
   })
 
-  it("stays quiet, and touches nothing, when the check is turned off", async () => {
+  test("then adiff stays quiet and touches nothing with the check off", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })

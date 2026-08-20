@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
@@ -13,8 +13,8 @@ const files = {
 const chosen = async (driver: TestDriver): Promise<string> =>
   (await driver.screen.paintedWith(palette.selection)).join(" ")
 
-describe("settling from the review panel", () => {
-  it("stays on the comment that was settled", async () => {
+describe("when a thread is settled from the review panel", () => {
+  test("then the cursor stays on the comment that was settled", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(files)

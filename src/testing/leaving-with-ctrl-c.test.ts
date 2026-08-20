@@ -1,10 +1,10 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [{ path: "src/one.ts", before: ["const a = 1"], after: ["const a = 1", "const one = 2"] }]
 
-describe("pressing ctrl+c", () => {
-  it("closes the box being written in rather than the review", async () => {
+describe("when ctrl+c is pressed", () => {
+  test("then the compose box closes and the review stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -22,7 +22,7 @@ describe("pressing ctrl+c", () => {
     expect(driver.screen.renderCrashes()).toEqual([])
   })
 
-  it("closes the key sheet rather than the review", async () => {
+  test("then the key sheet closes and the review stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -36,7 +36,7 @@ describe("pressing ctrl+c", () => {
     expect(await driver.screen.getFrame()).toContain("const one = 2")
   })
 
-  it("asks before leaving when nothing is open over the review", async () => {
+  test("then adiff asks before leaving", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -51,7 +51,7 @@ describe("pressing ctrl+c", () => {
     expect(frame).toContain("const one = 2")
   })
 
-  it("forgets the asking when another key is pressed", async () => {
+  test("then another key forgets the asking", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -65,7 +65,7 @@ describe("pressing ctrl+c", () => {
     expect(await driver.screen.getFrame()).not.toContain("press ctrl+c again")
   })
 
-  it("closes the command palette rather than the review", async () => {
+  test("then the palette closes and the review stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -81,7 +81,7 @@ describe("pressing ctrl+c", () => {
     expect(frame).toContain("const one = 2")
   })
 
-  it("closes the search rather than the review", async () => {
+  test("then the search closes and the review stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -97,7 +97,7 @@ describe("pressing ctrl+c", () => {
     expect(frame).toContain("const one = 2")
   })
 
-  it("closes the bug report rather than the review", async () => {
+  test("then the bug report closes and the review stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -112,7 +112,7 @@ describe("pressing ctrl+c", () => {
     expect(await driver.agent.listReports()).toHaveLength(0)
   })
 
-  it("asks before leaving the branch list too", async () => {
+  test("then adiff asks before leaving the branch list", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

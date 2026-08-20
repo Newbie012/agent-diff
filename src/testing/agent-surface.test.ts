@@ -1,8 +1,8 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
-describe("using adiff without reading its documentation", () => {
-  it("describes the commands it exposes, with the options each needs", async () => {
+describe("when an agent uses adiff without reading the documentation", () => {
+  test("then adiff describes every command with the options it needs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -66,7 +66,7 @@ describe("using adiff without reading its documentation", () => {
     )
   })
 
-  it("names the nearest command when asked to describe one that does not exist", async () => {
+  test("then adiff names the nearest command to one that does not exist", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -81,7 +81,7 @@ describe("using adiff without reading its documentation", () => {
     })
   })
 
-  it("keeps failures off stdout, so a caller can parse stdout unconditionally", async () => {
+  test("then failures stay off stdout", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-invitations-real" })
@@ -94,7 +94,7 @@ describe("using adiff without reading its documentation", () => {
     expect(result.stderr).toContain("UnknownBranch")
   })
 
-  it("returns only the asked-for fields, so a caller pays for what it reads", async () => {
+  test("then only the asked-for fields come back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })

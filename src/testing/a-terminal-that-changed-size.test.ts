@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -9,8 +9,8 @@ const files = [
 const drawn = (frame: string): number =>
   frame.split("\n").filter((line) => line.trim().length > 0).length
 
-describe("a terminal that changed size", () => {
-  it("keeps drawing after it is made smaller", async () => {
+describe("when the terminal changes size", () => {
+  test("then adiff keeps drawing after the terminal shrinks", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -26,7 +26,7 @@ describe("a terminal that changed size", () => {
     expect(frame).toContain("src/")
   })
 
-  it("survives being squeezed very small and opened out again", async () => {
+  test("then adiff survives being squeezed very small and opened out again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -48,7 +48,7 @@ describe("a terminal that changed size", () => {
     expect(frame).toContain("src/")
   })
 
-  it("comes back from a terminal too narrow to draw anything in", async () => {
+  test("then adiff comes back from a terminal too narrow to draw in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -65,7 +65,7 @@ describe("a terminal that changed size", () => {
     expect(frame).toContain("src/")
   })
 
-  it("says the terminal is too narrow rather than drawing nothing", async () => {
+  test("then the screen reports the terminal is too narrow", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -78,7 +78,7 @@ describe("a terminal that changed size", () => {
     expect(await driver.screen.getFrame()).toContain("more room")
   })
 
-  it("keeps drawing after it is made larger", async () => {
+  test("then adiff keeps drawing after the terminal grows", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

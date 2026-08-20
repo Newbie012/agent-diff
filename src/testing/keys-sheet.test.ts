@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("the keys a reviewer is shown", () => {
-  it("carries the few a pass through a review is made of", async () => {
+describe("when the footer shows a reviewer the keys", () => {
+  test("then the footer carries the few keys a review is made of", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -32,7 +32,7 @@ describe("the keys a reviewer is shown", () => {
     expect(footer).not.toContain("find")
   })
 
-  it("fits the row it is drawn on", async () => {
+  test("then the footer fits the row it is drawn on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -49,8 +49,8 @@ describe("the keys a reviewer is shown", () => {
   })
 })
 
-describe("the sheet of every key", () => {
-  it("lists what the screen answers to, with the key beside each", async () => {
+describe("when the key sheet is open", () => {
+  test("then the sheet lists what the screen answers to, with each key beside it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -67,7 +67,7 @@ describe("the sheet of every key", () => {
     expect(frame).toContain("Report a bug")
   })
 
-  it("names the way out, which the palette leaves out", async () => {
+  test("then the sheet names the way out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -80,7 +80,7 @@ describe("the sheet of every key", () => {
     expect(await driver.screen.getFrame()).toContain("Go back")
   })
 
-  it("closes on escape and leaves the diff where it was", async () => {
+  test("then escape closes the sheet and leaves the diff where it was", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -97,7 +97,7 @@ describe("the sheet of every key", () => {
     expect(frame).toContain("const first = 1")
   })
 
-  it("runs the command under the cursor", async () => {
+  test("then return runs the command under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -113,7 +113,7 @@ describe("the sheet of every key", () => {
     expect(await driver.screen.getFrame()).not.toContain("Wrap long lines")
   })
 
-  it("stays out of the way where typing is the point", async () => {
+  test("then the sheet stays shut where typing is the point", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -130,8 +130,8 @@ describe("the sheet of every key", () => {
   })
 })
 
-describe("finding a command by typing", () => {
-  it("names the key that runs it", async () => {
+describe("when a command is found by typing", () => {
+  test("then the match names the key that runs it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

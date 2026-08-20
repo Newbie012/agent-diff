@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 
 const HEADINGS = new Set(["Breaking", "Added", "Fixed", "Performance"])
 
@@ -52,8 +52,8 @@ const releasedIntents = async (): Promise<ReadonlySet<string>> => {
   )
 }
 
-describe("a release note", () => {
-  it("groups what changed under the kind of change it was", async () => {
+describe("when a release note is written", () => {
+  test("then each change is grouped under its kind", async () => {
     // ARRANGE
     const text = await readFile("CHANGELOG.md", "utf8")
 
@@ -66,7 +66,7 @@ describe("a release note", () => {
     expect([...new Set(headings)].filter((heading) => !HEADINGS.has(heading))).toEqual([])
   })
 
-  it("names the part of adiff each entry is about", async () => {
+  test("then each entry names the part of adiff it is about", async () => {
     // ARRANGE
     const text = await readFile("CHANGELOG.md", "utf8")
 
@@ -80,7 +80,7 @@ describe("a release note", () => {
     expect(headingsIn(newest).length).toBeGreaterThan(0)
   })
 
-  it("holds every change intent still waiting for a release to the same shape", async () => {
+  test("then every unreleased intent is held to the same shape", async () => {
     // ARRANGE
     const released = await releasedIntents()
     const names = (await readdir(".changeset"))

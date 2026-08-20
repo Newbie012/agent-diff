@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 80 }, (_, at) => `  private step${at}() { return ${at}; }`)
@@ -9,8 +9,8 @@ const diffRows = (frame: string): ReadonlyArray<string> =>
     .map((line) => line.slice(33, 90))
     .filter((line) => /step\d+/.test(line))
 
-describe("typing a comment", () => {
-  it("leaves the diff behind it where it was", async () => {
+describe("when a comment is being typed", () => {
+  test("then the diff behind the box stays where it was", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/mapper.ts", before: [], after: body }] })

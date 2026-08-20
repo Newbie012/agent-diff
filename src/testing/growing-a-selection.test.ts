@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const file = {
@@ -11,8 +11,8 @@ const file = {
   ],
 }
 
-describe("holding shift with the arrows", () => {
-  it("takes the lines it passes into the selection", async () => {
+describe("when shift is held with the arrows", () => {
+  test("then the lines passed are taken into the selection", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -28,7 +28,7 @@ describe("holding shift with the arrows", () => {
     expect(await driver.screen.getFrame()).toContain("3 lines")
   })
 
-  it("opens the comment box when the shift is let go", async () => {
+  test("then letting go of shift opens the comment box", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -42,7 +42,7 @@ describe("holding shift with the arrows", () => {
     expect(await driver.screen.getFrame()).toContain("Comment on src/api.ts")
   })
 
-  it("leaves a selection made without shift alone", async () => {
+  test("then a selection made without shift is left alone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -56,7 +56,7 @@ describe("holding shift with the arrows", () => {
     expect(await driver.screen.getFrame()).not.toContain("Comment on")
   })
 
-  it("leaves the selection where c can comment on it", async () => {
+  test("then c can comment on the selection", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)

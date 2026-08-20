@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("reading the keys off the bottom of the screen", () => {
-  it("writes modifiers and named keys as glyphs, not as words", async () => {
+describe("when the footer is read", () => {
+  test("then modifiers and named keys are written as glyphs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -28,7 +28,7 @@ describe("reading the keys off the bottom of the screen", () => {
     expect(footer).not.toContain("ctrl+s")
   })
 
-  it("says what is selected while a selection is being made", async () => {
+  test("then the footer counts what is selected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -41,7 +41,7 @@ describe("reading the keys off the bottom of the screen", () => {
     expect(await driver.screen.footer()).toContain("2 lines")
   })
 
-  it("clears a message on its own, so the footer does not accumulate history", async () => {
+  test("then a message clears on its own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const filler = (count: number, mark: string): ReadonlyArray<string> =>
@@ -26,8 +26,8 @@ const cursorOn = async (driver: TestDriver): Promise<string> => {
   return rows[0] ?? ""
 }
 
-describe("moving around a long diff", () => {
-  it("jumps to the end of the file", async () => {
+describe("when the reviewer moves around a long diff", () => {
+  test("then the cursor jumps to the end of the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)
@@ -40,7 +40,7 @@ describe("moving around a long diff", () => {
     expect(await cursorOn(driver)).toContain("export default wide")
   })
 
-  it("comes back to the start", async () => {
+  test("then the cursor comes back to the start", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)
@@ -54,7 +54,7 @@ describe("moving around a long diff", () => {
     expect(await cursorOn(driver)).toContain("export function wide")
   })
 
-  it("jumps from one change to the next, skipping the context between them", async () => {
+  test("then the cursor jumps from one change to the next", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoHunks)

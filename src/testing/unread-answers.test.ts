@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 150, height: 24 }
@@ -34,8 +34,8 @@ const answered = async (driver: TestDriver) => {
   return { branch, id }
 }
 
-describe("answers waiting to be read", () => {
-  it("counts an answer nobody has read yet", async () => {
+describe("when answers are waiting to be read", () => {
+  test("then an answer nobody has read is counted", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch } = await answered(driver)
@@ -47,7 +47,7 @@ describe("answers waiting to be read", () => {
     expect(threadsOf(listed)[0]?.unread).toBe(1)
   })
 
-  it("stops counting it once the reviewer opens it", async () => {
+  test("then the count drops once the reviewer opens it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch } = await answered(driver)
@@ -62,7 +62,7 @@ describe("answers waiting to be read", () => {
     expect(threadsOf(listed)[0]?.unread).toBe(0)
   })
 
-  it("keeps the count across a reload of the branch", async () => {
+  test("then the count survives a reload of the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const { branch } = await answered(driver)
@@ -77,8 +77,8 @@ describe("answers waiting to be read", () => {
   })
 })
 
-describe("the review panel with answers waiting", () => {
-  it("says how many are unread after a reload", async () => {
+describe("when the review panel has answers waiting", () => {
+  test("then the panel counts the unread answers after a reload", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answered(driver)
@@ -91,7 +91,7 @@ describe("the review panel with answers waiting", () => {
     expect(await driver.screen.getFrame()).toContain("1 unread")
   })
 
-  it("stops saying it once the comment is opened", async () => {
+  test("then the panel drops the count once the comment is opened", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await answered(driver)
@@ -107,8 +107,8 @@ describe("the review panel with answers waiting", () => {
   })
 })
 
-describe("opening one of several answers", () => {
-  it("leaves the panel cursor where it was", async () => {
+describe("when one of several answers is opened", () => {
+  test("then the panel cursor stays where it was", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)

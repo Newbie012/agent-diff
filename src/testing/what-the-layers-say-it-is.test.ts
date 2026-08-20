@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -21,8 +21,8 @@ const layered = async (driver: TestDriver, summary: string): Promise<void> => {
   })
 }
 
-describe("what the layers say the branch is", () => {
-  it("says it above the layers, where the reviewer starts", async () => {
+describe("when the layers say what the branch is", () => {
+  test("then the summary sits above the layers", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver, SUMMARY)
@@ -36,7 +36,7 @@ describe("what the layers say the branch is", () => {
     expect(frame.indexOf("Replaces the old")).toBeLessThan(frame.indexOf("The grid itself"))
   })
 
-  it("keeps a long one from crowding out the layers", async () => {
+  test("then a long summary does not crowd out the layers", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await layered(driver, LONG)
@@ -50,7 +50,7 @@ describe("what the layers say the branch is", () => {
     expect(frame).toContain("…")
   })
 
-  it("says nothing where a branch has no layers", async () => {
+  test("then a branch with no layers carries no summary", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })

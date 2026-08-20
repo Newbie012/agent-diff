@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const twoFiles = {
@@ -8,8 +8,8 @@ const twoFiles = {
   ],
 }
 
-describe("finding a command without knowing its key", () => {
-  it("lists the commands available on the current screen", async () => {
+describe("when a command is found without knowing its key", () => {
+  test("then the palette lists the commands available on this screen", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -27,7 +27,7 @@ describe("finding a command without knowing its key", () => {
     expect(frame).toContain("Previous comment")
   })
 
-  it("runs the command that was chosen, so the key never had to be learned", async () => {
+  test("then the chosen command runs", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -44,7 +44,7 @@ describe("finding a command without knowing its key", () => {
     expect(frame).toContain("file 2 of 2")
   })
 
-  it("leaves the review untouched when the palette is dismissed", async () => {
+  test("then dismissing the palette leaves the review untouched", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)
@@ -64,8 +64,8 @@ describe("finding a command without knowing its key", () => {
   })
 })
 
-describe("a command whose name is long", () => {
-  it("keeps a gap between the name and its category", async () => {
+describe("when a command's name is long", () => {
+  test("then a gap stays between the name and its category", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(twoFiles)

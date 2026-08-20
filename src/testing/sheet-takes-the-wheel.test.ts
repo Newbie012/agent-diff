@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -15,8 +15,8 @@ const oneFile = {
 const highlighted = (frame: string): string =>
   frame.split("\n").find((row) => row.includes("┃") && row.includes("▎")) ?? ""
 
-describe("the sheet of every key", () => {
-  it("scrolls with the wheel, not the diff behind it", async () => {
+describe("when the wheel turns over the key sheet", () => {
+  test("then the sheet scrolls and the diff behind it stays", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 type Handed = { readonly id: string }
@@ -22,8 +22,8 @@ const comment = {
   body: "why is this unused",
 }
 
-describe("answering a comment", () => {
-  it("hands the agent the id it needs to answer", async () => {
+describe("when the agent answers a comment", () => {
+  test("then the agent gets the id it needs to answer", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -37,7 +37,7 @@ describe("answering a comment", () => {
     expect(first?.id).toMatch(/\S/)
   })
 
-  it("shows the answer against the comment it belongs to", async () => {
+  test("then the answer shows against the comment it belongs to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -58,7 +58,7 @@ describe("answering a comment", () => {
     expect(thread?.answers[0]?.body).toBe("removed it, and the import with it")
   })
 
-  it("says an answer is asking something back", async () => {
+  test("then the answer is marked as asking something back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -79,7 +79,7 @@ describe("answering a comment", () => {
     expect(thread?.state).toBe("question")
   })
 
-  it("refuses an answer to a comment nobody wrote", async () => {
+  test("then adiff refuses an answer to a comment nobody wrote", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -97,8 +97,8 @@ describe("answering a comment", () => {
   })
 })
 
-describe("settling a thread", () => {
-  it("reads as settled once the reviewer says so", async () => {
+describe("when the reviewer settles a thread", () => {
+  test("then the thread reads as settled", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -119,7 +119,7 @@ describe("settling a thread", () => {
     expect(thread?.state).toBe("done")
   })
 
-  it("leaves an unanswered comment open", async () => {
+  test("then an unanswered comment stays open", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -133,8 +133,8 @@ describe("settling a thread", () => {
   })
 })
 
-describe("reading a thread in the diff", () => {
-  it("shows the answer beneath the comment it belongs to", async () => {
+describe("when a thread is read in the diff", () => {
+  test("then the answer shows beneath the comment it belongs to", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()
@@ -158,7 +158,7 @@ describe("reading a thread in the diff", () => {
     expect(rows[said + 1]).toContain("dropped it")
   })
 
-  it("marks a thread the agent is asking about", async () => {
+  test("then a thread the agent is asking about is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create()

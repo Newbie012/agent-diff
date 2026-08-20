@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const long = Array.from({ length: 90 }, (_, at) => `const line${at} = ${at};`)
@@ -25,8 +25,8 @@ const topRow = (frame: string): string => {
   )
 }
 
-describe("scrolling after a drag", () => {
-  it("scrolls the diff when nothing has been selected", async () => {
+describe("when the wheel scrolls after a drag", () => {
+  test("then the diff scrolls with nothing selected", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(bigFile)
@@ -40,7 +40,7 @@ describe("scrolling after a drag", () => {
     expect(topRow(await driver.screen.getFrame())).not.toBe(before)
   })
 
-  it("still scrolls once a selection is under way", async () => {
+  test("then the diff still scrolls with a selection under way", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(bigFile)

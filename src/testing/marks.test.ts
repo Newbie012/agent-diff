@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -18,8 +18,8 @@ const gutter = (frame: string): string =>
     .map((line) => line.slice(37, 39))
     .join("")
 
-describe("seeing where the comments are", () => {
-  it("marks the line a comment is attached to", async () => {
+describe("when the diff is drawn with comments on it", () => {
+  test("then the line a comment attaches to is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -34,7 +34,7 @@ describe("seeing where the comments are", () => {
     expect(gutter(await driver.screen.getFrame())).toContain("○")
   })
 
-  it("shows no mark before anything is commented on", async () => {
+  test("then no mark shows before anything is commented on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

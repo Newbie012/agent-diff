@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -18,8 +18,8 @@ const composing = async (driver: TestDriver, text: string): Promise<void> => {
   await driver.screen.typeText(text)
 }
 
-describe("erasing what was typed", () => {
-  it("takes a word back with option and backspace", async () => {
+describe("when what was typed is erased", () => {
+  test("then option and backspace take a word back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver, "keep this word")
@@ -33,7 +33,7 @@ describe("erasing what was typed", () => {
     expect(frame).not.toContain("keep this word")
   })
 
-  it("takes the line back with command and backspace", async () => {
+  test("then command and backspace take the line back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver, "all of this goes")
@@ -45,7 +45,7 @@ describe("erasing what was typed", () => {
     expect(await driver.screen.getFrame()).not.toContain("all of this")
   })
 
-  it("still takes one character without a modifier", async () => {
+  test("then backspace alone takes one character", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await composing(driver, "abcd")

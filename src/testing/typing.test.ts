@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -16,8 +16,8 @@ const openCompose = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["c"])
 }
 
-describe("typing a comment", () => {
-  it("lets every letter through, including the ones bound elsewhere", async () => {
+describe("when a comment is typed", () => {
+  test("then every letter goes through, including the ones bound elsewhere", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -32,7 +32,7 @@ describe("typing a comment", () => {
     expect(frame).toContain("Comment on src/api.ts")
   })
 
-  it("still closes on escape", async () => {
+  test("then escape still closes the box", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -46,7 +46,7 @@ describe("typing a comment", () => {
     expect(await driver.screen.getFrame()).not.toContain("Comment on")
   })
 
-  it("keeps letters out of the command palette query as commands", async () => {
+  test("then letters typed into the palette query stay out of the commands", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

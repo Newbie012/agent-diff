@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const untouched = Array.from({ length: 40 }, (_, at) => `const held${at} = ${at}`)
@@ -13,8 +13,8 @@ const deep = {
   ],
 }
 
-describe("opening a file whose change is a long way down", () => {
-  it("lands on a line, not on the row that stands for the ones it hides", async () => {
+describe("when a file's change is a long way down", () => {
+  test("then the cursor lands on a line of code", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)
@@ -30,7 +30,7 @@ describe("opening a file whose change is a long way down", () => {
     expect(carrying).toMatch(/\d+\s+const held\d+/)
   })
 
-  it("lands workably when the branch is named on the command line", async () => {
+  test("then the cursor lands on a line of code with the branch named on the command line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const made = await driver.branch.create(deep)
@@ -43,7 +43,7 @@ describe("opening a file whose change is a long way down", () => {
     expect(await driver.screen.getFrame()).toContain("Comment on src/api.ts")
   })
 
-  it("can be commented on without moving first", async () => {
+  test("then a comment can be written without moving first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(deep)

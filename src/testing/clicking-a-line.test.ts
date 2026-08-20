@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 200 }, (_, at) => `  const step${at} = ${at};`)
@@ -13,8 +13,8 @@ const tall = {
   ],
 }
 
-describe("putting the cursor on a line with the mouse", () => {
-  it("does not start a selection", async () => {
+describe("when the mouse puts the cursor on a line", () => {
+  test("then no selection starts", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -28,7 +28,7 @@ describe("putting the cursor on a line with the mouse", () => {
     expect(frame).not.toMatch(/\d+ lines?\s/)
   })
 
-  it("leaves the diff where it is when the arrows move inside it", async () => {
+  test("then the diff stays put while the arrows move inside it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)
@@ -45,7 +45,7 @@ describe("putting the cursor on a line with the mouse", () => {
     expect(await driver.screen.paintedTop()).toBe(before)
   })
 
-  it("still follows the cursor once it leaves the diff", async () => {
+  test("then the diff follows the cursor once it leaves the pane", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(tall)

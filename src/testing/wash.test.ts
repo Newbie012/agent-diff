@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { palette } from "../tui/index.ts"
 
@@ -12,8 +12,8 @@ const mixed = {
   ],
 }
 
-describe("seeing what changed", () => {
-  it("keeps the added and removed washes after the cursor has moved", async () => {
+describe("when the cursor moves over a change", () => {
+  test("then the added and removed washes stay", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(mixed)

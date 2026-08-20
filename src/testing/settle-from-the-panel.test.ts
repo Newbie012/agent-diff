@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 160, height: 32 }
@@ -32,8 +32,8 @@ const commentedElsewhere = async (driver: TestDriver): Promise<void> => {
   await driver.screen.pressKeys(["TAB"])
 }
 
-describe("a comment the diff cannot reach", () => {
-  it("settles from the review panel", async () => {
+describe("when the diff cannot reach a comment", () => {
+  test("then the comment settles from the review panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commentedElsewhere(driver)
@@ -45,7 +45,7 @@ describe("a comment the diff cannot reach", () => {
     expect(await driver.screen.getFrame()).toContain("settled")
   })
 
-  it("is removed from the review panel", async () => {
+  test("then the comment is removed from the review panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await commentedElsewhere(driver)
@@ -57,7 +57,7 @@ describe("a comment the diff cannot reach", () => {
     expect(await driver.screen.getFrame()).toContain("removed")
   })
 
-  it("offers the key that settles it", async () => {
+  test("then the footer offers the key that settles it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

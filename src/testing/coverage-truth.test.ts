@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import type { LayersInput } from "./index.ts"
 
@@ -41,8 +41,8 @@ type Report = {
 
 const layersOf = (envelope: unknown): Report => (envelope as { layers: Report }).layers
 
-describe("what coverage counts", () => {
-  it("names the changed lines a layer leaves out, rather than calling the hunk covered", async () => {
+describe("when coverage is counted", () => {
+  test("then the changed lines a layer leaves out are named", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(fourAdded)
@@ -58,7 +58,7 @@ describe("what coverage counts", () => {
     expect(layers.total).toBe(1)
   })
 
-  it("does not count a layer that claims only unchanged lines", async () => {
+  test("then a layer claiming only unchanged lines counts for nothing", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(contextOnly)

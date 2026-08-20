@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -10,8 +10,8 @@ const oneFile = {
 const pathRow = (frame: string): string =>
   frame.split("\n").find((row) => row.includes("worktree")) ?? ""
 
-describe("naming the repository on the home screen", () => {
-  it("keeps the path and the count on one line", async () => {
+describe("when the home screen names the repository", () => {
+  test("then the path and the count share one line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -25,7 +25,7 @@ describe("naming the repository on the home screen", () => {
     expect(row).toContain("repo")
   })
 
-  it("elides the middle of a long path, keeping what identifies it", async () => {
+  test("then a long path elides in the middle", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

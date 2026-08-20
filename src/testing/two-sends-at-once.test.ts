@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const files = [
@@ -26,8 +26,8 @@ const drafted = (driver: TestDriver, branch: string, file: string, body: string)
     body,
   ])
 
-describe("two sends at once", () => {
-  it("puts one review on the pull request, not two", async () => {
+describe("when two sends run at once", () => {
+  test("then one review lands on the pull request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })
@@ -49,7 +49,7 @@ describe("two sends at once", () => {
     expect(`${refused?.stdout}${refused?.stderr}`).toContain("Nothing is being held")
   })
 
-  it("sends each held comment once and leaves nothing behind", async () => {
+  test("then each held comment sends once and nothing is left behind", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const created = await driver.branch.create({ files })

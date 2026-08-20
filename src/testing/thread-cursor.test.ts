@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const oneFile = {
@@ -11,8 +11,8 @@ const oneFile = {
   ],
 }
 
-describe("standing on a thread", () => {
-  it("puts the cursor on the thread under the line", async () => {
+describe("when the cursor stands on a thread", () => {
+  test("then the cursor lands on the thread under the line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -27,7 +27,7 @@ describe("standing on a thread", () => {
     expect(await driver.screen.rowWith("why is this here")).toContain("▎")
   })
 
-  it("steps over a thread in one move, not one row at a time", async () => {
+  test("then the cursor steps over a thread in one move", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -42,7 +42,7 @@ describe("standing on a thread", () => {
     expect(await driver.screen.rowWith("const second = 2")).toContain("▎")
   })
 
-  it("settles the thread the cursor is on when a line carries two", async () => {
+  test("then a line carrying two threads settles the one under the cursor", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -62,8 +62,8 @@ describe("standing on a thread", () => {
   })
 })
 
-describe("a settled thread", () => {
-  it("folds to a row that says how to open it", async () => {
+describe("when a thread is settled", () => {
+  test("then the thread folds to a row saying how to open it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -82,7 +82,7 @@ describe("a settled thread", () => {
     expect(frame).toContain("press l")
   })
 
-  it("opens again on l", async () => {
+  test("then l opens the thread again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -101,7 +101,7 @@ describe("a settled thread", () => {
     expect(frame).not.toContain("press l")
   })
 
-  it("leaves a comment below it anchored to the right line", async () => {
+  test("then a comment below stays anchored to its own line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
@@ -123,8 +123,8 @@ describe("a settled thread", () => {
   })
 })
 
-describe("settled threads across a reading", () => {
-  it("stays folded when the branch is read again", async () => {
+describe("when the branch is read again with settled threads on it", () => {
+  test("then a settled thread stays folded", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -143,7 +143,7 @@ describe("settled threads across a reading", () => {
     expect(frame).toContain("press l")
   })
 
-  it("keeps an open point in full view", async () => {
+  test("then an open point stays in full view", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)

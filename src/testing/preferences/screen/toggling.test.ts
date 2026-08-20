@@ -13,7 +13,7 @@ const opened = async (driver: TestDriver): Promise<void> => {
 }
 
 describe("when the preferences screen is opened", () => {
-  test("then every preference says what it does and whether it is on", async () => {
+  test("then every preference shows what it does and whether it is on", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

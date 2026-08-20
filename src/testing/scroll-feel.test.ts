@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const layers = (count: number, mark: string): ReadonlyArray<string> =>
@@ -22,8 +22,8 @@ const file = { files: [{ path: "src/run.ts", before: buried("settle"), after: bu
 const firstCodeRow = (frame: string): string =>
   frame.split("\n").find((line) => /│[▎●\s]*\d+/.test(line)) ?? ""
 
-describe("how scrolling feels", () => {
-  it("moves one line a notch, the way the terminal does", async () => {
+describe("when the wheel turns one notch", () => {
+  test("then the diff moves one line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -63,8 +63,8 @@ const openDiff = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ review: true })
 }
 
-describe("a burst of wheel events", () => {
-  it("lands where the same notches land one at a time", async () => {
+describe("when a burst of wheel events arrives", () => {
+  test("then the burst lands where the same notches land one at a time", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openDiff(driver)
@@ -79,7 +79,7 @@ describe("a burst of wheel events", () => {
     expect(firstCodeRow(await driver.screen.getFrame())).toBe(slowly)
   })
 
-  it("nets out when the burst turns around", async () => {
+  test("then a burst that turns around nets out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openDiff(driver)
@@ -94,7 +94,7 @@ describe("a burst of wheel events", () => {
     expect(firstCodeRow(await driver.screen.getFrame())).toBe(oneNotch)
   })
 
-  it("carries the whole burst in the first frame after it", async () => {
+  test("then the first frame after the burst carries all of it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await openDiff(driver)
@@ -109,8 +109,8 @@ describe("a burst of wheel events", () => {
   })
 })
 
-describe("lines above the first change", () => {
-  it("counts what the diff omits at the top of the file", async () => {
+describe("when lines sit above the first change", () => {
+  test("then the diff counts what it omits at the top of the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(file)
@@ -129,8 +129,8 @@ const deep = (mark: string): ReadonlyArray<string> => [
   `export const run = () => ${mark}()`,
 ]
 
-describe("expanding to the whole file", () => {
-  it("reaches the top of a file the diff starts deep inside", async () => {
+describe("when the context expands to the whole file", () => {
+  test("then scrolling reaches the top of the file", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({

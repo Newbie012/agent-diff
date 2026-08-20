@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const file = (mark: string) => ({
@@ -9,8 +9,8 @@ const file = (mark: string) => ({
 
 const LONG = "release-2-fix-the-tree-drawing"
 
-describe("what the list says a branch is stacked on", () => {
-  it("says the whole name when the terminal has room for it", async () => {
+describe("when the list shows what a branch is stacked on", () => {
+  test("then the whole name shows where there is room", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const under = await driver.branch.create({ name: LONG, files: [file("one")] })
@@ -24,7 +24,7 @@ describe("what the list says a branch is stacked on", () => {
     expect(await driver.screen.getFrame()).toContain(`on ${LONG}`)
   })
 
-  it("marks it as shortened when the terminal does not", async () => {
+  test("then a shortened name is marked as shortened", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const under = await driver.branch.create({ name: LONG, files: [file("one")] })

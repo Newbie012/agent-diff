@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 import { shapes } from "./shapes.ts"
 import { commandsFor } from "../tui/index.ts"
@@ -37,9 +37,9 @@ const wider = (frame: string, room: number): ReadonlyArray<string> =>
 const asKeys = (key: string): ReadonlyArray<string> =>
   key === "return" ? ["escape"] : [key]
 
-describe("a monkey at the keyboard", () => {
+describe("when random keys are pressed at the terminal", () => {
   for (const seed of SEEDS) {
-    it(`leaves the screen standing after ${PRESSES} presses, seed ${seed}`, async () => {
+    test(`leaves the screen standing after ${PRESSES} presses, seed ${seed}`, async () => {
       // ARRANGE
       await using driver = await TestDriver.create()
       const roll = rolling(seed)

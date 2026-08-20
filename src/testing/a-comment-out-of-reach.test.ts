@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const branchFiles = {
@@ -21,8 +21,8 @@ const openWide = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ width: 150, height: 24, review: true })
 }
 
-describe("a comment whose lines are no longer in the diff", () => {
-  it("counts as read once the reviewer opens it from the panel", async () => {
+describe("when a comment's lines are no longer in the diff", () => {
+  test("then the comment counts as read once it is opened from the panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(branchFiles)
@@ -48,7 +48,7 @@ describe("a comment whose lines are no longer in the diff", () => {
     expect(await driver.screen.getFrame()).not.toContain("1 unread")
   })
 
-  it("can still be settled from the panel", async () => {
+  test("then the comment can still be settled from the panel", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(branchFiles)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const body = (mark: string, count: number): ReadonlyArray<string> =>
@@ -20,8 +20,8 @@ const opened = async (driver: TestDriver, gap: number): Promise<string> => {
   return driver.screen.getFrame()
 }
 
-describe("a line that is not worth hiding", () => {
-  it("is shown rather than folded behind a marker", async () => {
+describe("when a single line would be folded away", () => {
+  test("then the line is shown instead of folded", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -34,7 +34,7 @@ describe("a line that is not worth hiding", () => {
     expect(frame).toContain("const keep3")
   })
 
-  it("still folds when there is more than one to hide", async () => {
+  test("then more than one line still folds", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 

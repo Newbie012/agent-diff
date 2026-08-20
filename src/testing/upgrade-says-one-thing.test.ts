@@ -1,15 +1,15 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const SKILL_AT = join(".claude", "skills", "adiff", "SKILL.md")
 
 const alone = (where: string): Readonly<Record<string, string>> => ({ HOME: where })
 
-describe("what adiff upgrade says", () => {
-  it("names the command it runs and the version it landed on, and nothing else", async () => {
+describe("when adiff upgrade reports", () => {
+  test("then the output names the command it ran and the version it landed on, and nothing else", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -26,7 +26,7 @@ describe("what adiff upgrade says", () => {
     ])
   })
 
-  it("says the one thing when there is nothing to do", async () => {
+  test("then the output carries one line when there is nothing to do", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const manifest = await import("../../package.json", { with: { type: "json" } })
@@ -40,7 +40,7 @@ describe("what adiff upgrade says", () => {
     expect(result.stdout.trim().split("\n")).toHaveLength(1)
   })
 
-  it("no longer explains the registry's tags at someone who asked for an upgrade", async () => {
+  test("then the output leaves the registry's tags out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -55,8 +55,8 @@ describe("what adiff upgrade says", () => {
   })
 })
 
-describe("keeping the installed skill current", () => {
-  it("rewrites a skill that is already there", async () => {
+describe("when the installed skill is kept current", () => {
+  test("then a skill already there is rewritten", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const where = join(driver.workspacePath, "elsewhere")
@@ -72,7 +72,7 @@ describe("keeping the installed skill current", () => {
     expect(await readFile(join(where, SKILL_AT), "utf8")).not.toBe("an old skill\n")
   })
 
-  it("installs nothing where no skill was asked for", async () => {
+  test("then nothing is installed where no skill was asked for", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const where = join(driver.workspacePath, "bare")
@@ -86,7 +86,7 @@ describe("keeping the installed skill current", () => {
     expect(existsSync(join(where, SKILL_AT))).toBe(false)
   })
 
-  it("leaves a skill that already matches alone", async () => {
+  test("then a skill that already matches is left alone", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const where = join(driver.workspacePath, "current")

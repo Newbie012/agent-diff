@@ -124,9 +124,13 @@ Not:
 - ~~`fix(diff): a binary file that adiff cannot show`~~ — a title, not a statement.
 
 **No gerund titles.** "Saying what is not there", "Opening onto one branch", "Asking before
-leaving" are all wrong. Write a statement with a verb in it: "a file with no newline says so".
-This holds for the sentence, the branch name, the changeset filename, the PR title and the test
-filename.
+leaving" are all wrong. Write a statement with a verb in it: "a file with no newline is drawn as
+one line, not two". This holds for the sentence, the branch name, the changeset filename, the PR
+title and the test filename.
+
+Do not write "says so". It carries no meaning of its own: it borrows the subject clause beside it,
+and the moment the sentence is split across a `describe` and a `test`, or read off a PR page or a
+recording's title card, nothing is left. Name what is said.
 
 For `perf`, give both numbers and what they were measured on. A speed claim with no measurement is
 not a release note.

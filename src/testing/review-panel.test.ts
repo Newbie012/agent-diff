@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest"
+import { describe, expect, test } from "@effect/vitest"
 import { TestDriver } from "./index.ts"
 
 const WIDE = { width: 160, height: 32 }
@@ -23,8 +23,8 @@ const openWide = async (driver: TestDriver): Promise<void> => {
   await driver.screen.open({ ...WIDE, review: true })
 }
 
-describe("the review panel", () => {
-  it("lists the comments on the branch when the terminal is wide enough", async () => {
+describe("when the review panel is drawn", () => {
+  test("then the panel lists the comments on the branch", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -46,7 +46,7 @@ describe("the review panel", () => {
     expect(frame).toContain("why this one")
   })
 
-  it("stays out of the way when the terminal is narrow", async () => {
+  test("then a narrow terminal leaves the panel out", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -65,7 +65,7 @@ describe("the review panel", () => {
     expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
-  it("gives the columns back when the reviewer hides it", async () => {
+  test("then hiding the panel gives its columns back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -85,7 +85,7 @@ describe("the review panel", () => {
     expect(await driver.screen.getFrame()).not.toContain("Not picked up")
   })
 
-  it("lists every comment the agent is holding", async () => {
+  test("then the panel lists every comment the agent is holding", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
@@ -114,7 +114,7 @@ describe("the review panel", () => {
     expect(frame).toContain("already handed over")
   })
 
-  it("lands the cursor on the comment the reviewer opens", async () => {
+  test("then the cursor lands on the comment the reviewer opens", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(twoFiles)
