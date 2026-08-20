@@ -187,6 +187,10 @@
   dir: ""
   intents:
     - the-rail-knows-where-you-are
+"@eliya-oss/agent-diff@0.1.0-alpha.133":
+  dir: ""
+  intents:
+    - sorting-the-changelog-by-version
 "@eliya-oss/agent-diff@0.1.0-alpha.14":
   dir: ""
   intents:
