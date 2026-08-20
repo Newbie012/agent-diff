@@ -111,6 +111,10 @@
   dir: ""
   intents:
     - effect-idiom
+"@eliya-oss/agent-diff@0.1.0-alpha.116":
+  dir: ""
+  intents:
+    - keys-that-follow-the-focus
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:
