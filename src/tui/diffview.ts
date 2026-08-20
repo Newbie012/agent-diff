@@ -115,6 +115,7 @@ export class DiffView {
   private readonly pinned: CodeRenderable
   private readonly pinBox: BoxRenderable
   private pinnedText = ""
+  private fed = ""
   private newLit: ReadonlyArray<ReadonlyArray<Span>> = []
   private oldLit: ReadonlyArray<ReadonlyArray<Span>> = []
   private newFor = ""
@@ -357,7 +358,11 @@ export class DiffView {
 
   private feed(): void {
     const spans = [...noteSpans(this.display, this.held), ...this.pickedSpans()]
-    this.code.content = textAt(this.display, this.held, this.hidden())
+    const text = textAt(this.display, this.held, this.hidden())
+    if (text !== this.fed) {
+      this.fed = text
+      this.code.content = text
+    }
     this.code.onHighlight = (highlights) => {
       const own = this.ownSpans()
       const base = own ?? highlights
