@@ -1,4 +1,4 @@
-import { mkdir, realpath, rm, writeFile } from "node:fs/promises"
+import { chmod, mkdir, realpath, rm, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { series, type DriverState } from "../../state.ts"
 import { generateBranchTestModel, type BranchTestModel, type FileTestModel } from "./model.ts"
@@ -83,6 +83,14 @@ export class BranchTestDriver {
     const absolute = join(branch.worktree, path)
     await mkdir(dirname(absolute), { recursive: true })
     await writeFile(absolute, text, "utf8")
+  }
+
+  async makeExecutable(branch: CreatedBranch, path: string): Promise<void> {
+    await chmod(join(branch.worktree, path), 0o755)
+  }
+
+  async rename(branch: CreatedBranch, from: string, to: string): Promise<void> {
+    await this.state.git(branch.worktree, ["mv", from, to])
   }
 
   async setBinary(branch: CreatedBranch, path: string, bytes: number): Promise<void> {
