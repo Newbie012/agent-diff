@@ -1,8 +1,9 @@
-import { absurd, Option } from "effect"
+import { Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { type Action } from "./command.ts"
 import { gapNumbered, gapRowSet, shownOf } from "./gaps.ts"
 import { searchCommands, searchGlossary } from "./match.ts"
+import { preferences } from "../domain/preferences/index.ts"
 import {
   crowdedOf,
   carriesLine,
@@ -20,6 +21,7 @@ import {
   layerHolding,
   placeIn,
   readingOrder,
+  type Screen,
   type TuiState,
   commentRowsIn,
   openCommentRows,
@@ -32,7 +34,9 @@ import {
   panelEntries,
   panelFits,
   panelShown,
+  chosenNow,
   treeRows,
+  withChosen,
   treeStart,
 } from "./model.ts"
 
@@ -442,24 +446,17 @@ const outOfDiff = (state: TuiState): TuiState =>
     ? { ...state, selecting: false, anchorRow: state.cursor }
     : { ...state, screen: "branches", selecting: false }
 
-const goBack = (state: TuiState): TuiState => {
-  switch (state.screen) {
-    case "search":
-      return { ...state, screen: "review", matches: [], term: "", query: "" }
-    case "report":
-      return { ...state, screen: state.returnTo, draft: "" }
-    case "palette":
-    case "keys":
-      return { ...state, screen: state.returnTo, query: "" }
-    case "compose":
-      return { ...state, screen: "review", replyTo: undefined }
-    case "branches":
-    case "review":
-      return outOfDiff(state)
-    default:
-      return absurd(state.screen)
-  }
+const BACK_FROM: Partial<Record<Screen, (state: TuiState) => TuiState>> = {
+  search: (state) => ({ ...state, screen: "review", matches: [], term: "", query: "" }),
+  report: (state) => ({ ...state, screen: state.returnTo, draft: "" }),
+  palette: (state) => ({ ...state, screen: state.returnTo, query: "" }),
+  keys: (state) => ({ ...state, screen: state.returnTo, query: "" }),
+  settings: (state) => ({ ...state, screen: state.returnTo }),
+  compose: (state) => ({ ...state, screen: "review", replyTo: undefined }),
 }
+
+const goBack = (state: TuiState): TuiState =>
+  BACK_FROM[state.screen]?.(state) ?? outOfDiff(state)
 
 const walkMatches = (state: TuiState, delta: number): TuiState => ({
   ...state,
@@ -481,6 +478,25 @@ const openKeys = (state: TuiState): TuiState => ({
   query: "",
   paletteIndex: 0,
 })
+
+const openSettings = (state: TuiState): TuiState => ({
+  ...state,
+  screen: "settings",
+  returnTo: state.screen,
+  settingsIndex: 0,
+})
+
+const moveSettings = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  settingsIndex: clamp(state.settingsIndex + delta, 0, Math.max(0, preferences.length - 1)),
+})
+
+const flipSetting = (state: TuiState): TuiState => {
+  const wanted = preferences[state.settingsIndex]
+  if (wanted === undefined) return state
+  const held = chosenNow(state)
+  return withChosen(state, wanted.name, !(held[wanted.name] ?? wanted.byDefault))
+}
 
 const movePalette = (state: TuiState, delta: number): TuiState => ({
   ...state,
@@ -564,6 +580,10 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "report.send": (state) => state,
   "palette.open": openPalette,
   "keys.open": openKeys,
+  "settings.open": openSettings,
+  "settings.next": (state) => moveSettings(state, 1),
+  "settings.prev": (state) => moveSettings(state, -1),
+  "settings.flip": flipSetting,
   "keys.next": (state) => movePalette(state, 1),
   "keys.prev": (state) => movePalette(state, -1),
   "palette.run": (state) => state,

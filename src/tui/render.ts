@@ -41,7 +41,9 @@ import {
   RAIL_TITLE_LEAD,
   type LayerRoom,
   type RailWindow,
+  preferenceRows,
   type LayerRow,
+  type PreferenceRow,
   wrapped,
   selectedLineCount,
   snippetOf,
@@ -546,6 +548,24 @@ const sheetText = (
   return new StyledText(drawn)
 }
 
+const SETTING_LEAD = 4
+
+const settingsText = (rows: ReadonlyArray<PreferenceRow>, room: number): StyledText => {
+  const drawn = rows.flatMap((row) => {
+    const mark = row.on ? marks().done : " "
+    const head = `${row.here ? marks().cursor : " "} ${mark} ${row.title}`
+    const said = `${" ".repeat(SETTING_LEAD)}${clip(row.about, Math.max(8, room - SETTING_LEAD))}`
+    const tone = row.on ? palette.added : palette.muted
+    return [
+      row.here
+        ? bg(palette.selection)(fg(palette.ink)(`${head.padEnd(room)}\n`))
+        : fg(tone)(`${head.padEnd(room)}\n`),
+      fg(palette.faint)(`${said.padEnd(room)}\n`),
+    ]
+  })
+  return new StyledText(drawn)
+}
+
 const stack = (parent: { add: (child: never) => void }, children: ReadonlyArray<unknown>): void => {
   for (const child of children) parent.add(child as never)
 }
@@ -570,7 +590,18 @@ const makeModals = (renderer: CliRenderer) => ({
   palette: makePaletteParts(renderer),
   found: makeFoundParts(renderer),
   keys: makeKeysParts(renderer),
+  settings: makeSettingsParts(renderer),
 })
+
+const makeSettingsParts = (renderer: CliRenderer) => {
+  const box = makePalette(renderer)
+  const title = bar(renderer, "settings-title", palette.faint)
+  const choices = makeChoices(renderer)
+  box.id = "settings"
+  box.add(title)
+  box.add(choices)
+  return { box, title, choices }
+}
 
 const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
   const parts = makePaletteParts(renderer)
@@ -1298,6 +1329,9 @@ export class Screen {
   private readonly paletteChoices: TextRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
+  private readonly settings: BoxRenderable
+  private readonly settingsTitle: TextRenderable
+  private readonly settingsChoices: TextRenderable
   private readonly keysQuery: TextareaRenderable
   private readonly foundQuery: TextareaRenderable
   private readonly keysChoices: TextRenderable
@@ -1347,6 +1381,9 @@ export class Screen {
     this.paletteQuery = modals.palette.query
     this.paletteChoices = modals.palette.choices
     this.keys = modals.keys.box
+    this.settings = modals.settings.box
+    this.settingsTitle = modals.settings.title
+    this.settingsChoices = modals.settings.choices
     this.keysTitle = modals.keys.title
     this.keysQuery = modals.keys.query
     this.foundQuery = modals.found.query
@@ -1445,13 +1482,8 @@ export class Screen {
         return this.foundQuery
       case "keys":
         return this.keysQuery
-      case "branches":
-      case "review":
-      case "compose":
-      case "report":
-        return undefined
       default:
-        return absurd(screen)
+        return undefined
     }
   }
 
@@ -1512,6 +1544,7 @@ export class Screen {
     this.paintCompose(state)
     this.paintPalette(state)
     this.paintKeys(state)
+    this.paintSettings(state)
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
@@ -1550,6 +1583,27 @@ export class Screen {
     this.palette.width = room
     this.palette.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.palette.top = panelTop(this.renderer.height, PANEL_QUARTER)
+  }
+
+  private paintSettings(state: TuiState): void {
+    this.settings.visible = state.screen === "settings"
+    if (state.screen !== "settings") {
+      this.settingsTitle.content = ""
+      this.settingsChoices.content = ""
+      return
+    }
+    const rows = preferenceRows(state)
+    const room = panelWidth(this.renderer.width)
+    const tall = Math.min(
+      panelRows(this.renderer.height, PANEL_QUARTER),
+      rows.length * 2 + PALETTE_CHROME - 1,
+    )
+    this.settingsTitle.content = "What adiff does"
+    this.settingsChoices.content = settingsText(rows, room - MODAL_ROOM)
+    this.settings.height = tall
+    this.settings.width = room
+    this.settings.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.settings.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private paintKeys(state: TuiState): void {
@@ -1740,6 +1794,7 @@ export class Screen {
       this.palette,
       this.found,
       this.keys,
+      this.settings,
     ])
   }
 

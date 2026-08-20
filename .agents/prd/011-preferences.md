@@ -3,7 +3,7 @@
 > The handful of choices a reviewer makes about how the review behaves, kept between sessions and
 > changed from the terminal, the file, or the command line.
 
-- **Status:** `draft`
+- **Status:** `active` — the list, the file, the commands and the screen ship; holding comments does not
 - **Owner:** TBD
 - **Last updated:** 2026-08-19
 

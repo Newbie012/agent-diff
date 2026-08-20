@@ -58,6 +58,10 @@ export type Action =
   | "compose.open"
   | "compose.submit"
   | "palette.open"
+  | "settings.open"
+  | "settings.next"
+  | "settings.prev"
+  | "settings.flip"
   | "keys.open"
   | "keys.next"
   | "keys.prev"
@@ -660,6 +664,47 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["return"],
     screens: ["palette", "keys"],
     hint: "run",
+    listed: false,
+  }),
+  command({
+    action: "settings.open",
+    also: ["preferences", "settings", "options", "config"],
+    title: "Change what adiff does",
+    category: "App",
+    keys: [","],
+    screens: ["branches", "review"],
+    listed: false,
+  }),
+  command({
+    action: "settings.next",
+    title: "Next preference",
+    category: "App",
+    keys: ["down", "j"],
+    screens: ["settings"],
+    listed: false,
+  }),
+  command({
+    action: "settings.prev",
+    title: "Previous preference",
+    category: "App",
+    keys: ["up", "k"],
+    screens: ["settings"],
+    listed: false,
+  }),
+  command({
+    action: "settings.flip",
+    title: "Turn it on or off",
+    category: "App",
+    keys: ["return", "space"],
+    screens: ["settings"],
+    listed: false,
+  }),
+  command({
+    action: "back",
+    title: "Go back",
+    category: "App",
+    keys: ["escape", "q", ","],
+    screens: ["settings"],
     listed: false,
   }),
   command({
