@@ -57,12 +57,12 @@ describe("panning past the edge of a line", () => {
     })
     await driver.screen.open()
     await driver.screen.pressKeys(["RETURN"])
-    expect(rowWith(await driver.screen.getFrame(), "press l")).toContain("27 lines hidden")
+    expect(rowWith(await driver.screen.getFrame(), "opens")).toContain("27 lines hidden")
 
     // ACT
     await driver.screen.pressKeys([">", ">", ">"])
 
     // ASSERT
-    expect(rowWith(await driver.screen.getFrame(), "press l")).toContain("27 lines hidden")
+    expect(rowWith(await driver.screen.getFrame(), "opens")).toContain("27 lines hidden")
   })
 })

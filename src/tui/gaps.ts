@@ -39,8 +39,10 @@ type Made = {
 const sourceLength = (source: ReadonlyArray<string>): number =>
   source.at(-1)?.trim() === "" ? source.length - 1 : source.length
 
-const markerText = (hidden: number): string =>
-  `⋯ ${hidden} ${hidden === 1 ? "line" : "lines"} hidden · press l`
+const markerText = (hidden: number): string => {
+  const said = `⋯ ${hidden} ${hidden === 1 ? "line" : "lines"} hidden`
+  return hidden <= GAP_CHUNK ? `${said} · l opens them` : `${said} · l opens ${GAP_CHUNK}, F opens all`
+}
 
 const lastNewLine = (patch: Patch): number => {
   const found = patch.rows.findLast((row) => Option.isSome(row.newLine))

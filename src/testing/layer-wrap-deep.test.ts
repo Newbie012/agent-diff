@@ -59,7 +59,7 @@ const codeOf = (frame: string): string =>
 const bare = (text: string): string => text.replace(/\s+/g, "")
 
 const gapRows = (frame: string): ReadonlyArray<string> =>
-  rowsOf(frame).filter((line) => line.includes("press l"))
+  rowsOf(frame).filter((line) => line.includes("opens"))
 
 const openOnLayer = async (driver: TestDriver): Promise<string> => {
   const branch = await driver.branch.create(branchWithGaps)

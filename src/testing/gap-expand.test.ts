@@ -33,7 +33,7 @@ const nested = {
 }
 
 const gapRows = (frame: string): ReadonlyArray<string> =>
-  frame.split("\n").filter((line) => line.includes("press l"))
+  frame.split("\n").filter((line) => line.includes("opens"))
 
 const hiddenCounts = (frame: string): ReadonlyArray<number> =>
   gapRows(frame).map((line) => Number(/(\d+) lines hidden/.exec(line)?.[1] ?? -1))
@@ -85,7 +85,7 @@ describe("opening the lines a diff leaves out", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).not.toContain("lines hidden")
+    expect(frame).not.toContain("opens")
     expect(frame).toContain("kept0")
   })
 
