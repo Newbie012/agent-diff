@@ -278,6 +278,17 @@ const togglePanel = (state: TuiState): TuiState => {
   }
 }
 
+const toggleNav = (state: TuiState): TuiState => {
+  if (state.navOpen) {
+    return {
+      ...state,
+      navOpen: false,
+      focus: state.focus === "tree" ? "diff" : state.focus,
+    }
+  }
+  return { ...state, navOpen: true }
+}
+
 const packedAway = (state: TuiState): boolean => !state.navOpen && !state.panelOpen
 
 const zoom = (state: TuiState): TuiState =>
@@ -514,6 +525,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1), navOpen: true }),
   "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1), navOpen: true }),
   "panel.toggle": togglePanel,
+  "nav.toggle": toggleNav,
   "nav.zoom": zoom,
   "wrap.toggle": (state) => ({ ...state, wrap: !state.wrap, pan: 0 }),
   "sticky.toggle": (state) => ({ ...state, sticky: !state.sticky }),

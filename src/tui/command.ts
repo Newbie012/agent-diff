@@ -31,6 +31,7 @@ export type Action =
   | "pan.right"
   | "pan.left"
   | "layers.ask"
+  | "nav.toggle"
   | "rail.toggle"
   | "tree.winnow"
   | "panel.winnow"
@@ -79,6 +80,7 @@ export type Command = {
   readonly whenComments: boolean
   readonly counted: boolean
   readonly whenLayers: boolean
+  readonly whenStale: boolean
   readonly whenThread: boolean
   readonly whenSelecting: boolean
   readonly whenReviewed: boolean
@@ -98,6 +100,7 @@ export type Offered = {
   readonly selecting: boolean
   readonly reviewed: number
   readonly pull: boolean
+  readonly stale: boolean
   readonly pane: Pane
   readonly onLayers: boolean
   readonly hidingRead: boolean
@@ -113,6 +116,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenComments: false,
   counted: false,
   whenLayers: false,
+  whenStale: false,
   whenThread: false,
   whenSelecting: false,
   whenReviewed: false,
@@ -522,12 +526,23 @@ export const commands: ReadonlyArray<Command> = [
     rank: 3,
   }),
   command({
+    action: "nav.toggle",
+    also: ["sidebar", "file list", "collapse", "expand", "hide files"],
+    title: "Show or hide the file list",
+    category: "Reading",
+    keys: ["t"],
+    screens: ["review"],
+  }),
+  command({
     action: "layers.ask",
     also: ["reading order", "plan", "walkthrough"],
     title: "Ask the agent for a reading order",
     category: "Files",
     keys: ["L"],
     screens: ["review"],
+    hint: "new order",
+    rank: 6,
+    whenStale: true,
   }),
   command({
     action: "rail.toggle",
@@ -764,6 +779,7 @@ export const hintsFor = (
     .filter((entry) => entry.hint.length > 0)
     .filter((entry) => !entry.whenComments || offered.comments > 0)
     .filter((entry) => !entry.whenLayers || offered.layers > 0)
+    .filter((entry) => !entry.whenStale || offered.stale)
     .filter((entry) => !entry.whenThread || offered.onThread)
     .filter((entry) => !entry.whenSelecting || offered.selecting)
     .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
