@@ -766,10 +766,10 @@ const stateRoom = (pane: number, name: number): number => Math.max(0, pane - nam
 const columns = (cells: Cells, room: number): string =>
   `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.layers.padStart(8)}   ${cells.state}`
 
-const FORGE_SILENT = "  could not find out which of these have a pull request"
+const FORGE_SILENT = "  could not reach the forge, so no pull request is shown"
 
 const unaskedForge = (state: TuiState): ReadonlyArray<TextChunk> =>
-  state.forge === "silent" ? [fg(palette.faint)(`\n${FORGE_SILENT}`)] : []
+  state.forge === "silent" ? [fg(palette.attention)(`\n${FORGE_SILENT}`)] : []
 
 const branchHeading = (room: number): string =>
   `  ${columns(
@@ -1388,7 +1388,7 @@ export class Screen {
     const pane = this.homeRoom(state)
     const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`
-    this.landingKeys.content = this.homeKeys(state)
+    this.landingKeys.visible = false
     this.diffPane.visible = state.screen !== "branches" && !atHome(state)
     this.paintPanel(state)
     this.paintPane(state)
@@ -1680,22 +1680,11 @@ export class Screen {
     })
     if (found === this.hovered) return
     this.hovered = found
-    this.landingKeys.content = this.chipRow()
     if (this.shown !== undefined) this.footer.content = this.footerText(this.shown)
   }
 
   private homeRoom(state: TuiState): number {
     return homeWidth(this.renderer.width, longestName(state), longestState(state))
-  }
-
-  private homeKeys(state: TuiState): StyledText {
-    const said = state.notice.length === 0 ? state.waiting : state.notice
-    const tail = said.length === 0 ? "" : `  ${said}`
-    const room = Math.max(0, this.homeRoom(state) - tail.length)
-    const chips = keptWithin(this.chipRow().chunks, room)
-    if (tail.length === 0) return new StyledText([...chips])
-    const colour = state.notice.length === 0 ? palette.accent : palette.attention
-    return new StyledText([...chips, fg(colour)(tail)])
   }
 
   private chipRow(): StyledText {

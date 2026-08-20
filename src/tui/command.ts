@@ -362,8 +362,8 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "search.open",
     also: ["search", "find", "grep", "look for", "where is"],
-    category: "Selecting",
-    title: "Find the selection elsewhere",
+    category: "Reading",
+    title: "Search this branch",
     keys: ["/"],
     screens: ["review"],
   }),
@@ -445,7 +445,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.settle",
-    also: ["resolve", "close", "done", "accept"],
+    also: ["settle", "resolve", "close", "done", "accept"],
     panes: ["diff", "review"],
     title: "Settle the thread here",
     category: "Comments",
@@ -466,7 +466,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.reply",
-    also: ["respond", "answer", "write back"],
+    also: ["reply", "respond", "answer", "write back"],
     panes: ["review", "diff"],
     hint: "reply",
     rank: 1,
@@ -478,7 +478,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.remove",
-    also: ["delete", "withdraw", "retract", "undo"],
+    also: ["remove", "delete", "withdraw", "retract", "undo"],
     panes: ["review"],
     hint: "remove",
     rank: 2,
