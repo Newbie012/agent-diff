@@ -155,6 +155,10 @@
   dir: ""
   intents:
     - a-chip-that-says-its-state
+"@eliya-oss/agent-diff@0.1.0-alpha.126":
+  dir: ""
+  intents:
+    - prose-above-the-pair
 "@eliya-oss/agent-diff@0.1.0-alpha.13":
   dir: ""
   intents:

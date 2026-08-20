@@ -442,6 +442,10 @@
 
 - Reword or withdraw a staged comment, and see when a thread describes an older commit.
 
+## 0.1.0-alpha.126
+
+- A layer's note about a changed line sits above the change, not inside it. When a line is replaced, git shows the old and the new one after the other, and the note was drawn between them — so four rows of prose split the one pairing a diff exists to show, on the first screen of the review.
+
 ## 0.1.0-alpha.125
 
 - A key that toggles something says which way it will go. `f hide read` read the same whether files were hidden or shown — and the filter survives a restart, so you could open a review with files missing and nothing on screen saying so. It now reads `f show read` while hiding. Same for `f hide settled`, and `X` offers `restore` when the thread under the cursor has been removed.
