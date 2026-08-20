@@ -118,6 +118,7 @@ export type TuiState = {
   readonly closed: ReadonlyArray<string>
   readonly vouched: ReadonlyArray<string>
   readonly sent: ReadonlyArray<StagedComment>
+  readonly held: ReadonlyArray<StagedComment>
   readonly viewport: number
   readonly context: number
   readonly contextWas: number
@@ -162,6 +163,7 @@ export type TuiState = {
 }
 
 const nothingReviewed = {
+  held: [] as ReadonlyArray<StagedComment>,
   arrived: [] as ReadonlyArray<StagedComment>,
   panelOpen: true,
   panelWas: true,
@@ -989,9 +991,17 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
 
-export type PanelSection = "asked" | "filed" | "with" | "answered" | "settled" | "removed"
+export type PanelSection =
+  | "held"
+  | "asked"
+  | "filed"
+  | "with"
+  | "answered"
+  | "settled"
+  | "removed"
 
 export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
+  "held",
   "asked",
   "filed",
   "with",
@@ -1044,7 +1054,10 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   const shown = state.hideSettled
     ? state.sent.filter((comment) => comment.settled !== true)
     : state.sent
-  const delivered = shown.map((comment) => sentEntry(state, comment))
+  const waiting = state.held.map(
+    (comment): PanelEntry => ({ section: "held", comment, fresh: false, unread: 0 }),
+  )
+  const delivered = [...waiting, ...shown.map((comment) => sentEntry(state, comment))]
   const ordered = (section: PanelSection): ReadonlyArray<PanelEntry> => {
     const found = delivered.filter((entry) => entry.section === section)
     return state.newestFirst ? found.toReversed() : found

@@ -418,25 +418,42 @@ export const anchorIn = Effect.fn("Cli.anchorIn")(function* (
   })
 })
 
-export const commentIn = Effect.fn("Cli.commentIn")(function* (
+export type Written = readonly [CommentRequest, ...ReadonlyArray<CommentRequest>]
+
+export const commentsIn = Effect.fn("Cli.commentsIn")(function* (
   worktree: Worktree,
-  request: CommentRequest,
+  requests: Written,
 ) {
   const store = yield* Store
-  const chosen = yield* anchorIn(worktree, request)
-
+  const anchoring = Effect.fn("Cli.anchoring")(function* (request: CommentRequest) {
+    const anchor = yield* anchorIn(worktree, request)
+    return { id: request.id, anchor, body: request.body }
+  })
+  const anchored = yield* Effect.forEach(requests, anchoring)
   const batch: Batch = {
-    id: request.id,
-    at: request.at,
+    id: requests[0].id,
+    at: requests[0].at,
     head: worktree.head,
-    comments: [{ id: request.id, anchor: chosen, body: request.body }],
+    comments: anchored,
   }
   yield* store.submit(worktree.path, batch)
   return batch
 })
 
+export const commentIn = Effect.fn("Cli.commentIn")(function* (
+  worktree: Worktree,
+  request: CommentRequest,
+) {
+  return yield* commentsIn(worktree, [request])
+})
+
 export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {
   return yield* commentIn(yield* findBranch(request.repo, request.branch), request)
+})
+
+export const submitComments = Effect.fn("Cli.submitComments")(function* (requests: Written) {
+  const worktree = yield* findBranch(requests[0].repo, requests[0].branch)
+  return yield* commentsIn(worktree, requests)
 })
 
 export type ReplyRequest = {

@@ -58,6 +58,7 @@ export type Action =
   | "compose.open"
   | "compose.submit"
   | "palette.open"
+  | "held.send"
   | "settings.open"
   | "settings.next"
   | "settings.prev"
@@ -89,6 +90,7 @@ export type Command = {
   readonly whenSelecting: boolean
   readonly whenReviewed: boolean
   readonly whenPull: boolean
+  readonly whenHeld: boolean
   readonly panes: ReadonlyArray<Pane>
   readonly rank: number
 }
@@ -99,6 +101,7 @@ const EVERY_PANE: ReadonlyArray<Pane> = ["tree", "diff", "review"]
 
 export type Offered = {
   readonly comments: number
+  readonly held: number
   readonly layers: number
   readonly onThread: boolean
   readonly selecting: boolean
@@ -110,6 +113,7 @@ export type Offered = {
   readonly hidingRead: boolean
   readonly hidingSettled: boolean
   readonly onRemoved: boolean
+  readonly onHeld: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -125,6 +129,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenSelecting: false,
   whenReviewed: false,
   whenPull: false,
+  whenHeld: false,
   panes: EVERY_PANE,
   rank: 0,
   ...input,
@@ -616,6 +621,18 @@ export const commands: ReadonlyArray<Command> = [
     rank: 3,
   }),
   command({
+    action: "held.send",
+    also: ["send", "dispatch", "flush", "send everything"],
+    panes: ["diff", "tree", "review"],
+    category: "Comments",
+    title: "Send the comments you are holding",
+    keys: ["C"],
+    screens: ["review"],
+    hint: "send",
+    whenHeld: true,
+    rank: 1,
+  }),
+  command({
     action: "report.open",
     title: "Report a bug",
     category: "App",
@@ -803,11 +820,17 @@ export const displayKey = (key: string): string => {
   return GLYPHS[key] ?? key
 }
 
+const heldOrRemoved = (offered: Offered): string => {
+  if (offered.onHeld) return "drop"
+  return offered.onRemoved ? "restore" : "remove"
+}
+
 const SWAPPED: Readonly<Record<string, (offered: Offered) => string>> = {
   "rail.toggle": (offered) => (offered.onLayers ? "file tree" : "layers"),
   "tree.winnow": (offered) => (offered.hidingRead ? "show read" : "hide read"),
   "panel.winnow": (offered) => (offered.hidingSettled ? "show settled" : "hide settled"),
-  "thread.remove": (offered) => (offered.onRemoved ? "restore" : "remove"),
+  "thread.remove": (offered) => heldOrRemoved(offered),
+  "held.send": (offered) => `send ${offered.held}`,
 }
 
 const hintOf = (entry: Command, offered: Offered): string => {
@@ -829,6 +852,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenSelecting || offered.selecting)
     .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
     .filter((entry) => !entry.whenPull || offered.pull)
+    .filter((entry) => !entry.whenHeld || offered.held > 0)
     .filter((entry) => entry.panes.includes(offered.pane))
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
