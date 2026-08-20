@@ -6,4 +6,6 @@ A key that toggles something says which way it will go. `f hide read` read the s
 
 `L` asks about the branch, not about the line the cursor happened to be on. The request landed as a comment card on an arbitrary import, so the agent was told to write a reading order in a thread about a line that had nothing to do with it. It is anchored to the start of the diff and says up front that it is about the branch.
 
+Every changed file has a place in the layers rail. A file with no changed lines — a binary one, say — belonged to no layer and never reached the leftover layer either, so the rail listed seven of eight files, the two rails disagreed about the count, and `]` could never reach the eighth.
+
 `→ N columns cut off` counted three columns that were not cut, and did not name the key that pans.
