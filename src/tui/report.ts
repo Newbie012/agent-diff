@@ -1,5 +1,7 @@
 import { hostname, platform } from "node:os"
+import { absurd } from "effect"
 import manifest from "../../package.json" with { type: "json" }
+import type { RowKind } from "../domain/patch/index.ts"
 import { selectedBranch, selectedPatch, treeWindow, type TuiState } from "./model.ts"
 
 export type Surroundings = {
@@ -14,7 +16,18 @@ export type Surroundings = {
 const AROUND_CURSOR = 8
 const TREE_ROWS = 12
 
-const sign = (kind: string): string => (kind === "added" ? "+" : kind === "removed" ? "-" : " ")
+const sign = (kind: RowKind): string => {
+  switch (kind) {
+    case "added":
+      return "+"
+    case "removed":
+      return "-"
+    case "context":
+      return " "
+    default:
+      return absurd(kind)
+  }
+}
 
 const visibleRows = (state: TuiState): ReadonlyArray<string> => {
   const patch = selectedPatch(state)

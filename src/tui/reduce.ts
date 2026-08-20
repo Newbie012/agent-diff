@@ -1,4 +1,4 @@
-import { Option } from "effect"
+import { absurd, Option } from "effect"
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { type Action } from "./command.ts"
 import { gapNumbered, gapRowSet, shownOf } from "./gaps.ts"
@@ -372,14 +372,28 @@ const openCompose = (state: TuiState): TuiState => {
   }
 }
 
+const outOfDiff = (state: TuiState): TuiState =>
+  state.selecting
+    ? { ...state, selecting: false, anchorRow: state.cursor }
+    : { ...state, screen: "branches", selecting: false }
+
 const goBack = (state: TuiState): TuiState => {
-  if (state.screen === "search") return { ...state, screen: "review", matches: [], term: "", query: "" }
-  if (state.screen === "report") return { ...state, screen: state.returnTo, draft: "" }
-  if (state.screen === "palette") return { ...state, screen: state.returnTo, query: "" }
-  if (state.screen === "keys") return { ...state, screen: state.returnTo, query: "" }
-  if (state.screen === "compose") return { ...state, screen: "review", replyTo: undefined }
-  if (state.selecting) return { ...state, selecting: false, anchorRow: state.cursor }
-  return { ...state, screen: "branches", selecting: false }
+  switch (state.screen) {
+    case "search":
+      return { ...state, screen: "review", matches: [], term: "", query: "" }
+    case "report":
+      return { ...state, screen: state.returnTo, draft: "" }
+    case "palette":
+    case "keys":
+      return { ...state, screen: state.returnTo, query: "" }
+    case "compose":
+      return { ...state, screen: "review", replyTo: undefined }
+    case "branches":
+    case "review":
+      return outOfDiff(state)
+    default:
+      return absurd(state.screen)
+  }
 }
 
 const walkMatches = (state: TuiState, delta: number): TuiState => ({

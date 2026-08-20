@@ -1,5 +1,5 @@
 import { execFile, type ChildProcess } from "node:child_process"
-import { Context, Effect, Layer, Schema } from "effect"
+import { absurd, Context, Effect, Layer, Schema } from "effect"
 import { ForgeUnavailable } from "./error.ts"
 
 export type PullState = "open" | "draft" | "merged" | "closed"
@@ -49,11 +49,22 @@ const Row = Schema.Struct({
 
 const decode = Schema.decodeUnknownEffect(Schema.Array(Row))
 
+const SAID: ReadonlyArray<"OPEN" | "MERGED" | "CLOSED"> = ["OPEN", "MERGED", "CLOSED"]
+
 const stateOf = (row: typeof Row.Type): PullState => {
-  if (row.isDraft && row.state === "OPEN") return "draft"
-  if (row.state === "MERGED") return "merged"
-  if (row.state === "CLOSED") return "closed"
-  return "open"
+  const said = SAID.find((known) => known === row.state)
+  switch (said) {
+    case "OPEN":
+      return row.isDraft ? "draft" : "open"
+    case "MERGED":
+      return "merged"
+    case "CLOSED":
+      return "closed"
+    case undefined:
+      return "open"
+    default:
+      return absurd(said)
+  }
 }
 
 const ended = (child: ChildProcess): Effect.Effect<void> => Effect.sync(() => void child.kill())
