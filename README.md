@@ -42,6 +42,9 @@ comment that `ctrl+s` sends. `d` settles the thread you are on, `m` marks a file
 copies the line you are on, and dragging over lines copies them. `?` lists every key and filters as
 you type. The footer carries the keys of whichever pane you are in.
 
+`,` opens the preferences and turns any of it on or off. Turn on holding and a comment waits with
+the others until `C` sends them to the agent as one review.
+
 ## For agents
 
 Three commands are the whole loop:
