@@ -40,6 +40,8 @@ import {
   type CommentRequest,
   type VouchReport,
   removeComment,
+  restoreComment,
+  restoreIn,
   settleIn,
   removeIn,
   settleThread,
@@ -77,6 +79,7 @@ import {
   threadChosen,
   threadAtStop,
   WHOLE_FILE,
+  type StagedComment,
   type TuiState,
 } from "./model.ts"
 import {
@@ -1020,17 +1023,24 @@ export class App {
   private removeHere(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const thread = threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      const thread = threadHere(this.state)
       const id = thread?.id
       if (branch === undefined || id === undefined) {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
+      yield* this.turningOver(branch.branch, id, thread?.removed === true)
+    })
+  }
+
+  private turningOver(branch: string, id: string, back: boolean): Work {
+    return Effect.gen({ self: this }, function* () {
       const was = this.state.panelIndex
-      yield* this.removing(branch.branch, id)
-      const sent = yield* this.loadSent(branch.branch)
-      const held = withSent({ ...this.state, opened: this.state.opened.filter((one) => one !== id) }, sent)
-      this.commit(withNotice(this.staying(held, id, was), "removed, restore it with comment restore"))
+      yield* back ? this.restoring(branch, id) : this.removing(branch, id)
+      const sent = yield* this.loadSent(branch)
+      const kept = { ...this.state, opened: this.state.opened.filter((one) => one !== id) }
+      const said = back ? "brought back" : "withdrawn, it is under Withdrawn in the review"
+      this.commit(withNotice(this.staying(withSent(kept, sent), id, was), said))
     })
   }
 
@@ -1201,6 +1211,13 @@ export class App {
     return worktree === undefined
       ? settleThread(this.repo, branch, id, at)
       : settleIn(worktree, id, at)
+  }
+
+  private restoring(branch: string, id: string): Work<{ readonly restored: string }> {
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined
+      ? restoreComment(this.repo, branch, id)
+      : restoreIn(worktree, id)
   }
 
   private removing(branch: string, id: string): Work<{ readonly removed: string }> {
@@ -1438,6 +1455,9 @@ export class App {
     })
   }
 }
+
+const threadHere = (state: TuiState): StagedComment | undefined =>
+  threadChosen(state) ?? threadAtStop(state) ?? threadAtRow(state, state.cursor)
 
 const sentAway = (state: TuiState): TuiState => ({
   ...state,

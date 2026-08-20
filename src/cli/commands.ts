@@ -294,6 +294,7 @@ type Spoken = {
 type Reading = {
   readonly spoken: ReadonlyArray<Spoken>
   readonly settled: Readonly<Record<string, string>>
+  readonly removed: Readonly<Record<string, string>>
   readonly head: string
   readonly shown: ReadonlySet<string>
   readonly read: Readonly<Record<string, number>>
@@ -320,7 +321,7 @@ const sentOf = (
   replies: ReadonlyArray<PendingComment>,
   reading: Reading,
 ) => {
-  const { spoken, settled, head, shown, read } = reading
+  const { spoken, settled, removed, head, shown, read } = reading
   const ids = new Set([comment.id, ...replies.map((reply) => reply.id)])
   const said = spoken.filter((entry) => ids.has(entry.comment))
   const seen = [...ids].reduce((total, id) => total + (read[id] ?? 0), 0)
@@ -334,6 +335,7 @@ const sentOf = (
     end: comment.end,
     body: comment.body,
     settled: Object.hasOwn(settled, comment.id),
+    removed: Object.hasOwn(removed, comment.id),
     stale: comment.head !== head,
     outside: !shown.has(comment.file),
     unread: Math.max(0, said.length - seen),
@@ -349,13 +351,12 @@ export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading)
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
-  const held = flatten(yield* store.inbox(worktree.path)).filter(
-    (comment) => !Object.hasOwn(current.removed, comment.id),
-  )
+  const held = flatten(yield* store.inbox(worktree.path))
   const replies = held.filter((comment) => comment.replyTo !== undefined)
   const conversation = {
     spoken,
     settled: current.settled,
+    removed: current.removed,
     head: worktree.head,
     shown,
     read: current.read,

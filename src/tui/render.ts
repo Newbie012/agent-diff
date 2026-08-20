@@ -600,6 +600,9 @@ const makeCompose = (renderer: CliRenderer): BoxRenderable =>
     flexDirection: "column",
   })
 
+const stillThere = (sent: TuiState["sent"]): TuiState["sent"] =>
+  sent.filter((one) => one.removed !== true)
+
 const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyArray<string> => {
   const said = threadQuote(state, room)
   if (said.length > 0) return said.slice(0, shownLines * 2).map((line) => clip(line, room))
@@ -671,7 +674,7 @@ const notesOf = (
     }))
 
 const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> =>
-  notesOf(state.sent, path, true, state.opened)
+  notesOf(stillThere(state.sent), path, true, state.opened)
 
 const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<TextChunk>> => {
   const chips: Array<ReadonlyArray<TextChunk>> = []
@@ -950,6 +953,7 @@ const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   with: "With the agent",
   answered: "Answered, not settled",
   settled: "Settled",
+  removed: "Withdrawn",
 }
 
 const PANEL_ORDER = PANEL_SECTIONS

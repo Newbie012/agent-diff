@@ -55,7 +55,7 @@ describe("a comment the diff cannot reach", () => {
     await driver.screen.pressKeys(["X"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("removed")
+    expect(await driver.screen.getFrame()).toContain("withdrawn")
   })
 
   it("offers the key that settles it", async () => {

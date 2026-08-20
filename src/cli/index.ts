@@ -66,6 +66,7 @@ export {
   listThreads,
   removeComment,
   restoreComment,
+  restoreIn,
   settleRead,
   settleIn,
   removeIn,
