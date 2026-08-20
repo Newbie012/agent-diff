@@ -195,6 +195,11 @@
   dir: ""
   intents:
     - scroll-and-spacing-in-the-layers-rail
+"@eliya-oss/agent-diff@0.1.0-alpha.135":
+  dir: ""
+  intents:
+    - release-notes-grouped-by-kind
+    - the-agent-has-it
 "@eliya-oss/agent-diff@0.1.0-alpha.14":
   dir: ""
   intents:
