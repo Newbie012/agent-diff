@@ -722,9 +722,10 @@ export const openedAt = (state: TuiState, patchIndex: number, line: number): Tui
 }
 
 export const withPatches = (state: TuiState, patches: ReadonlyArray<Patch>): TuiState => {
-  const closed = crowdedOf(patches)
-  const opened = { ...state, patches, closed }
+  const crowded = crowdedOf(patches)
+  const opened = { ...state, patches, closed: crowded }
   const patchIndex = fileOrder(opened)[0] ?? 0
+  const closed = revealing(opened, patchIndex)
   return {
     ...state,
     screen: "review",
