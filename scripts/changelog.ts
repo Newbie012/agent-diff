@@ -33,6 +33,22 @@ const releasesIn = (ledger: string): ReadonlyArray<Release> => {
   return found
 }
 
+const NUMBERS = /\d+/g
+
+const rankOf = (version: string): ReadonlyArray<number> =>
+  [...version.matchAll(NUMBERS)].map((found) => Number(found[0]))
+
+const compare = (one: Release, two: Release): number => {
+  const left = rankOf(one.version)
+  const right = rankOf(two.version)
+  const most = Math.max(left.length, right.length)
+  for (let at = 0; at < most; at += 1) {
+    const step = (right[at] ?? 0) - (left[at] ?? 0)
+    if (step !== 0) return step
+  }
+  return one.version.localeCompare(two.version)
+}
+
 const bodyOf = (intent: string): string | undefined => {
   const path = join(INTENTS, `${intent}.md`)
   const raw = readFileSync(path, "utf8")
@@ -71,7 +87,7 @@ if (wanted !== undefined) {
 }
 
 const entries = releases
-  .toReversed()
+  .toSorted(compare)
   .flatMap((release) => {
     const entry = entryFor(release, have)
     return entry === undefined ? [] : [entry]
