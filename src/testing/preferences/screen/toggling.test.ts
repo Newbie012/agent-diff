@@ -27,7 +27,7 @@ describe("when the preferences screen is opened", () => {
     expect(frame).toContain("Keep the heading in view")
   })
 
-  test("then escape puts you back where you came from", async () => {
+  test("then escape goes back to the review", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -43,7 +43,7 @@ describe("when the preferences screen is opened", () => {
 })
 
 describe("when a preference is turned on from the screen", () => {
-  test("then the review behaves that way straight away", async () => {
+  test("then long lines wrap straight away", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -56,7 +56,7 @@ describe("when a preference is turned on from the screen", () => {
     expect(await driver.screen.believes()).toMatchObject({ wrap: true })
   })
 
-  test("then it is still that way after adiff is opened again", async () => {
+  test("then long lines still wrap the next time adiff opens", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
@@ -70,7 +70,7 @@ describe("when a preference is turned on from the screen", () => {
     expect(await driver.screen.believes()).toMatchObject({ wrap: true })
   })
 
-  test("then the key that toggles it changes the same preference", async () => {
+  test("then pressing w turns wrapping off again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await opened(driver)
