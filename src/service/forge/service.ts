@@ -18,7 +18,7 @@ export type ForgeComment = {
 }
 
 export type Sent = {
-  readonly landed: ReadonlyArray<string>
+  readonly landed: ReadonlyArray<number>
   readonly url: string
 }
 
@@ -187,8 +187,21 @@ const Landed = Schema.Struct({
 
 const readLanded = Schema.decodeUnknownEffect(Landed)
 
-const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArray<string> => {
-  const parsed = Effect.runSync(
+type Acknowledged = { readonly path: string; readonly line?: number }
+
+const keyOf = (path: string, line: number): string => `${path}:${line}`
+
+const counted = (back: ReadonlyArray<Acknowledged>): Map<string, number> => {
+  const room = new Map<string, number>()
+  back.forEach((one) => {
+    const key = keyOf(one.path, one.line ?? 0)
+    room.set(key, (room.get(key) ?? 0) + 1)
+  })
+  return room
+}
+
+const acknowledged = (said: string): ReadonlyArray<Acknowledged> | undefined =>
+  Effect.runSync(
     Effect.orElseSucceed(
       Effect.flatMap(
         Effect.try(() => JSON.parse(said) as unknown),
@@ -196,10 +209,19 @@ const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArr
       ),
       () => ({ comments: undefined }),
     ),
-  )
-  const back = parsed.comments
-  if (back === undefined) return asked.map((one) => `${one.path}:${one.line}`)
-  return back.map((one) => `${one.path}:${one.line ?? 0}`)
+  ).comments
+
+const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArray<number> => {
+  const back = acknowledged(said)
+  if (back === undefined) return []
+  const room = counted(back)
+  return asked.flatMap((one, at) => {
+    const key = keyOf(one.path, one.line)
+    const left = room.get(key) ?? 0
+    if (left === 0) return []
+    room.set(key, left - 1)
+    return [at]
+  })
 }
 
 const review = Effect.fn("Forge.review")(function* (

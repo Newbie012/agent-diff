@@ -9,9 +9,17 @@ export type PullOnForge = {
   readonly url?: string
 }
 
+export type Landing = {
+  readonly path: string
+  readonly line: number
+}
+
 export type ForgeOptions = {
   readonly refuses?: boolean
   readonly reason?: string
+  readonly accepts?: ReadonlyArray<Landing>
+  readonly answers?: string
+  readonly slowMs?: number
 }
 
 export type PostedReview = {
@@ -25,6 +33,22 @@ export type PostedReview = {
 }
 
 const OWNER = "someone/their-repo"
+
+const quoted = (raw: string): string => `'${raw.replaceAll("'", `'\\''`)}'`
+
+const ECHOES =
+  "const asked = JSON.parse(process.argv[1]); process.stdout.write(JSON.stringify({ comments: asked.comments.map((one) => ({ path: one.path, line: one.line })) }))"
+
+const answerFor = (options: ForgeOptions): ReadonlyArray<string> => {
+  if (options.refuses === true) {
+    return [`echo '${options.reason ?? "the forge said no"}' >&2`, "exit 1"]
+  }
+  if (options.answers !== undefined) return [`printf '%s' ${quoted(options.answers)}`]
+  if (options.accepts !== undefined) {
+    return [`printf '%s' ${quoted(JSON.stringify({ comments: options.accepts }))}`]
+  }
+  return [`node -e ${quoted(ECHOES)} "$body"`]
+}
 
 const scriptFor = (
   pulls: ReadonlyArray<PullOnForge>,
@@ -46,7 +70,6 @@ const scriptFor = (
       },
     ]),
   )
-  const refuse = options.refuses === true
   return [
     "#!/bin/sh",
     'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then',
@@ -64,9 +87,10 @@ const scriptFor = (
     "exit 0",
     "fi",
     'if [ "$1" = "api" ]; then',
-    `cat > "${posted}"`,
-    refuse ? `echo '${options.reason ?? "the forge said no"}' >&2` : "",
-    refuse ? "exit 1" : "printf '{}'",
+    "body=$(cat)",
+    `printf '%s\\n' "$body" >> "${posted}"`,
+    options.slowMs === undefined ? "" : `sleep ${(options.slowMs / 1000).toFixed(2)}`,
+    ...answerFor(options),
     "exit 0",
     "fi",
     "exit 1",
@@ -83,7 +107,7 @@ export class ForgeTestDriver {
   }
 
   private postedPath(): string {
-    return join(this.state.workspace, "bin", "posted.json")
+    return join(this.state.workspace, "bin", "posted.jsonl")
   }
 
   async holds(pulls: ReadonlyArray<PullOnForge>, options: ForgeOptions = {}): Promise<void> {
@@ -95,7 +119,14 @@ export class ForgeTestDriver {
   }
 
   async posted(): Promise<PostedReview | undefined> {
+    return (await this.posts()).at(-1)
+  }
+
+  async posts(): Promise<ReadonlyArray<PostedReview>> {
     const raw = await readFile(this.postedPath(), "utf8").catch(() => "")
-    return raw.trim().length === 0 ? undefined : (JSON.parse(raw) as PostedReview)
+    return raw
+      .split("\n")
+      .filter((line) => line.trim().length > 0)
+      .map((line) => JSON.parse(line) as PostedReview)
   }
 }

@@ -92,6 +92,7 @@ export {
   MissingOption,
   NoLayers,
   NothingDrafted,
+  PartlySent,
   PullMoved,
   UnknownBase,
   UnknownBranch,

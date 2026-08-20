@@ -109,7 +109,13 @@ file ([PRD 011](011-preferences.md)), which this PRD reuses rather than redefine
   pull request gets a single notification and a single conversation, which is what a review is.
 
 - **Nothing is sent twice.** A dispatch that partly succeeded says which comments landed and keeps
-  the rest. Pressing send again sends only what did not go.
+  the rest. Pressing send again sends only what did not go. A comment counts as landed only when the
+  forge names it back; anything the forge did not confirm, including a reply adiff cannot read, is
+  still held and the dispatch is a refusal rather than a success.
+
+- **One send at a time.** A send takes the drafts, the forge call and the write as one step, so two
+  sends started at the same moment cannot both post the same set. The second one finds nothing
+  being held and says so.
 
 - **Dispatch is refused when the pull request has moved.** A comment is anchored to a line, and a
   line that has moved is a comment on the wrong code. The reviewer is told the pull request moved
@@ -159,6 +165,7 @@ Covered as outcomes:
 - Sending makes exactly one review on the forge carrying every held comment against its own file
   and line.
 - A dispatch that partly failed keeps what did not land, and sending again sends only that.
+- Two sends at the same moment make one review, and the second says nothing is being held.
 - A pull request that moved refuses the dispatch and keeps every draft.
 - An unreachable forge refuses the dispatch and keeps every draft.
 - Drafts written before a restart are still there after it.

@@ -2,8 +2,9 @@ import { Effect } from "effect"
 import { Forge, type ForgeComment } from "../service/forge/index.ts"
 import { Store, type StoredDraft } from "../service/store/index.ts"
 import { anchorIn, findBranch } from "./commands.ts"
-import { NothingDrafted, PullMoved, UnknownDraft } from "./error.ts"
+import { NothingDrafted, PartlySent, PullMoved, UnknownDraft } from "./error.ts"
 import type { Side } from "../domain/patch/index.ts"
+import type { Worktree } from "../service/git/index.ts"
 
 export type DraftRequest = {
   readonly repo: string
@@ -115,13 +116,13 @@ const commentOf = (draft: StoredDraft): ForgeComment => ({
   body: draft.body,
 })
 
-export const dispatchDrafts = Effect.fn("Cli.dispatchDrafts")(function* (
+const sending = Effect.fn("Cli.sending")(function* (
   repo: string,
   branch: string,
+  worktree: Worktree,
 ) {
   const store = yield* Store
   const forge = yield* Forge
-  const worktree = yield* findBranch(repo, branch)
   const held = yield* store.drafts(worktree.path)
   if (held.length === 0) return yield* new NothingDrafted({ branch })
   const head = yield* forge.head(repo, branch)
@@ -129,9 +130,30 @@ export const dispatchDrafts = Effect.fn("Cli.dispatchDrafts")(function* (
     return yield* new PullMoved({ branch, was: worktree.head, now: head })
   }
   const sent = yield* forge.review(repo, branch, held.map(commentOf))
-  const gone = new Set(held.map((one) => one.id))
-  const now = yield* store.drafts(worktree.path)
-  const waiting = now.filter((one) => !gone.has(one.id))
+  const gone = new Set(sent.landed.map((at) => held[at]?.id))
+  const kept = held.filter((one) => !gone.has(one.id))
+  const asked = new Set(held.map((one) => one.id))
+  const since = (yield* store.drafts(worktree.path)).filter((one) => !asked.has(one.id))
+  const waiting = [...kept, ...since]
   yield* store.saveDrafts(worktree.path, waiting)
-  return { sent: sent.landed.length, url: sent.url, held: waiting.length } satisfies Dispatched
+  if (kept.length > 0) {
+    return yield* new PartlySent({
+      branch,
+      url: sent.url,
+      sent: held.length - kept.length,
+      held: waiting.length,
+      landed: held.filter((one) => gone.has(one.id)).map((one) => one.id),
+      kept: kept.map((one) => one.id),
+    })
+  }
+  return { sent: held.length, url: sent.url, held: since.length } satisfies Dispatched
+})
+
+export const dispatchDrafts = Effect.fn("Cli.dispatchDrafts")(function* (
+  repo: string,
+  branch: string,
+) {
+  const store = yield* Store
+  const worktree = yield* findBranch(repo, branch)
+  return yield* store.whileHoldingDrafts(worktree.path, sending(repo, branch, worktree))
 })
