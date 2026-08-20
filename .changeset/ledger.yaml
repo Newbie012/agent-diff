@@ -206,6 +206,11 @@
     - a-wheel-that-keeps-working
     - the-key-sheet-in-two-columns
     - the-panel-takes-the-keys
+"@eliya-oss/agent-diff@0.1.0-alpha.137":
+  dir: ""
+  intents:
+    - prose-is-not-the-file
+    - the-file-list-on-its-own
 "@eliya-oss/agent-diff@0.1.0-alpha.14":
   dir: ""
   intents:
