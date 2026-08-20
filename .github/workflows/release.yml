@@ -14,6 +14,28 @@ permissions:
   id-token: write
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - run: npm install -g --allow-scripts=pnpm pnpm@12.0.0-beta.3
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm build
+
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -39,7 +61,7 @@ jobs:
           NODE_OPTIONS: --experimental-ffi
 
   release:
-    needs: tests
+    needs: [check, tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
