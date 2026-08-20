@@ -277,7 +277,7 @@ export class DiffView {
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
     this.feed()
     this.numbers.setLineNumbers(lineNumbers(patch, this.display))
-    this.numbers.setHideLineNumbers(bareOf(this.display))
+    this.numbers.setHideLineNumbers(bareOf(patch, this.display))
     this.numbers.setLineSigns(lineSigns(patch, this.display))
     this.numbers.setLineColors(new Map())
   }
@@ -544,8 +544,19 @@ const startsOf = (display: ReadonlyArray<Display>): Map<number, number> => {
   return starts
 }
 
-const bareOf = (display: ReadonlyArray<Display>): Set<number> =>
-  new Set(display.flatMap((entry, index) => (entry.comment || entry.gap || entry.prose ? [index] : [])))
+const numbered = (rows: ReadonlyMap<number, Row>, entry: Display): boolean => {
+  const row = rows.get(entry.row)
+  return row !== undefined && numberFor(row) !== undefined
+}
+
+const bareOf = (patch: Patch, display: ReadonlyArray<Display>): Set<number> => {
+  const rows = new Map(patch.rows.map((row) => [row.index, row]))
+  return new Set(
+    display.flatMap((entry, index) =>
+      entry.comment || entry.gap || entry.prose || !numbered(rows, entry) ? [index] : [],
+    ),
+  )
+}
 
 export const noteKey = (note: Note): string =>
   [

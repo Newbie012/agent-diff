@@ -63,6 +63,12 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
   selected rows' text, joined by newlines, without diff signs.
 - **A range with no matching rows produces no anchor.** The caller refuses; it never falls back to
   the nearest row.
+- **A change with no lines to show says what did change.** A mode change, a rename, a copy, and
+  an added or deleted empty file each get one row of plain words — `mode changed, 100644 to 100755`,
+  `renamed from pkg/gizmo.ts`. No patch is ever without rows. When such a change comes with edits,
+  the words come first and the diff follows.
+- **A row that sits on no line on either side carries no line number.** The words above, the
+  binary notice, the hidden-lines marker, and the no-newline notice are all of this kind.
 - **Rendering a patch produces the display text and the row-to-line map in one pass.** These two
   must never be computed separately — a cursor that lands on a line the text does not have is the
   failure mode this rule exists to prevent.
@@ -86,11 +92,12 @@ Behaviors that must be covered:
 - An old-side range quotes the deleted code.
 - A range the diff does not show is refused, and nothing reaches the agent.
 - A file in a nested directory anchors to the right path.
+- A mode-only change, a rename with no edits, and a rename with edits each say what changed.
 
 ## Out of Scope
 
-- Binary files, renames without content changes, and mode-only changes. They parse without error
-  and produce no rows; commenting on them is refused by the range rule.
+- Commenting on a change with no lines. The row that says what changed sits on no line on either
+  side, so the range rule refuses it.
 - Merge conflict markers.
 - Syntax highlighting, which belongs to the renderer.
 
