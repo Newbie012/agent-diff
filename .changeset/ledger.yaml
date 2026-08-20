@@ -99,6 +99,10 @@
   dir: ""
   intents:
     - what-the-panel-says
+"@eliya-oss/agent-diff@0.1.0-alpha.113":
+  dir: ""
+  intents:
+    - the-thread-you-are-answering
 "@eliya-oss/agent-diff@0.1.0-alpha.12":
   dir: ""
   intents:

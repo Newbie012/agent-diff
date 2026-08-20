@@ -446,6 +446,12 @@
 
 - An agent can answer a comment, and a reviewer can settle the thread.
 
+## 0.1.0-alpha.113
+
+- The reply box shows the thread you are answering. It used to quote code from wherever the diff cursor happened to be — often a different file — and never showed your comment or the agent's answer, so you replied to a question you could not see. It now shows the conversation, and names the range rather than only its last line.
+  
+  The header says when a line runs off the right of the pane. Code was cut with no marker of any kind, so two lines that differ only past the edge looked identical.
+
 ## 0.1.0-alpha.112
 
 - The review panel says what state a thread is in. A question the agent asked back — the one thing that stops the review until you answer — was filed under "Answered" with the same mark as an ordinary answer. It now has a section of its own at the top, and settled threads have one at the bottom instead of sitting in place with one glyph missing. When there are more threads than fit, the panel says how many are above and below rather than ending mid-list.
