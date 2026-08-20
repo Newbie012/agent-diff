@@ -1,16 +1,42 @@
+import { execFileSync } from "node:child_process"
 import { argv, stdout } from "node:process"
 import { bodyOf, intentNames, readingOf, releasedNames, sectionsIn } from "./lib/intents.ts"
 
+const value = (name: string): string | undefined => {
+  const at = argv.indexOf(`--${name}`)
+  return at === -1 ? undefined : argv[at + 1]
+}
+
 const wanted = argv.slice(2).filter((token) => !token.startsWith("--"))
+const against = value("against") ?? "origin/main"
+
+const git = (...args: ReadonlyArray<string>): string => {
+  try {
+    return execFileSync("git", [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
+  } catch {
+    return ""
+  }
+}
+
+const onThisBranch = (): ReadonlyArray<string> => {
+  const base = git("merge-base", "HEAD", against)
+  if (base === "") return []
+  return git("diff", "--name-only", "--diff-filter=AM", `${base}...HEAD`, "--", ".changeset")
+    .split("\n")
+    .filter((path) => path.endsWith(".md") && !path.includes("/changelogs/"))
+    .map((path) => path.slice(".changeset/".length, -".md".length))
+}
 
 const released = releasedNames()
+const have = intentNames()
 
-const intents =
-  wanted.length > 0 ? wanted : [...intentNames()].filter((name) => !released.has(name)).toSorted()
+const mine = onThisBranch().filter((name) => have.has(name) && !released.has(name))
+
+const intents = wanted.length > 0 ? wanted : mine.toSorted()
 
 if (intents.length === 0) {
   stdout.write(
-    "No change intent is waiting for a release, so there is nothing to summarise. A branch that only refactors, tests or documents has no summary to paste — say what it did in prose instead.\n",
+    `This branch adds no change intent against ${against}, so there is nothing to summarise. A branch that only refactors, tests or documents has no summary to paste — say what it did in prose instead.\n`,
   )
   process.exit(0)
 }
