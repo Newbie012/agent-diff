@@ -31,10 +31,12 @@ const chosen =
   traceAt === undefined || testName === undefined ? undefined : traceNamed(traceAt, testName)
 const cols = number("cols", chosen?.seat.width ?? 120)
 const rows = number("rows", chosen?.seat.height ?? 32)
-const keys =
-  chosen === undefined
-    ? (value("keys") ?? "").split(" ").filter((token) => token.length > 0)
-    : chosen.steps.flatMap((step) => step.keys)
+const tokensIn = (said: string): ReadonlyArray<string> =>
+  said.startsWith("text:") ? [said] : said.split(" ").filter((token) => token.length > 0)
+
+const asked = argv.flatMap((arg, at) => (arg === "--keys" ? tokensIn(argv[at + 1] ?? "") : []))
+
+const keys = chosen === undefined ? asked : chosen.steps.flatMap((step) => step.keys)
 const label = value("label") ?? chosen?.test ?? "after"
 const against = value("against")
 const wanted = value("wait-for") ?? "WORKTREE"
@@ -61,20 +63,29 @@ mkdirSync(shots, { recursive: true })
 
 const stillAt = (root: string, name: string): string => {
   const out = join(shots, `${name}.png`)
+  const session = `adiff-${createHash("sha256").update(`${name}-still`).digest("hex").slice(0, 10)}`
   run("termctrl", [
-    "save",
-    "--format", "png",
-    "--out", out,
+    "start", session,
     "--cols", String(cols),
     "--rows", String(rows),
-    "--hide-cursor",
-    "--settle-ms", "3000",
-    "--deadline-ms", "40000",
-    "--wait-for", wanted,
-    ...keys.filter((key) => !/^(wait|until):/.test(key)).flatMap((key) => ["-s", key]),
     "--",
     "node", ...NODE, ...bootArgs(root),
   ])
+  try {
+    run("termctrl", ["wait", session, wanted, "--timeout", "40000"])
+    execFileSync("sleep", ["0.4"])
+    for (const key of keys) sendOne(session, key)
+    execFileSync("sleep", ["1"])
+    run("termctrl", [
+      "save", session,
+      "--format", "png",
+      "--out", out,
+      "--hide-cursor",
+      "--settle-ms", "1000",
+    ])
+  } finally {
+    run("termctrl", ["stop", session])
+  }
   return out
 }
 

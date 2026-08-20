@@ -1,3 +1,4 @@
+import { preferences } from "../../domain/preferences/index.ts"
 import type { Step } from "./model.ts"
 
 const step = (does: string, keys: ReadonlyArray<string>): Step => ({ does, keys })
@@ -44,6 +45,27 @@ export const hideFilesAlreadyRead = (): Step => step("hide the files already rea
 
 export const leaveAComment = (said: string): Step =>
   step(`leave a comment saying "${said}"`, [press("c"), settle(1200), `text:${said}`, `until:${said}`, "ctrl-s"])
+
+const preferenceAt = (name: string): number => preferences.findIndex((one) => one.name === name)
+
+const turnOn = (name: string, said: string): Step =>
+  step(said, [
+    press(","),
+    ...Array.from({ length: preferenceAt(name) }, () => press("j")),
+    "enter",
+    "escape",
+  ])
+
+export const holdCommentsUntilYouSendThem = (): Step =>
+  turnOn("hold", "turn on holding comments until you send them")
+
+export const tryToLeave = (): Step => step("try to leave", ["ctrl-c"])
+
+export const sendTheCommentsYouAreHolding = (): Step =>
+  step("send the comments you are holding", [press("C")])
+
+export const dropTheCommentYouAreHolding = (): Step =>
+  step("drop the comment you are holding", [press("X")])
 
 export const openTheFolder = (): Step => step("open the folder", [press("l")])
 

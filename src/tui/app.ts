@@ -31,13 +31,16 @@ import {
   sentIn,
   saveReport,
   commentIn,
+  commentsIn,
   savePreference,
   submitComment,
+  submitComments,
   submitReply,
   toggleVouch,
   vouchIn,
   type BranchReading,
   type CommentRequest,
+  type Written,
   type VouchReport,
   removeComment,
   restoreComment,
@@ -82,6 +85,7 @@ import {
   threadAtStop,
   threadHere,
   WHOLE_FILE,
+  type StagedComment,
   type TuiState,
 } from "./model.ts"
 import {
@@ -134,6 +138,13 @@ const AGE_TICK_MS = 30_000
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
+
+const countOf = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
+
+const leavingSaid = (state: TuiState): string =>
+  state.held.length === 0
+    ? LEAVING_SAID
+    : `${countOf(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
 
 const LAYERS_ASK_LEAD = "About this branch, not about this line."
 
@@ -682,6 +693,7 @@ export class App {
       "branch.pull": () => this.showPull(),
       "compose.open": () => this.compose(),
       "compose.submit": () => this.send(),
+      "held.send": () => this.sendHeld(),
       "palette.run": () => this.runChoice(),
       "comment.next": () => this.walkComments(1),
       "comment.prev": () => this.walkComments(-1),
@@ -1075,8 +1087,20 @@ export class App {
     return { ...state, panelIndex: Math.min(was, last) }
   }
 
+  private heldUnderCursor(): number {
+    if (this.state.focus !== "review") return -1
+    const entry = panelEntry(this.state)
+    if (entry?.section !== "held") return -1
+    return this.state.held.indexOf(entry.comment)
+  }
+
   private removeHere(): Work {
     return Effect.gen({ self: this }, function* () {
+      const waiting = this.heldUnderCursor()
+      if (waiting !== -1) {
+        yield* this.dropHeld(waiting)
+        return
+      }
       const branch = selectedBranch(this.state)
       const thread = threadHere(this.state)
       const id = thread?.id
@@ -1251,7 +1275,7 @@ export class App {
   private forgetLeaving(): void {
     if (this.leaving === undefined) return
     this.leaving = undefined
-    if (this.state.notice === LEAVING_SAID) this.commit(withNoticeHere(this.state, ""))
+    if (this.state.notice === leavingSaid(this.state)) this.commit(withNoticeHere(this.state, ""))
   }
 
   private askedToLeave(): Work {
@@ -1266,7 +1290,7 @@ export class App {
         return
       }
       this.leaving = Date.now()
-      this.commit(withNotice(this.state, LEAVING_SAID))
+      this.commit(withNotice(this.state, leavingSaid(this.state)))
     })
   }
 
@@ -1278,6 +1302,11 @@ export class App {
   private commenting(branch: string, request: CommentRequest): Work<unknown> {
     const worktree = this.worktreeFor(branch)
     return worktree === undefined ? submitComment(request) : commentIn(worktree, request)
+  }
+
+  private sending(branch: string, requests: Written): Work<unknown> {
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined ? submitComments(requests) : commentsIn(worktree, requests)
   }
 
   private settling(branch: string, id: string): Work<{ readonly settled: string }> {
@@ -1533,6 +1562,17 @@ export class App {
         this.commit(withNotice(this.state, "nothing selected"))
         return
       }
+      const body = yield* this.display.written
+      if (this.state.hold) {
+        this.holding({
+          file: patch.path,
+          side: anchor.value.side,
+          start: anchor.value.start,
+          end: anchor.value.end,
+          body,
+        })
+        return
+      }
       yield* this.commenting(branch.branch, {
         repo: this.repo,
         branch: branch.branch,
@@ -1540,12 +1580,59 @@ export class App {
         side: anchor.value.side,
         start: anchor.value.start,
         end: anchor.value.end,
-        body: yield* this.display.written,
+        body,
         id: randomUUID(),
         at: new Date().toISOString(),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
+    })
+  }
+
+  private holding(comment: StagedComment): void {
+    const held = [...this.state.held, comment]
+    this.commit(
+      withNotice(
+        sentAway({ ...this.state, held }),
+        `held — ${countOf(held.length, "comment")} waiting, press C to send`,
+      ),
+    )
+  }
+
+  private dropHeld(at: number): Work {
+    return Effect.sync(() => {
+      const was = this.state.panelIndex
+      const held = this.state.held.filter((_, index) => index !== at)
+      this.commit(withNotice(this.staying({ ...this.state, held }, was), "dropped, it was never sent"))
+    })
+  }
+
+  private sendHeld(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      const [first, ...rest] = this.state.held
+      if (branch === undefined || first === undefined) return
+      const at = new Date().toISOString()
+      const asked = (comment: StagedComment): CommentRequest => ({
+        repo: this.repo,
+        branch: branch.branch,
+        file: comment.file,
+        side: comment.side,
+        start: comment.start,
+        end: comment.end,
+        body: comment.body,
+        id: randomUUID(),
+        at,
+      })
+      const many = this.state.held.length
+      yield* this.sending(branch.branch, [asked(first), ...rest.map(asked)])
+      const sent = yield* this.loadSent(branch.branch)
+      this.commit(
+        withNotice(
+          withSent({ ...this.state, held: [] }, sent),
+          `sent ${countOf(many, "comment")} to the agent`,
+        ),
+      )
     })
   }
 }

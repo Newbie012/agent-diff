@@ -31,11 +31,13 @@ export {
   sentIn,
   saveReport,
   commentIn,
+  commentsIn,
   readPreference,
   readPreferences,
   preferenceValue,
   savePreference,
   submitComment,
+  submitComments,
   submitReply,
   takeComments,
   toggleVouch,
@@ -105,5 +107,5 @@ export {
   UnknownWorktree,
   UnselectableRange,
 } from "./error.ts"
-export type { BranchReading, BranchSummary, PendingComment, ProgressReport, CommentRequest, VouchReport, VouchRequest } from "./commands.ts"
+export type { BranchReading, BranchSummary, PendingComment, ProgressReport, CommentRequest, Written, VouchReport, VouchRequest } from "./commands.ts"
 export type { Options } from "./parse.ts"

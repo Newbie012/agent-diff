@@ -1,9 +1,10 @@
 import { TestDriver } from "../driver.ts"
 import { series } from "../state.ts"
-import { noteChecksWith } from "./checking.ts"
+import { noteChecksWith, noteSubject } from "./checking.ts"
 import { tracing } from "./trace.ts"
 import { View } from "./view.ts"
 import type { Scenario, Step } from "./model.ts"
+import type { DeliveredComment } from "../domains/agent/index.ts"
 
 const NAMED: Readonly<Record<string, string>> = {
   enter: "RETURN",
@@ -25,6 +26,7 @@ const bound = (token: string): string =>
 export class Review implements AsyncDisposable {
   readonly driver: TestDriver
   private readonly said: Scenario
+  private worktree = ""
 
   private constructor(driver: TestDriver, said: Scenario) {
     this.driver = driver
@@ -51,6 +53,7 @@ export class Review implements AsyncDisposable {
   private async build(): Promise<void> {
     this.noteChecks()
     const branch = await this.driver.branch.create(this.said.world.branch)
+    this.worktree = branch.worktree
     const layers = this.said.world.layers
     if (layers !== undefined) await this.driver.app.runLayersSet(branch.worktree, layers)
     await this.driver.screen.open({ width: this.said.seat.width, height: this.said.seat.height })
@@ -66,6 +69,18 @@ export class Review implements AsyncDisposable {
 
   private async reach(token: string): Promise<void> {
     if (/^(wait|until):/.test(token)) return
+    if (token === "escape") {
+      await this.driver.screen.pressEscape()
+      return
+    }
+    if (token === "tab") {
+      await this.driver.screen.pressTab()
+      return
+    }
+    if (token === "shift-tab") {
+      await this.driver.screen.pressShiftTab()
+      return
+    }
     const text = typed(token)
     if (text === undefined) {
       await this.driver.screen.pressKeys([bound(token)])
@@ -81,6 +96,16 @@ export class Review implements AsyncDisposable {
   async andThen(...steps: ReadonlyArray<Step>): Promise<View> {
     await series(steps, (step) => this.take(step))
     return this.sees()
+  }
+
+  async whatTheAgentGot(): Promise<ReadonlyArray<DeliveredComment>> {
+    noteSubject({ noun: "what the agent got" })
+    return this.driver.agent.listComments(this.worktree)
+  }
+
+  async howManyTimesTheAgentWasTold(): Promise<number> {
+    noteSubject({ noun: "the hand-overs the agent got" })
+    return (await this.driver.agent.listBatches(this.worktree)).length
   }
 
   async sees(): Promise<View> {

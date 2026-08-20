@@ -543,6 +543,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "select.swap": swapEnds,
   "compose.open": openCompose,
   "compose.submit": (state) => state,
+  "held.send": (state) => state,
   "thread.reply": (state) => state,
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1) }),
   "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1) }),

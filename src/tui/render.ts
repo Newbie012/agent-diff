@@ -16,7 +16,7 @@ import {
   type TextChunk,
 } from "@opentui/core"
 import { absurd } from "effect"
-import { displayKey, hintsFor, takesText, type Command } from "./command.ts"
+import { displayKey, hintsFor, takesText, type Command, type Offered } from "./command.ts"
 import { REMAINDER_TITLE } from "../domain/layers/index.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
 import { DiffView, type LinePaint, type Note } from "./diffview.ts"
@@ -70,6 +70,7 @@ import {
   composeBox,
   composeRoom as composeText,
   panelEntries,
+  panelEntry,
   panelShown,
   shownMatches,
   reviewWidth,
@@ -1112,7 +1113,25 @@ const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
         room.title + TITLE_LEAD,
       )
 
+const offeredIn = (state: TuiState): Offered => ({
+  comments: state.sent.length,
+  held: state.held.length,
+  layers: state.layers.length,
+  onThread: state.stop > 0 || threadChosen(state) !== undefined,
+  selecting: state.selecting,
+  reviewed: reviewedCountIn(state),
+  pull: pullHere(state).length > 0,
+  pane: state.screen === "review" ? state.focus : "diff",
+  stale: state.layersStale,
+  onLayers: onLayers(state),
+  hidingRead: state.hideReviewed,
+  hidingSettled: state.hideSettled,
+  onRemoved: threadHere(state)?.removed === true,
+  onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
+})
+
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
+  held: "Waiting to be sent",
   asked: "Waiting on you",
   filed: "Not picked up",
   with: "Picked up, no answer",
@@ -1515,20 +1534,7 @@ export class Screen {
 
   update(state: TuiState): void {
     this.shown = state
-    this.chips = hintsFor(state.screen, {
-      comments: state.sent.length,
-      layers: state.layers.length,
-      onThread: state.stop > 0 || threadChosen(state) !== undefined,
-      selecting: state.selecting,
-      reviewed: reviewedCountIn(state),
-      pull: pullHere(state).length > 0,
-      pane: state.screen === "review" ? state.focus : "diff",
-      stale: state.layersStale,
-      onLayers: onLayers(state),
-      hidingRead: state.hideReviewed,
-      hidingSettled: state.hideSettled,
-      onRemoved: threadHere(state)?.removed === true,
-    })
+    this.chips = hintsFor(state.screen, offeredIn(state))
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
