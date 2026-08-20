@@ -1,9 +1,10 @@
 import { execFileSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { argv, exit, stderr, stdout } from "node:process"
-import { scenarioNamed } from "./scenario.ts"
+import { traceNamed } from "./scenario.ts"
 
 const SIM = "scripts/simulate.ts"
 const SCENARIO = "scripts/scenario.ts"
@@ -19,14 +20,17 @@ const number = (name: string, fallback: number): number => {
   return said === undefined ? fallback : Number(said)
 }
 
-const chosen = value("scenario") === undefined ? undefined : await scenarioNamed(value("scenario") as string)
+const traceAt = value("trace")
+const testName = value("test-name")
+const chosen =
+  traceAt === undefined || testName === undefined ? undefined : traceNamed(traceAt, testName)
 const cols = number("cols", chosen?.seat.width ?? 120)
 const rows = number("rows", chosen?.seat.height ?? 32)
 const keys =
   chosen === undefined
     ? (value("keys") ?? "").split(" ").filter((token) => token.length > 0)
     : chosen.steps.flatMap((step) => step.keys)
-const label = value("label") ?? chosen?.name ?? "after"
+const label = value("label") ?? chosen?.test ?? "after"
 const against = value("against")
 const wanted = value("wait-for") ?? "WORKTREE"
 const filming = argv.includes("--video")
@@ -70,12 +74,14 @@ const stillAt = (root: string, name: string): string => {
 }
 
 const bootArgs = (root: string): ReadonlyArray<string> =>
-  chosen === undefined ? [join(root, SIM)] : [join(root, SCENARIO), chosen.name]
+  chosen === undefined || traceAt === undefined || testName === undefined
+    ? [join(root, SIM)]
+    : [join(root, SCENARIO), traceAt, testName]
 
 const filmAt = (root: string, name: string): string => {
   const tape = join(shots, `${name}.termctrl`)
   const out = join(shots, `${name}.mp4`)
-  const session = `adiff-${name}`
+  const session = `adiff-${createHash("sha256").update(name).digest("hex").slice(0, 10)}`
   run("termctrl", [
     "start", session,
     "--record", tape,

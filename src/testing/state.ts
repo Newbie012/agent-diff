@@ -3,12 +3,14 @@ import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { promisify } from "node:util"
+import { Tracer } from "./scenario/trace.ts"
 
 const exec = promisify(execFile)
 
 export type DriverOptions = { readonly remember?: boolean }
 
 export type DriverState = {
+  readonly tracer: Tracer
   readonly repo: string
   readonly workspace: string
   readonly sessionPath: string | undefined
@@ -57,6 +59,7 @@ export const createDriverState = async (options: DriverOptions = {}): Promise<Dr
   }
 
   return {
+    tracer: new Tracer(),
     repo,
     workspace,
     sessionPath: options.remember === true ? join(workspace, "session.json") : undefined,

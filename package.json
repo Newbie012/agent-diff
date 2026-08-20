@@ -36,7 +36,8 @@
     "prepare": "effect-tsgo patch --oxlint",
     "shot": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/shot.ts",
     "pr-summary": "node scripts/pr-summary.ts",
-    "scenario": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/scenario.ts"
+    "scenario": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/scenario.ts",
+    "record": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/record.ts"
   },
   "engines": {
     "node": ">=22"

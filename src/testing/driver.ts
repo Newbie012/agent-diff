@@ -1,9 +1,13 @@
+import { expect } from "vitest"
 import { AgentTestDriver } from "./domains/agent/index.ts"
 import { AppTestDriver } from "./domains/app/index.ts"
 import { BranchTestDriver } from "./domains/branch/index.ts"
 import { ForgeTestDriver } from "./domains/forge/index.ts"
 import { ScreenTestDriver } from "./domains/screen/index.ts"
 import { createDriverState, type DriverOptions, type DriverState } from "./state.ts"
+import { tracing } from "./scenario/trace.ts"
+
+const nameOfTest = (): string => expect.getState().currentTestName ?? "unnamed"
 
 export class TestDriver implements AsyncDisposable {
   readonly repoPath: string
@@ -34,6 +38,7 @@ export class TestDriver implements AsyncDisposable {
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
+    if (tracing()) this.state.tracer.write(nameOfTest())
     await this.screen.close()
     await this.state.dispose()
   }

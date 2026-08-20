@@ -118,7 +118,12 @@ export class ScreenTestDriver {
     this.state = state
   }
 
+  private noteSeat(options: OpenOptions): void {
+    this.state.tracer.sawSeat({ width: options.width ?? WIDTH, height: options.height ?? HEIGHT })
+  }
+
   async open(options: OpenOptions = {}): Promise<void> {
+    this.noteSeat(options)
     this.watchClipboard()
     if (options.upgrades === true) delete process.env["ADIFF_NO_UPGRADE_CHECK"]
     else process.env["ADIFF_NO_UPGRADE_CHECK"] = "1"
@@ -243,6 +248,7 @@ export class ScreenTestDriver {
   }
 
   async pressKeys(keys: ReadonlyArray<string>): Promise<void> {
+    this.state.tracer.sawKeys(keys)
     const setup = this.active()
     for (const key of keys) {
       const chord = /^(ctrl|shift)\+(.+)$/.exec(key)
@@ -254,6 +260,7 @@ export class ScreenTestDriver {
   }
 
   async typeText(text: string): Promise<void> {
+    this.state.tracer.sawText(text)
     const setup = this.active()
     await setup.mockInput.typeText(text)
     await this.app?.settled()
