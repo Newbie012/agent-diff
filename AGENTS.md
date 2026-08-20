@@ -52,22 +52,16 @@ the code. `.agents/EFFECT.md` is the full contract.
 
 ## How to write here
 
-Write for the reader, not for the sentence. The four rules below are one failure showing up in four
-places: prose composed to be admired. It is the most common defect in this repository, and it costs
-a reader the fact they came for.
+Write for the reader, not for the sentence. Load the `plain-english` skill and follow it, for PR
+bodies, change intents, PRD contracts, test titles and commit messages alike.
 
-- **State it, do not gesture at it.** "says so", "that way", "the one you have" leave the noun out
-  because the ellipsis sounds elegant. Name the thing.
-- **Nothing on a screen has a mind.** A pane shows, lists, marks, counts or reads. A command
-  prints, names or exits. None of them says, knows, wants, teaches or asks. A hundred of these are
-  still in `.agents/` and `src/`.
-- **Do not argue by aphorism.** "A preference nobody can find is a preference nobody has" restates
-  the claim in a pleasing shape. Give the reason in the plain case instead.
-- **Do not define by contrast.** "X rather than Y" puts a Y in the reader's head that was never
-  there. 88 of these are in the PRDs. Describe what is there.
+Three things that skill leaves out, which this repo gets wrong most often:
 
-This holds for test titles, PRD contracts, change intents, PR bodies and commit messages. A sentence
-you are pleased with is worth rereading.
+- Name the subject. "says so" and "that way" borrow a noun the reader cannot see.
+- A pane shows, lists, marks, counts or reads. A command prints, names or exits.
+- Give the reason in the plain case. An aphorism sounds like a reason and carries none.
+
+A sentence you are pleased with is worth rereading.
 
 ## Shipping
 
