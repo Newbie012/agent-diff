@@ -6,7 +6,7 @@ import { storeAt } from "../src/service/store/index.ts"
 import { launch } from "../src/tui/index.ts"
 import { markSetNames, useMarks } from "../src/tui/marks.ts"
 import { createWorkspace } from "./simulation/workspace.ts"
-import { seedRemarks } from "./simulation/seed.ts"
+import { seedComments } from "./simulation/seed.ts"
 
 const WIDTH = 108
 const HEIGHT = 20
@@ -14,7 +14,7 @@ const wanted = process.argv.slice(2).filter((token) => !token.startsWith("--"))
 const names = wanted.length > 0 ? wanted : markSetNames
 
 const space = await createWorkspace({ branches: 1 })
-await seedRemarks(space)
+await seedComments(space)
 
 const rule = "─".repeat(WIDTH)
 

@@ -14,9 +14,16 @@ export const tracesIn = (path: string): ReadonlyArray<Trace> =>
 
 export const traceNamed = (path: string, test: string): Trace => {
   const every = tracesIn(path)
-  const found = every.find((held) => held.test === test)
+  const found = every.findLast((held) => held.test === test)
   if (found === undefined) {
     stderr.write(`No trace for ${test}. There are ${every.length}.\n`)
+    exit(1)
+  }
+  const beyond = found.cannotReplay ?? []
+  if (beyond.length > 0) {
+    stderr.write(
+      `${test} drives adiff with ${beyond.join(" and ")}, which a replay cannot do, so this trace would capture the wrong screen. Write the test with keys instead, or leave it uncaptured.\n`,
+    )
     exit(1)
   }
   return found

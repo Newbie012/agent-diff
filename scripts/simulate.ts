@@ -13,7 +13,11 @@ import { createWorkspace, series, type Branch, type Workspace } from "./simulati
 
 const exec = promisify(execFile)
 
-type Comment = { readonly body: string; readonly file: string }
+type Comment = {
+  readonly body: string
+  readonly file: string
+  readonly answers?: ReadonlyArray<string>
+}
 
 type Args = {
   branches: number
@@ -50,6 +54,7 @@ type Envelope = {
   readonly ok: boolean
   readonly branches?: ReadonlyArray<{ readonly branch: string }>
   readonly comments?: ReadonlyArray<Comment>
+  readonly drafts?: ReadonlyArray<unknown>
 }
 
 const adiff = async (
@@ -82,9 +87,21 @@ const runAgents = async (space: Workspace, alive: () => boolean): Promise<void> 
   await runAgents(space, alive)
 }
 
+const seededOn = async (space: Workspace, branch: Branch): Promise<string | undefined> => {
+  const listed = await adiff(space, ["comment", "list", "--worktree", "."], branch.worktree)
+  const held = await adiff(space, ["draft", "list", "--worktree", "."], branch.worktree)
+  const comments = listed?.comments ?? []
+  const drafts = held?.drafts ?? []
+  const answered = comments.filter((one) => (one.answers ?? []).length > 0)
+  if (comments.length === 0 && drafts.length === 0) return undefined
+  return `${branch.name}: ${comments.length} sent, ${answered.length} answered, ${drafts.length} held`
+}
+
 const probe = async (space: Workspace): Promise<void> => {
   const branch = space.branches[0]
   if (branch === undefined) return
+  const seeded = await Promise.all(space.branches.map((one) => seededOn(space, one)))
+  for (const said of seeded) if (said !== undefined) console.log("seeded     ", said)
   const listed = await adiff(space, ["branch", "list", "--repo", "."], space.repo)
   console.log("branches   ", JSON.stringify(listed))
   const file = "src/api/invitations.ts"
