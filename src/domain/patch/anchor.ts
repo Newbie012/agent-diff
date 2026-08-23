@@ -66,6 +66,15 @@ const runsAt = (
     return here !== undefined && here.text === text && here.line === (lines[at]?.line ?? 0) + step
   })
 
+const nearestRun = (
+  lines: ReadonlyArray<{ readonly line: number; readonly text: string }>,
+  said: ReadonlyArray<string>,
+  near: number,
+): number | undefined =>
+  lines
+    .flatMap((here, at) => (runsAt(lines, said, at) ? [here.line] : []))
+    .toSorted((one, other) => Math.abs(one - near) - Math.abs(other - near))[0]
+
 export const foundAgain = (
   patch: Patch,
   wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
@@ -73,10 +82,13 @@ export const foundAgain = (
   const said = wanted.snippet.split("\n")
   if (said.every((text) => text.trim().length === 0)) return Option.none()
   const lines = sideLines(patch, wanted.side)
-  const starts = lines.flatMap((here, at) => (runsAt(lines, said, at) ? [here.line] : []))
-  const nearest = starts.toSorted(
-    (one, other) => Math.abs(one - wanted.start) - Math.abs(other - wanted.start),
-  )[0]
-  if (nearest === undefined) return Option.none()
-  return Option.some({ side: wanted.side, start: nearest, end: nearest + said.length - 1 })
+  const whole = nearestRun(lines, said, wanted.start)
+  if (whole !== undefined) {
+    return Option.some({ side: wanted.side, start: whole, end: whole + said.length - 1 })
+  }
+  const first = said[0] ?? ""
+  if (said.length === 1 || first.trim().length === 0) return Option.none()
+  const opening = nearestRun(lines, [first], wanted.start)
+  if (opening === undefined) return Option.none()
+  return Option.some({ side: wanted.side, start: opening, end: opening })
 }

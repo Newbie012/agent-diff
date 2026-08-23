@@ -347,7 +347,7 @@ const sentOf = (
     settled: Object.hasOwn(settled, comment.id),
     removed: Object.hasOwn(removed, comment.id),
     stale: comment.head !== head,
-    outside: !shown.has(comment.file),
+    outside: !shown.has(comment.file) || comment.placed === false,
     unread: Math.max(0, said.length - seen),
     asks: last?.voice === "agent" && last.asks,
     ...(takenAt === undefined ? {} : { takenAt }),
@@ -361,10 +361,11 @@ const whereItSitsNow = (
   comment: PendingComment,
 ): PendingComment => {
   const patch = patches.find((candidate) => candidate.path === comment.file)
-  if (patch === undefined) return comment
+  if (patch === undefined) return { ...comment, placed: false }
+  if (comment.snippet.trim().length === 0) return { ...comment, placed: true }
   return Option.match(foundAgain(patch, comment), {
-    onNone: () => comment,
-    onSome: (range) => ({ ...comment, start: range.start, end: range.end }),
+    onNone: () => ({ ...comment, placed: false }),
+    onSome: (range) => ({ ...comment, start: range.start, end: range.end, placed: true }),
   })
 }
 
@@ -540,6 +541,7 @@ export type PendingComment = {
   readonly end: number
   readonly snippet: string
   readonly body: string
+  readonly placed?: boolean | undefined
   readonly replyTo?: string | undefined
   readonly thread?: ReadonlyArray<Turn> | undefined
 }

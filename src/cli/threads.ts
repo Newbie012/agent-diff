@@ -60,12 +60,13 @@ type Reading = {
 const whereItSitsNow = (
   patches: ReadonlyArray<Patch>,
   anchor: Batch["comments"][number]["anchor"],
-): { readonly start: number; readonly end: number } => {
+): { readonly start: number; readonly end: number; readonly placed: boolean } => {
   const patch = patches.find((candidate) => candidate.path === anchor.path)
-  if (patch === undefined) return anchor
+  if (patch === undefined) return { ...anchor, placed: false }
+  if (anchor.snippet.trim().length === 0) return { ...anchor, placed: true }
   return Option.match(foundAgain(patch, anchor), {
-    onNone: () => anchor,
-    onSome: (range) => range,
+    onNone: () => ({ ...anchor, placed: false }),
+    onSome: (range) => ({ ...range, placed: true }),
   })
 }
 
@@ -110,7 +111,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, reading: Reading): T
     body: comment.body,
     state: stateOf(turns, mine.at(-1)?.asks === true, settled, Object.hasOwn(reading.removed, comment.id)),
     stale: batch.head !== reading.head,
-    outside: !reading.shown.has(comment.anchor.path),
+    outside: !reading.shown.has(comment.anchor.path) || !sits.placed,
     unread: Math.max(0, mine.length - seen),
     answers: mine.map(spoken),
     turns,
