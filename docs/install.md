@@ -20,6 +20,19 @@ bun add -g @eliya-oss/agent-diff@alpha
 
 bun installs the package; adiff itself runs on Node.
 
+## The skill
+
+```bash
+npx skills add Newbie012/agent-diff --skill adiff -g
+```
+
+The skill teaches your agent to pick up your comments. It asks which agent you use, and knows Claude
+Code, Codex, Cursor, OpenCode and seventy-odd others. Name yours up front with `--agent codex`,
+repeat the flag for more than one, or pass `--agent '*'` for all.
+
+`-g` puts the skill in your home directory. Written into a repository instead, the skill reaches an
+agent working in a worktree only once you commit it, so drop `-g` when your team wants it committed.
+
 ## Homebrew
 
 ```bash
