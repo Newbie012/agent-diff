@@ -124,9 +124,10 @@ file ([PRD 011](011-preferences.md)), which this PRD reuses rather than redefine
 - **An unreachable forge is a refusal, not a loss.** Every draft stays exactly as it was, and the
   message says what could not be reached.
 
-- **The agent can read drafts and write one, and can never send.** There is a command to list
-  drafts and a command to add one; there is no command that dispatches. The one thing that puts
-  words under somebody else's name is done by the person whose name it is.
+- **The agent can read drafts and write one, and never sends.** `draft send` dispatches, and it is
+  the reviewer's command: the agent lists drafts and adds them, and the skill tells it to leave the
+  sending alone. The one thing that puts words under somebody else's name is done by the person
+  whose name it is.
 
 - **A draft the agent wrote is a draft like any other.** The reviewer sees it, edits it, drops it,
   and sends it. It is not marked as the agent's work on the pull request, because the reviewer is

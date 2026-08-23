@@ -302,8 +302,8 @@ adiff draft drop --repo . --branch their-change --id d1
 
 Rules for drafting on somebody else's behalf:
 
-- **You never send.** There is no command that dispatches, on purpose. The reviewer signs the
-  review, so the reviewer sends it.
+- **You never send.** `draft send` exists and it is the reviewer's, not yours. The reviewer signs
+  the review, so the reviewer sends it.
 - **Write what the reviewer meant, not what you would say.** They told you the point; your job is
   the wording. If you are not sure what the point is, ask rather than inventing one.
 - **One draft per point.** A held comment that covers three things cannot be dropped in part.
