@@ -65,7 +65,7 @@ takes either.
 | `layers show` | `<review>` | `{ok, layers}` |
 | `review open` | `--repo` | opens the terminal |
 | `review pane` | `--repo` | `{ok, opened, pane, command}` |
-| `init` | `--repo [--write] [--skill]` | `{ok, wrote, changes}` |
+| `init` | `[--repo] [--check] [--no-skill]` | `{ok, wrote, changes}` |
 | `upgrade` | `[--check] [--json]` | plain text, or `{ok, upgrade}` |
 | `skill refresh` | `[--json]` | `{ok, changes}` |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |

@@ -68,23 +68,25 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   of the running executable and adiff's own module, which is right in every install anyone has hit
   and unprovable in a test that upgrades nothing for real. Naming the route makes each one
   observable, and gives an operator whose install detection guesses wrong a way to say so.
-- **The agent skill ships in the repo** at `skills/adiff/SKILL.md` and is installed by symlinking
-  the directory into the agent's skills path. adiff never installs it automatically; touching an
-  agent's configuration is the operator's decision.
+- **The agent skill ships in the repo** at `skills/adiff/SKILL.md`. `init` writes a copy into the
+  repository under review, and an operator who wants it for every repository symlinks the directory
+  into the agent's skills path. adiff never touches an agent's own configuration.
 - **`adiff init` writes the loop into the repository under review**, so an agent that reads a
   repository's instructions finds it without anyone naming adiff. It writes a passage naming
   `comment take --wait`, `comment answer` and `describe` into `AGENTS.md`, and a `CLAUDE.md` that
   imports `AGENTS.md`, which is how a harness that reads only its own file sees the same text once.
-- **`init` reports before it writes.** With no `--write` it answers with what each file would
-  become and touches nothing. That is what asking looks like on a surface an agent also calls.
+- **`init` writes where it is run.** `adiff init` with nothing after it writes into the current
+  directory, so getting started is installing adiff and running one command. `--repo` names another
+  directory, and `--check` answers with what each file would become and touches nothing.
 - **`init` writes inside sentinels and nowhere else.** A block runs from `<!-- adiff:begin -->` to
   `<!-- adiff:end -->`. A file without the sentinels is appended to, a file with them has that
   block replaced, and content outside them is never read for meaning or rewritten. Re-running
   changes nothing and answers `unchanged`. Removing adiff from a repository is deleting the block.
-- **The skill is committed only when asked.** `init --skill` writes `.claude/skills/adiff/SKILL.md`,
-  which Claude Code loads natively and Cursor and Codex accept for compatibility. Committing a
-  skill directory into a repository other people share is a larger imposition than four lines of
-  markdown, so it is a separate decision from the instructions.
+- **`init` installs the skill as well.** It writes `.claude/skills/adiff/SKILL.md`, which Claude
+  Code loads natively and Cursor and Codex accept for compatibility. Without it an agent has the
+  four commands and not the loop they belong to, which is the state most people got stuck in.
+  `--no-skill` leaves it out, for a repository where committing a skill directory is someone
+  else's call.
 - **Copied text is offered to the terminal and to the machine.** A terminal is told through the
   escape that carries a clipboard, wrapped for tmux and screen, which swallow it otherwise. The
   machine is told through whatever it has — pbcopy, wl-copy, xclip, clip — because a terminal that
@@ -123,11 +125,12 @@ Behaviors that must be covered:
 - Every command test runs against a store root set by `ADIFF_ROOT`, proving the override works.
 - The binary starts under a real Node process, proving the flag plumbing works. Any test failing
   to start is this contract breaking.
-- `init` without `--write` reports the changes and leaves the repository as it found it.
-- `init --write` puts the loop in `AGENTS.md` and an import in `CLAUDE.md`.
-- A second `init --write` answers `unchanged` and leaves one block, not two.
+- `adiff init` in a repository, with no options, puts the loop in `AGENTS.md`, an import in
+  `CLAUDE.md`, and the skill in `.claude/skills/adiff/`.
+- `init --check` reports the same changes and leaves the repository as it found it.
+- A second `init` answers `unchanged` and leaves one block, not two.
 - A file someone else wrote keeps its content and gains the block at the end.
-- The skill lands only when `--skill` asks for it.
+- `init --no-skill` writes the instructions and leaves the skill directory alone.
 
 ## Out of Scope
 

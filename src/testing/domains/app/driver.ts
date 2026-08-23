@@ -250,14 +250,20 @@ export class AppTestDriver {
     return this.run(["review", "pane", "--repo", this.state.repo], options.env ?? {})
   }
 
-  runInit(options: { readonly write?: boolean; readonly skill?: boolean } = {}): Promise<CliResult> {
+  runInit(
+    options: { readonly check?: boolean; readonly skill?: boolean } = {},
+  ): Promise<CliResult> {
     return this.run([
       "init",
       "--repo",
       this.state.repo,
-      ...(options.write === true ? ["--write"] : []),
-      ...(options.skill === true ? ["--skill"] : []),
+      ...(options.check === true ? ["--check"] : []),
+      ...(options.skill === false ? ["--no-skill"] : []),
     ])
+  }
+
+  runInitHere(): Promise<CliResult> {
+    return this.run(["init"], {}, this.state.repo)
   }
 
   async writeFileAt(name: string, contents: string): Promise<void> {

@@ -293,9 +293,9 @@ const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
 
 const init = Effect.fn("Main.init")(function* (options: Options) {
   const report = yield* initRepository({
-    repo: yield* required(options, "repo"),
-    write: options["write"] !== undefined,
-    skill: options["skill"] !== undefined,
+    repo: options["repo"] ?? process.cwd(),
+    write: options["check"] === undefined,
+    skill: options["no-skill"] === undefined,
   })
   yield* answer(options, { wrote: report.wrote, changes: report.changes })
 })

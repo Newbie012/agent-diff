@@ -6,44 +6,32 @@ An agent finishes a piece of work and leaves you a diff. adiff puts the conversa
 you comment on the lines in a terminal, the agent that wrote them answers under your words, and a
 point stays open until you settle it.
 
-<pre align="center">brew install Newbie012/tap/adiff</pre>
-
-<p align="center"><a href="docs/install.md">Other ways to install</a></p>
-
 <img src="assets/terminal.webp" alt="The adiff worktree list, showing seven branches with their sizes, layers and review state" width="820">
 
 </div>
 
 ## Getting started
 
-Install adiff, then teach the repository what it is:
+Two commands. The first installs adiff, the second tells this repository that review happens here:
 
 ```bash
 brew install Newbie012/tap/adiff
-adiff init --write --skill
+adiff init
 ```
 
-`init` writes a short passage into `AGENTS.md` and a `CLAUDE.md` that imports it, and `--skill`
-writes the full skill into `.claude/skills/adiff/`. Then ask your agent to walk you through it:
+[Other ways to install](docs/install.md), if you would rather not use Homebrew.
+
+`init` writes a short passage into `AGENTS.md`, a `CLAUDE.md` that imports it, and the adiff skill
+into `.claude/skills/adiff/`, so an agent working here picks up your comments without anyone naming
+the tool. `adiff init --check` shows what it would write and writes nothing.
+
+Then ask your agent to walk you through it:
 
 > Read the adiff skill and onboard me: hand your current work over for review, and tell me what to
 > press.
 
 From then on the loop is: the agent hands work over, you read it, and it answers what you wrote.
-
-## Reviewing
-
-```bash
-adiff review open --repo .
-```
-
-`j` and `k` move down the diff, `[` and `]` between files, `v` starts a selection and `c` writes a
-comment that `ctrl+s` sends. `d` settles the thread you are on, `m` marks a file reviewed, `y`
-copies the line you are on, and dragging over lines copies them. `?` lists every key and filters as
-you type. The footer carries the keys of whichever pane you are in.
-
-`,` opens the preferences and turns any of it on or off. Turn on holding and a comment waits with
-the others until `C` sends them to the agent as one review.
+Open a review yourself with `adiff review open --repo .`, and press `?` for every key.
 
 ## For agents
 

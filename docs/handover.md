@@ -78,14 +78,15 @@ record the commit they were written for, and adiff marks them stale once the bra
 ## Setting up a repository
 
 ```bash
-adiff init            # shows what it would write
-adiff init --write    # writes it
+adiff init            # writes it into the current directory
+adiff init --check    # shows what it would write, and writes nothing
 ```
 
 Writes a short passage into `AGENTS.md` and a `CLAUDE.md` that imports it, telling any agent working
-in that repository how the handover runs. It sits between `<!-- adiff:begin -->` and
-`<!-- adiff:end -->`, so a second run changes nothing and removing it is deleting a block you can
-see. `--skill` also writes the full skill into `.claude/skills/adiff/`.
+in that repository how the handover runs, and the full skill into `.claude/skills/adiff/`. The
+passage sits between `<!-- adiff:begin -->` and `<!-- adiff:end -->`, so a second run changes nothing
+and removing it is deleting a block you can see. `--no-skill` writes the passage alone, and `--repo`
+names a directory other than the one you are in.
 
 For a per-machine install instead:
 
