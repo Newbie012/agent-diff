@@ -57,6 +57,12 @@ says what happened, the driver knows how.
   because a capture is uploaded to GitHub before anyone looks at it, and a still of the wrong
   screen is believed.
 
+- **`--local` writes a capture and uploads nothing.** Every other route uploads before a human sees
+  the frame, and an attachment cannot be deleted, so the instruction to read a still before pasting
+  it could only be followed by publishing the still first. `--local` keeps the file in `shots/` and
+  prints its path in place of the markdown, so a frame is read at no cost and published on a second
+  run. It keeps the file the way `--keep` does, and the before-and-after pair prints both paths.
+
 
 - **A branch has shapes, and the properties are checked against all of them.** Every defect the
   fixtures missed was a shape they never took: a folder holding more files than the tree opens, a

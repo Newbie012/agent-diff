@@ -41,7 +41,8 @@ const label = value("label") ?? chosen?.test ?? "after"
 const against = value("against")
 const wanted = value("wait-for") ?? "BRANCH"
 const filming = argv.includes("--video")
-const keeping = argv.includes("--keep")
+const local = argv.includes("--local")
+const keeping = argv.includes("--keep") || local
 
 const run = (command: string, args: ReadonlyArray<string>): string =>
   execFileSync(command, [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] }).trim()
@@ -302,6 +303,10 @@ const here = git("rev-parse", "--show-toplevel")
 
 if (filming) {
   const film = filmAt(here, slug)
+  if (local) {
+    stdout.write(`\n${film}\n`)
+    exit(0)
+  }
   stdout.write(`\n${uploaded(film)}\n`)
   if (!keeping) rmSync(film, { force: true })
   exit(0)
@@ -310,6 +315,10 @@ if (filming) {
 const after = stillAt(here, `${slug}-after`)
 
 if (against === undefined) {
+  if (local) {
+    stdout.write(`\n${after}\n`)
+    exit(0)
+  }
   stdout.write(`\n![${label}](${uploaded(after)})\n`)
   if (!keeping) rmSync(after, { force: true })
   exit(0)
@@ -326,6 +335,11 @@ if (readFileSync(before).equals(readFileSync(after))) {
     rmSync(after, { force: true })
   }
   exit(1)
+}
+
+if (local) {
+  stdout.write(`\n${before}\n${after}\n`)
+  exit(0)
 }
 
 stdout.write(
