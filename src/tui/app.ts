@@ -318,6 +318,7 @@ export class App {
   private readonly intents: Queue.Queue<Intent>
   private consuming: Fiber.Fiber<void> | undefined
   private failure = ""
+  private failureKind = ""
   private reading: BranchReading | undefined
 
   private readonly renderer: CliRenderer
@@ -494,6 +495,7 @@ export class App {
 
   private fail(cause: unknown): void {
     this.failure = cause instanceof Error ? `${cause.message}\n${cause.stack ?? ""}` : String(cause)
+    this.failureKind = cause instanceof Error ? cause.name : "a failure with no name"
   }
 
   lastFailure(): string {
@@ -1493,6 +1495,7 @@ export class App {
         keys: this.keys,
         trail: this.trail,
         failure: this.failure,
+        failureKind: this.failureKind,
         width: this.renderer.width,
         height: this.renderer.height,
       })
