@@ -236,6 +236,12 @@
   dir: ""
   intents:
     - a-comment-follows-its-code
+"@eliya-oss/agent-diff@0.1.0-alpha.143":
+  dir: ""
+  intents:
+    - a-comment-finds-its-line
+    - getting-started-is-two-commands
+    - the-base-the-terminal-was-opened-with
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
