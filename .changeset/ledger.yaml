@@ -228,6 +228,10 @@
   dir: ""
   intents:
     - comments-that-wait-until-you-send-them
+"@eliya-oss/agent-diff@0.1.0-alpha.141":
+  dir: ""
+  intents:
+    - a-wait-that-is-not-waiting
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
