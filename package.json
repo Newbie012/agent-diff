@@ -20,7 +20,6 @@
   "scripts": {
     "check": "pnpm run typecheck && pnpm run lint && pnpm run build && pnpm test",
     "build": "rolldown -c rolldown.config.ts",
-    "embed-skill": "node --experimental-ffi --disable-warning=ExperimentalWarning scripts/embed-skill.ts",
     "prepack": "pnpm run build",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint && node scripts/check-rules.ts",

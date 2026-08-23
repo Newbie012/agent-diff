@@ -106,25 +106,3 @@ jobs:
           '
           echo "::notice::$ASSET reports $VERSION and answers describe with no runtime on PATH."
 
-      - name: check it carries the skill
-        env:
-          ASSET: ${{ matrix.asset }}
-        run: |
-          BIN="$PWD/$ASSET"
-          WHERE=$(mktemp -d)
-          mkdir -p "$WHERE/.claude/skills/adiff"
-          printf 'a skill an older adiff wrote\n' > "$WHERE/.claude/skills/adiff/SKILL.md"
-          cd "$WHERE"
-          HOME="$WHERE" "$BIN" skill refresh --json > refreshed.json || {
-            echo "::error::$ASSET could not refresh an installed skill. The skill is not travelling inside the build."
-            cat refreshed.json
-            exit 1
-          }
-          node -e '
-            const fs = require("fs")
-            const written = fs.readFileSync(".claude/skills/adiff/SKILL.md", "utf8")
-            if (!written.includes("name: adiff")) {
-              throw new Error("the binary wrote something that is not the skill")
-            }
-          '
-          echo "::notice::$ASSET refreshes an installed skill from the copy compiled into it."

@@ -21,14 +21,15 @@ pick up your comments:
 
 ```bash
 brew install Newbie012/tap/adiff
-npx skills add Newbie012/agent-diff --skill adiff -g -y -a claude-code
+npx skills add Newbie012/agent-diff --skill adiff -g
 ```
 
-The flags matter. `-g` puts the skill in your home directory rather than in the repository you are
-standing in, which is what reaches an agent working in a worktree; `-y` and `-a claude-code` answer
-the questions the skills CLI asks otherwise. Nothing lands in the repository, so there is nothing to
-commit and nothing a teammate inherits — drop `-g` if your team has adopted adiff and wants the skill
-in the repo.
+It asks which agent you use — Claude Code, Codex, Cursor, OpenCode and seventy-odd others — or you
+can name it up front with `--agent codex`, more than once for more than one, or `--agent '*'` for all
+of them. `-g` is the flag worth keeping: it puts the skill in your home directory rather than in the
+repository you are standing in, and a skill written into the repository is invisible to an agent
+working in a worktree of it unless you commit it. Drop `-g` if your team has adopted adiff and wants
+it committed.
 
 Your agent finds the skill on its own from there.
 

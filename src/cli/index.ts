@@ -43,11 +43,10 @@ export {
   toggleVouch,
   vouchIn,
 } from "./commands.ts"
-export { refreshSkill } from "./skill.ts"
 export { openPane } from "./pane.ts"
-export { refreshSkills, sayRefreshed } from "./upgrade.ts"
 export {
   askLatest,
+  SAY_SKILL_TOO,
   findUpgrade,
   newer,
   runUpgrade,
@@ -56,8 +55,7 @@ export {
   upgradeReport,
   willUpgrade,
 } from "./upgrade.ts"
-export type { Route, SkillsRefreshed, UpgradeFound, UpgradeReport } from "./upgrade.ts"
-export type { Change, SkillReport } from "./skill.ts"
+export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
 export { searchBranch, searchIn } from "./search.ts"
 export type { Match } from "./search.ts"
 export { layersIn, setLayers, showLayers } from "./layers.ts"
