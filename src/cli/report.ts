@@ -67,6 +67,23 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "No comment carries that id. `adiff comment take` reports the ids an agent can answer, and `adiff comment list` reports every id on a review.",
     retriable: false,
   },
+  UnknownRemark: {
+    exit: NOT_FOUND,
+    suggestion:
+      "No remark on this pull request carries that id. `adiff remark list` reports the ids it holds.",
+    retriable: false,
+  },
+  NothingSaid: {
+    exit: NOT_FOUND,
+    suggestion: "Nothing was written. Pass `--body` with what you mean to say.",
+    retriable: false,
+  },
+  RemarkTaken: {
+    exit: NOT_FOUND,
+    suggestion:
+      "That remark is already a comment on this review. `adiff comment list` reports it, and removing that comment frees the remark.",
+    retriable: false,
+  },
   UnknownField: {
     exit: USAGE,
     suggestion: "That is not a field this answer carries. The ones it does are named above.",

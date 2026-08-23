@@ -22,6 +22,27 @@ export type Sent = {
   readonly url: string
 }
 
+export type ForgeSaid = {
+  readonly by: string
+  readonly body: string
+}
+
+export type ForgeRemark = {
+  readonly id: string
+  readonly answerTo: number
+  readonly replies: ReadonlyArray<ForgeSaid>
+  readonly path: string
+  readonly side: "old" | "new"
+  readonly line: number
+  readonly start: number
+  readonly by: string
+  readonly body: string
+  readonly moreReplies: number
+  readonly hunk: string
+  readonly commit: string
+  readonly outdated: boolean
+}
+
 export type Shape = {
   readonly pulls: (repo: string) => Effect.Effect<ReadonlyArray<Pull>, ForgeUnavailable>
   readonly openPull: (repo: string, branch: string) => Effect.Effect<void, ForgeUnavailable>
@@ -31,6 +52,16 @@ export type Shape = {
     branch: string,
     comments: ReadonlyArray<ForgeComment>,
   ) => Effect.Effect<Sent, ForgeUnavailable>
+  readonly remarks: (
+    repo: string,
+    branch: string,
+  ) => Effect.Effect<ReadonlyArray<ForgeRemark>, ForgeUnavailable>
+  readonly answer: (
+    repo: string,
+    branch: string,
+    answerTo: number,
+    body: string,
+  ) => Effect.Effect<void, ForgeUnavailable>
 }
 
 export class Forge extends Context.Service<Forge, Shape>()("adiff/Forge") {}
@@ -224,6 +255,207 @@ const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArr
   })
 }
 
+const THREADS = `query($owner:String!,$name:String!,$number:Int!,$after:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviewThreads(first:50,after:$after){
+        pageInfo{ hasNextPage endCursor }
+        nodes{
+          id isResolved isOutdated path diffSide
+          line originalLine startLine originalStartLine
+          comments(first:50){
+            totalCount
+            nodes{ databaseId author{login} body diffHunk originalCommit{oid} }
+          }
+        }
+      }
+    }
+  }
+}`
+
+const Said = Schema.Struct({
+  databaseId: Schema.optionalKey(Schema.NullishOr(Schema.Int)),
+  author: Schema.optionalKey(Schema.NullishOr(Schema.Struct({ login: Schema.String }))),
+  body: Schema.String,
+  diffHunk: Schema.optionalKey(Schema.NullishOr(Schema.String)),
+  originalCommit: Schema.optionalKey(Schema.NullishOr(Schema.Struct({ oid: Schema.String }))),
+})
+
+const Thread = Schema.Struct({
+  id: Schema.String,
+  isResolved: Schema.Boolean,
+  isOutdated: Schema.Boolean,
+  path: Schema.String,
+  line: Schema.optionalKey(Schema.NullishOr(Schema.Int)),
+  originalLine: Schema.optionalKey(Schema.NullishOr(Schema.Int)),
+  startLine: Schema.optionalKey(Schema.NullishOr(Schema.Int)),
+  originalStartLine: Schema.optionalKey(Schema.NullishOr(Schema.Int)),
+  diffSide: Schema.String,
+  comments: Schema.Struct({
+    totalCount: Schema.optionalKey(Schema.NullishOr(Schema.Int)),
+    nodes: Schema.Array(Said),
+  }),
+})
+
+const Page = Schema.Struct({
+  hasNextPage: Schema.Boolean,
+  endCursor: Schema.optionalKey(Schema.NullishOr(Schema.String)),
+})
+
+const Threads = Schema.Struct({
+  data: Schema.Struct({
+    repository: Schema.Struct({
+      pullRequest: Schema.Struct({
+        reviewThreads: Schema.Struct({
+          pageInfo: Schema.optionalKey(Page),
+          nodes: Schema.Array(Thread),
+        }),
+      }),
+    }),
+  }),
+})
+
+const readThreads = Schema.decodeUnknownEffect(Threads)
+
+const ANONYMOUS = "someone"
+
+const heardFrom = (said: typeof Said.Type): ForgeSaid => ({
+  by: said.author?.login ?? ANONYMOUS,
+  body: said.body,
+})
+
+const someLine = (...found: ReadonlyArray<number | null | undefined>): number | undefined =>
+  found.find((one) => one !== null && one !== undefined) ?? undefined
+
+const hasNoLine = (thread: typeof Thread.Type): boolean =>
+  thread.line === null || thread.line === undefined
+
+const quotedIn = (said: typeof Said.Type): { readonly hunk: string; readonly commit: string } => ({
+  hunk: said.diffHunk ?? "",
+  commit: said.originalCommit?.oid ?? "",
+})
+
+const spanIn = (
+  thread: typeof Thread.Type,
+  line: number,
+): { readonly line: number; readonly start: number } => ({
+  line,
+  start: someLine(thread.startLine, thread.originalStartLine) ?? line,
+})
+
+const remarkOf = (thread: typeof Thread.Type): ForgeRemark | undefined => {
+  const [first, ...rest] = thread.comments.nodes
+  const line = someLine(thread.line, thread.originalLine)
+  if (first === undefined || line === undefined) return undefined
+  return {
+    id: thread.id,
+    answerTo: first.databaseId ?? 0,
+    moreReplies: Math.max(0, (thread.comments.totalCount ?? 0) - thread.comments.nodes.length),
+    path: thread.path,
+    side: thread.diffSide === "LEFT" ? "old" : "new",
+    ...spanIn(thread, line),
+    ...heardFrom(first),
+    ...quotedIn(first),
+    replies: rest.map(heardFrom),
+    outdated: thread.isOutdated || hasNoLine(thread),
+  }
+}
+
+const ownerOf = Effect.fn("Forge.owner")(function* (repo: string) {
+  const said = yield* gh(repo, ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"])
+  const [owner = "", name = ""] = said.trim().split("/")
+  return { owner, name }
+})
+
+type Where = { readonly owner: string; readonly name: string; readonly number: number }
+
+const asked = (repo: string, where: Where, after: string | undefined) =>
+  gh(repo, [
+    "api",
+    "graphql",
+    "-f",
+    `query=${THREADS}`,
+    "-f",
+    `owner=${where.owner}`,
+    "-f",
+    `name=${where.name}`,
+    "-F",
+    `number=${where.number}`,
+    ...(after === undefined ? [] : ["-f", `after=${after}`]),
+  ])
+
+const whereOf = Effect.fn("Forge.whereOf")(function* (repo: string, branch: string) {
+  const pull = yield* named(repo, branch)
+  const here = yield* ownerOf(repo)
+  return { owner: here.owner, name: here.name, number: pull.number } satisfies Where
+})
+
+const threadsIn = Effect.fn("Forge.threadsIn")(function* (repo: string, raw: string) {
+  const parsed = yield* Effect.try({
+    try: () => JSON.parse(raw) as unknown,
+    catch: (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
+  })
+  const held = yield* Effect.mapError(
+    readThreads(parsed),
+    (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
+  )
+  return held.data.repository.pullRequest.reviewThreads
+})
+
+const unresolved = (nodes: ReadonlyArray<typeof Thread.Type>): ReadonlyArray<ForgeRemark> =>
+  nodes
+    .filter((thread) => !thread.isResolved)
+    .flatMap((thread) => {
+      const found = remarkOf(thread)
+      return found === undefined ? [] : [found]
+    })
+
+const PAGES = 20
+
+const everyThread = Effect.fn("Forge.everyThread")(function* (repo: string, where: Where) {
+  const held: Array<typeof Thread.Type> = []
+  let after: string | undefined
+  for (let page = 0; page < PAGES; page += 1) {
+    const raw: string = yield* asked(repo, where, after)
+    const found: typeof Threads.Type["data"]["repository"]["pullRequest"]["reviewThreads"] =
+      yield* threadsIn(repo, raw)
+    held.push(...found.nodes)
+    if (found.pageInfo?.hasNextPage !== true) return held
+    const next = found.pageInfo.endCursor
+    if (next === null || next === undefined) return held
+    after = next
+  }
+  return held
+})
+
+const answer = Effect.fn("Forge.answer")(function* (
+  repo: string,
+  branch: string,
+  answerTo: number,
+  body: string,
+) {
+  const where = yield* whereOf(repo, branch)
+  const route = `repos/${where.owner}/${where.name}/pulls/${where.number}/comments`
+  const said = yield* gh(
+    repo,
+    ["api", "--method", "POST", route, "--input", "-"],
+    JSON.stringify({ body, in_reply_to: answerTo }),
+  )
+  const landed = yield* Effect.try({
+    try: () => JSON.parse(said) as { readonly id?: number },
+    catch: (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
+  })
+  return yield* landed.id === undefined
+    ? new ForgeUnavailable({ repo, reason: "the reply came back with no id" })
+    : Effect.void
+})
+
+const remarks = Effect.fn("Forge.remarks")(function* (repo: string, branch: string) {
+  const open = yield* pulls(repo)
+  if (!open.some((one) => one.branch === branch)) return [] as ReadonlyArray<ForgeRemark>
+  return unresolved(yield* everyThread(repo, yield* whereOf(repo, branch)))
+})
+
 const review = Effect.fn("Forge.review")(function* (
   repo: string,
   branch: string,
@@ -241,4 +473,6 @@ export const ForgeLive: Layer.Layer<Forge> = Layer.succeed(Forge)({
   openPull,
   head,
   review,
+  remarks,
+  answer,
 })

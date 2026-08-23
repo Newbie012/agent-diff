@@ -46,6 +46,13 @@ A git worktree and the ticket branch checked out in it. The unit of review. adif
 
 An anchored note written by the reviewer, belonging to one [branch](#branch).
 
+### Remark
+
+An anchored remark on the [branch](#branch)'s pull request, read from the forge rather than written
+in adiff. It carries the handle that left it, which may be the reviewer's own, and every reply in
+its thread. The reviewer triages it; it reaches the agent only as a [comment](#comment) the reviewer
+accepted.
+
 ### Review
 
 A set of comments submitted together as one hand-over to the agent.

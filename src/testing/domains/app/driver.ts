@@ -119,10 +119,33 @@ export class AppTestDriver {
       state: pull.state.toUpperCase(),
       isDraft: pull.draft === true,
     }))
+    const named = pulls.map((pull, at) => ({
+      branch: pull.branch,
+      number: at + 1,
+      headRefOid: "headcommit",
+      url: `https://forge.test/someone/their-repo/pull/${at + 1}`,
+    }))
+    const noThreads = JSON.stringify({
+      data: { repository: { pullRequest: { reviewThreads: { nodes: [] } } } },
+    })
     const script = [
       "#!/bin/sh",
       `echo "$@" >> ${join(bin, "asked.txt")}`,
       delayMs > 0 ? `sleep ${(delayMs / 1000).toFixed(2)}` : "",
+      'if [ "$1" = "repo" ]; then',
+      "printf '%s\\n' 'someone/their-repo'",
+      "exit 0",
+      "fi",
+      'if [ "$1" = "api" ]; then',
+      `cat <<'JSON'`,
+      noThreads,
+      "JSON",
+      "exit 0",
+      "fi",
+      'if [ "$1" = "pr" ] && [ "$2" = "view" ]; then',
+      `node -e 'const held = ${JSON.stringify(JSON.stringify(named))}; const one = JSON.parse(held).find((row) => row.branch === process.argv[1]); if (one === undefined) { process.exit(1) } process.stdout.write(JSON.stringify(one))' "$3"`,
+      "exit $?",
+      "fi",
       `cat <<'JSON'`,
       JSON.stringify(rows),
       "JSON",
@@ -211,6 +234,52 @@ export class AppTestDriver {
 
   runThreads(branch: string, fields?: ReadonlyArray<string>): Promise<CliResult> {
     return this.run(["comment", "list", "--repo", this.state.repo, "--branch", branch, ...(fields ?? [])])
+  }
+
+  runRemarks(branch: string): Promise<CliResult> {
+    return this.run(["remark", "list", "--repo", this.state.repo, "--branch", branch])
+  }
+
+  runRemarkDismiss(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a remark dismissed from the command line")
+    return this.run([
+      "remark",
+      "dismiss",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
+  }
+
+  runRemarkRestore(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a remark restored from the command line")
+    return this.run([
+      "remark",
+      "restore",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
+  }
+
+  runRemarkAccept(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a remark accepted from the command line")
+    return this.run([
+      "remark",
+      "accept",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
   }
 
   runResolve(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {

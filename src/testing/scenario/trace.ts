@@ -2,6 +2,7 @@ import { appendFileSync } from "node:fs"
 import { env } from "node:process"
 import type { BranchTestModel } from "../domains/branch/index.ts"
 import type { LayersInput } from "../domains/app/index.ts"
+import type { ThreadOnForge } from "../domains/forge/index.ts"
 import { commands } from "../../tui/index.ts"
 import type { Change, Seat, Step } from "./model.ts"
 
@@ -24,7 +25,11 @@ export type Moment =
 export type Trace = {
   readonly test: string
   readonly cannotReplay?: ReadonlyArray<string>
-  readonly world: { readonly branch: Partial<BranchTestModel>; readonly layers?: LayersInput }
+  readonly world: {
+    readonly branch: Partial<BranchTestModel>
+    readonly layers?: LayersInput
+    readonly remarks?: ReadonlyArray<ThreadOnForge>
+  }
   readonly seat: Seat
   readonly changes?: ReadonlyArray<Change>
   readonly steps: ReadonlyArray<Step>
@@ -94,6 +99,10 @@ export class Tracer {
 
   sawLayers(layers: LayersInput): void {
     this.world = { ...this.world, layers }
+  }
+
+  sawForge(remarks: ReadonlyArray<ThreadOnForge>): void {
+    this.world = { ...this.world, remarks }
   }
 
   sawSeat(seat: Seat): void {

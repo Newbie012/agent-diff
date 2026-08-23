@@ -36,6 +36,7 @@ export type Action =
   | "tree.winnow"
   | "panel.winnow"
   | "thread.reply"
+  | "remark.accept"
   | "panel.flip"
   | "review.reload"
   | "thread.settle"
@@ -87,6 +88,8 @@ export type Command = {
   readonly whenLayers: boolean
   readonly whenStale: boolean
   readonly whenThread: boolean
+  readonly whenRemark: boolean
+  readonly whenAnswerable: boolean
   readonly whenSelecting: boolean
   readonly whenReviewed: boolean
   readonly whenPull: boolean
@@ -114,6 +117,8 @@ export type Offered = {
   readonly hidingSettled: boolean
   readonly onRemoved: boolean
   readonly onHeld: boolean
+  readonly onRemark: boolean
+  readonly onDismissed: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -126,6 +131,8 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenLayers: false,
   whenStale: false,
   whenThread: false,
+  whenRemark: false,
+  whenAnswerable: false,
   whenSelecting: false,
   whenReviewed: false,
   whenPull: false,
@@ -481,16 +488,28 @@ export const commands: ReadonlyArray<Command> = [
     rank: 1,
   }),
   command({
+    action: "remark.accept",
+    also: ["accept", "take it on", "agree"],
+    panes: ["review", "diff"],
+    hint: "accept",
+    rank: 1,
+    title: "Take the remark here on as your own comment",
+    category: "Comments",
+    keys: ["A"],
+    screens: ["review"],
+    whenRemark: true,
+  }),
+  command({
     action: "thread.reply",
     also: ["reply", "respond", "answer", "write back"],
     panes: ["review", "diff"],
     hint: "reply",
     rank: 1,
-    title: "Write back to the thread here",
+    title: "Write back to the thread or remark here",
     category: "Comments",
     keys: ["R"],
     screens: ["review"],
-    whenThread: true,
+    whenAnswerable: true,
   }),
   command({
     action: "thread.remove",
@@ -822,6 +841,8 @@ export const displayKey = (key: string): string => {
 
 const heldOrRemoved = (offered: Offered): string => {
   if (offered.onHeld) return "drop"
+  if (offered.onDismissed) return "restore"
+  if (offered.onRemark) return "dismiss"
   return offered.onRemoved ? "restore" : "remove"
 }
 
@@ -849,6 +870,8 @@ export const hintsFor = (
     .filter((entry) => !entry.whenLayers || offered.layers > 0)
     .filter((entry) => !entry.whenStale || offered.stale)
     .filter((entry) => !entry.whenThread || offered.onThread)
+    .filter((entry) => !entry.whenRemark || offered.onRemark || offered.onDismissed)
+    .filter((entry) => !entry.whenAnswerable || offered.onThread || offered.onRemark)
     .filter((entry) => !entry.whenSelecting || offered.selecting)
     .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
     .filter((entry) => !entry.whenPull || offered.pull)

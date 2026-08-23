@@ -68,6 +68,7 @@ export type CommentRequest = {
   readonly side: Side
   readonly id: string
   readonly at: string
+  readonly remark?: string | undefined
 }
 
 export type Basis = "default" | "stacked" | "set"
@@ -362,6 +363,7 @@ const whereItSitsNow = (
 ): PendingComment => {
   const patch = patches.find((candidate) => candidate.path === comment.file)
   if (patch === undefined) return { ...comment, placed: false }
+  if (comment.start === WHOLE_FILE) return { ...comment, placed: false }
   if (comment.snippet.trim().length === 0) return { ...comment, placed: true }
   return Option.match(foundAgain(patch, comment), {
     onNone: () => ({ ...comment, placed: false }),
@@ -443,7 +445,12 @@ export const commentsIn = Effect.fn("Cli.commentsIn")(function* (
   const store = yield* Store
   const anchoring = Effect.fn("Cli.anchoring")(function* (request: CommentRequest) {
     const anchor = yield* anchorIn(worktree, request)
-    return { id: request.id, anchor, body: request.body }
+    return {
+      id: request.id,
+      anchor,
+      body: request.body,
+      ...(request.remark === undefined ? {} : { remark: request.remark }),
+    }
   })
   const anchored = yield* Effect.forEach(requests, anchoring)
   const batch: Batch = {

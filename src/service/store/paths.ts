@@ -28,6 +28,9 @@ export const draftsPath = (root: string, worktreePath: string): string =>
 export const layersPath = (root: string, worktreePath: string): string =>
   join(branchDir(root, worktreePath), "layers.json")
 
+export const remarksPath = (root: string, worktreePath: string): string =>
+  join(branchDir(root, worktreePath), "remarks.json")
+
 export const settingsPath = (root: string): string => join(root, "settings.json")
 
 export const upgradePath = (root: string): string => join(root, "upgrade.json")

@@ -12,6 +12,7 @@ import {
   type StoredDraft,
   type Watching,
   type StoredLayers,
+  type StoredRemarks,
   type UpgradeCheck,
 } from "./model.ts"
 import * as Wire from "./schema.ts"
@@ -26,6 +27,7 @@ import {
   draftsPath,
   watchPath,
   layersPath,
+  remarksPath,
   upgradePath,
 } from "./paths.ts"
 
@@ -55,6 +57,17 @@ type Shape = {
     worktreePath: string,
     layers: StoredLayers,
   ) => Effect.Effect<void, StoreUnwritable>
+  readonly remarks: (
+    worktreePath: string,
+  ) => Effect.Effect<Option.Option<StoredRemarks>, StoreUnreadable>
+  readonly saveRemarks: (
+    worktreePath: string,
+    remarks: StoredRemarks,
+  ) => Effect.Effect<void, StoreUnwritable>
+  readonly whileHoldingRemarks: <A, E, R>(
+    worktreePath: string,
+    work: Effect.Effect<A, E, R>,
+  ) => Effect.Effect<A, E | StoreUnwritable, R>
   readonly drafts: (
     worktreePath: string,
   ) => Effect.Effect<ReadonlyArray<StoredDraft>, StoreUnreadable>
@@ -153,6 +166,7 @@ const writeSettings = writes(Wire.Settings)
 const writeUpgradeCheck = writes(Wire.UpgradeCheck, INDENT)
 const writeState = writes(Wire.BranchState, INDENT)
 const writeLayers = writes(Wire.StoredLayers, INDENT)
+const writeRemarks = writes(Wire.StoredRemarks, INDENT)
 const writeDrafts = writes(Wire.Drafts, INDENT)
 const writeBatch = appends(Wire.Batch)
 const writeAnswer = appends(Wire.StoredAnswer)
@@ -163,6 +177,7 @@ const asBatch = decoded(Wire.Batch)
 const asAnswer = decoded(Wire.StoredAnswer)
 const asState = decoded(Wire.BranchState)
 const asLayers = decoded(Wire.StoredLayers)
+const asRemarks = decoded(Wire.StoredRemarks)
 const asDrafts = decoded(Wire.Drafts)
 const asWatching = decoded(Wire.Watching)
 
@@ -194,6 +209,10 @@ const parseState = Effect.fn("Store.parseState")(function* (path: string, raw: s
 
 const parseLayers = Effect.fn("Store.parseLayers")(function* (path: string, raw: string) {
   return yield* asLayers(path, yield* jsonOf(path, raw))
+})
+
+const parseRemarks = Effect.fn("Store.parseRemarks")(function* (path: string, raw: string) {
+  return yield* asRemarks(path, yield* jsonOf(path, raw))
 })
 
 type Reader = (worktreePath: string) => Effect.Effect<BranchState, StoreUnreadable>
@@ -402,6 +421,38 @@ const layersOps = (root: string, adopted: Keys) => {
   return { layers, saveLayers }
 }
 
+const remarksOps = (root: string, adopted: Keys) => {
+  const remarks = Effect.fn("Store.remarks")(function* (worktreePath: string) {
+    const key = yield* keyIn(adopted, worktreePath)
+    const path = remarksPath(root, key)
+    const raw = yield* readOptional(path)
+    if (Option.isNone(raw)) return Option.none<StoredRemarks>()
+    return Option.some(yield* parseRemarks(path, raw.value))
+  })
+
+  const saveRemarks = Effect.fn("Store.saveRemarks")(function* (
+    worktreePath: string,
+    next: StoredRemarks,
+  ) {
+    const key = yield* keyIn(adopted, worktreePath)
+    const path = remarksPath(root, key)
+    yield* ensureDir(branchDir(root, key))
+    yield* writeRemarks(path, next)
+  })
+
+  const whileHoldingRemarks = <A, E, R>(
+    worktreePath: string,
+    work: Effect.Effect<A, E, R>,
+  ): Effect.Effect<A, E | StoreUnwritable, R> =>
+    Effect.gen(function* () {
+      const key = yield* keyIn(adopted, worktreePath)
+      yield* ensureDir(branchDir(root, key))
+      return yield* alone(`${remarksPath(root, key)}.lock`, DRAFTS_LOCK, work)
+    }).pipe(Effect.withSpan("Store.whileHoldingRemarks"))
+
+  return { remarks, saveRemarks, whileHoldingRemarks }
+}
+
 const inboxOps = (root: string, adopted: Keys) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
     const key = yield* keyIn(adopted, worktreePath)
@@ -591,6 +642,7 @@ const makeStore = (root: string, adopted: Keys): Shape => {
     ...upgradeOps(root),
     ...talk,
     ...layersOps(root, adopted),
+    ...remarksOps(root, adopted),
     ...watchOps(root, adopted),
     ...draftsOps(root, adopted),
     ...cursors,

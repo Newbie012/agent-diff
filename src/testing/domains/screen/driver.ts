@@ -60,6 +60,8 @@ const watchedForge = (note: () => void): Layer.Layer<Forge> =>
     openPull: () => Effect.void,
     head: () => Effect.succeed(""),
     review: () => Effect.succeed({ landed: [], url: "" }),
+    remarks: () => Effect.succeed([]),
+    answer: () => Effect.void,
   })
 
 const CLIP = /\u005d52;c;([A-Za-z0-9+/=]*)/g
@@ -98,6 +100,7 @@ export type OpenOptions = {
   readonly base?: string
   readonly review?: boolean
   readonly forgeWatched?: boolean
+  readonly noticeMs?: number
 }
 
 export class ScreenTestDriver {
@@ -123,11 +126,21 @@ export class ScreenTestDriver {
     this.state.tracer.sawSeat({ width: options.width ?? WIDTH, height: options.height ?? HEIGHT })
   }
 
+  private checkUpgrades(options: OpenOptions): void {
+    if (options.upgrades === true) delete process.env["ADIFF_NO_UPGRADE_CHECK"]
+    else process.env["ADIFF_NO_UPGRADE_CHECK"] = "1"
+  }
+
+  private forgeFor(options: OpenOptions): Layer.Layer<Forge> {
+    return options.forgeWatched === true
+      ? watchedForge(() => this.order.push("forge"))
+      : ForgeLive
+  }
+
   async open(options: OpenOptions = {}): Promise<void> {
     this.noteSeat(options)
     this.watchClipboard()
-    if (options.upgrades === true) delete process.env["ADIFF_NO_UPGRADE_CHECK"]
-    else process.env["ADIFF_NO_UPGRADE_CHECK"] = "1"
+    this.checkUpgrades(options)
     const setup = await createTestRenderer({
       width: options.width ?? WIDTH,
       height: options.height ?? HEIGHT,
@@ -136,15 +149,17 @@ export class ScreenTestDriver {
     this.setup = setup
     this.watch()
     this.countKeys(setup)
-    const forge =
-      options.forgeWatched === true ? watchedForge(() => this.order.push("forge")) : ForgeLive
-    const layer = Layer.mergeAll(this.countingGit(), forge, storeAt(this.state.storeRoot))
+    const layer = Layer.mergeAll(
+      this.countingGit(),
+      this.forgeFor(options),
+      storeAt(this.state.storeRoot),
+    )
     const scope = Scope.makeUnsafe()
     this.scope = scope
     const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
     this.app = await Effect.runPromise(
       launch(options.repo ?? this.state.repo, setup.renderer, {
-        noticeMs: NOTICE_MS,
+        noticeMs: options.noticeMs ?? NOTICE_MS,
         sessionPath: this.state.sessionPath,
         branch: options.branch,
         base: options.base,

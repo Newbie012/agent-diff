@@ -24,6 +24,11 @@ import {
   setBase,
   clearBase,
   listThreads,
+  listRemarks,
+  acceptRemark,
+  answerRemark,
+  dismissRemark,
+  restoreRemark,
   MalformedLayers,
   MissingOption,
   narrow,
@@ -210,6 +215,55 @@ const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Option
   yield* answer(options, { answered: report.answered })
 })
 
+const remarkList = Effect.fn("Main.remarkList")(function* (options: Options) {
+  const remarks = yield* listRemarks(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+  )
+  yield* answer(options, { remarks })
+})
+
+const remarkAccept = Effect.fn("Main.remarkAccept")(function* (options: Options) {
+  const report = yield* acceptRemark({
+    repo: yield* required(options, "repo"),
+    branch: yield* required(options, "branch"),
+    id: yield* required(options, "id"),
+    body: options["body"],
+    at: options["at"] ?? new Date().toISOString(),
+    commentId: options["comment"] ?? randomUUID(),
+  })
+  yield* answer(options, report)
+})
+
+const remarkReply = Effect.fn("Main.remarkReply")(function* (options: Options) {
+  const report = yield* answerRemark({
+    repo: yield* required(options, "repo"),
+    branch: yield* required(options, "branch"),
+    id: yield* required(options, "id"),
+    body: yield* required(options, "body"),
+  })
+  yield* answer(options, { answered: report.answered })
+})
+
+const remarkDismiss = Effect.fn("Main.remarkDismiss")(function* (options: Options) {
+  const report = yield* dismissRemark(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+    options["at"] ?? new Date().toISOString(),
+  )
+  yield* answer(options, { dismissed: report.dismissed })
+})
+
+const remarkRestore = Effect.fn("Main.remarkRestore")(function* (options: Options) {
+  const report = yield* restoreRemark(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+  )
+  yield* answer(options, { restored: report.restored })
+})
+
 const commentList = Effect.fn("Main.commentList")(function* (options: Options) {
   const comments = yield* listThreads(
     yield* required(options, "repo"),
@@ -361,6 +415,11 @@ const routes = {
   "comment take": commentTake,
   "comment answer": commentAnswer,
   "comment list": commentList,
+  "remark list": remarkList,
+  "remark accept": remarkAccept,
+  "remark reply": remarkReply,
+  "remark dismiss": remarkDismiss,
+  "remark restore": remarkRestore,
   "draft list": draftList,
   "draft add": draftAdd,
   "draft edit": draftEdit,

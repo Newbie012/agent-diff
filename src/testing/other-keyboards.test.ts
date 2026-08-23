@@ -24,6 +24,6 @@ describe("when the keyboard is not English", () => {
     await driver.screen.pressKeys([HEBREW_LETTER_ON_THE_N_KEY])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("no comments yet")
+    expect(await driver.screen.getFrame()).toContain("nothing waiting on you here")
   })
 })

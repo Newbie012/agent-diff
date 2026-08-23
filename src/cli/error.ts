@@ -21,6 +21,20 @@ export class UnknownComment extends Data.TaggedError("UnknownComment")<{
   readonly id: string
 }> {}
 
+export class UnknownRemark extends Data.TaggedError("UnknownRemark")<{
+  readonly id: string
+  readonly known: ReadonlyArray<string>
+}> {}
+
+export class NothingSaid extends Data.TaggedError("NothingSaid")<{
+  readonly what: string
+}> {}
+
+export class RemarkTaken extends Data.TaggedError("RemarkTaken")<{
+  readonly id: string
+  readonly comment: string
+}> {}
+
 export class UnknownPreference extends Data.TaggedError("UnknownPreference")<{
   readonly name: string
   readonly known: ReadonlyArray<string>

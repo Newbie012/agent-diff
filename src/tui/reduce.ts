@@ -23,7 +23,7 @@ import {
   readingOrder,
   type Screen,
   type TuiState,
-  commentRowsIn,
+  needingRowsIn,
   openCommentRows,
   filesWithComments,
   rowAtSourceLine,
@@ -135,14 +135,14 @@ const nextFileWithComments = (state: TuiState, delta: number): number | undefine
 
 const atComment = (state: TuiState, file: number, delta: number): TuiState => {
   const moved = { ...state, patchIndex: file, top: 0, cursor: 0, anchorRow: 0, selecting: false }
-  const rows = commentRowsIn(moved, file)
+  const rows = needingRowsIn(moved, file)
   const landing = delta > 0 ? rows[0] : rows.at(-1)
   return landing === undefined ? moved : atRow(moved, landing)
 }
 
 const nothingOpen = (state: TuiState): TuiState => {
-  const any = commentRowsIn(state, state.patchIndex).length > 0
-  return withNotice(state, any ? "no open comment" : "no comments yet")
+  const any = needingRowsIn(state, state.patchIndex).length > 0
+  return withNotice(state, any ? "nothing else waiting on you here" : "nothing waiting on you here")
 }
 
 const layerComment = (state: TuiState, delta: number): TuiState => {
@@ -545,6 +545,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "compose.submit": (state) => state,
   "held.send": (state) => state,
   "thread.reply": (state) => state,
+  "remark.accept": (state) => state,
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1) }),
   "focus.back": (state) => ({ ...state, focus: focusStepped(state, -1) }),
   "panel.toggle": togglePanel,
@@ -678,6 +679,11 @@ export const gapOpened = (state: TuiState, gap: number, delta: number): TuiState
 
 export const panBy = (state: TuiState, delta: number): TuiState =>
   state.wrap ? state : { ...state, pan: Math.max(0, state.pan + delta) }
+
+export const withRemarks = (state: TuiState, remarks: TuiState["remarks"]): TuiState => ({
+  ...state,
+  remarks,
+})
 
 export const withSent = (state: TuiState, sent: TuiState["sent"]): TuiState => ({
   ...state,

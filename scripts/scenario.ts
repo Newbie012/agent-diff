@@ -41,14 +41,71 @@ export const worldOf = (held: Trace, at?: string): Promise<Workspace> =>
     ],
   })
 
-const quietForge = (space: Workspace): string => {
+const threadsFor = (held: Trace): string =>
+  JSON.stringify({
+    data: {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            pageInfo: { hasNextPage: false },
+            nodes: (held.world.remarks ?? []).map((one) => ({
+              id: one.id,
+              isResolved: one.resolved === true,
+              isOutdated: one.outdated === true,
+              path: one.path,
+              diffSide: one.side === "old" ? "LEFT" : "RIGHT",
+              line: one.line,
+              comments: {
+                totalCount: one.comments.length,
+                nodes: one.comments.map((said, at) => ({
+                  databaseId: 1000 + at,
+                  author: { login: said.by },
+                  body: said.body,
+                  diffHunk: at === 0 ? (one.hunk ?? `@@ -1 +${one.line} @@`) : "",
+                  originalCommit: { oid: "headcommit" },
+                })),
+              },
+            })),
+          },
+        },
+      },
+    },
+  })
+
+const forgeFor = (space: Workspace, held: Trace): string => {
   const bin = join(space.root, "bin")
   mkdirSync(bin, { recursive: true })
-  writeFileSync(join(bin, "gh"), "#!/bin/sh\nprintf '[]'\n", { mode: 0o755 })
+  const branch = space.branches[0]?.name ?? "review"
+  const lines =
+    (held.world.remarks ?? []).length === 0
+      ? ["#!/bin/sh", "printf '[]'"]
+      : [
+          "#!/bin/sh",
+          'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then',
+          `printf '%s' '${JSON.stringify([{ headRefName: branch, state: "OPEN", isDraft: false }])}'`,
+          "exit 0",
+          "fi",
+          'if [ "$1" = "pr" ] && [ "$2" = "view" ]; then',
+          `printf '%s' '${JSON.stringify({ number: 1, headRefOid: "headcommit", url: "https://forge.test/one/two/pull/1" })}'`,
+          "exit 0",
+          "fi",
+          'if [ "$1" = "repo" ]; then',
+          "printf '%s' 'one/two'",
+          "exit 0",
+          "fi",
+          'if [ "$1" = "api" ]; then',
+          `cat <<'JSON'`,
+          threadsFor(held),
+          "JSON",
+          "exit 0",
+          "fi",
+          "printf '[]'",
+        ]
+  writeFileSync(join(bin, "gh"), `${lines.join("\n")}\n`, { mode: 0o755 })
   return bin
 }
 
-export const openTerminal = (space: Workspace): Promise<number> =>
+export const openTerminal = (space: Workspace, held: Trace): Promise<number> =>
   new Promise((resolve) => {
     const child = spawn(NODE, runArgs(["review", "open", "--repo", space.repo]), {
       cwd: space.repo,
@@ -56,7 +113,7 @@ export const openTerminal = (space: Workspace): Promise<number> =>
         ...env,
         ADIFF_ROOT: space.storeRoot,
         ADIFF_NO_UPGRADE_CHECK: "1",
-        PATH: `${quietForge(space)}:${env["PATH"] ?? ""}`,
+        PATH: `${forgeFor(space, held)}:${env["PATH"] ?? ""}`,
       },
       stdio: "inherit",
     })
@@ -71,6 +128,6 @@ const isEntry = argv[1]?.endsWith("scenario.ts") === true
 if (isEntry && asked !== undefined && wanted !== undefined) {
   const held = traceNamed(asked, wanted)
   const space = await worldOf(held, inside)
-  await openTerminal(space)
+  await openTerminal(space, held)
   await space.dispose()
 }

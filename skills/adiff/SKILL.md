@@ -28,6 +28,14 @@ A comment keeps coming back until it is answered. A second `take` returns it aga
 you take. Settling or removing it also retires it: those are the reviewer saying they no longer
 need one.
 
+## A remark is context, a comment is work
+
+`adiff remark list --repo . --branch <branch>` reads the remarks left on the branch's pull request.
+They are not yours to act on. A remark is somebody's point about the code, and the reviewer decides
+what happens to it: accepting one writes a comment, and that comment is what reaches you through
+`comment take`. Read remarks when the reviewer asks you to, or to understand a comment that answers
+one. Never act on a remark that has not been accepted, and never accept one yourself.
+
 ## Wait for the next one
 
 ```bash

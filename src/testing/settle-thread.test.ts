@@ -85,6 +85,6 @@ describe("when a thread is settled from the terminal", () => {
     await driver.screen.pressKeys(["n"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("no open comment")
+    expect(await driver.screen.getFrame()).toContain("nothing else waiting on you here")
   })
 })
