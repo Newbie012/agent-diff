@@ -9,6 +9,7 @@ export type Surroundings = {
   readonly keys: ReadonlyArray<string>
   readonly trail: ReadonlyArray<string>
   readonly failure: string
+  readonly failureKind: string
   readonly width: number
   readonly height: number
 }
@@ -76,12 +77,17 @@ const fully = (state: TuiState, around: Surroundings): ReadonlyArray<string> => 
 ]
 
 const minimal = (): ReadonlyArray<string> => [
-  "_Sent as a minimal report: no machine, repo, branch or file name, no code, no key history._",
+  "_Sent as a minimal report: no machine, repo, branch or file name, no code, no key history, and nothing from a failure but its kind._",
   "",
 ]
 
+const lastFailure = (state: TuiState, around: Surroundings): string => {
+  if (around.failure.length === 0) return "none"
+  return state.reportFull ? (around.failure.split("\n")[0] ?? "") : around.failureKind
+}
+
 export const buildReport = (state: TuiState, around: Surroundings): string => {
-  const failure = around.failure.length === 0 ? "none" : around.failure.split("\n")[0]
+  const failure = lastFailure(state, around)
   return [
     "# adiff bug report",
     "",

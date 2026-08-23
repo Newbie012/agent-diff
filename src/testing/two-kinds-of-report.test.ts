@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises"
+import { chmod, readdir, readFile } from "node:fs/promises"
 import { hostname } from "node:os"
 import { join } from "node:path"
 import { describe, expect, test } from "@effect/vitest"
@@ -101,5 +101,31 @@ describe("when a bug is reported", () => {
     expect(text).toContain(repo)
     expect(text).toContain(branch)
     expect(text).toContain("secret-name.ts")
+  })
+
+  test("then a minimal report written after a failure names the kind and no path", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.agent.setStoreFile(branch.worktree, "state.json", '{"vouches":{}}')
+    await driver.screen.open({ review: true })
+    const filed = await readdir(join(driver.storeRoot, "branches"))
+    await chmod(join(driver.storeRoot, "branches", filed[0] ?? "", "state.json"), 0o000)
+    await driver.screen.pressKeys(["m"])
+
+    // ACT
+    await driver.screen.pressCtrl("b")
+    await driver.screen.typeText("marking a file threw")
+    await driver.screen.pressCtrl("t")
+    await driver.screen.pressCtrl("s")
+    const dir = join(driver.storeRoot, "reports")
+    const found = (await readdir(dir)).toSorted()
+    const text = await readFile(join(dir, found.at(-1) ?? ""), "utf8")
+
+    // ASSERT
+    const said = text.split("\n").find((line) => line.startsWith("- last internal failure:"))
+    expect(said).toBe("- last internal failure: StoreUnwritable")
+    expect(text).not.toContain(driver.storeRoot)
+    expect(text).not.toContain(await driver.branch.ownPath())
   })
 })

@@ -51,8 +51,9 @@ the reviewer's decision.
   typed and nothing that names the machine, the repo, the branch or the file — no code and no key
   history either — for a report about work that cannot leave the machine. What it keeps is what a
   maintainer needs and a reviewer can paste anywhere: the adiff and Node versions, the platform,
-  the terminal size, the screen and focus, the count of files reviewed, and the last internal
-  failure. The note at the foot of a minimal report says exactly that, so a reviewer can trust it
+  the terminal size, the screen and focus, the count of files reviewed, and the kind of the last
+  internal failure without its message, because an error message routinely carries an absolute
+  path. The note at the foot of a minimal report says exactly that, so a reviewer can trust it
   without reading the file.
 
 ### Owns
@@ -71,8 +72,8 @@ The keys themselves ([PRD 003](003-review-terminal.md)); the store's root
   ([PRD 003](003-review-terminal.md)).
 - **A report is markdown**, in this order: the reviewer's description first, because that is the
   part a human reads; then the facts.
-- **`ctrl+t` sends a minimal report**, which never contains the hostname, the repo path, the branch
-  or the file path.
+- **`ctrl+t` sends a minimal report**, which never contains the hostname, the repo path, the branch,
+  the file path, or the message of the last internal failure — only that failure's kind.
 - **The facts are** the adiff version as the build reports it, the Node version and platform, the terminal size, the repo,
   the branch, the file and cursor position, the screen the reviewer was on, the count of files
   reviewed, the last internal failure if one occurred, the last keys pressed, and the
@@ -107,6 +108,7 @@ Behaviors that must be covered:
 - Abandoning a report writes nothing.
 - A minimal report contains no hostname, no repo path, no branch and no file path, and a full one
   contains all four.
+- A minimal report written after an internal failure names the kind of failure and no path.
 
 ## Out of Scope
 
