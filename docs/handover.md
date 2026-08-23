@@ -78,18 +78,24 @@ record the commit they were written for, and adiff marks them stale once the bra
 ## Teaching an agent the loop
 
 ```bash
-npx skills add Newbie012/agent-diff --skill adiff
+npx skills add Newbie012/agent-diff --skill adiff -g -y -a claude-code
 ```
 
 That is the whole setup. The skill says everything on this page in the form an agent reads, and adiff
-writes nothing into the repository itself. When the skill is older than the adiff running beside it:
+writes nothing into the repository itself. `-g` is what makes it reach the agent: a skill written into
+`./.claude/skills/` is untracked, and an agent working in a worktree of that repository does not see
+an untracked file in the checkout beside it. Drop `-g` only if the skill is going to be committed.
+
+When the skill is older than the adiff running beside it:
 
 ```bash
 adiff skill refresh
 ```
 
 which rewrites the skill wherever it is already installed, here and in your home directory, and
-installs it nowhere new.
+installs it nowhere new. A skill the skills CLI installed as a symlink is reported as `linked` and
+left alone — that copy belongs to `npx skills update`, and writing through the link would be undone
+by it.
 
 When someone asks for a review, the agent can put it in front of them:
 

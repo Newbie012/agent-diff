@@ -69,7 +69,10 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   and unprovable in a test that upgrades nothing for real. Naming the route makes each one
   observable, and gives an operator whose install detection guesses wrong a way to say so.
 - **The agent skill ships in the repo** at `skills/adiff/SKILL.md`, and is installed by the skills
-  CLI: `npx skills add Newbie012/agent-diff --skill adiff`. adiff has no command of its own for it.
+  CLI: `npx skills add Newbie012/agent-diff --skill adiff -g -y -a claude-code`. Home scope, not
+  project scope: an agent works in a worktree, and a worktree does not see an untracked file in the
+  checkout beside it, so a skill written into `./.claude/skills/` never reaches the agent it was
+  installed for unless it is committed. Committing it is a decision a team makes, not a default. adiff has no command of its own for it.
   It used to: `adiff init` wrote a copy into the repository under review, plus a passage in
   `AGENTS.md` and a `CLAUDE.md` importing it, kept between sentinels so it could be found and
   replaced. Editing two files a whole team shares, in a format adiff then had to parse back out,
@@ -80,6 +83,18 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   home directory, and installs it nowhere new. It is how a skill installed against an older adiff
   is brought up to the build that is running, without adiff deciding for an operator which of their
   repositories should carry one.
+- **The skill travels inside the build, not beside it.** `skill refresh` used to find the shipped
+  skill by walking up from its own module until it saw `skills/adiff/SKILL.md` on disk. That file is
+  in the npm package and in a checkout, and it is not in the compiled binary, which is what Homebrew
+  installs — so the one mechanism that answers skill drift failed on the route most people install
+  by, and `upgrade` reported no skill refresh rather than a failure. The text is carried in a module
+  the build compiles in. The file on disk stays the thing a person edits, and a test proves the two
+  say the same thing.
+- **A skill the skills CLI owns is left alone.** `npx skills add` symlinks by default, so the
+  installed skill is often a link into that tool's own clone. Writing through the link would edit a
+  cache adiff does not own and be reverted by the next `skills update`, so a link is reported as
+  `linked` and not written. Two tools silently fighting over one file is worse than one tool saying
+  it will not.
 - **Copied text is offered to the terminal and to the machine.** A terminal is told through the
   escape that carries a clipboard, wrapped for tmux and screen, which swallow it otherwise. The
   machine is told through whatever it has — pbcopy, wl-copy, xclip, clip — because a terminal that
@@ -91,9 +106,9 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
 
 - **The published binary travels compressed.** Compiling with Bun bundles the whole runtime, so the
   executable is around seventy megabytes and no amount of minifying the review's own code moves that
-  number. It is attached to the release as a gzipped tar as well as raw, and Homebrew and the curl
-  route both take the compressed one: a quarter of the bytes over the wire, the same binary on disk.
-  The raw asset stays because installs made before this still ask for it by name.
+  number. It is attached to the release as a gzipped tar as well as raw, and Homebrew takes the
+  compressed one: a quarter of the bytes over the wire, the same binary on disk. The raw asset stays
+  because installs made before this still ask for it by name.
 
 - **TypeScript runs by type-stripping, not compilation.** There is no build layer and no bundler.
   Syntax that requires emit does not run, whatever `tsc` and vitest accept — see
@@ -115,11 +130,20 @@ the suite proof that the runtime contract holds.
 
 Behaviors that must be covered:
 
-- Every command test runs against a store root set by `ADIFF_ROOT`, proving the override works.
+- Every command test runs against a store root set by `ADIFF_ROOT`, proving the override works, and
+  against a `HOME` inside its own workspace. `skill refresh` reads the home directory, so a suite
+  that let `HOME` through wrote into the developer's own `~/.claude/skills/` and read its state back
+  as though it were the test's.
 - The binary starts under a real Node process, proving the flag plumbing works. Any test failing
   to start is this contract breaking.
 - `skill refresh` rewrites a skill that is already installed, and reports it as updated.
 - `skill refresh` where no skill is installed reports no changes and writes nothing.
+- What `skill refresh` writes is the whole of `skills/adiff/SKILL.md`, so the copy compiled into the
+  build cannot drift from the file a person edits.
+- `skill refresh` on a symlinked skill reports it as `linked` and leaves both the link and its
+  target as they were.
+- The compiled binary refreshes a skill with no runtime on PATH. Only a test that runs the compiled
+  binary can see this contract break; every other route has the file on disk beside it.
 
 ## Out of Scope
 

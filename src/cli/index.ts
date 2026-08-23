@@ -56,7 +56,7 @@ export {
   upgradeReport,
   willUpgrade,
 } from "./upgrade.ts"
-export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
+export type { Route, SkillsRefreshed, UpgradeFound, UpgradeReport } from "./upgrade.ts"
 export type { Change, SkillReport } from "./skill.ts"
 export { searchBranch, searchIn } from "./search.ts"
 export type { Match } from "./search.ts"

@@ -45,6 +45,7 @@ import {
   repoOf,
   restoreComment,
   runUpgrade,
+  type SkillsRefreshed,
   type UpgradeFound,
   sayDone,
   sayFound,
@@ -322,6 +323,8 @@ const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
 const say = (line: string): Effect.Effect<void> =>
   Effect.sync(() => process.stdout.write(line))
 
+const NOTHING_REFRESHED: SkillsRefreshed = { updated: [], failed: false }
+
 const settledUpgrade = (found: UpgradeFound, check: boolean, ran: boolean): Effect.Effect<void> =>
   Effect.sync(() => {
     if (check || found.current === true || ran) return
@@ -331,7 +334,7 @@ const settledUpgrade = (found: UpgradeFound, check: boolean, ran: boolean): Effe
 const saidUpgrade = Effect.fn("Main.saidUpgrade")(function* (
   found: UpgradeFound,
   ran: boolean,
-  skills: ReadonlyArray<string>,
+  skills: SkillsRefreshed,
 ) {
   yield* say(`\n${sayDone(found, ran)}\n`)
   const also = sayRefreshed(skills)
@@ -345,9 +348,9 @@ const upgrade = Effect.fn("Main.upgrade")(function* (options: Options) {
   const upgrading = willUpgrade(found, check)
   if (!quiet) yield* say(`${sayFound(found, check)}\n${upgrading ? "\n" : ""}`)
   const ran = upgrading ? yield* runUpgrade(found, quiet) : false
-  const skills = ran ? yield* refreshSkills : []
+  const skills = ran ? yield* refreshSkills : NOTHING_REFRESHED
   if (quiet) {
-    const also = skills.length === 0 ? {} : { skills }
+    const also = skills.updated.length === 0 ? {} : { skills: skills.updated }
     return yield* answer(options, { upgrade: upgradeReport(found, ran, check), ...also })
   }
   if (upgrading) yield* saidUpgrade(found, ran, skills)
