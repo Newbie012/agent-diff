@@ -246,22 +246,22 @@ export class AppTestDriver {
     ])
   }
 
-  runPane(options: { readonly env?: Readonly<Record<string, string>> } = {}): Promise<CliResult> {
-    return this.run(["review", "pane", "--repo", this.state.repo], options.env ?? {})
+  runPane(
+    options: {
+      readonly env?: Readonly<Record<string, string>>
+      readonly base?: string
+    } = {},
+  ): Promise<CliResult> {
+    const base = options.base === undefined ? [] : ["--base", options.base]
+    return this.run(["review", "pane", "--repo", this.state.repo, ...base], options.env ?? {})
   }
 
-  runInit(options: { readonly write?: boolean; readonly skill?: boolean } = {}): Promise<CliResult> {
-    return this.run([
-      "init",
-      "--repo",
-      this.state.repo,
-      ...(options.write === true ? ["--write"] : []),
-      ...(options.skill === true ? ["--skill"] : []),
-    ])
+  runSkillRefresh(): Promise<CliResult> {
+    return this.run(["skill", "refresh"], { HOME: this.state.workspace }, this.state.repo)
   }
 
-  async writeFileAt(name: string, contents: string): Promise<void> {
-    const path = join(this.state.repo, name)
+  async installTheSkill(contents: string): Promise<void> {
+    const path = join(this.state.repo, ".claude", "skills", "adiff", "SKILL.md")
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, contents, "utf8")
   }

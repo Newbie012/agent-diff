@@ -45,14 +45,18 @@ const splitters: ReadonlyArray<Splitter> = [
   },
 ]
 
-const onBranch = (branch: string | undefined): ReadonlyArray<string> =>
-  branch === undefined ? [] : ["--branch", branch]
+const named = (option: string, value: string | undefined): ReadonlyArray<string> =>
+  value === undefined ? [] : [`--${option}`, value]
 
-const selfInvocation = (repo: string, branch: string | undefined): ReadonlyArray<string> => {
+const selfInvocation = (
+  repo: string,
+  branch: string | undefined,
+  base: string | undefined,
+): ReadonlyArray<string> => {
   const entry = process.argv[1]
   const head =
     entry === undefined ? ["adiff"] : [process.execPath, ...process.execArgv, entry]
-  return [...head, "review", "open", "--repo", repo, ...onBranch(branch)]
+  return [...head, "review", "open", "--repo", repo, ...named("branch", branch), ...named("base", base)]
 }
 
 const ran = (binary: string, args: ReadonlyArray<string>): Effect.Effect<boolean> =>
@@ -67,14 +71,20 @@ const split = Effect.fn("Cli.split")(function* (
   chosen: Splitter,
   repo: string,
   branch: string | undefined,
+  base: string | undefined,
 ) {
-  return yield* ran(chosen.binary, chosen.args(repo, selfInvocation(repo, branch)))
+  return yield* ran(chosen.binary, chosen.args(repo, selfInvocation(repo, branch, base)))
 })
 
-export const openPane = Effect.fn("Cli.openPane")(function* (repo: string, branch?: string) {
-  const command = `adiff review open --repo ${repo}${branch === undefined ? "" : ` --branch ${branch}`}`
+export const openPane = Effect.fn("Cli.openPane")(function* (
+  repo: string,
+  branch?: string,
+  base?: string,
+) {
+  const said = [...named("branch", branch), ...named("base", base)].join(" ")
+  const command = `adiff review open --repo ${repo}${said.length === 0 ? "" : ` ${said}`}`
   const chosen = splitters.find((candidate) => candidate.present())
   if (chosen === undefined) return { opened: false, pane: "none", command } satisfies PaneReport
-  const opened = yield* split(chosen, repo, branch)
+  const opened = yield* split(chosen, repo, branch, base)
   return { opened, pane: chosen.pane, command } satisfies PaneReport
 })

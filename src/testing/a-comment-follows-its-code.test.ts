@@ -75,6 +75,48 @@ describe("when the agent adds lines above and between two commented lines", () =
   })
 })
 
+const handler = [
+  "export const world = {}",
+  "  seed: (driver, network) => {",
+  "    network.delay('/api/tree', 1000)",
+  "  },",
+]
+
+const onTheSeed = scenario({
+  name: "a review with a comment on a line the agent then edits",
+  world: {
+    branch: { files: [{ path: "src/api.ts", before: ["export const world = {}"], after: handler }] },
+  },
+  steps: [openTheBranch(), goDownALine(), leaveAComment("take the world object")],
+})
+
+describe("when the agent edits the line a comment was written against", () => {
+  test("then the comment follows the line into its new wording", async () => {
+    // ARRANGE
+    await using review = await reviewing(onTheSeed)
+    await review.andThen(
+      theAgentRewrites({
+        file: "src/api.ts",
+        lines: [
+          "export const world = {}",
+          "  seed: ({ driver, network }) => {",
+          "    network.delay('/api/tree', 1000)",
+          "  },",
+        ],
+        message: "the seed takes the world",
+      }),
+      readTheBranchAgain(),
+    )
+
+    // ACT
+    const seen = await review.sees()
+
+    // ASSERT
+    const rows = await seen.diff()
+    expect(under(rows, "seed: ({ driver, network }) => {")).toBe("take the world object")
+  })
+})
+
 describe("when the agent rewrites the line a comment was written against", () => {
   test("then no comment is drawn against the line that took its place", async () => {
     // ARRANGE

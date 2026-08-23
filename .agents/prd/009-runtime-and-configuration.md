@@ -68,23 +68,18 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   of the running executable and adiff's own module, which is right in every install anyone has hit
   and unprovable in a test that upgrades nothing for real. Naming the route makes each one
   observable, and gives an operator whose install detection guesses wrong a way to say so.
-- **The agent skill ships in the repo** at `skills/adiff/SKILL.md` and is installed by symlinking
-  the directory into the agent's skills path. adiff never installs it automatically; touching an
-  agent's configuration is the operator's decision.
-- **`adiff init` writes the loop into the repository under review**, so an agent that reads a
-  repository's instructions finds it without anyone naming adiff. It writes a passage naming
-  `comment take --wait`, `comment answer` and `describe` into `AGENTS.md`, and a `CLAUDE.md` that
-  imports `AGENTS.md`, which is how a harness that reads only its own file sees the same text once.
-- **`init` reports before it writes.** With no `--write` it answers with what each file would
-  become and touches nothing. That is what asking looks like on a surface an agent also calls.
-- **`init` writes inside sentinels and nowhere else.** A block runs from `<!-- adiff:begin -->` to
-  `<!-- adiff:end -->`. A file without the sentinels is appended to, a file with them has that
-  block replaced, and content outside them is never read for meaning or rewritten. Re-running
-  changes nothing and answers `unchanged`. Removing adiff from a repository is deleting the block.
-- **The skill is committed only when asked.** `init --skill` writes `.claude/skills/adiff/SKILL.md`,
-  which Claude Code loads natively and Cursor and Codex accept for compatibility. Committing a
-  skill directory into a repository other people share is a larger imposition than four lines of
-  markdown, so it is a separate decision from the instructions.
+- **The agent skill ships in the repo** at `skills/adiff/SKILL.md`, and is installed by the skills
+  CLI: `npx skills add Newbie012/agent-diff --skill adiff`. adiff has no command of its own for it.
+  It used to: `adiff init` wrote a copy into the repository under review, plus a passage in
+  `AGENTS.md` and a `CLAUDE.md` importing it, kept between sentinels so it could be found and
+  replaced. Editing two files a whole team shares, in a format adiff then had to parse back out,
+  bought nothing the skill does not already do — an agent finds a skill by its description without
+  being told to look — and a command that only fetched a file was a command to install, learn and
+  keep in step with the skills CLI's own. Removing adiff from a repository is now nothing.
+- **`skill refresh` rewrites the skill where it already is**, in the working directory and in the
+  home directory, and installs it nowhere new. It is how a skill installed against an older adiff
+  is brought up to the build that is running, without adiff deciding for an operator which of their
+  repositories should carry one.
 - **Copied text is offered to the terminal and to the machine.** A terminal is told through the
   escape that carries a clipboard, wrapped for tmux and screen, which swallow it otherwise. The
   machine is told through whatever it has — pbcopy, wl-copy, xclip, clip — because a terminal that
@@ -123,11 +118,8 @@ Behaviors that must be covered:
 - Every command test runs against a store root set by `ADIFF_ROOT`, proving the override works.
 - The binary starts under a real Node process, proving the flag plumbing works. Any test failing
   to start is this contract breaking.
-- `init` without `--write` reports the changes and leaves the repository as it found it.
-- `init --write` puts the loop in `AGENTS.md` and an import in `CLAUDE.md`.
-- A second `init --write` answers `unchanged` and leaves one block, not two.
-- A file someone else wrote keeps its content and gains the block at the end.
-- The skill lands only when `--skill` asks for it.
+- `skill refresh` rewrites a skill that is already installed, and reports it as updated.
+- `skill refresh` where no skill is installed reports no changes and writes nothing.
 
 ## Out of Scope
 

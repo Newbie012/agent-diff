@@ -75,6 +75,37 @@ const nearestRun = (
     .flatMap((here, at) => (runsAt(lines, said, at) ? [here.line] : []))
     .toSorted((one, other) => Math.abs(one - near) - Math.abs(other - near))[0]
 
+const SHORTEST_NEAR = 8
+
+const PER_EDIT = 4
+
+const edits = (one: string, other: string): number => {
+  let row = Array.from({ length: other.length + 1 }, (_, at) => at)
+  for (let step = 1; step <= one.length; step += 1) {
+    const next = [step]
+    for (let at = 1; at <= other.length; at += 1) {
+      const swap = (row[at - 1] ?? 0) + (one[step - 1] === other[at - 1] ? 0 : 1)
+      next.push(Math.min(swap, (row[at] ?? 0) + 1, (next[at - 1] ?? 0) + 1))
+    }
+    row = next
+  }
+  return row[other.length] ?? 0
+}
+
+const isNear = (one: string, other: string): boolean => {
+  const room = Math.max(one.trim().length, other.trim().length)
+  return room >= SHORTEST_NEAR && edits(one, other) <= Math.floor(room / PER_EDIT)
+}
+
+const nearestLike = (
+  lines: ReadonlyArray<{ readonly line: number; readonly text: string }>,
+  said: string,
+  near: number,
+): number | undefined =>
+  lines
+    .filter((here) => isNear(here.text, said))
+    .toSorted((one, other) => Math.abs(one.line - near) - Math.abs(other.line - near))[0]?.line
+
 export const foundAgain = (
   patch: Patch,
   wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
@@ -87,8 +118,10 @@ export const foundAgain = (
     return Option.some({ side: wanted.side, start: whole, end: whole + said.length - 1 })
   }
   const first = said[0] ?? ""
-  if (said.length === 1 || first.trim().length === 0) return Option.none()
-  const opening = nearestRun(lines, [first], wanted.start)
-  if (opening === undefined) return Option.none()
-  return Option.some({ side: wanted.side, start: opening, end: opening })
+  if (first.trim().length === 0) return Option.none()
+  const opening =
+    said.length === 1 ? undefined : nearestRun(lines, [first], wanted.start)
+  const alike = opening ?? nearestLike(lines, first, wanted.start)
+  if (alike === undefined) return Option.none()
+  return Option.some({ side: wanted.side, start: alike, end: alike })
 }

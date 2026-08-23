@@ -72,8 +72,14 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
   from the diff in hand.
 - **A snippet of several lines whose first line still stands is read back on that line.** The agent
   changing the third line of a five-line selection must not cost the reviewer the whole comment, and
-  the line the selection opened on is still exactly where the point was made. This is the only
-  partial match; no similarity, no nearest-looking line.
+  the line the selection opened on is still exactly where the point was made.
+- **A line the agent edited still takes its comment.** A snippet the diff no longer holds exactly is
+  read back on the nearest line that is nearly the same: at most one character changed per four, and
+  only where the snippet carries eight characters or more. Asking for `seed: (driver, network)` to
+  become `seed: ({ driver, network })` is the whole point of a review, and the reviewer who asked
+  loses both the comment and the answer to it if that edit moves the code out from under them. A
+  short line — a brace, a `};` — has no room for a near match and must still stand exactly, so a
+  comment never drifts onto punctuation. These two are the only partial matches.
 - **An anchor whose snippet the diff cannot show is not placed on any line.** Not the line it was
   written at, which by then holds code it was never about — that is the failure this rule exists to
   prevent. The thread stays in the review panel, which says it is not in the diff, and it can still
@@ -111,8 +117,9 @@ Behaviors that must be covered:
 - A range the diff does not show is refused, and nothing reaches the agent.
 - Two comments in one file, with lines added above one and between them, are each drawn against the
   code they were written against.
-- A comment whose line the agent rewrote is drawn against no line, and the review panel says it is
-  not in the diff.
+- A comment on a line the agent edited by a few characters is drawn against the edited line.
+- A comment whose line the agent rewrote outright is drawn against no line, and the review panel
+  says it is not in the diff.
 - A file in a nested directory anchors to the right path.
 - A mode-only change, a rename with no edits, and a rename with edits each say what changed.
 

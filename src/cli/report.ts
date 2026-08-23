@@ -149,7 +149,7 @@ const ADVICE: Readonly<Record<string, Advice>> = {
   InitUnwritable: {
     exit: FAILED,
     suggestion:
-      "adiff init writes AGENTS.md and CLAUDE.md in the repository you point --repo at. Check that path is a directory you can write to.",
+      "adiff could not write the skill. Check that .claude/skills/adiff/ is somewhere you can write to.",
     retriable: false,
   },
   UnselectableRange: {

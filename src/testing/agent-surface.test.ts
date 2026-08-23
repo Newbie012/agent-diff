@@ -38,7 +38,6 @@ describe("when an agent uses adiff without reading the documentation", () => {
       "config list",
       "config get",
       "config set",
-      "init",
       "skill refresh",
       "upgrade",
       "describe",

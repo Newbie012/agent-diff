@@ -95,6 +95,7 @@ export type OpenOptions = {
   readonly repo?: string
   readonly upgrades?: boolean
   readonly branch?: string
+  readonly base?: string
   readonly review?: boolean
   readonly forgeWatched?: boolean
 }
@@ -146,6 +147,7 @@ export class ScreenTestDriver {
         noticeMs: NOTICE_MS,
         sessionPath: this.state.sessionPath,
         branch: options.branch,
+        base: options.base,
       }).pipe(
         Effect.provideContext(context),
       ),
