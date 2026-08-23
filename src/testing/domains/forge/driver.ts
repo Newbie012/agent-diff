@@ -205,6 +205,11 @@ export class ForgeTestDriver {
   }
 
   async holds(pulls: ReadonlyArray<PullOnForge>, options: ForgeOptions = {}): Promise<void> {
+    if (options.refuses === true || options.threadsRaw !== undefined) {
+      this.state.tracer.cannotReplay("a forge that answers oddly")
+    } else {
+      this.state.tracer.sawForge(pulls[0]?.threads ?? [])
+    }
     const bin = join(this.state.workspace, "bin")
     await mkdir(bin, { recursive: true })
     const path = join(bin, "gh")

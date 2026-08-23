@@ -1,5 +1,6 @@
 import type { BranchTestModel } from "../domains/branch/index.ts"
 import type { LayersInput } from "../domains/app/index.ts"
+import type { ThreadOnForge } from "../domains/forge/index.ts"
 
 export type Change = {
   readonly file: string
@@ -20,6 +21,7 @@ export type Seat = {
 
 export type World = {
   readonly branch: Partial<BranchTestModel>
+  readonly remarks?: ReadonlyArray<ThreadOnForge>
   readonly layers?: LayersInput
 }
 
