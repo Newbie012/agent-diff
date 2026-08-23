@@ -100,6 +100,7 @@ reached the agent that wrote the code.
 | [010](010-feedback-capture.md) | Reporting a bug from inside the terminal, with the context attached | `tui`, `service/store` |
 | [011](011-preferences.md) | What the review remembers between sessions, and how it is read and set | `domain/preferences` |
 | [012](012-reviewing-someone-elses-work.md) | Reviewing a branch you did not write | `service/git`, `tui` |
+| [013](013-review-remarks.md) | Reading the pull request's own review, and deciding each remark | `service/forge`, `service/store`, `tui` |
 
 ### Cross-cutting concerns every PRD inherits
 

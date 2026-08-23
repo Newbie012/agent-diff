@@ -24,6 +24,7 @@ export type Prose = {
 
 export type Note = {
   readonly id: string
+  readonly from?: string
   readonly folded: boolean
   readonly side: "old" | "new"
   readonly line: number
@@ -33,7 +34,11 @@ export type Note = {
   readonly stale: boolean
   readonly asks: boolean
   readonly answers: ReadonlyArray<string>
-  readonly turns: ReadonlyArray<{ readonly voice: "reviewer" | "agent"; readonly body: string }>
+  readonly turns: ReadonlyArray<{
+    readonly voice: "reviewer" | "agent"
+    readonly by?: string
+    readonly body: string
+  }>
   readonly takenAt: string | undefined
   readonly now?: number
 }
@@ -708,7 +713,12 @@ const wrap = (text: string, room: number): ReadonlyArray<string> => {
   return lines
 }
 
-const headOf = (note: Note): string => {
+const REMARK_MARK = "\u25c7"
+
+const remarkHead = (note: Note, from: string): string =>
+  `${REMARK_MARK} @${from}${note.stale ? " · outdated" : ""}`
+
+const commentHead = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
   if (note.settled) return `${marks().done} settled${moved}`
   if (note.asks) return `${marks().asked} asked back${moved}`
@@ -718,30 +728,50 @@ const headOf = (note: Note): string => {
   return `${marks().waiting} picked up ${sinceThen(note.takenAt, note.now)}${moved}`
 }
 
+const headOf = (note: Note): string =>
+  note.from === undefined ? commentHead(note) : remarkHead(note, note.from)
+
 const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {
   const wrapped = body.split("\n").flatMap((line) => wrap(line, Math.max(NOTE_MIN, room - 2)))
   return wrapped.map((text, at) => (at === 0 ? `${mark} ${text}` : `  ${text}`))
 }
 
+const heardFrom = (turn: { readonly by?: string; readonly voice: string }): string | undefined =>
+  turn.by === undefined ? undefined : `@${turn.by}`
+
 const answerLines = (note: Note, room: number): ReadonlyArray<string> =>
   note.turns.length > 0
     ? note.turns.flatMap((turn) =>
-        spokenLines(turn.body, room, turn.voice === "agent" ? ANSWER_MARK : REPLY_MARK),
+        spokenLines(
+          turn.body,
+          room,
+          heardFrom(turn) ?? (turn.voice === "agent" ? ANSWER_MARK : REPLY_MARK),
+        ),
       )
     : note.answers.flatMap((body) => spokenLines(body, room, ANSWER_MARK))
+
+const REMARK_LINES = 8
+
+const capped = (lines: ReadonlyArray<string>, most: number): ReadonlyArray<string> =>
+  lines.length <= most
+    ? lines
+    : [...lines.slice(0, most), `⋯ ${lines.length - most} more lines, press o to read it`]
+
+const bodyLines = (note: Note, room: number): ReadonlyArray<string> => {
+  const said = note.body.split("\n").flatMap((line) => wrap(line, room))
+  return note.from === undefined ? said : capped(said, REMARK_LINES)
+}
 
 const noteLines = (note: Note, room: number): ReadonlyArray<string> =>
   note.folded
     ? [`${headOf(note)} · press l`]
-    : [
-        headOf(note),
-        ...note.body.split("\n").flatMap((line) => wrap(line, room)),
-        ...answerLines(note, room),
-      ]
+    : [headOf(note), ...bodyLines(note, room), ...answerLines(note, room)]
+
+const REMARK_RULE = "\u250a"
 
 const noteRows = (note: Note, row: number, room: number, stop: number): ReadonlyArray<Display> =>
   noteLines(note, room).map((line, index) => ({
-    text: `${marks().rule} ${line}`,
+    text: `${note.from === undefined ? marks().rule : REMARK_RULE} ${line}`,
     row,
     stop,
     comment: true,

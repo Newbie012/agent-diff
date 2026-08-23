@@ -96,6 +96,7 @@ export {
   NothingDrafted,
   PartlySent,
   PullMoved,
+  RemarkTaken,
   UnknownBase,
   UnknownBranch,
   UnknownComment,
@@ -104,8 +105,25 @@ export {
   UnknownField,
   UnknownFile,
   UnknownOption,
+  UnknownRemark,
   UnknownWorktree,
   UnselectableRange,
 } from "./error.ts"
 export type { BranchReading, BranchSummary, PendingComment, ProgressReport, CommentRequest, Written, VouchReport, VouchRequest } from "./commands.ts"
 export type { Options } from "./parse.ts"
+export {
+  acceptRemark,
+  answerRemark,
+  acceptIn,
+  dismissRemark,
+  dismissIn,
+  heldRemarks,
+  listRemarks,
+  quoted,
+  remarksIn,
+  remarksHeldIn,
+  restoreRemark,
+  undismissIn,
+  waitingRemarks,
+} from "./remarks.ts"
+export type { Remark, RemarkState } from "./remarks.ts"

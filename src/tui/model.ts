@@ -25,7 +25,7 @@ import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
 import type { ThreadStand } from "./marks.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
-import type { BranchSummary, Match, ReportedLayer } from "../cli/index.ts"
+import type { BranchSummary, Match, Remark, ReportedLayer } from "../cli/index.ts"
 import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
@@ -107,6 +107,7 @@ export type TuiState = {
   readonly stop: number
   readonly opened: ReadonlyArray<string>
   readonly replyTo?: string | undefined
+  readonly answerTo?: string | undefined
   readonly anchorRow: number
   readonly selecting: boolean
   readonly draft: string
@@ -119,6 +120,7 @@ export type TuiState = {
   readonly closed: ReadonlyArray<string>
   readonly vouched: ReadonlyArray<string>
   readonly sent: ReadonlyArray<StagedComment>
+  readonly remarks: ReadonlyArray<Remark>
   readonly held: ReadonlyArray<StagedComment>
   readonly viewport: number
   readonly context: number
@@ -207,6 +209,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   closed: [],
   vouched: [],
   sent: [],
+  remarks: [],
   viewport: 20,
   context: 3,
   contextWas: 3,
@@ -803,6 +806,7 @@ export const composeRoom = (columns: number): number =>
 
 export const composeTarget = (state: TuiState): string => {
   const patch = selectedPatch(state)
+  if (state.answerTo !== undefined) return answerTarget(state)
   if (state.replyTo !== undefined) return replyTarget(state)
   if (patch === undefined) return ""
   const [from, to] = selectionRange(state)
@@ -812,6 +816,18 @@ export const composeTarget = (state: TuiState): string => {
     onSome: (found) => (found.start === found.end ? `${found.start}` : `${found.start}-${found.end}`),
   })
   return span === "" ? `Comment on ${patch.path}` : `Comment on ${patch.path}:${span}`
+}
+
+export const remarkAnswering = (state: TuiState): Remark | undefined =>
+  state.answerTo === undefined
+    ? undefined
+    : state.remarks.find((one) => one.id === state.answerTo)
+
+const answerTarget = (state: TuiState): string => {
+  const remark = remarkAnswering(state)
+  return remark === undefined
+    ? "Reply on the pull request"
+    : `Reply to @${remark.by} on the pull request, ${remark.file}:${remark.end}`
 }
 
 const replyTarget = (state: TuiState): string => {
@@ -929,6 +945,11 @@ export const rowShowing = (patch: Patch, line: number): number | undefined =>
 const lineOnSide = (row: Patch["rows"][number], side: "old" | "new"): number | undefined =>
   Option.getOrUndefined(side === "old" ? row.oldLine : row.newLine)
 
+export const needingRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray<number> =>
+  [...commentRowsIn(state, fileIndex), ...remarkRowsIn(state, fileIndex)].toSorted(
+    (left, right) => left - right,
+  )
+
 export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray<number> => {
   const patch =
     fileIndex === state.patchIndex ? selectedPatch(state) : state.patches[fileIndex]
@@ -954,14 +975,86 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
   )
 }
 
-export const stopsAtRow = (state: TuiState, row: number): number =>
-  1 + threadsAtRow(state, row).length
+export const remarkShown = (remark: Remark): boolean =>
+  remark.state === "waiting" && remark.placed
+
+export const remarksAtRow = (state: TuiState, row: number): ReadonlyArray<Remark> => {
+  const patch = selectedPatch(state)
+  const here = patch?.rows[row]
+  if (patch === undefined || here === undefined) return []
+  return state.remarks.filter(
+    (one) => one.file === patch.path && remarkShown(one) && lineOnSide(here, one.side) === one.end,
+  )
+}
+
+export const remarkRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray<number> => {
+  const patch = fileIndex === state.patchIndex ? selectedPatch(state) : state.patches[fileIndex]
+  if (patch === undefined) return []
+  const here = state.remarks.filter((one) => one.file === patch.path && remarkShown(one))
+  return patch.rows
+    .filter((row) => here.some((one) => lineOnSide(row, one.side) === one.end))
+    .map((row) => row.index)
+}
+
+export type Stop =
+  | { readonly kind: "comment"; readonly comment: StagedComment }
+  | { readonly kind: "remark"; readonly remark: Remark }
+
+export const stopsIn = (state: TuiState, row: number): ReadonlyArray<Stop> => [
+  ...threadsAtRow(state, row).map((comment): Stop => ({ kind: "comment", comment })),
+  ...remarksAtRow(state, row).map((remark): Stop => ({ kind: "remark", remark })),
+]
+
+export const stopsAtRow = (state: TuiState, row: number): number => 1 + stopsIn(state, row).length
+
+export const remarkAtStop = (state: TuiState): Remark | undefined => {
+  if (state.stop === 0) return undefined
+  const found = stopsIn(state, state.cursor)[state.stop - 1]
+  return found?.kind === "remark" ? found.remark : undefined
+}
+
+export const remarkAtRow = (state: TuiState, row: number): Remark | undefined =>
+  remarksAtRow(state, row)[0]
+
+export type RemarkHere = { readonly remark: Remark; readonly dismissed: boolean }
+
+const remarkInPanel = (state: TuiState): RemarkHere | undefined => {
+  if (state.focus !== "review") return undefined
+  const chosen = panelEntry(state)
+  return chosen?.kind === "remark"
+    ? { remark: chosen.remark, dismissed: chosen.section === "dismissed" }
+    : undefined
+}
+
+const remarkInDiff = (state: TuiState, shy: boolean): Remark | undefined => {
+  if (state.focus !== "diff") return undefined
+  const standing = remarkAtStop(state)
+  if (standing !== undefined) return standing
+  if (state.stop > 0) return undefined
+  if (shy && threadAtRow(state, state.cursor) !== undefined) return undefined
+  return remarkAtRow(state, state.cursor)
+}
+
+export const remarkUnderCursor = (state: TuiState): RemarkHere | undefined => {
+  const chosen = remarkInPanel(state)
+  if (chosen !== undefined) return chosen
+  const here = remarkInDiff(state, true)
+  return here === undefined ? undefined : { remark: here, dismissed: false }
+}
+
+export const remarkToTakeOn = (state: TuiState): Remark | undefined =>
+  remarkInPanel(state)?.remark ?? remarkInDiff(state, false)
+
+export const remarkHere = (state: TuiState): Remark | undefined => remarkToTakeOn(state)
 
 export const threadHere = (state: TuiState): StagedComment | undefined =>
   threadChosen(state) ?? threadAtStop(state) ?? threadAtRow(state, state.cursor)
 
-export const threadAtStop = (state: TuiState): StagedComment | undefined =>
-  state.stop === 0 ? undefined : threadsAtRow(state, state.cursor)[state.stop - 1]
+export const threadAtStop = (state: TuiState): StagedComment | undefined => {
+  if (state.stop === 0) return undefined
+  const found = stopsIn(state, state.cursor)[state.stop - 1]
+  return found?.kind === "comment" ? found.comment : undefined
+}
 
 export const threadAtRow = (state: TuiState, row: number): StagedComment | undefined => {
   const patch = selectedPatch(state)
@@ -988,19 +1081,29 @@ export const openCommentRows = (state: TuiState): ReadonlyArray<number> => {
       entry.outside !== true,
   )
   return patch.rows
-    .filter((row) => open.some((note) => lineOnSide(row, note.side) === note.end))
+    .filter(
+      (row) =>
+        open.some((note) => lineOnSide(row, note.side) === note.end) ||
+        state.remarks.some(
+          (one) => one.file === patch.path && remarkShown(one) && lineOnSide(row, one.side) === one.end,
+        ),
+    )
     .map((row) => row.index)
 }
 
 export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
   state.patches.flatMap((patch, index) =>
-    state.sent.some((entry) => entry.file === patch.path) ? [index] : [],
+    state.sent.some((entry) => entry.file === patch.path) ||
+    state.remarks.some((one) => one.file === patch.path && remarkShown(one))
+      ? [index]
+      : [],
   )
 
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
 
 export type PanelSection =
+  | "remarks"
   | "held"
   | "asked"
   | "filed"
@@ -1008,8 +1111,10 @@ export type PanelSection =
   | "answered"
   | "settled"
   | "removed"
+  | "dismissed"
 
 export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
+  "remarks",
   "held",
   "asked",
   "filed",
@@ -1017,14 +1122,22 @@ export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
   "answered",
   "settled",
   "removed",
+  "dismissed",
 ]
 
-export type PanelEntry = {
-  readonly section: PanelSection
-  readonly comment: StagedComment
-  readonly fresh: boolean
-  readonly unread: number
-}
+export type PanelEntry =
+  | {
+      readonly kind: "comment"
+      readonly section: PanelSection
+      readonly comment: StagedComment
+      readonly fresh: boolean
+      readonly unread: number
+    }
+  | {
+      readonly kind: "remark"
+      readonly section: PanelSection
+      readonly remark: Remark
+    }
 
 const answersIn = (comment: StagedComment): number => comment.answers?.length ?? 0
 
@@ -1052,6 +1165,7 @@ const sectionOf = (comment: StagedComment): PanelSection => SECTION_OF[threadSta
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)
   return {
+    kind: "comment",
     section: sectionOf(newer),
     comment: newer,
     fresh: newer !== comment,
@@ -1059,14 +1173,30 @@ const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   }
 }
 
+const remarkRows = (state: TuiState, section: "remarks" | "dismissed"): ReadonlyArray<PanelEntry> =>
+  state.remarks
+    .filter((one) => (section === "remarks" ? one.state === "waiting" : one.state === "dismissed"))
+    .map((remark): PanelEntry => ({ kind: "remark", section, remark }))
+
 export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   const shown = state.hideSettled
     ? state.sent.filter((comment) => comment.settled !== true)
     : state.sent
   const waiting = state.held.map(
-    (comment): PanelEntry => ({ section: "held", comment, fresh: false, unread: 0 }),
+    (comment): PanelEntry => ({
+      kind: "comment",
+      section: "held",
+      comment,
+      fresh: false,
+      unread: 0,
+    }),
   )
-  const delivered = [...waiting, ...shown.map((comment) => sentEntry(state, comment))]
+  const delivered = [
+    ...remarkRows(state, "remarks"),
+    ...waiting,
+    ...shown.map((comment) => sentEntry(state, comment)),
+    ...remarkRows(state, "dismissed"),
+  ]
   const ordered = (section: PanelSection): ReadonlyArray<PanelEntry> => {
     const found = delivered.filter((entry) => entry.section === section)
     return state.newestFirst ? found.toReversed() : found
@@ -1080,7 +1210,13 @@ export const panelEntry = (state: TuiState): PanelEntry | undefined =>
 export const threadChosen = (state: TuiState): StagedComment | undefined => {
   if (state.focus !== "review") return undefined
   const entry = panelEntry(state)
-  return entry?.comment
+  return entry?.kind === "comment" ? entry.comment : undefined
+}
+
+export const remarkChosen = (state: TuiState): Remark | undefined => {
+  if (state.focus !== "review") return undefined
+  const entry = panelEntry(state)
+  return entry?.kind === "remark" ? entry.remark : undefined
 }
 
 export const spokenSince = (

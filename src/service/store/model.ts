@@ -2,6 +2,10 @@ import type * as Wire from "./schema.ts"
 
 export type StoredLayers = typeof Wire.StoredLayers.Type
 
+export type StoredRemarks = typeof Wire.StoredRemarks.Type
+
+export type StoredRemark = typeof Wire.StoredRemark.Type
+
 export type StoredComment = typeof Wire.StoredComment.Type
 
 export type StoredDraft = typeof Wire.StoredDraft.Type
@@ -26,4 +30,5 @@ export const emptyBranchState: BranchState = {
   removed: {},
   base: "",
   read: {},
+  dismissed: {},
 }

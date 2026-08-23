@@ -2,11 +2,29 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { DriverState } from "../../state.ts"
 
+export type CommentOnForge = {
+  readonly by: string
+  readonly body: string
+}
+
+export type ThreadOnForge = {
+  readonly id: string
+  readonly path: string
+  readonly line: number
+  readonly side?: "old" | "new"
+  readonly resolved?: boolean
+  readonly outdated?: boolean
+  readonly hunk?: string
+  readonly commit?: string
+  readonly comments: ReadonlyArray<CommentOnForge>
+}
+
 export type PullOnForge = {
   readonly branch: string
   readonly number?: number
   readonly head?: string
   readonly url?: string
+  readonly threads?: ReadonlyArray<ThreadOnForge>
 }
 
 export type Landing = {
@@ -15,6 +33,8 @@ export type Landing = {
 }
 
 export type ForgeOptions = {
+  readonly threadsRaw?: string
+  readonly morePages?: ReadonlyArray<ReadonlyArray<ThreadOnForge>>
   readonly refuses?: boolean
   readonly reason?: string
   readonly accepts?: ReadonlyArray<Landing>
@@ -37,7 +57,7 @@ const OWNER = "someone/their-repo"
 const quoted = (raw: string): string => `'${raw.replaceAll("'", `'\\''`)}'`
 
 const ECHOES =
-  "const asked = JSON.parse(process.argv[1]); process.stdout.write(JSON.stringify({ comments: asked.comments.map((one) => ({ path: one.path, line: one.line })) }))"
+  "const asked = JSON.parse(process.argv[1]); if (asked.in_reply_to !== undefined) { process.stdout.write(JSON.stringify({ id: 90210 })) } else { process.stdout.write(JSON.stringify({ comments: asked.comments.map((one) => ({ path: one.path, line: one.line })) })) }"
 
 const answerFor = (options: ForgeOptions): ReadonlyArray<string> => {
   if (options.refuses === true) {
@@ -48,6 +68,79 @@ const answerFor = (options: ForgeOptions): ReadonlyArray<string> => {
     return [`printf '%s' ${quoted(JSON.stringify({ comments: options.accepts }))}`]
   }
   return [`node -e ${quoted(ECHOES)} "$body"`]
+}
+
+const threadsPage = (
+  threads: ReadonlyArray<ThreadOnForge>,
+  cursor: string | undefined,
+): string =>
+  JSON.stringify({
+    data: {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            pageInfo: { hasNextPage: cursor !== undefined, endCursor: cursor },
+            nodes: threads.map((one) => ({
+              id: one.id,
+              isResolved: one.resolved === true,
+              isOutdated: one.outdated === true,
+              path: one.path,
+              line: one.line,
+              diffSide: one.side === "old" ? "LEFT" : "RIGHT",
+              comments: {
+                totalCount: one.comments.length,
+                nodes: one.comments.map((said, at) => ({
+                  databaseId: 1000 + at,
+                  author: { login: said.by },
+                  body: said.body,
+                  diffHunk: at === 0 ? (one.hunk ?? `@@ -1 +${one.line} @@`) : "",
+                  originalCommit: { oid: at === 0 ? (one.commit ?? "headcommit") : "" },
+                })),
+              },
+            })),
+          },
+        },
+      },
+    },
+  })
+
+const pagesOf = (
+  pulls: ReadonlyArray<PullOnForge>,
+  options: ForgeOptions,
+): ReadonlyArray<ReadonlyArray<ThreadOnForge>> => [pulls[0]?.threads ?? [], ...(options.morePages ?? [])]
+
+const pageBranch = (
+  threads: ReadonlyArray<ThreadOnForge>,
+  at: number,
+  last: number,
+): ReadonlyArray<string> => {
+  const cursor = at === last ? undefined : `page${at + 1}`
+  const test = at === 0 ? 'case "$*" in *"after="*) ;; *)' : `case "$*" in *"after=page${at}"*)`
+  return [
+    test,
+    `cat <<'JSON'`,
+    threadsPage(threads, cursor),
+    "JSON",
+    "exit 0",
+    ";;",
+    "esac",
+  ]
+}
+
+const graphqlBranch = (
+  pulls: ReadonlyArray<PullOnForge>,
+  options: ForgeOptions,
+): ReadonlyArray<string> => {
+  const pages = pagesOf(pulls, options)
+  return [
+    'if [ "$1" = "api" ] && [ "$2" = "graphql" ]; then',
+    ...(options.refuses === true
+      ? [`echo '${options.reason ?? "the forge said no"}' >&2`, "exit 1"]
+      : options.threadsRaw !== undefined
+        ? [`cat <<'JSON'`, options.threadsRaw, "JSON", "exit 0"]
+        : pages.flatMap((threads, at) => pageBranch(threads, at, pages.length - 1))),
+    "fi",
+  ]
 }
 
 const scriptFor = (
@@ -86,6 +179,7 @@ const scriptFor = (
     `printf '%s\\n' '${OWNER}'`,
     "exit 0",
     "fi",
+    ...graphqlBranch(pulls, options),
     'if [ "$1" = "api" ]; then',
     "body=$(cat)",
     `printf '%s\\n' "$body" >> "${posted}"`,

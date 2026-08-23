@@ -10,7 +10,7 @@ import {
   type CliRenderer,
   type KeyEvent,
 } from "@opentui/core"
-import { Cause, Deferred, Effect, Fiber, Option, Queue, Stream, SubscriptionRef } from "effect"
+import { Cause, Deferred, Effect, Fiber, Option, Queue, Result, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
@@ -49,6 +49,13 @@ import {
   removeIn,
   settleThread,
   settleRead,
+  acceptIn,
+  answerRemark,
+  dismissIn,
+  undismissIn,
+  remarksIn,
+  remarksHeldIn,
+  type Remark,
 } from "../cli/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
 import type { Worktree } from "../service/git/index.ts"
@@ -78,6 +85,9 @@ import {
   selectionRange,
   spokenSince,
   panelEntry,
+  remarkHere,
+  remarkToTakeOn,
+  remarkUnderCursor,
   type PanelEntry,
   panelEntries,
   threadAtRow,
@@ -121,6 +131,7 @@ import {
   withFinder,
   withMatches,
   allRevealed,
+  withRemarks,
   withSent,
   withSource,
   withLayers,
@@ -714,6 +725,7 @@ export class App {
       "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
       "thread.reply": () => this.replyHere(),
+      "remark.accept": () => this.acceptRemarkHere(),
       "selection.copy": () => Effect.sync(() => this.copySelection(false)),
       "search.open": () => this.findSelection(),
       "search.jump": () => this.runFinder(),
@@ -843,12 +855,23 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const reading = yield* readingOf(this.repo, name, this.base)
       this.reading = reading
-      const [progress, layers, sent] = yield* Effect.all(
-        [progressIn(reading), layersIn(reading), sentIn(reading)],
+      const [progress, layers, sent, remarks] = yield* Effect.all(
+        [
+          progressIn(reading),
+          layersIn(reading),
+          sentIn(reading),
+          Effect.result(remarksIn(this.repo, reading)),
+        ],
         { concurrency: "unbounded" },
       )
       const opened = withVouched(withPatches(this.state, reading.patches), progress.vouched)
-      return withLayers(withSent(opened, sent), layers)
+      const read = withRemarks(
+        withLayers(withSent(opened, sent), layers),
+        Result.getOrElse(remarks, () => [] as ReadonlyArray<Remark>),
+      )
+      return Result.isSuccess(remarks)
+        ? read
+        : withNoticeHere(read, "the forge did not answer, so no remarks are shown")
     })
   }
 
@@ -998,6 +1021,10 @@ export class App {
         this.commit(withNoticeHere(this.state, "nothing in the review yet"))
         return
       }
+      if (entry.kind === "remark") {
+        yield* this.openRemark(entry.remark)
+        return
+      }
       const at = this.state.patches.findIndex((patch) => patch.path === entry.comment.file)
       const patch = this.state.patches[at]
       if (patch === undefined) {
@@ -1017,7 +1044,11 @@ export class App {
     })
   }
 
-  private jumpingPastGaps(opened: TuiState, at: number, entry: PanelEntry): Work {
+  private jumpingPastGaps(
+    opened: TuiState,
+    at: number,
+    entry: Extract<PanelEntry, { kind: "comment" }>,
+  ): Work {
     return Effect.gen({ self: this }, function* () {
       const wide = { ...opened, revealed: allRevealed(opened) }
       const shown = selectedPatch(wide)
@@ -1079,11 +1110,51 @@ export class App {
     return Effect.sync(() => {
       const thread =
         threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
-      if (thread?.id === undefined) {
+      if (thread?.id !== undefined) {
+        this.commit({ ...this.state, screen: "compose", draft: "", replyTo: thread.id })
+        return
+      }
+      const remark = remarkToTakeOn(this.state)
+      if (remark === undefined) {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
-      this.commit({ ...this.state, screen: "compose", draft: "", replyTo: thread.id })
+      this.commit({ ...this.state, screen: "compose", draft: "", answerTo: remark.id })
+    })
+  }
+
+  private sendRemarkAnswer(to: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      if (this.state.draft.trim().length === 0) {
+        this.commit(withNotice(this.state, NOTHING_WRITTEN))
+        return
+      }
+      const said = yield* this.display.written
+      const done = yield* Effect.as(
+        answerRemark({ repo: this.repo, branch: branch.branch, id: to, body: said }),
+        true,
+      ).pipe(Effect.catchTag("ForgeUnavailable", () => Effect.succeed(false)))
+      const clear = { ...sentAway(this.state), answerTo: undefined }
+      if (!done) {
+        this.commit(withNotice(clear, "the forge would not take that reply"))
+        return
+      }
+      this.commit(clear)
+      yield* this.reloadFromForge("replied on the pull request")
+    })
+  }
+
+  private reloadFromForge(said: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      const reading = this.reading
+      if (reading === undefined) return
+      const remarks = yield* Effect.orElseSucceed(
+        remarksIn(this.repo, reading),
+        () => this.state.remarks,
+      )
+      this.commit(withNoticeHere(withRemarks(this.state, remarks), said))
     })
   }
 
@@ -1095,12 +1166,80 @@ export class App {
   private heldUnderCursor(): number {
     if (this.state.focus !== "review") return -1
     const entry = panelEntry(this.state)
-    if (entry?.section !== "held") return -1
+    if (entry === undefined || entry.kind !== "comment" || entry.section !== "held") return -1
     return this.state.held.indexOf(entry.comment)
+  }
+
+  private openRemark(remark: Remark): Work {
+    return Effect.gen({ self: this }, function* () {
+      const at = this.state.patches.findIndex((patch) => patch.path === remark.file)
+      const patch = this.state.patches[at]
+      if (patch === undefined || !remark.placed) {
+        this.commit(withNoticeHere(this.state, `${remark.file} is not in this diff`))
+        return
+      }
+      this.commit(openedAt(this.measured(), at, remark.end))
+      yield* this.turnedTo()
+    })
+  }
+
+  private acceptRemarkHere(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const remark = remarkHere(this.state)
+      const reading = this.reading
+      if (remark === undefined || reading === undefined) {
+        this.commit(withNoticeHere(this.state, "no remark here"))
+        return
+      }
+      const done = yield* Effect.as(
+        acceptIn({
+          reading,
+          id: remark.id,
+          at: new Date().toISOString(),
+          commentId: randomUUID(),
+        }),
+        true,
+      ).pipe(Effect.catchTag("RemarkTaken", () => Effect.succeed(false)))
+      if (!done) {
+        this.commit(withNoticeHere(this.state, "that remark is already a comment of yours"))
+        return
+      }
+      yield* this.reloadRemarks("accepted, the agent has it")
+    })
+  }
+
+  private dismissRemarkHere(remark: Remark, back: boolean): Work {
+    return Effect.gen({ self: this }, function* () {
+      const reading = this.reading
+      if (reading === undefined) return
+      const at = new Date().toISOString()
+      yield* back
+        ? undismissIn(reading.worktree.path, remark.id)
+        : dismissIn(reading.worktree.path, remark.id, at)
+      yield* this.reloadRemarks(back ? "restored" : "dismissed, it is under Dismissed")
+    })
+  }
+
+  private reloadRemarks(said: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      const reading = this.reading
+      if (reading === undefined) return
+      const [remarks, sent] = yield* Effect.all([remarksHeldIn(reading), sentIn(reading)], {
+        concurrency: "unbounded",
+      })
+      const held = this.staying(withRemarks(withSent(this.state, sent), remarks), this.state.panelIndex)
+      this.commit(withNoticeHere(held, said))
+    })
   }
 
   private removeHere(): Work {
     return Effect.gen({ self: this }, function* () {
+      const waitingHeld = this.heldUnderCursor()
+      const triaged = waitingHeld === -1 ? remarkUnderCursor(this.state) : undefined
+      if (triaged !== undefined) {
+        yield* this.dismissRemarkHere(triaged.remark, triaged.dismissed)
+        return
+      }
       const waiting = this.heldUnderCursor()
       if (waiting !== -1) {
         yield* this.dropHeld(waiting)
@@ -1124,7 +1263,11 @@ export class App {
       const sent = yield* this.loadSent(branch)
       const kept = { ...this.state, opened: this.state.opened.filter((one) => one !== id) }
       const said = back ? "restored" : "removed, it is under Removed in the review"
-      this.commit(withNotice(this.staying(withSent(kept, sent), was), said))
+      const held = this.reading
+      const remarks = held === undefined ? this.state.remarks : yield* remarksHeldIn(held)
+      this.commit(
+        withNotice(this.staying(withRemarks(withSent(kept, sent), remarks), was), said),
+      )
     })
   }
 
@@ -1508,6 +1651,7 @@ export class App {
   }
 
   private send(): Work {
+    if (this.state.answerTo !== undefined) return this.sendRemarkAnswer(this.state.answerTo)
     return this.state.replyTo === undefined ? this.sendComment() : this.sendReply(this.state.replyTo)
   }
 

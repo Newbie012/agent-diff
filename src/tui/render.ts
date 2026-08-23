@@ -54,7 +54,6 @@ import {
   selectedBranch,
   selectedPatch,
   selectionRange,
-  threadChosen,
   threadHere,
   threadStand,
   threadsOn,
@@ -71,6 +70,11 @@ import {
   composeRoom as composeText,
   panelEntries,
   panelEntry,
+  remarkShown,
+  remarkToTakeOn,
+  remarkUnderCursor,
+  threadAtStop,
+  threadChosen,
   panelShown,
   shownMatches,
   reviewWidth,
@@ -81,6 +85,7 @@ import {
   laidDraft,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
+import type { Remark } from "../cli/index.ts"
 import { marks, standMark } from "./marks.ts"
 import { palette } from "./theme.ts"
 
@@ -808,8 +813,34 @@ const notesOf = (
       now: shown.now,
     }))
 
-const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> =>
-  notesOf(stillThere(state.sent), path, true, { opened: state.opened, now: state.now })
+const remarksOf = (state: TuiState, path: string): ReadonlyArray<Note> =>
+  state.remarks
+    .filter((one) => one.file === path && remarkShown(one))
+    .map((one) => ({
+      id: one.id,
+      from: one.by,
+      folded: false,
+      side: one.side,
+      line: one.end,
+      body: one.body,
+      sent: false,
+      settled: false,
+      stale: one.outdated,
+      asks: false,
+      answers: [],
+      turns: one.replies.map((said) => ({
+        voice: "reviewer" as const,
+        by: said.by,
+        body: said.body,
+      })),
+      takenAt: undefined,
+      now: state.now,
+    }))
+
+const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
+  ...notesOf(stillThere(state.sent), path, true, { opened: state.opened, now: state.now }),
+  ...remarksOf(state, path),
+]
 
 const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<TextChunk>> => {
   const chips: Array<ReadonlyArray<TextChunk>> = []
@@ -1113,11 +1144,21 @@ const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
         room.title + TITLE_LEAD,
       )
 
+const standingOnThread = (state: TuiState): boolean =>
+  (state.stop > 0 && threadAtStop(state) !== undefined) || threadChosen(state) !== undefined
+
+const standingOnRemark = (state: TuiState): boolean => remarkToTakeOn(state) !== undefined
+
+const standingOnDismissed = (state: TuiState): boolean =>
+  remarkUnderCursor(state)?.dismissed === true
+
 const offeredIn = (state: TuiState): Offered => ({
   comments: state.sent.length,
   held: state.held.length,
   layers: state.layers.length,
-  onThread: state.stop > 0 || threadChosen(state) !== undefined,
+  onThread: standingOnThread(state),
+  onRemark: standingOnRemark(state),
+  onDismissed: standingOnDismissed(state),
   selecting: state.selecting,
   reviewed: reviewedCountIn(state),
   pull: pullHere(state).length > 0,
@@ -1131,6 +1172,8 @@ const offeredIn = (state: TuiState): Offered => ({
 })
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
+  remarks: "Remarks",
+  dismissed: "Dismissed",
   held: "Waiting to be sent",
   asked: "Waiting on you",
   filed: "Not picked up",
@@ -1226,23 +1269,46 @@ const windowedBlocks = (
   return { rows, chunks: kept.flatMap((block) => block.chunks) }
 }
 
-const panelWhere = (entry: PanelEntry, room: number): string => {
-  const where =
-    entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}`
-  return `${clipPath(entry.comment.file, Math.max(4, room - where.length))}${where}`
+const REMARK_MARK = "◇"
+
+const remarkWhere = (remark: Remark, known: boolean): string => {
+  if (remark.placed) return `:${remark.end}`
+  if (remark.outdated) return " · outdated"
+  return known ? " · the code went" : " · not in the diff"
 }
 
-const panelBody = (entry: PanelEntry): string =>
-  entry.comment.body.split("\n").find((line) => line.trim().length > 0) ?? ""
+const wherePart = (state: TuiState, entry: PanelEntry): string => {
+  if (entry.kind === "remark") {
+    const known = state.patches.some((patch) => patch.path === entry.remark.file)
+    return remarkWhere(entry.remark, known)
+  }
+  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}`
+}
+
+const panelFile = (entry: PanelEntry): string =>
+  entry.kind === "remark" ? entry.remark.file : entry.comment.file
+
+const panelWhere = (state: TuiState, entry: PanelEntry, room: number): string => {
+  const where = wherePart(state, entry)
+  return `${clipPath(panelFile(entry), Math.max(4, room - where.length))}${where}`
+}
+
+const panelBody = (entry: PanelEntry): string => {
+  const said = entry.kind === "remark" ? `@${entry.remark.by} ${entry.remark.body}` : entry.comment.body
+  return said.split("\n").find((line) => line.trim().length > 0) ?? ""
+}
+
+const panelMark = (entry: PanelEntry): string =>
+  entry.kind === "remark" ? REMARK_MARK : standMark(threadStand(entry.comment))
 
 type Placed = { readonly entry: PanelEntry; readonly at: number }
 
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
-  const lead = ` ${standMark(threadStand(entry.comment))} `
+  const lead = ` ${panelMark(entry)} `
   const here = placed.at === state.panelIndex
   return [
-    { text: `${lead}${panelWhere(entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
+    { text: `${lead}${panelWhere(state, entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
     { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted, here },
   ]
 }
@@ -1284,8 +1350,8 @@ const moreLine = (count: number, mark: string, room: number): ReadonlyArray<Pane
 
 const panelText = (state: TuiState, room: number, rows: number): StyledText => {
   const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
-  const fresh = placed.filter((one) => one.entry.fresh).length
-  const unread = placed.filter((one) => one.entry.unread > 0).length
+  const fresh = placed.filter((one) => one.entry.kind === "comment" && one.entry.fresh).length
+  const unread = placed.filter((one) => one.entry.kind === "comment" && one.entry.unread > 0).length
   const said = fresh > 0 ? `${fresh} ${PULL_HINT}` : unread > 0 ? `${unread} unread` : ""
   const banner: ReadonlyArray<PanelLine> =
     said.length === 0 ? [] : [{ text: clip(said, room), tone: palette.attention }]

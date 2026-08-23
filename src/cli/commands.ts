@@ -362,6 +362,7 @@ const whereItSitsNow = (
 ): PendingComment => {
   const patch = patches.find((candidate) => candidate.path === comment.file)
   if (patch === undefined) return { ...comment, placed: false }
+  if (comment.start === WHOLE_FILE) return { ...comment, placed: false }
   if (comment.snippet.trim().length === 0) return { ...comment, placed: true }
   return Option.match(foundAgain(patch, comment), {
     onNone: () => ({ ...comment, placed: false }),

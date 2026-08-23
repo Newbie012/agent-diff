@@ -1,0 +1,170 @@
+# PRD-013 — Review remarks
+
+> Reading the review left on a branch's pull request inside adiff, deciding each remark, and handing
+> the ones you accept to the agent as your own comments.
+
+- **Status:** `accepted`
+- **Owner:** TBD
+- **Last updated:** 2026-08-23
+
+## Problem Statement
+
+An agent's work reaches the reviewer as a diff, and the reviewer's comments are instructions the
+agent acts on. The review on the pull request arrives somewhere else: in a browser, one pull request
+at a time, and on a stack of three pull requests, three times over. The only way to act on it is to
+read it in one window and retype it in another.
+
+The two do not carry the same weight either. A comment written in adiff is work for the agent. A
+remark on the pull request is a point to weigh first, whoever left it, and some of it will be
+answered rather than acted on. A tool that treats both the same either hands the agent work nobody
+agreed to, or leaves the pull request's review outside the review entirely.
+
+## Solution
+
+adiff fetches the [remarks](CONTEXT.md#remark) on a branch's pull request and shows each one against
+the code it is about, with the handle that left it. The reviewer accepts, rewords or
+dismisses each one.
+
+Accepting writes a comment in the reviewer's name, quoting the handle it came from, and that comment
+is what the agent picks up. A remark itself is never handed over: it is a snapshot adiff read from
+the forge, and the agent's hand-over cannot return one. Dismissing takes a remark out of the review
+and leaves it untouched on the pull request.
+
+A remark belongs to the pull request it was left on, so each branch of a stack carries its own, and
+the branch list says how many are waiting on each.
+
+## User Stories
+
+1. As a `reviewer`, I want the pull request's remarks shown against my diff, so that I can read the
+   review where I read the code.
+2. As a `reviewer`, I want one key to accept a remark, so that agreeing with a point costs nothing.
+3. As a `reviewer`, I want to reword a remark before the agent sees it, so that the instruction says
+   what I mean.
+4. As a `reviewer`, I want to dismiss a remark, so that a point I disagree with leaves my review
+   without leaving the pull request.
+5. As a `reviewer`, I want a branch with no pull request to be quiet about it, so that nothing
+   pretends a review exists.
+6. As a `reviewer`, I want a remark whose code has changed to say so, so that I never read it as a
+   remark about the code now on screen.
+7. As an `agent`, I want the hand-over to carry only what the reviewer accepted, so that I never act
+   on a point the reviewer has not agreed with.
+8. As a `reviewer`, I want triage to survive a refetch and a restart, so that walking a stack twice
+   is not walking it from the start.
+
+## Implementation Decisions
+
+### Owns
+
+Fetching remarks from the forge, the snapshot they live in, the triage record, accepting a remark as
+a comment, and how a remark is drawn and reached in the terminal.
+
+### Does not own
+
+Sending a review to a pull request ([PRD 012](012-reviewing-someone-elses-work.md)); the anchor and
+its snippet match ([PRD 002](002-diff-and-anchoring.md)); the inbox and the hand-over
+([PRD 004](004-comment-delivery.md)); which branch a stack sits on
+([PRD 001](001-branch-discovery.md)).
+
+### Public contract
+
+- **A remark carries** its forge id, the pull request it was left on, the path, the side, the line
+  range, the handle that left it, the body, every reply in the thread with its own handle, the
+  commit it was left on, and whether the forge calls the thread outdated.
+- **Remarks are fetched, never delivered.** They live in a snapshot beside the branch's inbox,
+  replaced whole on every fetch. `comment take` cannot return one; the only thing that reaches the
+  agent is a comment.
+- **A remark belongs to the pull request it was left on.** A branch reads its own pull request's
+  threads and no other branch's, so a stack of three is three sets of remarks.
+- **A thread the forge reports as resolved is not fetched.** The forge is the record for
+  resolution.
+- **Triage records dismissals and nothing else.** A remark is accepted when a comment carrying its
+  id exists, so acceptance cannot disagree with the inbox.
+- **Accepting writes a comment in the reviewer's name**, quoting the handle it came from, anchored
+  where the remark's code stands now. Accepting a remark that is already accepted is refused and
+  says which comment holds it.
+- **Accepting a remark the diff cannot show anchors to the file**, with the hunk the forge quoted as
+  the snippet, so the code the remark was written against travels with the comment.
+- **A suggestion block is shown as it was written** and loses its fence when accepted, so the agent
+  is handed words rather than a patch.
+- **Dismissing is reversible.** A dismissed remark is listed as dismissed and can be restored.
+- **The comment keys do not reach a remark.** Every cursor stop and every review-panel row carries
+  its kind, and settling and replying read comments only.
+- **An untriaged remark still needs the reviewer**, so the walk through comments walks remarks too,
+  within a file and across files, and a pane holding only remarks says what it holds.
+- **A remark on a branch with no pull request is an empty list, not a failure**, and so is a forge
+  that cannot be reached at all. When the branch has a pull request whose threads will not load, the
+  review says the forge did not answer rather than showing an empty section.
+- **A remark's line comes from the forge, and its code from the hunk the forge quoted.** The last
+  line of that hunk on the remark's own side is what the anchor is matched by, so a remark relocates
+  the way a comment does. A remark the forge quoted no code for keeps the line it reported.
+- **A remark held by a comment cannot be dismissed or restored behind its back.** Triage of an
+  accepted remark is refused and names the comment holding it; removing that comment frees the
+  remark to be triaged again.
+- **Replying to a remark answers in its thread.** The reply goes to the thread the remark belongs
+  to, not to a new one, and a reply the forge does not confirm with an id is reported as refused
+  rather than sent. A reply is the one thing adiff writes to a pull request here.
+- **Every thread on the pull request is read, a page at a time.** Nothing is cut off at a page
+  boundary, and a thread holding more replies than were fetched says how many it is holding back.
+- **A remark longer than eight lines is cut short in the diff**, saying how many lines it holds and
+  where to read the rest. A remark is somebody else's prose and cannot be allowed to bury the code.
+
+### Deferred decisions
+
+| Decision | Trigger |
+| --- | --- |
+| Resolving a thread on the forge from adiff | Someone asking why a thread is open after the code changed |
+| Applying a suggestion block as a patch | Suggestions accepted verbatim often enough that retyping them is the cost |
+| One screen of every remark in a stack | A remark missed because it sat on a branch nobody opened |
+| Accepting from the branch list | A path that does not re-read the branch's diff for an anchor |
+| Forges other than GitHub | A second forge |
+| Reading past the first hundred threads on one pull request | A review with more than a hundred open threads |
+| Two adiff windows accepting the same remark at once | Anyone reviewing one branch in two windows |
+
+## Testing Decisions
+
+Observed at the two boundaries. At the store: what the agent receives after an accept, asserted on
+the body and the anchor rather than on a count. At the screen: where a remark is drawn, what the
+panel sections hold, and what the footer offers.
+
+The forge is a script on the path, as it is for every other forge test, so a test states the threads
+a pull request holds without reaching the network.
+
+Behaviors that must be covered:
+
+- Two unresolved threads are listed with their handles, bodies and replies; a resolved one is not.
+- A branch with no pull request lists nothing and does not fail.
+- A forge that refuses names the forge and exits non-zero.
+- A second fetch replaces the snapshot rather than adding to it.
+- Accepting hands the agent a comment quoting the handle, anchored at the remark's code.
+- Accepting the same remark twice is refused.
+- Accepting a remark the diff cannot show anchors to the file with the quoted hunk.
+- The hand-over never carries a remark.
+- Dismissing hides a remark from the diff and lists it as dismissed; restoring brings it back.
+- A remark is drawn under its code with its handle; a thread with three voices prints three handles.
+- A remark whose code is gone is drawn against no line and the panel says so.
+- A remark the forge calls outdated says so.
+- Settling and replying do not reach a remark.
+- The walk through comments reaches a file holding only remarks.
+- A thread the forge reports with no line, and a comment by an account that has gone, are both read
+  rather than failing the fetch.
+- A remark the forge quoted no code for sits on the line it reported.
+- An accepted suggestion reaches the agent as words, with no fence around them.
+- Dismissing an accepted remark is refused; removing its comment frees it.
+- A remark of two hundred lines leaves the code below it on screen.
+- A pull request with more threads than one page holds gives up every one of them.
+- Replying to a remark reaches the thread it belongs to, and nothing reaches the agent.
+
+## Out of Scope
+
+- Writing anything to the pull request. adiff reads remarks; sending a review belongs to
+  [PRD 012](012-reviewing-someone-elses-work.md).
+- Review bodies with no line of their own. A remark is anchored, and the forge's thread list is
+  where anchored remarks live.
+- Approving, requesting changes, or resolving threads.
+
+## Further Notes
+
+The riskiest assumption is that the pull request's review is worth reading inside adiff at all
+rather than in the browser it was written in. What makes it worth it is the ending: a point the
+reviewer agrees with becomes work the agent picks up without anyone retyping it. If reviewers accept
+nothing and answer everything in prose, this is a worse browser.

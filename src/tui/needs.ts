@@ -6,6 +6,8 @@ import type {
   UnknownBase,
   UnknownBranch,
   UnknownComment,
+  UnknownRemark,
+  RemarkTaken,
   UnknownFile,
   UnknownWorktree,
   UnselectableRange,
@@ -24,6 +26,8 @@ export type Fault =
   | UnknownBranch
   | UnknownComment
   | UnknownFile
+  | UnknownRemark
+  | RemarkTaken
   | UnknownWorktree
   | UnselectableRange
   | ForgeUnavailable

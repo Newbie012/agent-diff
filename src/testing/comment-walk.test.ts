@@ -81,6 +81,6 @@ describe("when the reviewer walks between comments", () => {
     await driver.screen.pressKeys(["n"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("no comments yet")
+    expect(await driver.screen.getFrame()).toContain("nothing waiting on you here")
   })
 })
