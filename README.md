@@ -12,20 +12,18 @@ point stays open until you settle it.
 
 ## Getting started
 
-Two commands. The first installs adiff, the second tells this repository that review happens here:
+Two commands. The first installs adiff, the second installs the skill that teaches your agent to
+pick up your comments:
 
 ```bash
 brew install Newbie012/tap/adiff
-adiff init
+npx skills add Newbie012/agent-diff --skill adiff
 ```
 
-[Other ways to install](docs/install.md), if you would rather not use Homebrew.
+[Other ways to install](docs/install.md), if you would rather not use Homebrew. adiff writes nothing
+into your repository — no `AGENTS.md`, no `CLAUDE.md`. Your agent finds the skill on its own.
 
-`init` writes a short passage into `AGENTS.md`, a `CLAUDE.md` that imports it, and the adiff skill
-into `.claude/skills/adiff/`, so an agent working here picks up your comments without anyone naming
-the tool. `adiff init --check` shows what it would write and writes nothing.
-
-Then ask your agent to walk you through it:
+Then ask it to walk you through it:
 
 > Read the adiff skill and onboard me: hand your current work over for review, and tell me what to
 > press.

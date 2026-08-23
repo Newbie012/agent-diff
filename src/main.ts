@@ -20,7 +20,6 @@ import {
   fieldsOf,
   findCommand,
   findUpgrade,
-  initRepository,
   refreshSkill,
   refreshSkills,
   sayRefreshed,
@@ -291,15 +290,6 @@ const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
   yield* answer(options, { layers })
 })
 
-const init = Effect.fn("Main.init")(function* (options: Options) {
-  const report = yield* initRepository({
-    repo: options["repo"] ?? process.cwd(),
-    write: options["check"] === undefined,
-    skill: options["no-skill"] === undefined,
-  })
-  yield* answer(options, { wrote: report.wrote, changes: report.changes })
-})
-
 const skillRefresh = Effect.fn("Main.skillRefresh")(function* (options: Options) {
   const report = yield* refreshSkill([process.cwd(), homedir()])
   yield* answer(options, { changes: report.changes })
@@ -394,7 +384,6 @@ const routes = {
   "review progress": reviewStatus,
   "layers set": layersSet,
   "layers show": layersShow,
-  init,
   "skill refresh": skillRefresh,
   upgrade,
   describe,

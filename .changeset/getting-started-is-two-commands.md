@@ -2,18 +2,19 @@
 "@eliya-oss/agent-diff": patch
 ---
 
-breaking(CLI): `adiff init` writes the instructions and the skill on its own, and `--check` reports without writing.
+breaking(CLI): `adiff init` is gone, and the skill is installed with `npx skills add Newbie012/agent-diff --skill adiff`.
 
 <details><summary>What changed</summary>
 
-`init` used to report unless you passed `--write`, and left the skill out unless you also passed
-`--skill`. So the command that set a repository up was `adiff init --write --skill`, and an agent
-that got the four commands without the loop they belong to was the common end state.
+`init` wrote a passage into `AGENTS.md` and a `CLAUDE.md` importing it, kept between sentinels so it
+could be found and replaced, and wrote the skill only if you also asked for it. Editing two files a
+whole team shares bought nothing the skill does not already do — an agent finds a skill by its
+description without being told to look — and a command whose whole job was fetching one file had to
+be installed, learned and kept in step with the skills CLI's own.
 
-Now `adiff init` writes `AGENTS.md`, `CLAUDE.md` and `.claude/skills/adiff/SKILL.md`. `--check`
-reports what each file would become and writes nothing, `--no-skill` writes the instructions alone,
-and `--write` and `--skill` are gone.
+Getting started is now installing adiff and installing the skill. adiff writes nothing into a
+repository. If you ran the old `init`, the block between `<!-- adiff:begin -->` and
+`<!-- adiff:end -->` in `AGENTS.md` and `CLAUDE.md` is yours to delete; nothing reads it any more.
+`adiff skill refresh` still brings an installed skill up to the build running beside it.
 
 </details>
-
-breaking(CLI): `adiff init` writes into the directory you run it in, so `--repo` is optional.

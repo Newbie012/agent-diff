@@ -432,36 +432,6 @@ const commands: ReadonlyArray<CommandSpec> = [
     example: "adiff config set --name hold --value on",
   },
   {
-    name: "init",
-    about:
-      "Write the review loop into this repository's agent instructions, so an agent finds it unprompted",
-    group: SET_UP,
-    addresses: "repo",
-    safety: "write",
-    options: [
-      {
-        name: "repo",
-        required: false,
-        value: "path",
-        about: "Repository to write the loop into. Defaults to the current directory",
-      },
-      {
-        name: "check",
-        required: false,
-        value: "flag",
-        about: "Report what each file would become, and change nothing",
-      },
-      {
-        name: "no-skill",
-        required: false,
-        value: "flag",
-        about: "Leave out the adiff skill at .claude/skills/adiff/SKILL.md",
-      },
-    ],
-    dataKey: "changes",
-    example: "adiff init",
-  },
-  {
     name: "skill refresh",
     about:
       "Rewrite the adiff skill wherever it is already installed, in this directory and in your home directory. Installs nothing that is not already there",

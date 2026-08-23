@@ -75,24 +75,21 @@ adiff layers show --worktree . --fields covered,total,uncovered
 Any hunk no layer claims is reported here and shown to you under "not in any layer". The layers
 record the commit they were written for, and adiff marks them stale once the branch moves past it.
 
-## Setting up a repository
-
-```bash
-adiff init            # writes it into the current directory
-adiff init --check    # shows what it would write, and writes nothing
-```
-
-Writes a short passage into `AGENTS.md` and a `CLAUDE.md` that imports it, telling any agent working
-in that repository how the handover runs, and the full skill into `.claude/skills/adiff/`. The
-passage sits between `<!-- adiff:begin -->` and `<!-- adiff:end -->`, so a second run changes nothing
-and removing it is deleting a block you can see. `--no-skill` writes the passage alone, and `--repo`
-names a directory other than the one you are in.
-
-For a per-machine install instead:
+## Teaching an agent the loop
 
 ```bash
 npx skills add Newbie012/agent-diff --skill adiff
 ```
+
+That is the whole setup. The skill says everything on this page in the form an agent reads, and adiff
+writes nothing into the repository itself. When the skill is older than the adiff running beside it:
+
+```bash
+adiff skill refresh
+```
+
+which rewrites the skill wherever it is already installed, here and in your home directory, and
+installs it nowhere new.
 
 When someone asks for a review, the agent can put it in front of them:
 
