@@ -170,6 +170,7 @@ const NOTICE_MS = 2200
 export type AppOptions = {
   readonly renderer: CliRenderer
   readonly repo: string
+  readonly base?: string | undefined
   readonly display: DisplayShape
   readonly state: SubscriptionRef.SubscriptionRef<TuiState>
   readonly intents: Queue.Queue<Intent>
@@ -321,6 +322,7 @@ export class App {
 
   private readonly renderer: CliRenderer
   private readonly repo: string
+  private readonly base: string | undefined
   private readonly noticeMs: number
   private roomed = 0
   private readonly sessionPath: string | undefined
@@ -346,6 +348,7 @@ export class App {
   constructor(options: AppOptions) {
     this.renderer = options.renderer
     this.repo = options.repo
+    this.base = options.base
     this.noticeMs = options.noticeMs ?? NOTICE_MS
     this.sessionPath = options.sessionPath
     Object.assign(this.chosen, chosenIn({ ...initialState([]), ...options.chosen }))
@@ -836,7 +839,7 @@ export class App {
 
   private readBranch(name: string): Work<TuiState> {
     return Effect.gen({ self: this }, function* () {
-      const reading = yield* readingOf(this.repo, name)
+      const reading = yield* readingOf(this.repo, name, this.base)
       this.reading = reading
       const [progress, layers, sent] = yield* Effect.all(
         [progressIn(reading), layersIn(reading), sentIn(reading)],
@@ -1126,7 +1129,7 @@ export class App {
   private fillBranches(): Work {
     return Effect.gen({ self: this }, function* () {
       const here = selectedBranch(this.state)?.branch
-      const branches = yield* (listBranches(this.repo))
+      const branches = yield* (listBranches(this.repo, this.base))
       const read = withBranches(this.state, branches)
       const at = branches.findIndex((candidate) => candidate.branch === here)
       this.commit(at === -1 ? read : { ...read, branchIndex: at })
@@ -1137,7 +1140,7 @@ export class App {
   private reloadList(): Work {
     return Effect.gen({ self: this }, function* () {
       const here = selectedBranch(this.state)?.branch
-      const branches = yield* (listBranches(this.repo))
+      const branches = yield* (listBranches(this.repo, this.base))
       const read = withBranches(this.state, branches)
       const at = branches.findIndex((candidate) => candidate.branch === here)
       const kept = at === -1 ? read : { ...read, branchIndex: at }
@@ -1165,7 +1168,7 @@ export class App {
       const next = reduce(this.measured(), "back")
       this.commit(next)
       if (next.screen !== "branches") return
-      this.commit(withBranches(this.state, yield* (listBranches(this.repo))))
+      this.commit(withBranches(this.state, yield* (listBranches(this.repo, this.base))))
     })
   }
 
@@ -1691,10 +1694,11 @@ const settingsHeld = Effect.gen(function* () {
 const firstBranches = Effect.fn("Tui.firstBranches")(function* (
   repo: string,
   branch: string | undefined,
+  base: string | undefined,
 ) {
-  if (branch === undefined) return yield* listBranches(repo)
-  const only = yield* summaryFor(repo, branch).pipe(Effect.orElseSucceed(() => undefined))
-  return only === undefined ? yield* listBranches(repo) : [only]
+  if (branch === undefined) return yield* listBranches(repo, base)
+  const only = yield* summaryFor(repo, branch, base).pipe(Effect.orElseSucceed(() => undefined))
+  return only === undefined ? yield* listBranches(repo, base) : [only]
 })
 
 const missing = (branch: string | undefined, found: Option.Option<number>): string =>
@@ -1713,6 +1717,7 @@ export type LaunchOptions = {
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
   readonly branch?: string | undefined
+  readonly base?: string | undefined
 }
 
 export const launch = Effect.fn("Tui.launch")(function* (
@@ -1722,7 +1727,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
 ) {
   const { noticeMs, sessionPath } = options
   const repo = yield* settledPath(asked)
-  const branches = yield* firstBranches(repo, options.branch)
+  const branches = yield* firstBranches(repo, options.branch, options.base)
   const asOpened = openingOn(branches, options.branch)
   const missed = missing(options.branch, asOpened)
   const resume = Option.isSome(asOpened)
@@ -1748,6 +1753,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   const app = new App({
     renderer,
     repo,
+    base: options.base,
     display,
     state,
     painting,
@@ -1775,17 +1781,15 @@ const untilDestroyed = (renderer: CliRenderer): Effect.Effect<void> =>
 export const runOn = Effect.fn("Tui.runOn")(function* (
   repo: string,
   renderer: CliRenderer,
-  sessionPath?: string,
-  branch?: string,
+  options: LaunchOptions = {},
 ) {
-  yield* launch(repo, renderer, { sessionPath, branch })
+  yield* launch(repo, renderer, options)
   yield* untilDestroyed(renderer)
 })
 
 export const runTui = Effect.fn("Tui.run")(function* (
   repo: string,
-  sessionPath?: string,
-  branch?: string,
+  options: LaunchOptions = {},
 ) {
   const renderer = yield* Effect.promise(() =>
     createCliRenderer({
@@ -1794,7 +1798,7 @@ export const runTui = Effect.fn("Tui.run")(function* (
     }),
   )
   yield* Effect.ensuring(
-    runOn(repo, renderer, sessionPath, branch),
+    runOn(repo, renderer, options),
     Effect.sync(() => renderer.destroy()),
   )
 })

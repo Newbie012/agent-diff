@@ -138,6 +138,10 @@ Behaviors that must be covered:
 - A branch with no changes does not appear.
 - A repo with no reviewable branches answers with an empty list and a zero exit.
 - The repository's own working tree appears once it carries uncommitted work, marked `own`.
+- The terminal opened with `--base` shows the diff against that base, and without it shows the
+  whole branch. The terminal reads a diff of its own rather than calling `branch list`, so a base
+  the commands honour proves nothing about the screen.
+- `review pane` given a `--base` carries it into the command it runs and the command it reports.
 
 ## Out of Scope
 

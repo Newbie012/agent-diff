@@ -311,7 +311,11 @@ const configSet = Effect.fn("Main.configSet")(function* (options: Options) {
 })
 
 const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
-  const report = yield* openPane(yield* required(options, "repo"), options["branch"])
+  const report = yield* openPane(
+    yield* required(options, "repo"),
+    options["branch"],
+    options["base"],
+  )
   yield* answer(options, { opened: report.opened, pane: report.pane, command: report.command })
 })
 
@@ -405,7 +409,12 @@ const byBranch = Effect.fn("Main.byBranch")(function* (options: Options, repo: s
 })
 
 const byWorktree = Effect.fn("Main.byWorktree")(function* (options: Options, worktree: string) {
-  return { ...options, repo: yield* repoOf(worktree), branch: yield* branchAt(worktree) }
+  const found: Options = {
+    ...options,
+    repo: yield* repoOf(worktree),
+    branch: yield* branchAt(worktree),
+  }
+  return found
 })
 
 const addressOf = Effect.fn("Main.addressOf")(function* (name: string, options: Options) {
@@ -425,11 +434,11 @@ const dispatch = Effect.fn("Main.dispatch")(function* (name: string, given: Opti
   if (name === "file review") return yield* fileReview(options)
   if (name === "review open") {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
-    return yield* runTui(
-      yield* required(options, "repo"),
-      process.env["ADIFF_SESSION"],
-      options["branch"],
-    )
+    return yield* runTui(yield* required(options, "repo"), {
+      sessionPath: process.env["ADIFF_SESSION"],
+      branch: options["branch"],
+      base: options["base"],
+    })
   }
   return yield* unknown(name)
 })

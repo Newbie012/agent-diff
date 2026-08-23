@@ -246,8 +246,14 @@ export class AppTestDriver {
     ])
   }
 
-  runPane(options: { readonly env?: Readonly<Record<string, string>> } = {}): Promise<CliResult> {
-    return this.run(["review", "pane", "--repo", this.state.repo], options.env ?? {})
+  runPane(
+    options: {
+      readonly env?: Readonly<Record<string, string>>
+      readonly base?: string
+    } = {},
+  ): Promise<CliResult> {
+    const base = options.base === undefined ? [] : ["--base", options.base]
+    return this.run(["review", "pane", "--repo", this.state.repo, ...base], options.env ?? {})
   }
 
   runSkillRefresh(): Promise<CliResult> {
