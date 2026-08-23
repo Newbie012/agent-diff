@@ -250,6 +250,10 @@
   dir: ""
   intents:
     - a-minimal-report-names-nothing
+"@eliya-oss/agent-diff@0.1.0-alpha.146":
+  dir: ""
+  intents:
+    - the-skill-inside-the-binary
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
