@@ -6,6 +6,10 @@ An agent finishes a piece of work and leaves you a diff. adiff puts the conversa
 you comment on the lines in a terminal, the agent that wrote them answers under your words, and a
 point stays open until you settle it.
 
+<pre align="center">brew install Newbie012/tap/adiff</pre>
+
+<p align="center"><a href="docs/install.md">Other ways to install</a></p>
+
 <img src="assets/terminal.webp" alt="The adiff worktree list, showing seven branches with their sizes, layers and review state" width="820">
 
 </div>
@@ -20,8 +24,8 @@ brew install Newbie012/tap/adiff
 npx skills add Newbie012/agent-diff --skill adiff
 ```
 
-[Other ways to install](docs/install.md), if you would rather not use Homebrew. adiff writes nothing
-into your repository — no `AGENTS.md`, no `CLAUDE.md`. Your agent finds the skill on its own.
+adiff writes nothing into your repository — no `AGENTS.md`, no `CLAUDE.md`. Your agent finds the
+skill on its own.
 
 Then ask it to walk you through it:
 
