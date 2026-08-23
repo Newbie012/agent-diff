@@ -1,4 +1,5 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
+import { foundAgain, type Patch } from "../domain/patch/index.ts"
 import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { findBranch, patchesOf } from "./commands.ts"
@@ -52,7 +53,20 @@ type Reading = {
   readonly removed: Readonly<Record<string, string>>
   readonly head: string
   readonly shown: ReadonlySet<string>
+  readonly patches: ReadonlyArray<Patch>
   readonly read: Readonly<Record<string, number>>
+}
+
+const whereItSitsNow = (
+  patches: ReadonlyArray<Patch>,
+  anchor: Batch["comments"][number]["anchor"],
+): { readonly start: number; readonly end: number } => {
+  const patch = patches.find((candidate) => candidate.path === anchor.path)
+  if (patch === undefined) return anchor
+  return Option.match(foundAgain(patch, anchor), {
+    onNone: () => anchor,
+    onSome: (range) => range,
+  })
 }
 
 const spoken = (entry: StoredAnswer): ThreadAnswer => ({
@@ -86,12 +100,13 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, reading: Reading): T
   const seen = [...ids].reduce((total, id) => total + (reading.read[id] ?? 0), 0)
   const turns = turnsOf(replies, mine)
   const settled = Object.hasOwn(reading.settled, comment.id)
+  const sits = whereItSitsNow(reading.patches, comment.anchor)
   return {
     id: comment.id,
     file: comment.anchor.path,
     side: comment.anchor.side,
-    start: comment.anchor.start,
-    end: comment.anchor.end,
+    start: sits.start,
+    end: sits.end,
     body: comment.body,
     state: stateOf(turns, mine.at(-1)?.asks === true, settled, Object.hasOwn(reading.removed, comment.id)),
     stale: batch.head !== reading.head,
@@ -129,12 +144,14 @@ export const listThreads = Effect.fn("Cli.listThreads")(function* (
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch, base)
   const current = yield* store.state(worktree.path)
+  const patches = yield* patchesOf(worktree)
   const sent = threadsIn(yield* store.inbox(worktree.path), {
     answers: yield* store.answers(worktree.path),
     settled: current.settled,
     removed: current.removed,
     head: worktree.head,
-    shown: new Set((yield* patchesOf(worktree)).map((patch: { path: string }) => patch.path)),
+    shown: new Set(patches.map((patch) => patch.path)),
+    patches,
     read: current.read,
   })
   return sent

@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-08-23
 
 ## Problem Statement
 
@@ -63,6 +63,13 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
   selected rows' text, joined by newlines, without diff signs.
 - **A range with no matching rows produces no anchor.** The caller refuses; it never falls back to
   the nearest row.
+- **An anchor is read back at the lines its snippet stands on now.** A comment written at line 12
+  and pushed to line 30 by an edit above it is reported at line 30, because the snippet is the
+  anchor's identity and the line number is only where it was last seen. The match is exact, on the
+  anchor's side, and the run of lines must be contiguous, so a snippet split by a later edit is not
+  half-matched. Where the snippet appears more than once the one nearest the recorded line wins, and
+  where the diff no longer shows it at all the recorded line stands. Nothing is rewritten in the
+  store: what the reviewer wrote is a record, and where it sits is read from the diff in hand.
 - **A change with no lines to show says what did change.** A mode change, a rename, a copy, and
   an added or deleted empty file each get one row of plain words — `mode changed, 100644 to 100755`,
   `renamed from pkg/gizmo.ts`. No patch is ever without rows. When such a change comes with edits,
@@ -91,6 +98,8 @@ Behaviors that must be covered:
 - A new-side range quotes only the new-side code, with deleted lines nearby excluded.
 - An old-side range quotes the deleted code.
 - A range the diff does not show is refused, and nothing reaches the agent.
+- A comment whose code moved down the file is drawn against that code, not against the line number
+  it was written at.
 - A file in a nested directory anchors to the right path.
 - A mode-only change, a rename with no edits, and a rename with edits each say what changed.
 

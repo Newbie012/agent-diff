@@ -1,4 +1,4 @@
-export { anchorFor, rowsForRange } from "./anchor.ts"
+export { anchorFor, foundAgain, rowsForRange } from "./anchor.ts"
 export { parsePatches } from "./parse.ts"
 export { stickyChain } from "./sticky.ts"
 export { lineOn, WHOLE_FILE } from "./model.ts"

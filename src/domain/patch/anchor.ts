@@ -44,3 +44,39 @@ export const rowsForRange = (patch: Patch, range: Range): Option.Option<readonly
   if (first === undefined || last === undefined) return Option.none()
   return Option.some([first.index, last.index] as const)
 }
+
+const sideLines = (
+  patch: Patch,
+  side: Side,
+): ReadonlyArray<{ readonly line: number; readonly text: string }> =>
+  patch.rows.flatMap((row) =>
+    Option.match(lineOn(row, side), {
+      onNone: () => [],
+      onSome: (line) => [{ line, text: row.text }],
+    }),
+  )
+
+const runsAt = (
+  lines: ReadonlyArray<{ readonly line: number; readonly text: string }>,
+  wanted: ReadonlyArray<string>,
+  at: number,
+): boolean =>
+  wanted.every((text, step) => {
+    const here = lines[at + step]
+    return here !== undefined && here.text === text && here.line === (lines[at]?.line ?? 0) + step
+  })
+
+export const foundAgain = (
+  patch: Patch,
+  wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
+): Option.Option<Range> => {
+  const said = wanted.snippet.split("\n")
+  if (said.every((text) => text.trim().length === 0)) return Option.none()
+  const lines = sideLines(patch, wanted.side)
+  const starts = lines.flatMap((here, at) => (runsAt(lines, said, at) ? [here.line] : []))
+  const nearest = starts.toSorted(
+    (one, other) => Math.abs(one - wanted.start) - Math.abs(other - wanted.start),
+  )[0]
+  if (nearest === undefined) return Option.none()
+  return Option.some({ side: wanted.side, start: nearest, end: nearest + said.length - 1 })
+}

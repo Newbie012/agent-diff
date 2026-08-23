@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-20
+- **Last updated:** 2026-08-23
 
 ## Problem Statement
 
@@ -113,6 +113,11 @@ Three screens, and the keys each answers to:
   kind of file is opened, and reading it took as long as it took while every key pressed in the
   meantime waited behind it. The colour pass runs beside the review instead, and the file that has
   been left is dropped rather than drawn over the one now on screen.
+
+- **Both sides of a thread are drawn by one rule.** A line break the writer typed is a line break on
+  screen, for the reviewer's comment, the agent's answer and the reply alike. Answers were flattened
+  to a single paragraph, which turned a bulleted answer into a run-on sentence while the comment
+  above it kept its shape.
 
 - **A comment taller than the pane is walked through, not stepped over.** A long answer is one stop
   for the cursor, and one press used to carry the reader from its first line to the line below its

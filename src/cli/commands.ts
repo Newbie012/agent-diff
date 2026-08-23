@@ -2,6 +2,7 @@ import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import {
   anchorFor,
+  foundAgain,
   parsePatches,
   rowsForRange,
   WHOLE_FILE,
@@ -355,13 +356,27 @@ const sentOf = (
   }
 }
 
+const whereItSitsNow = (
+  patches: ReadonlyArray<Patch>,
+  comment: PendingComment,
+): PendingComment => {
+  const patch = patches.find((candidate) => candidate.path === comment.file)
+  if (patch === undefined) return comment
+  return Option.match(foundAgain(patch, comment), {
+    onNone: () => comment,
+    onSome: (range) => ({ ...comment, start: range.start, end: range.end }),
+  })
+}
+
 export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading) {
   const store = yield* Store
   const worktree = reading.worktree
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
-  const held = flatten(yield* store.inbox(worktree.path))
+  const held = flatten(yield* store.inbox(worktree.path)).map((comment) =>
+    whereItSitsNow(reading.patches, comment),
+  )
   const replies = held.filter((comment) => comment.replyTo !== undefined)
   const conversation = {
     spoken,
