@@ -100,7 +100,7 @@ const sendOne = (session: string, key: string): void => {
     return
   }
   if (key.startsWith("until:")) {
-    run("termctrl", ["wait", session, key.slice("until:".length), "--timeout", "20000"])
+    run("termctrl", ["wait", session, "--timeout", "20000", "--", key.slice("until:".length)])
     return
   }
   run("termctrl", ["send", session, "--pace-ms", "120", key])

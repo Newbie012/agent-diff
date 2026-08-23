@@ -49,6 +49,31 @@ vitest directly. A test that does not still records; it just has no captions.
 The recording is driven by the test's own trace, so it cannot show something the test does not do. If
 a test fails, nothing is recorded — a green run is the precondition, not a claim to make in prose.
 
+## A recording replays keys, and nothing else
+
+The replay rebuilds the world from the trace — the branch fixture and the layers, and nothing more —
+then presses the keys. Anything a test does by another route is not there: a file changed or
+committed after the world was built, a comment or an answer seeded through the store or the command
+line, a preference set from outside. A test that does any of those marks its trace unreplayable, and
+`pnpm record` skips it and says which route it took.
+
+So a test that needs one of those things has two honest endings, and no third:
+
+- **Write it with keys instead**, if the same rule can be reached that way. A reviewer's reply
+  exercises the same drawing rule an agent's answer does, and a reply is keys. That test records.
+- **Let it be skipped**, and say in the PR body which behavior has no film and why.
+
+**Never paste a recording you have not looked at.** Take the still of the same trace and read it:
+
+```bash
+pnpm shot --trace <trace.jsonl> --test-name "<when> > <then>" --keep
+```
+
+The still is the last frame of the film. If it does not show the behavior the test names, the film
+does not either — and a film that shows the wrong screen is worse than no film, because a reviewer
+believes it. `pnpm record` writes its trace to a temp directory and prints the path in its error
+output; to keep one, run the tests yourself with `ADIFF_TRACE=<path>` set.
+
 ## What gets recorded
 
 Every test the branch adds, one recording each, not a representative sample. Skip only when the
