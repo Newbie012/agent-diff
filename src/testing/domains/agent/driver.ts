@@ -50,6 +50,7 @@ export class AgentTestDriver {
   }
 
   async seedAnswered(seed: Seeded): Promise<void> {
+    this.state.tracer.cannotReplay("a thread seeded into the store")
     const comment = {
       id: seed.id ?? "seeded",
       anchor: {
@@ -82,6 +83,7 @@ export class AgentTestDriver {
   }
 
   async setStoreFile(worktree: string, file: string, text: string): Promise<void> {
+    this.state.tracer.cannotReplay("a store file written by hand")
     const key = await Effect.runPromise(branchKeyOf(worktree))
     const directory = branchDir(this.state.storeRoot, key)
     await mkdir(directory, { recursive: true })

@@ -46,6 +46,17 @@ export const hideFilesAlreadyRead = (): Step => step("hide the files already rea
 export const leaveAComment = (said: string): Step =>
   step(`leave a comment saying "${said}"`, [press("c"), settle(1200), `text:${said}`, `until:${said}`, "ctrl-s"])
 
+export const replyOnTwoLines = (first: string, second: string): Step =>
+  step("write a reply on two lines", [
+    press("R"),
+    settle(1200),
+    `text:${first}`,
+    "enter",
+    `text:${second}`,
+    `until:${second}`,
+    "ctrl-s",
+  ])
+
 const preferenceAt = (name: string): number => preferences.findIndex((one) => one.name === name)
 
 const turnOn = (name: string, said: string): Step =>

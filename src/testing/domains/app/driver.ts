@@ -186,6 +186,7 @@ export class AppTestDriver {
     readonly body: string
     readonly asks?: boolean
   }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("an answer sent from the command line")
     return this.run([
       "comment",
       "answer",
@@ -204,6 +205,7 @@ export class AppTestDriver {
   }
 
   runResolve(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a thread settled from the command line")
     return this.run([
       "comment",
       "resolve",
@@ -217,6 +219,7 @@ export class AppTestDriver {
   }
 
   runRemove(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a thread removed from the command line")
     return this.run([
       "comment",
       "remove",
@@ -230,6 +233,7 @@ export class AppTestDriver {
   }
 
   runRestore(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a thread restored from the command line")
     return this.run([
       "comment",
       "restore",
@@ -275,6 +279,7 @@ export class AppTestDriver {
   }
 
   runTake(worktree: string, wait?: number): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a hand-over taken from the command line")
     const args = ["comment", "take", "--worktree", worktree]
     return this.run(wait === undefined ? args : [...args, "--wait", String(wait)])
   }
@@ -284,6 +289,7 @@ export class AppTestDriver {
   }
 
   runVouch(options: { readonly branch: string; readonly file: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a file vouched for from the command line")
     return this.run([
       "file",
       "review",
@@ -301,6 +307,7 @@ export class AppTestDriver {
     readonly to: string
     readonly body: string
   }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a reply sent from the command line")
     return this.run([
       "comment",
       "reply",
@@ -324,6 +331,7 @@ export class AppTestDriver {
   }
 
   runConfigSet(name: string, value: boolean): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a preference set from the command line")
     return this.run(["config", "set", "--name", name, "--value", value ? "on" : "off"])
   }
 
@@ -332,6 +340,7 @@ export class AppTestDriver {
   }
 
   runComment(options: CommentOptions): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a comment sent from the command line")
     return this.run([
       "comment",
       "send",
