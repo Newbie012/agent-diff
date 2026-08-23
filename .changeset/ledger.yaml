@@ -262,6 +262,10 @@
   dir: ""
   intents:
     - remarks-from-the-pull-request
+"@eliya-oss/agent-diff@0.1.0-alpha.149":
+  dir: ""
+  intents:
+    - the-agent-never-runs-draft-send
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
