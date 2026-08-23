@@ -41,14 +41,27 @@ Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entr
 - **No import reaches past another module's `index.ts`.** This is what lets two agents work in two
   modules of one worktree without colliding.
 - **No unit tests.** Assert on outcomes through the driver (ADR-003).
-- **A test title opens `when …` or `then …` and names its subject.** No pronoun standing where the
-  subject belongs, no "says so", no "that way", and never "adiff says" — name the surface that
-  shows it: the footer, the header, the diff, the rail, the output.
+- **A test title opens `when …` or `then …` and names its subject.** The linter checks the shape
+  and the subject slot. It cannot check the voice, which is the part that actually goes wrong: see
+  **How to write here**.
 - **No constructor parameter properties.** Node strips types rather than compiling them, so the
   syntax never runs even though `tsc` and vitest both accept it.
 
 `tools/oxlint-adiff.ts` owns them, and `pnpm lint` proves each rule still fires before it checks
 the code. `.agents/EFFECT.md` is the full contract.
+
+## How to write here
+
+Write for the reader, not for the sentence. Load the `plain-english` skill and follow it, for PR
+bodies, change intents, PRD contracts, test titles and commit messages alike.
+
+Three things that skill leaves out, which this repo gets wrong most often:
+
+- Name the subject. "says so" and "that way" borrow a noun the reader cannot see.
+- A pane shows, lists, marks, counts or reads. A command prints, names or exits.
+- Give the reason in the plain case. An aphorism sounds like a reason and carries none.
+
+A sentence you are pleased with is worth rereading.
 
 ## Shipping
 
