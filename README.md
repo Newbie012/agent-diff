@@ -7,6 +7,7 @@ you comment on the lines in a terminal, the agent that wrote them answers under 
 point stays open until you settle it.
 
 <pre align="center">brew install Newbie012/tap/adiff</pre>
+<pre align="center">npx skills add Newbie012/agent-diff --skill adiff -g</pre>
 
 <p align="center"><a href="docs/install.md">Other ways to install</a></p>
 
@@ -14,46 +15,25 @@ point stays open until you settle it.
 
 </div>
 
-## Getting started
+### Features
 
-Two commands. The first installs adiff, the second installs the skill that teaches your agent to
-pick up your comments:
+- 💬 **Comment on the lines.** The agent gets your words with the code they were about.
+- 🔁 **Nothing gets dropped.** A comment comes back until the agent answers it.
+- 🚦 **Every point has a state**: sent, picked up, answered, settled.
+- 🧷 **A comment follows its code** when the agent rewrites the file.
+- 🌱 **Review a worktree**, before anything is pushed.
+- 🪜 **Stacked branches** are diffed against the branch below.
+- 🔗 **Read the pull request's review here.** Accept a remark and your agent gets it.
+- ✅ **Mark a file reviewed.** The mark lapses when the agent rewrites it.
+- 🗺️ **Ask for a reading order.** adiff checks it covers every change.
+- 🤖 **Every key is also a command**, and every command answers JSON.
+- 🪟 **`adiff review pane`** puts the review beside your agent.
 
-```bash
-brew install Newbie012/tap/adiff
-npx skills add Newbie012/agent-diff --skill adiff -g
-```
+### Usage
 
-It asks which agent you use — Claude Code, Codex, Cursor, OpenCode and seventy-odd others — or you
-can name it up front with `--agent codex`, more than once for more than one, or `--agent '*'` for all
-of them. `-g` is the flag worth keeping: it puts the skill in your home directory rather than in the
-repository you are standing in, and a skill written into the repository is invisible to an agent
-working in a worktree of it unless you commit it. Drop `-g` if your team has adopted adiff and wants
-it committed.
-
-Your agent finds the skill on its own from there.
-
-Then ask it to walk you through it:
-
-> Read the adiff skill and onboard me: hand your current work over for review, and tell me what to
-> press.
-
-From then on the loop is: the agent hands work over, you read it, and it answers what you wrote.
-Open a review yourself with `adiff review open --repo .`, and press `?` for every key.
-
-## For agents
-
-Three commands are the whole loop:
-
-```bash
-adiff comment take --worktree . --wait 300   # what the reviewer wrote, with the code it was on
-adiff comment answer --worktree . --id <id> --body "what you did about it"
-adiff review pane --repo .                   # put the review in front of them, split in tmux
-```
-
-Everything answers JSON on stdout and `{"ok":false,"error":{...}}` on stderr, with a `suggestion`
-naming the command that resolves it. `adiff describe` returns the whole catalog, so nothing here has
-to be memorised. [The handover in detail](docs/handover.md) covers layers, coverage and the rest.
+1. Install adiff and its skill with the two commands above.
+2. In your agent, run `/adiff layer this work and hand it over for review`.
+3. Comment on the lines. The agent answers under your words, and `?` lists every key.
 
 ## Requirements
 
@@ -63,8 +43,9 @@ runs the terminal on that.
 
 ## Notes
 
-adiff is alpha, and one person's tool. Every release goes out under the `alpha` tag. Project docs
-live in `.agents/`: `AGENTS.md` covers making a change, `ARCHITECTURE.md` how the code is laid out.
+adiff is alpha, and one person's tool. Every release goes out under the `alpha` tag. The agent's
+side of the loop is in [docs/handover.md](docs/handover.md), and the project docs live in `.agents/`:
+`AGENTS.md` covers making a change, `ARCHITECTURE.md` how the code is laid out.
 
 ## License
 
