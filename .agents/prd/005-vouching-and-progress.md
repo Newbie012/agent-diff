@@ -64,8 +64,8 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   render a fraction without a second call.
 - **Vouching a file the diff does not contain is refused**, and the refusal names the files that
   are in the diff.
-- **Recording a vouch merges into the existing state.** A vouch must not overwrite the agent's
-  read cursor — see [PRD 004](004-comment-delivery.md).
+- **Recording a vouch merges into the existing state.** A vouch must not overwrite what the state
+  file says about hand-over — see [PRD 004](004-comment-delivery.md).
 
 ### Deferred decisions
 

@@ -36,7 +36,7 @@ src/
     layers/     layers, versions, coverage              PRD 006
   service/         Effect services, one directory each
     git/           worktree discovery, diffs, file reads  PRD 001
-    store/         review state, inbox, read cursor       PRD 004
+    store/         review state, inbox, what is owed      PRD 004
   cli/             commands and their errors              PRD 007
   tui/             the review terminal                    PRD 003
   testing/         the TestDriver                         PRD 008

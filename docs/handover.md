@@ -47,9 +47,9 @@ it can carry on. Settling is yours alone: the agent that raised the answer canno
 Every command that acts on a review takes either `--worktree <path>` or `--repo <path>` with
 `--branch <name>`, so the same command works from your checkout and from the agent's worktree.
 
-A comment keeps coming back on every `take` until it is answered, so nothing is lost to a crash or a
-second reader. Add `--wait 300` and it blocks until something arrives, which costs nothing while it
-waits.
+A comment keeps coming back on every `take` until it is retired: until the agent answers it, or you
+settle or remove it. Nothing is lost to a crash or a second reader. Add `--wait 300` and it blocks
+until something arrives, which costs nothing while it waits.
 
 ## The reading order
 

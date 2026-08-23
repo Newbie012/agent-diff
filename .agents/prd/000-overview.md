@@ -91,7 +91,7 @@ reached the agent that wrote the code.
 | [001](001-branch-discovery.md) | Which branches have something to review, and how much | `service/git` |
 | [002](002-diff-and-anchoring.md) | Parsing a diff into rows and hunks; turning a selection into an anchor | `domain/patch` |
 | [003](003-review-terminal.md) | The terminal: navigation, selection, composing a comment | `tui` |
-| [004](004-comment-delivery.md) | Filing a comment and handing it to the agent exactly once | `service/store` |
+| [004](004-comment-delivery.md) | Filing a comment and handing it to the agent until it is answered | `service/store` |
 | [005](005-vouching-and-progress.md) | Marking a file reviewed, and what lapses when the code changes | `domain/review` |
 | [006](006-narrative-review.md) | Reading a diff as agent-authored layers | `domain/layers` |
 | [007](007-command-surface.md) | The command contract: subcommands, envelope, exit codes | `cli`, `main.ts` |
