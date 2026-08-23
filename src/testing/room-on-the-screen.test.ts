@@ -112,7 +112,7 @@ describe("when the worktree list is drawn on a wide terminal", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("WORKTREE")
+    expect(frame).toContain("BRANCH")
     expect(widest(frame)).toBeLessThanOrEqual(80)
   })
 })

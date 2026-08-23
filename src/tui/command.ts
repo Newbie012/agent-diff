@@ -327,14 +327,14 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "branch.first",
-    title: "Go to the first worktree",
+    title: "Go to the first branch",
     category: "Branches",
     keys: ["g"],
     screens: ["branches"],
   }),
   command({
     action: "branch.last",
-    title: "Go to the last worktree",
+    title: "Go to the last branch",
     category: "Branches",
     keys: ["G"],
     screens: ["branches"],
@@ -445,7 +445,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "review.reload",
-    title: "Read the worktrees again",
+    title: "Read the branches again",
     category: "Branches",
     keys: ["r"],
     screens: ["branches"],

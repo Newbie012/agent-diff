@@ -20,7 +20,7 @@ describe("when adiff opens on the home screen", () => {
     expect(await driver.screen.getFrame()).toContain("repo")
   })
 
-  test("then the worktree list is headed with its columns", async () => {
+  test("then the branch list is headed with its columns", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -30,7 +30,7 @@ describe("when adiff opens on the home screen", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    const heading = frame.split("\n").find((row) => row.includes("WORKTREE")) ?? ""
+    const heading = frame.split("\n").find((row) => row.includes("BRANCH")) ?? ""
     expect(heading).toContain("FILES")
     expect(heading).toContain("STATE")
   })

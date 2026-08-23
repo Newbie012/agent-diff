@@ -127,7 +127,7 @@ const BRANCH_WIDTH = 82
 const BRANCH_NAME_MIN = 12
 const BRANCH_FIXED = 36
 const STATE_MIN = 11
-const EMPTY_LIST = "  nothing to review. No worktree differs from the branch it started from."
+const EMPTY_LIST = "  nothing to review. No branch differs from the one it started from."
 const MODAL_MARGIN = 4
 
 const shareOf = (width: number, least: number): number =>
@@ -907,7 +907,7 @@ const unaskedForge = (state: TuiState): ReadonlyArray<TextChunk> =>
 
 const branchHeading = (room: number): string =>
   `  ${columns(
-    { name: "WORKTREE", files: "FILES", added: "+", gone: "-", layers: "LAYERS", state: "STATE" },
+    { name: "BRANCH", files: "FILES", added: "+", gone: "-", layers: "LAYERS", state: "STATE" },
     room,
   )}`
 
@@ -1539,7 +1539,7 @@ export class Screen {
     this.header.content = this.headerText(state)
     this.footer.content = this.footerText(state)
     this.list.content = this.listText(state)
-    const many = state.branches.length === 1 ? "1 worktree" : `${state.branches.length} worktrees`
+    const many = state.branches.length === 1 ? "1 branch" : `${state.branches.length} branches`
     const pane = this.homeRoom(state)
     const room = Math.max(HOME_PATH_MIN, pane - many.length - HOME_PATH_CHROME)
     this.landing.content = `${elide(shortPath(this.repo), room)}  ·  ${many}`

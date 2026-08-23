@@ -37,6 +37,6 @@ describe("when the review opens on a branch", () => {
     await driver.screen.open({ branch: "no-such-branch" })
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("WORKTREE")
+    expect(await driver.screen.getFrame()).toContain("BRANCH")
   })
 })
