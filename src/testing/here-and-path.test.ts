@@ -8,12 +8,12 @@ const oneFile = {
 }
 
 const pathRow = (frame: string): string =>
-  frame.split("\n").find((row) => row.includes("worktree")) ?? ""
+  frame.split("\n").find((row) => row.includes("  ·  ")) ?? ""
 
 const tableRow = (frame: string, name: string): string =>
   frame
     .split("\n")
-    .filter((row) => !row.includes("worktrees"))
+    .filter((row) => !row.includes("  ·  "))
     .find((row) => new RegExp(`${name}\\s`).test(row) && row.includes("+")) ?? ""
 
 describe("when adiff names the repository it opened", () => {
@@ -44,8 +44,8 @@ describe("when adiff names the repository it opened", () => {
   })
 })
 
-describe("when the reader opens a worktree", () => {
-  test("then the worktree the argument names is marked", async () => {
+describe("when the reader opens a branch", () => {
+  test("then the branch the argument names is marked", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const first = await driver.branch.create(oneFile)

@@ -37,7 +37,7 @@ describe("when the reviewer backs out", () => {
     await driver.screen.pressEscape()
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("worktree")
+    expect(await driver.screen.getFrame()).toContain("BRANCH")
   })
 
   test("then q goes back rather than quitting the review", async () => {
@@ -50,6 +50,6 @@ describe("when the reviewer backs out", () => {
     await driver.screen.pressKeys(["q"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("worktree")
+    expect(await driver.screen.getFrame()).toContain("BRANCH")
   })
 })

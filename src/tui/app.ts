@@ -1702,7 +1702,7 @@ const firstBranches = Effect.fn("Tui.firstBranches")(function* (
 })
 
 const missing = (branch: string | undefined, found: Option.Option<number>): string =>
-  branch !== undefined && Option.isNone(found) ? `no worktree here is on ${branch}` : ""
+  branch !== undefined && Option.isNone(found) ? `no branch here is called ${branch}` : ""
 
 const openingOn = (
   branches: ReadonlyArray<BranchSummary>,

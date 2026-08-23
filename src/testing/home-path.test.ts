@@ -8,7 +8,7 @@ const oneFile = {
 }
 
 const pathRow = (frame: string): string =>
-  frame.split("\n").find((row) => row.includes("worktree")) ?? ""
+  frame.split("\n").find((row) => row.includes("  ·  ")) ?? ""
 
 describe("when the home screen names the repository", () => {
   test("then the path and the count share one line", async () => {
@@ -21,7 +21,7 @@ describe("when the home screen names the repository", () => {
 
     // ASSERT
     const row = pathRow(await driver.screen.getFrame())
-    expect(row).toContain("worktree")
+    expect(row).toContain("branch")
     expect(row).toContain("repo")
   })
 
@@ -35,7 +35,7 @@ describe("when the home screen names the repository", () => {
 
     // ASSERT
     const row = pathRow(await driver.screen.getFrame())
-    expect(row.trim()).toContain("worktree")
+    expect(row.trim()).toContain("branch")
     expect(row.trim().length).toBeLessThan(80)
     expect(row).toMatch(/repo/)
   })

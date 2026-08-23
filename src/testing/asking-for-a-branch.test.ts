@@ -12,7 +12,7 @@ const oneFile = {
 }
 
 describe("when adiff opens on a named branch", () => {
-  test("then the output reports no worktree here is on that branch", async () => {
+  test("then the screen reports no branch here is called that", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -21,6 +21,6 @@ describe("when adiff opens on a named branch", () => {
     await driver.screen.open({ width: 120, height: 20, branch: "not-a-branch-here" })
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("no worktree here is on not-a-branch-here")
+    expect(await driver.screen.getFrame()).toContain("no branch here is called not-a-branch-here")
   })
 })

@@ -502,7 +502,7 @@ Three screens, and the keys each answers to:
   Composing without a selection anchors to the cursor's single row.
 - **The command palette opens wherever a reader is moving around**, over the diff and over the
   review list. It stays shut where a reader is typing, since a draft is not a place to run a
-  command from, and on the worktree list, whose three actions are already on screen.
+  command from, and on the branch list, whose three actions are already on screen.
 - **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key
   and the search results are measured against the width and the height of the
   screen rather than against one fixed size. On a wide terminal a command keeps its whole title and
@@ -510,10 +510,14 @@ Three screens, and the keys each answers to:
   the list runs down to the room the screen has, instead of stopping at a count fixed for a short
   one. A panel never grows past what one eye span can read, and a narrow terminal keeps the sizes
   it has now, because the room being spent there is already the room that exists.
-- **The worktree list widens with the terminal too.** The name of a branch is what a reader picks a
-  worktree by, so a wide screen spends its extra columns on the name rather than on margin, and a
+- **The terminal says "branch", never "worktree".** A reviewer picks work by the branch name and
+  calls the thing a branch when they talk about it, so the list is headed `BRANCH`, the line above
+  it counts `3 branches`, and the keys that reload it and jump to its ends say branch too. The
+  `--worktree` option keeps its name: it takes a path on disk, which is what a worktree is.
+- **The branch list widens with the terminal too.** The name of a branch is what a reader picks a
+  branch by, so a wide screen spends its extra columns on the name rather than on margin, and a
   name is cut only where the screen genuinely cannot hold it. Where it is cut it keeps both ends,
-  for the reason a file name does: branches are named in families, and two worktrees whose names
+  for the reason a file name does: branches are named in families, and two branches whose names
   begin with the same words read as one row when only the beginning survives.
 - **The compose panel is as tall as what is written in it.** `enter` adds a line, and a line wider
   than the panel wraps onto the next one. The panel grows to fit either, at any terminal width, so
@@ -687,9 +691,9 @@ Behaviors that must be covered:
 - Two files deep in a nested tree, whose names share their ends, are drawn as two different rows,
   and the header names the file the cursor is on without running past the edge.
 - A long command title is read whole on a wide terminal, the sheet of keys lists more of them on a
-  tall one, and a long worktree name is read whole on a wide one, while an eighty column terminal
+  tall one, and a long branch name is read whole on a wide one, while an eighty column terminal
   still draws each of them inside its width.
-- Two worktrees whose names begin with the same words are two different rows on a terminal too
+- Two branches whose names begin with the same words are two different rows on a terminal too
   narrow to hold either name whole.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
@@ -697,14 +701,14 @@ test that fails when an unrelated pane grows, which is a false report, not a cau
 
 ### A branch that already has a pull request says so
 
-The worktree list reads whether a branch has a pull request and shows its state beside what is
+The branch list reads whether a branch has a pull request and shows its state beside what is
 waiting: open, draft, merged or closed. A merged pull request means the review happened elsewhere,
 a draft means the work is not ready for a reviewer. The review screen says the same word in its
 header, so a reviewer inside a diff knows the branch has one without going back to the list.
 
 - **The list draws before the answer arrives.** The state is fetched once for the whole list, after
   the screen is on, and fills in when it lands. Nothing waits on the network.
-- **`p` opens the pull request from both screens the reviewer reads on**, the worktree list and the
+- **`p` opens the pull request from both screens the reviewer reads on**, the branch list and the
   review, in a browser. It is one of the keys the footer names on each, because a key that has to
   be searched for in the palette before it is known is a key a reviewer does not have.
 - **The footer names the key where there is a pull request to open.** A branch the forge answered
@@ -713,7 +717,7 @@ header, so a reviewer inside a diff knows the branch has one without going back 
   under `?`, so a reviewer who knows it can still press it and be told what happened.
 - **What adiff cannot tell, it says.** No `gh`, not signed in, offline, or a remote that is not
   GitHub is a different fact from a branch that has no pull request, and an empty column reads as
-  the second one. The worktree list says once, under the table, that it could not find out.
+  the second one. The branch list says once, under the table, that it could not find out.
 
 ## Out of Scope
 

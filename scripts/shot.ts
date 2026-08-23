@@ -39,7 +39,7 @@ const asked = argv.flatMap((arg, at) => (arg === "--keys" ? tokensIn(argv[at + 1
 const keys = chosen === undefined ? asked : chosen.steps.flatMap((step) => step.keys)
 const label = value("label") ?? chosen?.test ?? "after"
 const against = value("against")
-const wanted = value("wait-for") ?? "WORKTREE"
+const wanted = value("wait-for") ?? "BRANCH"
 const filming = argv.includes("--video")
 const keeping = argv.includes("--keep")
 
