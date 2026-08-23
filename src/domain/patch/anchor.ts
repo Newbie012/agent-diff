@@ -106,7 +106,7 @@ const nearestLike = (
     .filter((here) => isNear(here.text, said))
     .toSorted((one, other) => Math.abs(one.line - near) - Math.abs(other.line - near))[0]?.line
 
-export const foundAgain = (
+export const foundExactly = (
   patch: Patch,
   wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
 ): Option.Option<Range> => {
@@ -118,10 +118,27 @@ export const foundAgain = (
     return Option.some({ side: wanted.side, start: whole, end: whole + said.length - 1 })
   }
   const first = said[0] ?? ""
-  if (first.trim().length === 0) return Option.none()
-  const opening =
-    said.length === 1 ? undefined : nearestRun(lines, [first], wanted.start)
-  const alike = opening ?? nearestLike(lines, first, wanted.start)
-  if (alike === undefined) return Option.none()
-  return Option.some({ side: wanted.side, start: alike, end: alike })
+  if (said.length === 1 || first.trim().length === 0) return Option.none()
+  const opening = nearestRun(lines, [first], wanted.start)
+  return opening === undefined
+    ? Option.none()
+    : Option.some({ side: wanted.side, start: opening, end: opening })
 }
+
+const foundAlike = (
+  patch: Patch,
+  wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
+): Option.Option<Range> => {
+  const first = wanted.snippet.split("\n")[0] ?? ""
+  if (first.trim().length === 0) return Option.none()
+  const alike = nearestLike(sideLines(patch, wanted.side), first, wanted.start)
+  return alike === undefined
+    ? Option.none()
+    : Option.some({ side: wanted.side, start: alike, end: alike })
+}
+
+export const foundAgain = (
+  patch: Patch,
+  wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
+): Option.Option<Range> =>
+  Option.orElse(foundExactly(patch, wanted), () => foundAlike(patch, wanted))

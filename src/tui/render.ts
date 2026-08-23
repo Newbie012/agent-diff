@@ -1274,7 +1274,7 @@ const REMARK_MARK = "◇"
 const remarkWhere = (remark: Remark, known: boolean): string => {
   if (remark.placed) return `:${remark.end}`
   if (remark.outdated) return " · outdated"
-  return known ? " · the code went" : " · not in the diff"
+  return known ? " · outside this diff" : " · not in the diff"
 }
 
 const wherePart = (state: TuiState, entry: PanelEntry): string => {

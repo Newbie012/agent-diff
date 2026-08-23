@@ -73,6 +73,11 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "No remark on this pull request carries that id. `adiff remark list` reports the ids it holds.",
     retriable: false,
   },
+  NothingSaid: {
+    exit: NOT_FOUND,
+    suggestion: "Nothing was written. Pass `--body` with what you mean to say.",
+    retriable: false,
+  },
   RemarkTaken: {
     exit: NOT_FOUND,
     suggestion:

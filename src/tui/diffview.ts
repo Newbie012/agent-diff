@@ -755,7 +755,7 @@ const REMARK_LINES = 8
 const capped = (lines: ReadonlyArray<string>, most: number): ReadonlyArray<string> =>
   lines.length <= most
     ? lines
-    : [...lines.slice(0, most), `⋯ ${lines.length - most} more lines, press o to read it`]
+    : [...lines.slice(0, most), `⋯ ${lines.length - most} more lines, press p to read it on the pull request`]
 
 const bodyLines = (note: Note, room: number): ReadonlyArray<string> => {
   const said = note.body.split("\n").flatMap((line) => wrap(line, room))

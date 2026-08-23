@@ -20,6 +20,7 @@ export type StagedComment = {
   readonly turns?: ReadonlyArray<{ readonly voice: "reviewer" | "agent"; readonly body: string }>
   readonly unread?: number
   readonly takenAt?: string
+  readonly remark?: string
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
@@ -1047,8 +1048,13 @@ export const remarkToTakeOn = (state: TuiState): Remark | undefined =>
 
 export const remarkHere = (state: TuiState): Remark | undefined => remarkToTakeOn(state)
 
-export const threadHere = (state: TuiState): StagedComment | undefined =>
-  threadChosen(state) ?? threadAtStop(state) ?? threadAtRow(state, state.cursor)
+export const threadHere = (state: TuiState): StagedComment | undefined => {
+  if (state.focus === "review") {
+    const entry = panelEntry(state)
+    return entry?.kind === "comment" ? entry.comment : undefined
+  }
+  return threadAtStop(state) ?? threadAtRow(state, state.cursor)
+}
 
 export const threadAtStop = (state: TuiState): StagedComment | undefined => {
   if (state.stop === 0) return undefined

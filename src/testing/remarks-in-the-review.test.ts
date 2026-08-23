@@ -204,7 +204,7 @@ describe("when a remark runs to hundreds of lines", () => {
     const frame = await driver.screen.getFrame()
 
     // ASSERT
-    expect(frame).toContain("more lines, press o to read it")
+    expect(frame).toContain("more lines, press p to read it on the pull request")
     expect(frame).toContain("const second = 2")
   })
 })
@@ -253,5 +253,37 @@ describe("when a remark is answered from the review", () => {
     expect(JSON.stringify(posted)).toContain("fair, the retry loop reads it again")
     expect(await driver.screen.getFrame()).toContain("replied on the pull request")
     expect(await driver.agent.listComments(branch.worktree)).toEqual([])
+  })
+})
+
+describe("when comments are held until they are sent", () => {
+  test("then an accepted remark waits with the rest", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.forge.holds([{ branch: branch.name, threads: [thread] as never }])
+    await driver.app.runConfigSet("hold", true)
+    await driver.screen.open({ width: 160, height: 24, review: true, noticeMs: 60_000 })
+    await driver.screen.pressKeys(["j"])
+
+    // ACT
+    await driver.screen.pressKeys(["A"])
+
+    // ASSERT
+    expect(await driver.agent.listComments(branch.worktree)).toEqual([])
+    expect(await driver.screen.getFrame()).toContain("Waiting to be sent")
+
+    // ACT
+    await driver.screen.pressKeys(["C"])
+
+    // ASSERT
+    const handed = await driver.agent.listComments(branch.worktree)
+    expect(handed.map((one) => one.body)).toEqual([
+      "@dana on the pull request: this re-reads the file on every pass",
+    ])
+    const listed = await driver.app.runRemarks(branch.name)
+    expect(
+      (listed.envelope as { remarks: ReadonlyArray<{ state: string }> }).remarks[0]?.state,
+    ).toBe("accepted")
   })
 })

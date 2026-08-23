@@ -68,6 +68,7 @@ export type CommentRequest = {
   readonly side: Side
   readonly id: string
   readonly at: string
+  readonly remark?: string | undefined
 }
 
 export type Basis = "default" | "stacked" | "set"
@@ -444,7 +445,12 @@ export const commentsIn = Effect.fn("Cli.commentsIn")(function* (
   const store = yield* Store
   const anchoring = Effect.fn("Cli.anchoring")(function* (request: CommentRequest) {
     const anchor = yield* anchorIn(worktree, request)
-    return { id: request.id, anchor, body: request.body }
+    return {
+      id: request.id,
+      anchor,
+      body: request.body,
+      ...(request.remark === undefined ? {} : { remark: request.remark }),
+    }
   })
   const anchored = yield* Effect.forEach(requests, anchoring)
   const batch: Batch = {

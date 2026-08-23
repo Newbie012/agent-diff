@@ -174,3 +174,78 @@ describe("when a remark has already been accepted", () => {
     expect(listed(await driver.app.runRemarks(branch.name))[0]?.state).toBe("waiting")
   })
 })
+
+const wide = {
+  name: "resend-expired-invites",
+  files: [
+    {
+      path: "src/api.ts",
+      before: Array.from({ length: 30 }, (_, at) => `const line${at} = ${at}`),
+      after: [
+        ...Array.from({ length: 29 }, (_, at) => `const line${at} = ${at}`),
+        "const line29 = 29",
+        "const added = 30",
+      ],
+    },
+  ],
+}
+
+describe("when a remark sits on a line the diff leaves out", () => {
+  test("then the panel says the remark is outside this diff", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(wide)
+    await driver.forge.holds([
+      {
+        branch: branch.name,
+        threads: [
+          {
+            id: "PRRT_far",
+            path: "src/api.ts",
+            line: 5,
+            hunk: "@@ -5 +5 @@\n const line4 = 4",
+            comments: [{ by: "dana", body: "this one is far above the change" }],
+          },
+        ] as never,
+      },
+    ])
+
+    // ACT
+    await driver.screen.open({ width: 160, height: 30, review: true, noticeMs: 60_000 })
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("outside this diff")
+    expect(frame).not.toContain("not in the diff")
+  })
+
+  test("then showing the whole file draws the remark on its line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(wide)
+    await driver.forge.holds([
+      {
+        branch: branch.name,
+        threads: [
+          {
+            id: "PRRT_far",
+            path: "src/api.ts",
+            line: 5,
+            hunk: "@@ -5 +5 @@\n const line4 = 4",
+            comments: [{ by: "dana", body: "this one is far above the change" }],
+          },
+        ] as never,
+      },
+    ])
+    await driver.screen.open({ width: 160, height: 40, review: true, noticeMs: 60_000 })
+
+    // ACT
+    await driver.screen.pressKeys(["F"])
+
+    // ASSERT
+    const rows = (await driver.screen.getFrame()).split("\n")
+    const code = rows.findIndex((row) => row.includes("const line4 = 4"))
+    expect(code).toBeGreaterThan(0)
+    expect(rows.slice(code, code + 3).join(" ")).toContain("@dana")
+  })
+})

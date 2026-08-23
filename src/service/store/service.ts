@@ -64,6 +64,10 @@ type Shape = {
     worktreePath: string,
     remarks: StoredRemarks,
   ) => Effect.Effect<void, StoreUnwritable>
+  readonly whileHoldingRemarks: <A, E, R>(
+    worktreePath: string,
+    work: Effect.Effect<A, E, R>,
+  ) => Effect.Effect<A, E | StoreUnwritable, R>
   readonly drafts: (
     worktreePath: string,
   ) => Effect.Effect<ReadonlyArray<StoredDraft>, StoreUnreadable>
@@ -436,7 +440,17 @@ const remarksOps = (root: string, adopted: Keys) => {
     yield* writeRemarks(path, next)
   })
 
-  return { remarks, saveRemarks }
+  const whileHoldingRemarks = <A, E, R>(
+    worktreePath: string,
+    work: Effect.Effect<A, E, R>,
+  ): Effect.Effect<A, E | StoreUnwritable, R> =>
+    Effect.gen(function* () {
+      const key = yield* keyIn(adopted, worktreePath)
+      yield* ensureDir(branchDir(root, key))
+      return yield* alone(`${remarksPath(root, key)}.lock`, DRAFTS_LOCK, work)
+    }).pipe(Effect.withSpan("Store.whileHoldingRemarks"))
+
+  return { remarks, saveRemarks, whileHoldingRemarks }
 }
 
 const inboxOps = (root: string, adopted: Keys) => {

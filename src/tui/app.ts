@@ -51,10 +51,12 @@ import {
   settleRead,
   acceptIn,
   answerRemark,
+  quoted,
   dismissIn,
   undismissIn,
   remarksIn,
   remarksHeldIn,
+  remarksAgainst,
   type Remark,
 } from "../cli/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
@@ -90,8 +92,6 @@ import {
   remarkUnderCursor,
   type PanelEntry,
   panelEntries,
-  threadAtRow,
-  threadChosen,
   threadAtStop,
   threadHere,
   WHOLE_FILE,
@@ -869,7 +869,8 @@ export class App {
         withLayers(withSent(opened, sent), layers),
         Result.getOrElse(remarks, () => [] as ReadonlyArray<Remark>),
       )
-      return Result.isSuccess(remarks)
+      const hasPull = (this.state.pulls[reading.worktree.branch] ?? "").length > 0
+      return Result.isSuccess(remarks) || !hasPull
         ? read
         : withNoticeHere(read, "the forge did not answer, so no remarks are shown")
     })
@@ -1092,7 +1093,7 @@ export class App {
   private settleHere(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const thread = threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      const thread = threadHere(this.state)
       const id = thread?.id
       if (branch === undefined || id === undefined) {
         this.commit(withNotice(this.state, "no thread here"))
@@ -1108,8 +1109,7 @@ export class App {
 
   private replyHere(): Work {
     return Effect.sync(() => {
-      const thread =
-        threadChosen(this.state) ?? threadAtStop(this.state) ?? threadAtRow(this.state, this.state.cursor)
+      const thread = threadHere(this.state)
       if (thread?.id !== undefined) {
         this.commit({ ...this.state, screen: "compose", draft: "", replyTo: thread.id })
         return
@@ -1189,6 +1189,17 @@ export class App {
       const reading = this.reading
       if (remark === undefined || reading === undefined) {
         this.commit(withNoticeHere(this.state, "no remark here"))
+        return
+      }
+      if (this.state.hold) {
+        this.holding({
+          file: remark.file,
+          side: remark.side,
+          start: remark.start,
+          end: remark.end,
+          body: quoted(remark),
+          remark: remark.id,
+        })
         return
       }
       const done = yield* Effect.as(
@@ -1614,7 +1625,12 @@ export class App {
       const widened = withContext(this.state, next, patches, 0)
       const patch = selectedPatch(widened)
       const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)
-      this.commit(withContext(this.state, next, patches, cursor))
+      const held = this.reading
+      const remarks =
+        held === undefined
+          ? this.state.remarks
+          : yield* remarksAgainst(held.worktree.path, patches)
+      this.commit(withRemarks(withContext(this.state, next, patches, cursor), remarks))
     })
   }
 
@@ -1773,6 +1789,7 @@ export class App {
         body: comment.body,
         id: randomUUID(),
         at,
+        ...(comment.remark === undefined ? {} : { remark: comment.remark }),
       })
       const many = this.state.held.length
       yield* this.sending(branch.branch, [asked(first), ...rest.map(asked)])

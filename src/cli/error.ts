@@ -26,6 +26,10 @@ export class UnknownRemark extends Data.TaggedError("UnknownRemark")<{
   readonly known: ReadonlyArray<string>
 }> {}
 
+export class NothingSaid extends Data.TaggedError("NothingSaid")<{
+  readonly what: string
+}> {}
+
 export class RemarkTaken extends Data.TaggedError("RemarkTaken")<{
   readonly id: string
   readonly comment: string

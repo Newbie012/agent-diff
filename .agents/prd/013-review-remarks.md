@@ -82,7 +82,7 @@ its snippet match ([PRD 002](002-diff-and-anchoring.md)); the inbox and the hand
 - **Accepting writes a comment in the reviewer's name**, quoting the handle it came from, anchored
   where the remark's code stands now. Accepting a remark that is already accepted is refused and
   says which comment holds it.
-- **Accepting a remark the diff cannot show anchors to the file**, with the hunk the forge quoted as
+- **Accepting a remark the diff cannot show anchors to the line the forge reported**, with the hunk the forge quoted as
   the snippet, so the code the remark was written against travels with the comment.
 - **A suggestion block is shown as it was written** and loses its fence when accepted, so the agent
   is handed words rather than a patch.
@@ -96,7 +96,11 @@ its snippet match ([PRD 002](002-diff-and-anchoring.md)); the inbox and the hand
   review says the forge did not answer rather than showing an empty section.
 - **A remark's line comes from the forge, and its code from the hunk the forge quoted.** The last
   line of that hunk on the remark's own side is what the anchor is matched by, so a remark relocates
-  the way a comment does. A remark the forge quoted no code for keeps the line it reported.
+  when its code moves. A remark the forge quoted no code for keeps the line it reported.
+- **A remark is placed only where its code is exactly.** A comment of the reviewer's own may settle
+  on a line that merely looks like the one it was written against; somebody else's remark may not,
+  because a remark drawn against code it was never about is the thing this PRD exists to prevent. A
+  remark whose code the diff does not show is drawn against no line and says it is outside this diff.
 - **A remark held by a comment cannot be dismissed or restored behind its back.** Triage of an
   accepted remark is refused and names the comment holding it; removing that comment frees the
   remark to be triaged again.
@@ -148,6 +152,10 @@ Behaviors that must be covered:
 - A thread the forge reports with no line, and a comment by an account that has gone, are both read
   rather than failing the fetch.
 - A remark the forge quoted no code for sits on the line it reported.
+- A remark whose code is not in the shown hunks says it is outside this diff, and showing the whole
+  file draws it on its line.
+- An accepted remark waits with the others when comments are held until they are sent.
+- The keys that settle and reply do not reach a remark chosen in the review panel.
 - An accepted suggestion reaches the agent as words, with no fence around them.
 - Dismissing an accepted remark is refused; removing its comment frees it.
 - A remark of two hundred lines leaves the code below it on screen.

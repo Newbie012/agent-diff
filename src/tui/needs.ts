@@ -8,6 +8,7 @@ import type {
   UnknownComment,
   UnknownRemark,
   RemarkTaken,
+  NothingSaid,
   UnknownFile,
   UnknownWorktree,
   UnselectableRange,
@@ -28,6 +29,7 @@ export type Fault =
   | UnknownFile
   | UnknownRemark
   | RemarkTaken
+  | NothingSaid
   | UnknownWorktree
   | UnselectableRange
   | ForgeUnavailable

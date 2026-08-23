@@ -451,7 +451,7 @@ const answer = Effect.fn("Forge.answer")(function* (
 })
 
 const remarks = Effect.fn("Forge.remarks")(function* (repo: string, branch: string) {
-  const open = yield* Effect.orElseSucceed(pulls(repo), () => [] as ReadonlyArray<Pull>)
+  const open = yield* pulls(repo)
   if (!open.some((one) => one.branch === branch)) return [] as ReadonlyArray<ForgeRemark>
   return unresolved(yield* everyThread(repo, yield* whereOf(repo, branch)))
 })

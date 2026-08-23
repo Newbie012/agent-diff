@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect"
 import {
   anchorFor,
-  foundAgain,
+  foundExactly,
   lineOn,
   rowsForRange,
   type Patch,
@@ -10,7 +10,7 @@ import {
 import { Forge, type ForgeRemark } from "../service/forge/index.ts"
 import { Store, type StoredRemark } from "../service/store/index.ts"
 import { findBranch, readingOf, type BranchReading } from "./commands.ts"
-import { RemarkTaken, UnknownRemark } from "./error.ts"
+import { NothingSaid, RemarkTaken, UnknownRemark } from "./error.ts"
 
 const VERSION = 1
 
@@ -32,7 +32,7 @@ export type Remark = {
   readonly outdated: boolean
   readonly placed: boolean
   readonly state: RemarkState
-  readonly comment?: string
+  readonly comment: string
 }
 
 const heldOf = (one: ForgeRemark): StoredRemark => ({
@@ -88,7 +88,7 @@ const placedNow = (patches: ReadonlyArray<Patch>, held: StoredRemark): Sits => {
     const shown = showsLine(patch, held.side, held.line)
     return { start: spanOf(held, held.line), end: held.line, placed: shown }
   }
-  return Option.match(foundAgain(patch, { side: held.side, start: held.line, snippet }), {
+  return Option.match(foundExactly(patch, { side: held.side, start: held.line, snippet }), {
     onNone: () => asRead,
     onSome: (range) => ({ start: spanOf(held, range.end), end: range.end, placed: true }),
   })
@@ -140,7 +140,7 @@ const shownOf = (
     outdated: held.outdated,
     placed: sits.placed,
     state: stateOf(held, dismissed, accepted),
-    ...(comment === undefined ? {} : { comment }),
+    comment: comment ?? "",
   }
 }
 
@@ -152,13 +152,18 @@ export const remarksIn = Effect.fn("Cli.remarksIn")(function* (
   const forge = yield* Forge
   const worktree = reading.worktree
   const found = yield* forge.remarks(repo, worktree.branch)
-  const held = found.map(heldOf)
+  const once = new Map(found.map((one) => [one.id, one]))
+  const held = [...once.values()].map(heldOf)
   yield* store.saveRemarks(worktree.path, {
     version: VERSION,
     head: worktree.head,
     read: new Date().toISOString(),
     remarks: held,
   })
+  const known = new Set(held.map((one) => one.id))
+  const kept = (was: Readonly<Record<string, string>>): Readonly<Record<string, string>> =>
+    Object.fromEntries(Object.entries(was).filter(([id]) => known.has(id)))
+  yield* store.changeState(worktree.path, (was) => ({ ...was, dismissed: kept(was.dismissed) }))
   const current = yield* store.state(worktree.path)
   const accepted = yield* acceptedIn(worktree.path)
   return held.map((one) => shownOf(one, reading.patches, current.dismissed, accepted))
@@ -181,13 +186,19 @@ export const heldRemarks = Effect.fn("Cli.heldRemarks")(function* (worktreePath:
   })
 })
 
-export const remarksHeldIn = Effect.fn("Cli.remarksHeldIn")(function* (reading: BranchReading) {
+export const remarksAgainst = Effect.fn("Cli.remarksAgainst")(function* (
+  worktreePath: string,
+  patches: ReadonlyArray<Patch>,
+) {
   const store = yield* Store
-  const worktree = reading.worktree
-  const held = yield* heldRemarks(worktree.path)
-  const current = yield* store.state(worktree.path)
-  const accepted = yield* acceptedIn(worktree.path)
-  return held.map((one) => shownOf(one, reading.patches, current.dismissed, accepted))
+  const held = yield* heldRemarks(worktreePath)
+  const current = yield* store.state(worktreePath)
+  const accepted = yield* acceptedIn(worktreePath)
+  return held.map((one) => shownOf(one, patches, current.dismissed, accepted))
+})
+
+export const remarksHeldIn = Effect.fn("Cli.remarksHeldIn")(function* (reading: BranchReading) {
+  return yield* remarksAgainst(reading.worktree.path, reading.patches)
 })
 
 const remarkNamed = Effect.fn("Cli.remarkNamed")(function* (worktreePath: string, id: string) {
@@ -258,7 +269,7 @@ export const restoreRemark = Effect.fn("Cli.restoreRemark")(function* (
   return yield* undismissIn((yield* findBranch(repo, branch)).path, id)
 })
 
-export const quoted = (held: StoredRemark): string => {
+export const quoted = (held: { readonly by: string; readonly body: string }): string => {
   const said = spokenWithout(held.body).trim()
   return said.length === 0
     ? `@${held.by} left a remark with no words on the pull request`
@@ -285,7 +296,7 @@ const anchorFrom = (reading: BranchReading, held: StoredRemark) => {
   }))
 }
 
-export const acceptIn = Effect.fn("Cli.acceptRemarkIn")(function* (request: {
+const takingOn = Effect.fn("Cli.takingOnRemark")(function* (request: {
   readonly reading: BranchReading
   readonly id: string
   readonly body?: string | undefined
@@ -306,7 +317,7 @@ export const acceptIn = Effect.fn("Cli.acceptRemarkIn")(function* (request: {
       {
         id: request.commentId,
         anchor: anchorFrom(request.reading, held),
-        body: request.body ?? quoted(held),
+        body: (request.body ?? "").trim().length === 0 ? quoted(held) : request.body ?? "",
         remark: held.id,
       },
     ],
@@ -316,6 +327,17 @@ export const acceptIn = Effect.fn("Cli.acceptRemarkIn")(function* (request: {
     dismissed: without(was.dismissed, held.id),
   }))
   return { accepted: held.id, comment: request.commentId }
+})
+
+export const acceptIn = Effect.fn("Cli.acceptRemarkAlone")(function* (request: {
+  readonly reading: BranchReading
+  readonly id: string
+  readonly body?: string | undefined
+  readonly at: string
+  readonly commentId: string
+}) {
+  const store = yield* Store
+  return yield* store.whileHoldingRemarks(request.reading.worktree.path, takingOn(request))
 })
 
 export const acceptRemark = Effect.fn("Cli.acceptRemark")(function* (request: {
@@ -345,6 +367,9 @@ export const answerRemark = Effect.fn("Cli.answerRemark")(function* (request: {
   const forge = yield* Forge
   const worktree = yield* findBranch(request.repo, request.branch)
   const held = yield* remarkNamed(worktree.path, request.id)
+  if (request.body.trim().length === 0) {
+    return yield* new NothingSaid({ what: "a reply to a remark" })
+  }
   yield* forge.answer(request.repo, worktree.branch, held.answerTo, request.body)
   return { answered: held.id }
 })
