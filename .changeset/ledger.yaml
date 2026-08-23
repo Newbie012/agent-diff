@@ -246,6 +246,10 @@
   dir: ""
   intents:
     - the-terminal-says-branch-not-worktree
+"@eliya-oss/agent-diff@0.1.0-alpha.145":
+  dir: ""
+  intents:
+    - a-minimal-report-names-nothing
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
