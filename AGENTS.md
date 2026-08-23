@@ -30,6 +30,7 @@ pnpm review         # the terminal, on this repo
 pnpm simulate       # the terminal, on a synthetic repo (--probe for headless)
 pnpm pr-summary     # the `## What changed` block for this branch
 pnpm shot --keys "enter text:l" --label "a layer opened"   # screenshot the terminal
+pnpm shot --local --keys "enter" --label "a branch open"   # the same, kept in shots/ and not uploaded
 ```
 
 Node 26 or newer, always started with `--experimental-ffi` (ADR-001). Every entry point passes it.

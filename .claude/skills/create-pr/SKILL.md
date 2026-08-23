@@ -66,8 +66,12 @@ So a test that needs one of those things has two honest endings, and no third:
 **Never paste a recording you have not looked at.** Take the still of the same trace and read it:
 
 ```bash
-pnpm shot --trace <trace.jsonl> --test-name "<when> > <then>" --keep
+pnpm shot --trace <trace.jsonl> --test-name "<when> > <then>" --local
 ```
+
+`--local` writes the frame to `shots/` and uploads nothing, so reading it first publishes nothing.
+Leave `--local` off once the frame is the one you meant, and the capture uploads and prints the
+markdown to paste.
 
 The still is the last frame of the film. If it does not show the behavior the test names, the film
 does not either — and a film that shows the wrong screen is worse than no film, because a reviewer
