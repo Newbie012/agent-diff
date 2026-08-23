@@ -254,6 +254,10 @@
   dir: ""
   intents:
     - the-skill-inside-the-binary
+"@eliya-oss/agent-diff@0.1.0-alpha.147":
+  dir: ""
+  intents:
+    - the-skills-cli-owns-the-skill
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
