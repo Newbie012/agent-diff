@@ -67,7 +67,12 @@ export class AppTestDriver {
     extra: Readonly<Record<string, string>> = {},
     cwd?: string,
   ): Promise<CliResult> {
-    const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot, ...extra }
+    const env = {
+      ...process.env,
+      HOME: this.state.workspace,
+      ADIFF_ROOT: this.state.storeRoot,
+      ...extra,
+    }
     const where = cwd === undefined ? {} : { cwd }
     try {
       const { stdout, stderr } = await exec(process.execPath, [...NODE_FLAGS, ENTRY, ...args], { env, encoding: "utf8", ...where })
@@ -81,7 +86,11 @@ export class AppTestDriver {
   }
 
   private runWith(args: ReadonlyArray<string>, input: string): Promise<CliResult> {
-    const env = { ...process.env, ADIFF_ROOT: this.state.storeRoot }
+    const env = {
+      ...process.env,
+      HOME: this.state.workspace,
+      ADIFF_ROOT: this.state.storeRoot,
+    }
     return new Promise((resolve) => {
       const child = execFile(
         process.execPath,
@@ -258,6 +267,16 @@ export class AppTestDriver {
 
   runSkillRefresh(): Promise<CliResult> {
     return this.run(["skill", "refresh"], { HOME: this.state.workspace }, this.state.repo)
+  }
+
+  async writeOutside(name: string, contents: string): Promise<void> {
+    const path = join(this.state.repo, name)
+    await mkdir(dirname(path), { recursive: true })
+    await writeFile(path, contents, "utf8")
+  }
+
+  async makeRoomFor(name: string): Promise<void> {
+    await mkdir(dirname(join(this.state.repo, name)), { recursive: true })
   }
 
   async installTheSkill(contents: string): Promise<void> {

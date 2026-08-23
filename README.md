@@ -21,11 +21,16 @@ pick up your comments:
 
 ```bash
 brew install Newbie012/tap/adiff
-npx skills add Newbie012/agent-diff --skill adiff
+npx skills add Newbie012/agent-diff --skill adiff -g -y -a claude-code
 ```
 
-adiff writes nothing into your repository — no `AGENTS.md`, no `CLAUDE.md`. Your agent finds the
-skill on its own.
+The flags matter. `-g` puts the skill in your home directory rather than in the repository you are
+standing in, which is what reaches an agent working in a worktree; `-y` and `-a claude-code` answer
+the questions the skills CLI asks otherwise. Nothing lands in the repository, so there is nothing to
+commit and nothing a teammate inherits — drop `-g` if your team has adopted adiff and wants the skill
+in the repo.
+
+Your agent finds the skill on its own from there.
 
 Then ask it to walk you through it:
 

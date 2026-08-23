@@ -1,15 +1,13 @@
-import { existsSync, readFileSync, realpathSync } from "node:fs"
+import { existsSync, lstatSync, realpathSync } from "node:fs"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { fileURLToPath } from "node:url"
 import { Effect, Option } from "effect"
 import { InitUnwritable } from "./error.ts"
-
-const REACH = 5
+import { SHIPPED_SKILL } from "./shipped-skill.ts"
 
 export type Change = {
   readonly path: string
-  readonly action: "create" | "update" | "unchanged"
+  readonly action: "create" | "update" | "unchanged" | "linked"
 }
 
 const readAt = Effect.fn("Cli.readAt")(function* (path: string) {
@@ -27,26 +25,22 @@ const writeAt = Effect.fn("Cli.writeAt")(function* (path: string, text: string) 
   })
 })
 
-const skillSource = (): string | undefined => {
-  const here = dirname(fileURLToPath(import.meta.url))
-  const climb = Array.from({ length: REACH }, (_, layer) => join(here, ...Array(layer).fill("..")))
-  return climb.map((at) => join(at, "skills", "adiff", "SKILL.md")).find((path) => existsSync(path))
-}
-
-const shippedSkill = Effect.fn("Cli.shippedSkill")(function* () {
-  const source = skillSource()
-  return yield* source === undefined
-    ? new InitUnwritable({ path: "skills/adiff/SKILL.md", reason: "not found beside this build" })
-    : Effect.sync(() => readFileSync(source, "utf8"))
-})
-
 const SKILL_AT = join(".claude", "skills", "adiff", "SKILL.md")
 
 export type SkillReport = { readonly changes: ReadonlyArray<Change> }
 
+const isLink = (path: string): boolean => {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
 const refreshAt = Effect.fn("Cli.refreshAt")(function* (root: string, wanted: string) {
   const path = join(root, SKILL_AT)
   if (!existsSync(path)) return []
+  if (isLink(path)) return [{ path, action: "linked" } satisfies Change]
   const current = yield* readAt(path)
   const held = Option.getOrUndefined(current)
   if (held === wanted) return [{ path, action: "unchanged" } satisfies Change]
@@ -65,9 +59,8 @@ const settledRoot = (root: string): string => {
 export const refreshSkill = Effect.fn("Cli.refreshSkill")(function* (
   roots: ReadonlyArray<string>,
 ) {
-  const wanted = yield* shippedSkill()
   const seen = [...new Set(roots.map(settledRoot))]
   const found: Array<Change> = []
-  for (const root of seen) found.push(...(yield* refreshAt(root, wanted)))
+  for (const root of seen) found.push(...(yield* refreshAt(root, SHIPPED_SKILL)))
   return { changes: found } satisfies SkillReport
 })
