@@ -22,9 +22,10 @@ export const traceNamed = (path: string, test: string): Trace => {
   return found
 }
 
-export const worldOf = (held: Trace): Promise<Workspace> =>
+export const worldOf = (held: Trace, at?: string): Promise<Workspace> =>
   createWorkspace({
     branches: 1,
+    ...(at === undefined ? {} : { at }),
     fixtures: [
       {
         name: held.world.branch.name ?? "review",
@@ -57,11 +58,12 @@ export const openTerminal = (space: Workspace): Promise<number> =>
 
 const asked = argv[2]
 const wanted = argv[3]
+const inside = argv[4]
 const isEntry = argv[1]?.endsWith("scenario.ts") === true
 
 if (isEntry && asked !== undefined && wanted !== undefined) {
   const held = traceNamed(asked, wanted)
-  const space = await worldOf(held)
+  const space = await worldOf(held, inside)
   await openTerminal(space)
   await space.dispose()
 }

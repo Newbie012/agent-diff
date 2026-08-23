@@ -791,7 +791,7 @@ const notesOf = (
   },
 ): ReadonlyArray<Note> =>
   comments
-    .filter((entry) => entry.file === path)
+    .filter((entry) => entry.file === path && entry.outside !== true)
     .map((entry) => ({
       id: entry.id ?? "",
       folded: entry.settled === true && !(entry.id !== undefined && shown.opened.includes(entry.id)),
@@ -1227,7 +1227,8 @@ const windowedBlocks = (
 }
 
 const panelWhere = (entry: PanelEntry, room: number): string => {
-  const where = `:${entry.comment.end}`
+  const where =
+    entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}`
   return `${clipPath(entry.comment.file, Math.max(4, room - where.length))}${where}`
 }
 

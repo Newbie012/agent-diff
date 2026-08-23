@@ -2,6 +2,7 @@ import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import {
   anchorFor,
+  foundAgain,
   parsePatches,
   rowsForRange,
   WHOLE_FILE,
@@ -346,7 +347,7 @@ const sentOf = (
     settled: Object.hasOwn(settled, comment.id),
     removed: Object.hasOwn(removed, comment.id),
     stale: comment.head !== head,
-    outside: !shown.has(comment.file),
+    outside: !shown.has(comment.file) || comment.placed === false,
     unread: Math.max(0, said.length - seen),
     asks: last?.voice === "agent" && last.asks,
     ...(takenAt === undefined ? {} : { takenAt }),
@@ -355,13 +356,28 @@ const sentOf = (
   }
 }
 
+const whereItSitsNow = (
+  patches: ReadonlyArray<Patch>,
+  comment: PendingComment,
+): PendingComment => {
+  const patch = patches.find((candidate) => candidate.path === comment.file)
+  if (patch === undefined) return { ...comment, placed: false }
+  if (comment.snippet.trim().length === 0) return { ...comment, placed: true }
+  return Option.match(foundAgain(patch, comment), {
+    onNone: () => ({ ...comment, placed: false }),
+    onSome: (range) => ({ ...comment, start: range.start, end: range.end, placed: true }),
+  })
+}
+
 export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading) {
   const store = yield* Store
   const worktree = reading.worktree
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
-  const held = flatten(yield* store.inbox(worktree.path))
+  const held = flatten(yield* store.inbox(worktree.path)).map((comment) =>
+    whereItSitsNow(reading.patches, comment),
+  )
   const replies = held.filter((comment) => comment.replyTo !== undefined)
   const conversation = {
     spoken,
@@ -525,6 +541,7 @@ export type PendingComment = {
   readonly end: number
   readonly snippet: string
   readonly body: string
+  readonly placed?: boolean | undefined
   readonly replyTo?: string | undefined
   readonly thread?: ReadonlyArray<Turn> | undefined
 }

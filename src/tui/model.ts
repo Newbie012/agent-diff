@@ -13,6 +13,7 @@ export type StagedComment = {
   readonly body: string
   readonly settled?: boolean
   readonly removed?: boolean
+  readonly outside?: boolean
   readonly stale?: boolean
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
@@ -710,7 +711,9 @@ export const markedStands = (state: TuiState): ReadonlyMap<number, ThreadStand> 
   const patch = selectedPatch(state)
   const found = new Map<number, ThreadStand>()
   if (patch === undefined) return found
-  const here = state.sent.filter((entry) => entry.file === patch.path && entry.removed !== true)
+  const here = state.sent.filter(
+    (entry) => entry.file === patch.path && entry.removed !== true && entry.outside !== true,
+  )
   for (const entry of here) {
     const stand = threadStand(entry)
     for (const row of rowsUnder(patch, entry)) found.set(row, louder(stand, found.get(row) ?? "gone"))
@@ -930,7 +933,7 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
   const patch =
     fileIndex === state.patchIndex ? selectedPatch(state) : state.patches[fileIndex]
   if (patch === undefined) return []
-  const notes = state.sent.filter((entry) => entry.file === patch.path)
+  const notes = state.sent.filter((entry) => entry.file === patch.path && entry.outside !== true)
   const rows = patch.rows.filter((row) =>
     notes.some((note) => lineOnSide(row, note.side) === note.end),
   )
@@ -946,6 +949,7 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
       entry.file === patch.path &&
       entry.id !== undefined &&
       entry.removed !== true &&
+      entry.outside !== true &&
       lineOnSide(here, entry.side) === entry.end,
   )
 }
@@ -968,6 +972,7 @@ export const threadAtRow = (state: TuiState, row: number): StagedComment | undef
       entry.file === patch.path &&
       entry.id !== undefined &&
       entry.removed !== true &&
+      entry.outside !== true &&
       lineOnSide(here, entry.side) === entry.end,
   )
 }
@@ -976,7 +981,11 @@ export const openCommentRows = (state: TuiState): ReadonlyArray<number> => {
   const patch = selectedPatch(state)
   if (patch === undefined) return []
   const open = state.sent.filter(
-    (entry) => entry.file === patch.path && entry.settled !== true && entry.removed !== true,
+    (entry) =>
+      entry.file === patch.path &&
+      entry.settled !== true &&
+      entry.removed !== true &&
+      entry.outside !== true,
   )
   return patch.rows
     .filter((row) => open.some((note) => lineOnSide(row, note.side) === note.end))

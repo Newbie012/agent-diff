@@ -719,7 +719,7 @@ const headOf = (note: Note): string => {
 }
 
 const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {
-  const wrapped = wrap(body.replaceAll("\n", " "), Math.max(NOTE_MIN, room - 2))
+  const wrapped = body.split("\n").flatMap((line) => wrap(line, Math.max(NOTE_MIN, room - 2)))
   return wrapped.map((text, at) => (at === 0 ? `${mark} ${text}` : `  ${text}`))
 }
 

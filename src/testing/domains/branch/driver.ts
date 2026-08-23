@@ -43,7 +43,8 @@ export class BranchTestDriver {
     ])
     await series(model.files, (file) => this.lay(worktree, file))
     const stacked = { ...model, worktree: await realpath(worktree) }
-    await this.commitAll(stacked, model.name)
+    this.state.tracer.cannotReplay("a branch stacked on another")
+    await this.commit(stacked, model.name)
     return stacked
   }
 
@@ -53,16 +54,33 @@ export class BranchTestDriver {
   }
 
   async commitAll(branch: CreatedBranch, message: string): Promise<void> {
-    await this.state.git(branch.worktree, ["add", "-A"])
-    await this.state.git(branch.worktree, ["commit", "-q", "-m", message])
+    this.state.tracer.cannotReplay("a commit made after the world was built")
+    await this.commit(branch, message)
   }
 
   async setFile(branch: CreatedBranch, path: string, lines: ReadonlyArray<string>): Promise<void> {
+    this.state.tracer.cannotReplay("a file changed after the world was built")
     await this.write(branch.worktree, path, lines)
   }
 
   async setOwnFile(path: string, lines: ReadonlyArray<string>): Promise<void> {
+    this.state.tracer.cannotReplay("a file changed after the world was built")
     await this.write(this.state.repo, path, lines)
+  }
+
+  async changeAndCommit(
+    branch: CreatedBranch,
+    path: string,
+    lines: ReadonlyArray<string>,
+    message: string,
+  ): Promise<void> {
+    await this.write(branch.worktree, path, lines)
+    await this.commit(branch, message)
+  }
+
+  private async commit(branch: CreatedBranch, message: string): Promise<void> {
+    await this.state.git(branch.worktree, ["add", "-A"])
+    await this.state.git(branch.worktree, ["commit", "-q", "-m", message])
   }
 
   ownPath(): Promise<string> {

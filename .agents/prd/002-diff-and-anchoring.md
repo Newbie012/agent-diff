@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-08-23
 
 ## Problem Statement
 
@@ -63,6 +63,24 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
   selected rows' text, joined by newlines, without diff signs.
 - **A range with no matching rows produces no anchor.** The caller refuses; it never falls back to
   the nearest row.
+- **An anchor is read back at the lines its snippet stands on now.** A comment written at line 12
+  and pushed to line 30 by an edit above it is reported at line 30, because the snippet is the
+  anchor's identity and the line number is only where it was last seen. The match is exact, on the
+  anchor's side, and the run of lines must be contiguous, so a snippet split by a later edit is not
+  half-matched. Where the snippet appears more than once the one nearest the recorded line wins.
+  Nothing is rewritten in the store: what the reviewer wrote is a record, and where it sits is read
+  from the diff in hand.
+- **A snippet of several lines whose first line still stands is read back on that line.** The agent
+  changing the third line of a five-line selection must not cost the reviewer the whole comment, and
+  the line the selection opened on is still exactly where the point was made. This is the only
+  partial match; no similarity, no nearest-looking line.
+- **An anchor whose snippet the diff cannot show is not placed on any line.** Not the line it was
+  written at, which by then holds code it was never about — that is the failure this rule exists to
+  prevent. The thread stays in the review panel, which says it is not in the diff, and it can still
+  be read, answered, settled and removed from there.
+- **An anchor with no snippet keeps the line it was written at.** There is nothing to look for, so
+  the line number is the best that anchor has, and a comment is never lost for carrying less than
+  today's anchors carry.
 - **A change with no lines to show says what did change.** A mode change, a rename, a copy, and
   an added or deleted empty file each get one row of plain words — `mode changed, 100644 to 100755`,
   `renamed from pkg/gizmo.ts`. No patch is ever without rows. When such a change comes with edits,
@@ -91,6 +109,10 @@ Behaviors that must be covered:
 - A new-side range quotes only the new-side code, with deleted lines nearby excluded.
 - An old-side range quotes the deleted code.
 - A range the diff does not show is refused, and nothing reaches the agent.
+- Two comments in one file, with lines added above one and between them, are each drawn against the
+  code they were written against.
+- A comment whose line the agent rewrote is drawn against no line, and the review panel says it is
+  not in the diff.
 - A file in a nested directory anchors to the right path.
 - A mode-only change, a rename with no edits, and a rename with edits each say what changed.
 

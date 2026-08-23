@@ -1,5 +1,5 @@
 import { preferences } from "../../domain/preferences/index.ts"
-import type { Step } from "./model.ts"
+import type { Change, Step } from "./model.ts"
 
 const step = (does: string, keys: ReadonlyArray<string>): Step => ({ does, keys })
 
@@ -7,19 +7,31 @@ const press = (key: string): string => `text:${key}`
 
 const settle = (ms: number): string => `wait:${ms}`
 
-export const openTheBranch = (): Step => step("open the branch", ["enter"])
+export const openTheBranch = (): Step =>
+  step("open the branch", ["enter", "until:file 1 of", settle(400)])
 
 export const goBack = (): Step => step("go back", ["escape"])
+
+export const readTheBranchAgain = (): Step => step("read the branch again", [press("r")])
+
+export const theAgentRewrites = (change: Change): Step => ({
+  does: `the agent rewrites ${change.file}`,
+  keys: [],
+  change,
+})
 
 export const readTheNextFile = (): Step => step("read the next file", [press("]")])
 
 export const readThePreviousFile = (): Step => step("read the previous file", [press("[")])
 
+const stepped = (key: string, times: number): ReadonlyArray<string> =>
+  Array.from({ length: times }, () => [press(key), settle(300)]).flat()
+
 export const goDownALine = (times = 1): Step =>
-  step(times === 1 ? "go down a line" : `go down ${times} lines`, Array.from({ length: times }, () => press("j")))
+  step(times === 1 ? "go down a line" : `go down ${times} lines`, stepped("j", times))
 
 export const goUpALine = (times = 1): Step =>
-  step(times === 1 ? "go up a line" : `go up ${times} lines`, Array.from({ length: times }, () => press("k")))
+  step(times === 1 ? "go up a line" : `go up ${times} lines`, stepped("k", times))
 
 export const markTheFileReviewed = (): Step => step("mark the file reviewed", [press("m")])
 
@@ -44,7 +56,25 @@ export const askForAReadingOrder = (): Step => step("ask for a reading order", [
 export const hideFilesAlreadyRead = (): Step => step("hide the files already read", [press("f")])
 
 export const leaveAComment = (said: string): Step =>
-  step(`leave a comment saying "${said}"`, [press("c"), settle(1200), `text:${said}`, `until:${said}`, "ctrl-s"])
+  step(`leave a comment saying "${said}"`, [
+    press("c"),
+    settle(1200),
+    `text:${said}`,
+    `until:${said}`,
+    "ctrl-s",
+    settle(800),
+  ])
+
+export const replyOnTwoLines = (first: string, second: string): Step =>
+  step("write a reply on two lines", [
+    press("R"),
+    settle(1200),
+    `text:${first}`,
+    "enter",
+    `text:${second}`,
+    `until:${second}`,
+    "ctrl-s",
+  ])
 
 const preferenceAt = (name: string): number => preferences.findIndex((one) => one.name === name)
 

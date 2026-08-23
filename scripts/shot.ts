@@ -89,18 +89,39 @@ const stillAt = (root: string, name: string): string => {
   return out
 }
 
+const simRoot = mkdtempSync(join(tmpdir(), "adiff-world-"))
+
 const bootArgs = (root: string): ReadonlyArray<string> =>
   chosen === undefined || traceAt === undefined || testName === undefined
     ? [join(root, SIM)]
-    : [join(root, SCENARIO), traceAt, testName]
+    : [join(root, SCENARIO), traceAt, testName, simRoot]
+
+const worldWorktree = (): string =>
+  join(simRoot, chosen?.world.branch.name ?? "review")
+
+const madeInTheWorld = (token: string): void => {
+  const at = Number(token.slice("world:".length))
+  const change = chosen?.changes?.[at]
+  if (change === undefined) return
+  const worktree = worldWorktree()
+  const file = join(worktree, change.file)
+  mkdirSync(join(file, ".."), { recursive: true })
+  writeFileSync(file, `${change.lines.join("\n")}\n`, "utf8")
+  run("git", ["-C", worktree, "add", "-A"])
+  run("git", ["-C", worktree, "commit", "-q", "-m", change.message])
+}
 
 const sendOne = (session: string, key: string): void => {
+  if (key.startsWith("world:")) {
+    madeInTheWorld(key)
+    return
+  }
   if (key.startsWith("wait:")) {
     execFileSync("sleep", [String(Number(key.slice("wait:".length)) / 1000)])
     return
   }
   if (key.startsWith("until:")) {
-    run("termctrl", ["wait", session, key.slice("until:".length), "--timeout", "20000"])
+    run("termctrl", ["wait", session, "--timeout", "20000", "--", key.slice("until:".length)])
     return
   }
   run("termctrl", ["send", session, "--pace-ms", "120", key])
@@ -118,7 +139,7 @@ const SHOWN: Readonly<Record<string, string>> = {
 }
 
 const keyShown = (token: string): string | undefined => {
-  if (/^(wait|until):/.test(token)) return undefined
+  if (/^(wait|until|world):/.test(token)) return undefined
   if (token.startsWith("text:")) {
     const said = token.slice("text:".length)
     return said.length === 1 ? said : "typing"

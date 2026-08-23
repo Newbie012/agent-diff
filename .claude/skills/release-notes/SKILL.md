@@ -151,8 +151,6 @@ tests, or how long it took you. Those belong in the PR.
 ### The template
 
 ```markdown
-One paragraph. What this changes, and what prompted it. Two or three sentences.
-
 ## What changed
 
 ### Fixed
@@ -183,6 +181,11 @@ The repro. Then what the fix was.
 
 - The **title** is the entry sentence without the `kind(area):` prefix, and follows the same
   no-gerund rule.
+- **Nothing comes before `## What changed`.** No opening paragraph, no framing, no "two things a
+  reviewer hits". The bullets say what changed; a reader who wants the story reads the section for
+  the one that bit them. The template's paragraph is for a PR with no change intent at all.
+- **Every section is two or three sentences.** The repro, then what it does now. A reader deciding
+  whether this is their bug does not read a fourth sentence.
 - **`## What changed` is generated, never typed.** `node scripts/pr-summary.ts` prints it from the
   change intents on this branch. The PR and the changelog then cannot drift apart. Commit the
   intent first — the summary is read from the diff against `origin/main`, so an uncommitted file
