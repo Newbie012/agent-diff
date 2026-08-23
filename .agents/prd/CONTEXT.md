@@ -50,10 +50,24 @@ An anchored note written by the reviewer, belonging to one [branch](#branch).
 
 A set of comments submitted together as one hand-over to the agent.
 
+### Settle
+
+The reviewer's act of closing a [thread](#thread), because the point was addressed and needs nothing
+more. Settling folds the thread on screen and retires the comment, so the agent stops being handed
+it. Only the reviewer settles: an agent can answer, and can say its answer asks something, but it
+cannot close the point it was answering. Removing a comment retires it the same way, and says the
+reviewer should not have made it.
+
 ### Side
 
 Which version of the file a line number refers to: `new` for the working tree, `old` for the
 version being replaced. A range on the new side never selects removed lines, and the reverse.
+
+### Thread
+
+One [comment](#comment) and everything said since: the agent's answers and the reviewer's replies,
+oldest first. It is what the reviewer acts on rather than the comment underneath — one stop for the
+cursor, [settled](#settle) or removed whole.
 
 ### Vouched
 
@@ -101,13 +115,14 @@ it, the agent reads from it, and neither has to be running for the other to work
 
 ### Store
 
-Where review state lives on disk: the [inbox](#inbox), the [vouches](#vouched), and how far the
-agent has read. Rooted at `~/.adiff` by default, overridable with `ADIFF_ROOT`.
+Where review state lives on disk: the [inbox](#inbox), the agent's answers, the
+[vouches](#vouched), and which [threads](#thread) are settled, removed or read. Rooted at
+`~/.adiff` by default, overridable with `ADIFF_ROOT`.
 
 ### Take
 
-The agent's act of collecting the comments it has not seen. Exactly-once: a comment handed over is
-never handed over again.
+The agent's act of collecting every comment it still owes an answer. A comment comes back on every
+take until it is retired: answered by the agent, or [settled](#settle) or removed by the reviewer.
 
 ---
 

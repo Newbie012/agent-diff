@@ -78,7 +78,7 @@ and dropping a draft, sending the held set to the forge as one review, and sayin
 ### Does not own
 
 The diff and its anchors ([PRD 002](002-diff-and-anchoring.md)); how the review is drawn
-([PRD 003](003-review-terminal.md)); the local inbox and exactly-once hand-over to an agent in the
+([PRD 003](003-review-terminal.md)); the local inbox and the hand-over to an agent in the
 worktree ([PRD 004](004-comment-delivery.md)) — a draft is never in the inbox; the layers that
 order the reading ([PRD 006](006-narrative-review.md)); the `hold` preference and the preferences
 file ([PRD 011](011-preferences.md)), which this PRD reuses rather than redefines.

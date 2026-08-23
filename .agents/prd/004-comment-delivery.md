@@ -1,10 +1,11 @@
 # PRD-004 — Comment delivery
 
-> Filing a comment against a worktree, and handing it to the agent working there exactly once.
+> Filing a comment against a worktree, and handing it to the agent working there until it is
+> answered.
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-20
+- **Last updated:** 2026-08-23
 
 ## Problem Statement
 
@@ -20,16 +21,17 @@ reviewer does not need the agent to be running, and the agent does not need the 
 [inbox](CONTEXT.md#inbox) is append-only, so nothing a reviewer wrote can be lost by anything the
 agent does.
 
-The agent [takes](CONTEXT.md#take) what it has not seen. Delivery is exactly-once: a comment handed
-over is never handed over again, so an agent can poll without re-reading its whole history and
-without a comment going missing between two takes.
+The agent [takes](CONTEXT.md#take) every comment it still owes an answer. A comment comes back on
+every take until it is retired — answered by the agent, or [settled](CONTEXT.md#settle) or removed
+by the reviewer — so an agent that took a comment and never answered it is handed it again, and
+nothing goes missing between two takes.
 
 ## User Stories
 
 1. As a `reviewer`, I want to write comments while the agent is busy, so that reviewing is not
    gated on the agent's attention.
-2. As an `agent`, I want everything written since I last looked, so that I neither miss a comment
-   nor act on one twice.
+2. As an `agent`, I want every comment I still owe an answer, so that a point I never got round to
+   is one I am handed again rather than one nobody chases.
 3. As an `agent`, I want to wait for the next comment, so that I can sit in a review loop instead
    of polling.
 4. As an `agent`, I want an empty answer when nothing is waiting, so that quiet is distinguishable
@@ -47,8 +49,8 @@ without a comment going missing between two takes.
 
 ### Owns
 
-The on-disk layout of review state, appending a submission, and the read cursor that makes
-hand-over exactly-once.
+The on-disk layout of review state, appending a submission, and working out what the agent is
+still owed.
 
 ### Does not own
 
@@ -63,7 +65,7 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 ```text
 <root>/branches/<slug>/inbox.jsonl   append-only submissions
 <root>/branches/<slug>/outbox.jsonl  append-only answers
-<root>/branches/<slug>/state.json    vouches, how far the agent has read, and settled threads
+<root>/branches/<slug>/state.json    vouches, settled and removed threads, and what has been read
 ```
 
 - **The slug is derived from the repository and the branch, not from where the worktree sits.** A
@@ -79,8 +81,9 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **A submission is one line of JSON** carrying its id, timestamp, the HEAD it was written
   against, and its comments. Appending never rewrites what is there.
 - **Taking returns every comment that is still owed an answer**, oldest first, and keeps returning
-  it until one exists. Taking with nothing owed returns an empty list and a zero exit. Taking reads;
-  it writes nothing, so it can be run twice with no consequence.
+  it until one exists. Taking with nothing owed returns an empty list and a zero exit. What taking
+  writes is the time each comment was first picked up, which is how the review screen says a comment
+  is waiting on the agent; taking again hands the same comments over and leaves that time alone.
 - **An answer is what retires a comment, not the act of reading it.** A cursor that advanced on read
   made delivery at-most-once: an agent that took five comments and answered three — because it ran
   out of room, was interrupted, or simply lost track — left two that nothing would hand over again
@@ -100,8 +103,8 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
 - **An answer is one line of JSON** in the outbox: the comment it answers, its body, the HEAD it
   was written against, whether it asks the reviewer something, and when. Appending never rewrites.
 - **Answers are read on demand, not handed over.** The reviewer is sitting in front of a screen and
-  re-reads the branch; the cursor exists because an agent polls and must neither miss a comment nor
-  act on one twice. A reviewer has no such problem, so there is no second cursor to corrupt.
+  re-reads the branch, so nothing has to remember what they have seen. What the agent is owed is
+  worked out from the inbox and the outbox each time, and there is no second record to corrupt.
 - **Only the reviewer settles a thread.** An agent can answer, and can say its answer asks
   something, but a point is closed by the person who raised it. An agent that could close its own
   thread could end a conversation the reviewer never read.
@@ -152,7 +155,7 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   had nowhere to go: the reviewer could settle it, remove it, or write a second comment on the same
   line that the agent had no reason to connect to the first. A reply carries the id of the comment
   it continues and the anchor of that comment, so it travels the same append-only inbox, is owed an
-  answer like any comment, and is handed over exactly once. Delivery learns nothing new.
+  answer like any comment, and comes back until it has one. Delivery learns nothing new.
 
 - **A reply is handed over with the conversation so far** — the point that started the thread and
   every answer and reply since, oldest first. An agent that receives "no, the other one" on its own
@@ -252,7 +255,7 @@ public read was broken.
 Behaviors that must be covered:
 
 - A comment written by the reviewer is handed to the agent with its anchor intact.
-- The same comment is not handed over twice.
+- A comment with no answer is handed over again on the next take, and stops once it has one.
 - A comment written after the agent caught up is handed over on the next take.
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
@@ -269,6 +272,6 @@ Behaviors that must be covered:
 
 ## Further Notes
 
-Exactly-once is a cursor, not a delete. The inbox keeps everything, so a reviewer can always see
-what they sent and a bug in the cursor is recoverable by resetting a number rather than by
-recovering lost comments.
+Retiring a comment is a record, not a delete. The inbox keeps everything, so a reviewer can always
+see what they sent, and a bug in what counts as retired is fixed by correcting that record rather
+than by recovering lost comments.
