@@ -131,7 +131,7 @@ the body and the anchor rather than on a count. At the screen: where a remark is
 panel sections hold, and what the footer offers.
 
 The forge is a script on the path, as it is for every other forge test, so a test states the threads
-a pull request holds without reaching the network.
+each pull request holds, per pull request, without reaching the network.
 
 Behaviors that must be covered:
 
@@ -160,6 +160,8 @@ Behaviors that must be covered:
 - Dismissing an accepted remark is refused; removing its comment frees it.
 - A remark of two hundred lines leaves the code below it on screen.
 - A pull request with more threads than one page holds gives up every one of them.
+- Each branch of a stack reads the remarks on its own pull request and no other's, and accepting on
+  one hands nothing to the agent in the other.
 - Replying to a remark reaches the thread it belongs to, and nothing reaches the agent.
 
 ## Out of Scope

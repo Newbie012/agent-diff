@@ -104,44 +104,67 @@ const threadsPage = (
     },
   })
 
-const pagesOf = (
-  pulls: ReadonlyArray<PullOnForge>,
-  options: ForgeOptions,
-): ReadonlyArray<ReadonlyArray<ThreadOnForge>> => [pulls[0]?.threads ?? [], ...(options.morePages ?? [])]
+const numberOf = (pull: PullOnForge, at: number): number => pull.number ?? at + 1
 
-const pageBranch = (
+const pagesFor = (
+  pull: PullOnForge,
+  at: number,
+  options: ForgeOptions,
+): ReadonlyArray<ReadonlyArray<ThreadOnForge>> =>
+  at === 0 ? [pull.threads ?? [], ...(options.morePages ?? [])] : [pull.threads ?? []]
+
+const pageCase = (
   threads: ReadonlyArray<ThreadOnForge>,
   at: number,
   last: number,
 ): ReadonlyArray<string> => {
   const cursor = at === last ? undefined : `page${at + 1}`
-  const test = at === 0 ? 'case "$*" in *"after="*) ;; *)' : `case "$*" in *"after=page${at}"*)`
+  const pattern = at === 0 ? "*)" : `*"after=page${at}"*)`
+  return [pattern, `cat <<'JSON'`, threadsPage(threads, cursor), "JSON", "exit 0", ";;"]
+}
+
+const pullCase = (pull: PullOnForge, at: number, options: ForgeOptions): ReadonlyArray<string> => {
+  const pages = pagesFor(pull, at, options)
+  const last = pages.length - 1
+  const later = pages.flatMap((threads, page) =>
+    page === 0 ? [] : pageCase(threads, page, last),
+  )
+  const first = pages[0] ?? []
   return [
-    test,
-    `cat <<'JSON'`,
-    threadsPage(threads, cursor),
-    "JSON",
-    "exit 0",
-    ";;",
+    `*"number=${numberOf(pull, at)}"*)`,
+    'case "$*" in',
+    ...later,
+    ...pageCase(first, 0, last),
     "esac",
+    ";;",
   ]
+}
+
+const oddAnswer = (options: ForgeOptions): ReadonlyArray<string> | undefined => {
+  if (options.refuses === true) {
+    return [`echo '${options.reason ?? "the forge said no"}' >&2`, "exit 1"]
+  }
+  return options.threadsRaw === undefined
+    ? undefined
+    : [`cat <<'JSON'`, options.threadsRaw, "JSON", "exit 0"]
 }
 
 const graphqlBranch = (
   pulls: ReadonlyArray<PullOnForge>,
   options: ForgeOptions,
-): ReadonlyArray<string> => {
-  const pages = pagesOf(pulls, options)
-  return [
-    'if [ "$1" = "api" ] && [ "$2" = "graphql" ]; then',
-    ...(options.refuses === true
-      ? [`echo '${options.reason ?? "the forge said no"}' >&2`, "exit 1"]
-      : options.threadsRaw !== undefined
-        ? [`cat <<'JSON'`, options.threadsRaw, "JSON", "exit 0"]
-        : pages.flatMap((threads, at) => pageBranch(threads, at, pages.length - 1))),
-    "fi",
-  ]
-}
+): ReadonlyArray<string> => [
+  'if [ "$1" = "api" ] && [ "$2" = "graphql" ]; then',
+  ...(oddAnswer(options) ?? [
+    'case "$*" in',
+    ...pulls.flatMap((pull, at) => pullCase(pull, at, options)),
+    "esac",
+    `cat <<'JSON'`,
+    threadsPage([], undefined),
+    "JSON",
+    "exit 0",
+  ]),
+  "fi",
+]
 
 const scriptFor = (
   pulls: ReadonlyArray<PullOnForge>,
