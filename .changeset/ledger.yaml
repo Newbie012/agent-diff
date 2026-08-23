@@ -232,6 +232,10 @@
   dir: ""
   intents:
     - a-wait-that-is-not-waiting
+"@eliya-oss/agent-diff@0.1.0-alpha.142":
+  dir: ""
+  intents:
+    - a-comment-follows-its-code
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
