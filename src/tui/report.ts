@@ -45,12 +45,16 @@ const visibleTree = (state: TuiState): ReadonlyArray<string> =>
     return `${here} ${"  ".repeat(row.depth)}${row.name}${row.kind === "directory" ? "/" : ""}`
   })
 
-const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
-  `- adiff ${manifest.version} on Node ${process.version}, ${platform()}, ${hostname()}`,
-  `- terminal ${around.width}x${around.height}`,
+const whereabouts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
   `- repo \`${around.repo}\``,
   `- branch \`${selectedBranch(state)?.branch ?? "none"}\``,
   `- file \`${selectedPatch(state)?.path ?? "none"}\`, row ${state.cursor + 1}`,
+]
+
+const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
+  `- adiff ${manifest.version} on Node ${process.version}, ${platform()}${state.reportFull ? `, ${hostname()}` : ""}`,
+  `- terminal ${around.width}x${around.height}`,
+  ...(state.reportFull ? whereabouts(state, around) : []),
   `- screen \`${state.screen}\`, focus \`${state.focus}\`, selecting ${String(state.selecting)}`,
   `- ${state.vouched.length} of ${state.patches.length} reviewed`,
 ]
@@ -72,7 +76,7 @@ const fully = (state: TuiState, around: Surroundings): ReadonlyArray<string> => 
 ]
 
 const minimal = (): ReadonlyArray<string> => [
-  "_Sent as a minimal report: no file names, no code, no key history._",
+  "_Sent as a minimal report: no machine, repo, branch or file name, no code, no key history._",
   "",
 ]
 
