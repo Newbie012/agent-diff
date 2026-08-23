@@ -7,6 +7,8 @@ export type OptionSpec = {
 
 export type Addresses = "review" | "repo" | "none"
 
+export const WAIT_MOST = 86_400
+
 export type CommandSpec = {
   readonly name: string
   readonly about: string
@@ -227,7 +229,7 @@ const commands: ReadonlyArray<CommandSpec> = [
         name: "wait",
         required: false,
         value: "seconds",
-        about: "Block until a comment arrives or the timeout elapses",
+        about: `Block until a comment arrives or the timeout elapses. A whole number of seconds from 1 to ${WAIT_MOST}; anything else is refused`,
       },
     ],
     dataKey: "comments",

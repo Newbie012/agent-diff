@@ -14,6 +14,7 @@ describe("when a command is asked what it does", () => {
     expect(result.stdout.startsWith("{")).toBe(false)
     expect(result.stdout).toContain("adiff comment take (--worktree <path> | --repo <path> --branch <name>)")
     expect(result.stdout).toContain("--wait <seconds>")
+    expect(result.stdout).toContain("from 1 to 86400")
     expect(result.stdout).toContain("Naming the review is required")
   })
 

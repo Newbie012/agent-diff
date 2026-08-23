@@ -74,7 +74,7 @@ export {
   settleThread,
 } from "./threads.ts"
 export type { Thread, ThreadAnswer } from "./threads.ts"
-export { numeric, oneOf, onlyKnown, optionsFrom, required } from "./parse.ts"
+export { numeric, oneOf, onlyKnown, optionsFrom, required, seconds } from "./parse.ts"
 export {
   addressing,
   catalog,

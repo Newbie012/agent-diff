@@ -39,6 +39,7 @@ import {
   onlyKnown,
   optionsFrom,
   required,
+  seconds,
   verbsUnder,
   reviewProgress,
   removeComment,
@@ -193,7 +194,7 @@ const NOTHING_WAITING =
 
 const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
   const worktree = yield* required(options, "worktree")
-  const wait = Number(options["wait"] ?? 0)
+  const wait = yield* seconds(options, "wait")
   const comments =
     wait > 0
       ? yield* awaitComments(worktree, Date.now() + wait * WAIT_UNIT)
