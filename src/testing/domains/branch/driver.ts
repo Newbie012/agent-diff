@@ -68,6 +68,16 @@ export class BranchTestDriver {
     await this.write(this.state.repo, path, lines)
   }
 
+  async changeAndCommit(
+    branch: CreatedBranch,
+    path: string,
+    lines: ReadonlyArray<string>,
+    message: string,
+  ): Promise<void> {
+    await this.write(branch.worktree, path, lines)
+    await this.commit(branch, message)
+  }
+
   private async commit(branch: CreatedBranch, message: string): Promise<void> {
     await this.state.git(branch.worktree, ["add", "-A"])
     await this.state.git(branch.worktree, ["commit", "-q", "-m", message])

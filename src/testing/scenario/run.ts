@@ -4,6 +4,7 @@ import { noteChecksWith, noteSubject } from "./checking.ts"
 import { tracing } from "./trace.ts"
 import { View } from "./view.ts"
 import type { Scenario, Step } from "./model.ts"
+import type { CreatedBranch } from "../domains/branch/index.ts"
 import type { DeliveredComment } from "../domains/agent/index.ts"
 
 const NAMED: Readonly<Record<string, string>> = {
@@ -27,6 +28,7 @@ export class Review implements AsyncDisposable {
   readonly driver: TestDriver
   private readonly said: Scenario
   private worktree = ""
+  private branch: CreatedBranch | undefined
 
   private constructor(driver: TestDriver, said: Scenario) {
     this.driver = driver
@@ -53,6 +55,7 @@ export class Review implements AsyncDisposable {
   private async build(): Promise<void> {
     this.noteChecks()
     const branch = await this.driver.branch.create(this.said.world.branch)
+    this.branch = branch
     this.worktree = branch.worktree
     const layers = this.said.world.layers
     if (layers !== undefined) await this.driver.app.runLayersSet(branch.worktree, layers)
@@ -62,9 +65,16 @@ export class Review implements AsyncDisposable {
 
   private async take(step: Step): Promise<void> {
     const tracer = this.driver.tracerHere()
-    tracer.saying(step.does)
+    if (step.change !== undefined && this.branch !== undefined) {
+      const { file, lines, message } = step.change
+      await this.driver.branch.changeAndCommit(this.branch, file, lines, message)
+      tracer.sawChange(step.does, step.change)
+      return
+    }
+    tracer.sawStep(step)
+    tracer.mute(true)
     await series(step.keys, (token) => this.reach(token))
-    tracer.saying(undefined)
+    tracer.mute(false)
   }
 
   private async reach(token: string): Promise<void> {

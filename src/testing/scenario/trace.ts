@@ -3,7 +3,7 @@ import { env } from "node:process"
 import type { BranchTestModel } from "../domains/branch/index.ts"
 import type { LayersInput } from "../domains/app/index.ts"
 import { commands } from "../../tui/index.ts"
-import type { Seat, Step } from "./model.ts"
+import type { Change, Seat, Step } from "./model.ts"
 
 export type Bounds = {
   readonly fromCol: number
@@ -26,6 +26,7 @@ export type Trace = {
   readonly cannotReplay?: ReadonlyArray<string>
   readonly world: { readonly branch: Partial<BranchTestModel>; readonly layers?: LayersInput }
   readonly seat: Seat
+  readonly changes?: ReadonlyArray<Change>
   readonly steps: ReadonlyArray<Step>
   readonly moments: ReadonlyArray<Moment>
 }
@@ -83,7 +84,9 @@ export class Tracer {
   private readonly steps: Array<Step> = []
   private readonly moments: Array<Moment> = []
   private naming: string | undefined
+  private muted = false
   private readonly beyond: Array<string> = []
+  private readonly changes: Array<Change> = []
 
   sawWorld(branch: Partial<BranchTestModel>): void {
     this.world = { ...this.world, branch }
@@ -105,7 +108,17 @@ export class Tracer {
     this.naming = does
   }
 
+  sawStep(step: Step): void {
+    this.steps.push(step)
+    this.tookStep(step)
+  }
+
+  mute(on: boolean): void {
+    this.muted = on
+  }
+
   sawKeys(keys: ReadonlyArray<string>, screen?: string): void {
+    if (this.muted) return
     const step = { does: this.naming ?? saidFor(keys, screen), keys: keys.map(asTermctrl) }
     this.steps.push(step)
     this.tookStep(step)
@@ -124,6 +137,14 @@ export class Tracer {
     this.moments.push({ kind: "step", ...step })
   }
 
+  sawChange(does: string, change: Change): void {
+    const at = this.changes.length
+    this.changes.push(change)
+    const step = { does, keys: [`world:${at}`] }
+    this.steps.push(step)
+    this.tookStep(step)
+  }
+
   sawCheck(does: string, where: Bounds | undefined): void {
     const last = this.moments.at(-1)
     if (last?.kind === "check") {
@@ -140,6 +161,7 @@ export class Tracer {
   }
 
   sawText(said: string): void {
+    if (this.muted) return
     const step = {
       does: this.naming ?? `write "${said}"`,
       keys: ["wait:1200", `text:${said}`, `until:${said}`],
@@ -156,6 +178,7 @@ export class Tracer {
       ...(this.beyond.length === 0 ? {} : { cannotReplay: this.beyond }),
       world: this.world,
       seat: this.seat,
+      ...(this.changes.length === 0 ? {} : { changes: this.changes }),
       steps: this.steps,
       moments: this.moments,
     }

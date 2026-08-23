@@ -1,9 +1,16 @@
 import type { BranchTestModel } from "../domains/branch/index.ts"
 import type { LayersInput } from "../domains/app/index.ts"
 
+export type Change = {
+  readonly file: string
+  readonly lines: ReadonlyArray<string>
+  readonly message: string
+}
+
 export type Step = {
   readonly does: string
   readonly keys: ReadonlyArray<string>
+  readonly change?: Change
 }
 
 export type Seat = {
