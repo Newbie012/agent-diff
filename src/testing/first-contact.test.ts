@@ -28,6 +28,18 @@ describe("when an agent meets adiff with nothing read", () => {
     expect(result.stdout).toContain("describe --command")
   })
 
+  test("then describe says the most seconds a wait can ask for", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    const result = await driver.app.runDescribe("comment take")
+
+    // ASSERT
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain("from 1 to 86400")
+  })
+
   test("then asking about one command costs a tenth of the catalog", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

@@ -227,6 +227,11 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   than jumping to what arrived, for the same reason: they chose when to look, and they did not ask
   to be moved.
 - **Waiting is polling with a deadline.** A wait that expires returns an empty list, not an error.
+- **A wait outside its bound is refused, never quietly dropped.** `--wait` takes a whole number of
+  seconds from 1 to 86400. An expired wait and a wait that never started answer with the same empty
+  list, so a value adiff cannot honour has to fail loudly: `BadOption` on stderr with exit 2, naming
+  the most it takes. Without that, a caller that asked for an hour of listening reads "nothing
+  arrived" and believes it is armed.
 - **Missing files read as empty.** A worktree that has never been reviewed has an empty inbox and
   default state, not a failure.
 

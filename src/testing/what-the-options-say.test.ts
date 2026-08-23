@@ -174,4 +174,47 @@ describe("when an option is given a value", () => {
     const delivered = await driver.agent.listComments(branch.worktree)
     expect(delivered[0]?.body).toBe("--this one too")
   })
+
+  test("then adiff refuses a wait longer than the most it takes, and names that most", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ files })
+
+    // ACT
+    const result = await driver.app.run([
+      "comment",
+      "take",
+      "--worktree",
+      branch.worktree,
+      "--wait",
+      "100000",
+    ])
+
+    // ASSERT
+    expect(result.code).toBe(2)
+    expect(result.stdout).toBe("")
+    expect(result.envelope).toMatchObject({ ok: false, error: { type: "BadOption", retriable: false } })
+    expect(said(result)).toContain("86400")
+  })
+
+  test("then adiff refuses a wait that is not a whole number of seconds", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ files })
+
+    // ACT
+    const result = await driver.app.run([
+      "comment",
+      "take",
+      "--worktree",
+      branch.worktree,
+      "--wait",
+      "abc",
+    ])
+
+    // ASSERT
+    expect(result.code).toBe(2)
+    expect(result.stdout).toBe("")
+    expect(said(result)).toContain("abc")
+  })
 })

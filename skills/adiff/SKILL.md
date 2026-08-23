@@ -37,6 +37,14 @@ adiff comment take --worktree . --wait 300
 Blocks until a comment arrives or the timeout in seconds elapses, then returns the same envelope.
 An empty `comments` array means the wait expired with nothing new — that is not an error.
 
+`--wait` takes a whole number of seconds from 1 to 86400. A value outside that is refused on
+stderr with exit 2, because an instant empty answer would read exactly like a wait that expired:
+if a wait comes back at once, you are not waiting.
+
+Arm the wait as the first thing you do in a turn, before the work. A turn that is interrupted
+half-way then still leaves a listener running, and a wait armed at the end of a turn is a wait that
+often never gets armed.
+
 Run the wait in the background, not in the foreground. A foreground wait holds the turn, so you
 cannot do anything else and the person you are working with cannot talk to you. Backgrounded, the
 harness brings you back the moment a comment lands.
@@ -48,6 +56,10 @@ already running.
 Re-arm it after each comment you handle, and keep it running while you work. A reviewer reads at
 their own pace, so comments arrive minutes apart, and the whole point is that they reach you as
 events rather than by you asking. When you finish a piece of work, say you are still listening.
+
+A backgrounded wait that is killed rather than expiring is not the reviewer going quiet, and not a
+reason to stop listening. A kill loses whatever the wait would have handed you, so take once
+without `--wait` to collect what landed, then arm a new wait.
 
 ## Answering a comment
 
@@ -244,6 +256,15 @@ with:
 ```bash
 adiff layers show --worktree . --fields covered,partial,total,uncovered
 ```
+
+`uncovered` does not always empty out by claiming lines you can see. A deleted line is counted at
+the number it had in the old file, so a branch that cuts a file from 409 lines to 394 reports an
+uncovered run at 395-409 — line numbers past the end of the file as it now stands. A span over the
+new file cannot reach them; only a span whose `end` runs past the end of the file can. Write one, or
+say the run is unreachable, rather than reading the leftover as a layer you forgot.
+
+That is also the case for spans generally: `start` 1 to past the last line covers a file whatever
+happens to it, while a tight range goes stale on the next push that moves the lines under it.
 
 Setting layers again supersedes the previous set and bumps `version`; the set records the commit it
 was written for, and adiff reports it as `stale` once the branch moves past that commit. Once a

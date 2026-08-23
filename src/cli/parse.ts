@@ -1,4 +1,5 @@
 import { Effect, Option } from "effect"
+import { WAIT_MOST } from "./catalog.ts"
 import { BadOption, MissingOption, UnknownOption } from "./error.ts"
 
 export type Options = Readonly<Record<string, string>>
@@ -71,4 +72,17 @@ export const numeric = Effect.fn("Cli.numeric")(function* (options: Options, nam
   return yield* Number.isInteger(parsed) && parsed >= 1
     ? Effect.succeed(parsed)
     : new BadOption({ option: name, given: raw, allowed: ["a whole number of 1 or more"] })
+})
+
+export const seconds = Effect.fn("Cli.seconds")(function* (options: Options, name: string) {
+  const raw = options[name]
+  if (raw === undefined) return 0
+  const asked = Number(raw)
+  return yield* Number.isInteger(asked) && asked >= 1 && asked <= WAIT_MOST
+    ? Effect.succeed(asked)
+    : new BadOption({
+        option: name,
+        given: raw,
+        allowed: [`a whole number of seconds from 1 to ${WAIT_MOST}`],
+      })
 })
