@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-08-23
 
 ## Problem Statement
 
@@ -48,6 +48,14 @@ says what happened, the driver knows how.
   that meant to submit a comment passed without submitting one. The driver translates what the
   binding table calls a key — `escape`, `tab`, `down`, `pagedown`, `ctrl+s`, `shift+down` — into
   what the mock sends, so a test presses what a reviewer presses.
+
+
+- **A capture takes the newest trace for a test, and refuses one the driver marked unreplayable.**
+  Every run appends to `ADIFF_TRACE`, so running the same test twice into one file leaves two
+  traces under one name, and `pnpm shot --trace` read the first — it captured the earlier run. It
+  now takes the last. A trace carrying `cannotReplay` is refused by name instead of replayed,
+  because a capture is uploaded to GitHub before anyone looks at it, and a still of the wrong
+  screen is believed.
 
 
 - **A branch has shapes, and the properties are checked against all of them.** Every defect the

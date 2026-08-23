@@ -74,6 +74,10 @@ does not either — and a film that shows the wrong screen is worse than no film
 believes it. `pnpm record` writes its trace to a temp directory and prints the path in its error
 output; to keep one, run the tests yourself with `ADIFF_TRACE=<path>` set.
 
+A run appends to that file rather than replacing it, so running the same test into it twice leaves
+two traces under one name. The capture takes the newest, so a re-run shows the re-run. A trace the
+test marked unreplayable is refused, naming the route the test took, so nothing is uploaded from it.
+
 ## What gets recorded
 
 Every test the branch adds, one recording each, not a representative sample. Skip only when the

@@ -7,7 +7,22 @@ import { series, type Workspace } from "./workspace.ts"
 
 const exec = promisify(execFile)
 
-export type Remark = {
+const ran = async (space: Workspace, args: ReadonlyArray<string>): Promise<string> => {
+  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
+  try {
+    const { stdout } = await exec(NODE, runArgs(args), { env, encoding: "utf8" })
+    return stdout
+  } catch (thrown) {
+    const failed = thrown as { readonly stderr?: string; readonly message?: string }
+    const said = (failed.stderr ?? "").trim()
+    throw new Error(
+      `seeding the simulation: adiff ${args.join(" ")} failed with ${said.length > 0 ? said : (failed.message ?? "no output")}`,
+      { cause: thrown },
+    )
+  }
+}
+
+export type Note = {
   readonly branch: string
   readonly file: string
   readonly start: number
@@ -16,7 +31,7 @@ export type Remark = {
   readonly send: boolean
 }
 
-export const remarks: ReadonlyArray<Remark> = [
+export const notes: ReadonlyArray<Note> = [
   {
     branch: "add-teammate-invitations",
     file: "src/api/invitations.ts",
@@ -161,28 +176,28 @@ const speak = async (
   entry: (typeof answered)[number],
   id: string,
 ): Promise<void> => {
-  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
-  await exec(
-    NODE,
-    runArgs([
-      "comment",
-      "answer",
-      "--worktree",
-      worktree,
-      "--id",
-      id,
-      "--body",
-      entry.body,
-      ...(entry.asks ? ["--question"] : []),
-    ]),
-    { env, encoding: "utf8" },
-  ).catch(() => undefined)
+  await ran(space, [
+    "comment",
+    "answer",
+    "--worktree",
+    worktree,
+    "--id",
+    id,
+    "--body",
+    entry.body,
+    ...(entry.asks ? ["--question"] : []),
+  ])
   if (!entry.settle) return
-  await exec(
-    NODE,
-    runArgs(["comment", "resolve", "--repo", space.repo, "--branch", entry.branch, "--id", id]),
-    { env, encoding: "utf8" },
-  ).catch(() => undefined)
+  await ran(space, [
+    "comment",
+    "resolve",
+    "--repo",
+    space.repo,
+    "--branch",
+    entry.branch,
+    "--id",
+    id,
+  ])
 }
 
 type Handed = { readonly id: string; readonly file: string }
@@ -201,19 +216,17 @@ const spokenFor = (name: string, handed: ReadonlyArray<Handed>): ReadonlyArray<S
     })
 
 export const seedAnswers = async (space: Workspace): Promise<void> => {
-  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
   await series(branchesAnswered, async (name) => {
     const branch = space.branches.find((candidate) => candidate.name === name)
     if (branch === undefined) return
-    const taken = await exec(NODE, runArgs(["comment", "take", "--worktree", branch.worktree]), {
-      env,
-      encoding: "utf8",
-    }).catch(() => undefined)
-    if (taken === undefined) return
-    const handed = (
-      JSON.parse(taken.stdout) as { comments: ReadonlyArray<Handed> }
-    ).comments
+    const taken = await ran(space, ["comment", "take", "--worktree", branch.worktree])
+    const handed = (JSON.parse(taken) as { comments: ReadonlyArray<Handed> }).comments
     const spoken = spokenFor(name, handed)
+    if (spoken.length === 0) {
+      throw new Error(
+        `seeding the simulation: ${name} was handed ${handed.length} comments, and none of them is on a file an answer was written for`,
+      )
+    }
     await series(spoken, (each) => speak(space, branch.worktree, each.entry, each.id))
   })
 }
@@ -236,85 +249,82 @@ export const seedDrift = async (space: Workspace): Promise<void> => {
   if (branch === undefined) return
   const path = join(branch.worktree, drift.path)
   const held = await readFile(path, "utf8").catch(() => undefined)
-  if (held === undefined) return
+  if (held === undefined) {
+    throw new Error(`seeding the simulation: ${drift.path} is not in ${drift.branch}, so nothing can drift`)
+  }
   await writeFile(path, `${held}${drift.added.join("\n")}\n`, "utf8")
   await exec("git", ["add", "-A"], { cwd: branch.worktree })
   await exec("git", ["commit", "-q", "-m", drift.message], { cwd: branch.worktree })
 }
 
+const layersOn = (space: Workspace, worktree: string, reading: unknown): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const child = execFile(
+      NODE,
+      runArgs(["layers", "set", "--worktree", worktree, "--json", "-"]),
+      { env: { ...process.env, ADIFF_ROOT: space.storeRoot }, encoding: "utf8" },
+      (error, _stdout, stderr) => {
+        if (error === null) return resolve()
+        reject(
+          new Error(
+            `seeding the simulation: adiff layers set on ${worktree} failed with ${stderr.trim().length > 0 ? stderr.trim() : error.message}`,
+          ),
+        )
+      },
+    )
+    child.stdin?.end(JSON.stringify(reading))
+  })
+
 export const seedLayers = async (space: Workspace): Promise<void> => {
-  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
   await series(told, async (entry) => {
     const branch = space.branches.find((candidate) => candidate.name === entry.branch)
     if (branch === undefined) return
-    const child = execFile(
-      NODE,
-      runArgs(["layers", "set", "--worktree", branch.worktree, "--json", "-"]),
-      { env, encoding: "utf8" },
-    )
-    child.stdin?.end(JSON.stringify(entry.layers))
-    await new Promise((resolve) => child.on("close", resolve))
+    await layersOn(space, branch.worktree, entry.layers)
   })
 }
 
-export const seedRemarks = async (space: Workspace): Promise<void> => {
-  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
-  await series(remarks, async (remark) => {
-    const verb = remark.send ? "add" : "stage"
-    await exec(
-      NODE,
-      runArgs([
-        "comment",
-        verb,
-        "--repo",
-        space.repo,
-        "--branch",
-        remark.branch,
-        "--file",
-        remark.file,
-        "--start",
-        String(remark.start),
-        "--end",
-        String(remark.end),
-        "--body",
-        remark.body,
-      ]),
-      { env, encoding: "utf8" },
-    ).catch(() => undefined)
-  })
+export const seedComments = async (space: Workspace): Promise<void> => {
+  await series(notes, (note) =>
+    ran(space, [
+      ...(note.send ? ["comment", "send"] : ["draft", "add"]),
+      "--repo",
+      space.repo,
+      "--branch",
+      note.branch,
+      "--file",
+      note.file,
+      "--start",
+      String(note.start),
+      "--end",
+      String(note.end),
+      "--body",
+      note.body,
+    ]),
+  )
 }
 
 export const seedDemo = async (space: Workspace): Promise<void> => {
-  await seedRemarks(space)
+  await seedComments(space)
   await seedLayers(space)
   await seedAnswers(space)
   await seedDrift(space)
 }
 
 export const answerLive = async (space: Workspace, name: string): Promise<void> => {
-  const env = { ...process.env, ADIFF_ROOT: space.storeRoot }
   const branch = space.branches.find((candidate) => candidate.name === name)
   if (branch === undefined) return
-  const taken = await exec(NODE, runArgs(["comment", "take", "--worktree", branch.worktree]), {
-    env,
-    encoding: "utf8",
-  }).catch(() => undefined)
-  if (taken === undefined) return
-  const handed = (JSON.parse(taken.stdout) as { comments: ReadonlyArray<{ id: string }> }).comments
+  const taken = await ran(space, ["comment", "take", "--worktree", branch.worktree])
+  const handed = (JSON.parse(taken) as { comments: ReadonlyArray<{ id: string }> }).comments
   const first = handed[0]
   if (first === undefined) return
-  await exec(
-    NODE,
-    runArgs([
-      "comment",
-      "answer",
-      "--worktree",
-      branch.worktree,
-      "--id",
-      first.id,
-      "--body",
-      "It carries the seat count on the error, so support reads one field rather than looking it up.",
-    ]),
-    { env, encoding: "utf8" },
-  ).catch(() => undefined)
+  await ran(space, [
+    "comment",
+    "answer",
+    "--worktree",
+    branch.worktree,
+    "--id",
+    first.id,
+    "--body",
+    "It carries the seat count on the error, so support reads one field rather than looking it up.",
+  ])
 }
