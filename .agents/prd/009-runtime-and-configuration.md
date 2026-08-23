@@ -68,33 +68,29 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   of the running executable and adiff's own module, which is right in every install anyone has hit
   and unprovable in a test that upgrades nothing for real. Naming the route makes each one
   observable, and gives an operator whose install detection guesses wrong a way to say so.
-- **The agent skill ships in the repo** at `skills/adiff/SKILL.md`, and is installed by the skills
-  CLI: `npx skills add Newbie012/agent-diff --skill adiff -g -y -a claude-code`. Home scope, not
-  project scope: an agent works in a worktree, and a worktree does not see an untracked file in the
-  checkout beside it, so a skill written into `./.claude/skills/` never reaches the agent it was
-  installed for unless it is committed. Committing it is a decision a team makes, not a default. adiff has no command of its own for it.
-  It used to: `adiff init` wrote a copy into the repository under review, plus a passage in
-  `AGENTS.md` and a `CLAUDE.md` importing it, kept between sentinels so it could be found and
-  replaced. Editing two files a whole team shares, in a format adiff then had to parse back out,
-  bought nothing the skill does not already do — an agent finds a skill by its description without
-  being told to look — and a command that only fetched a file was a command to install, learn and
-  keep in step with the skills CLI's own. Removing adiff from a repository is now nothing.
-- **`skill refresh` rewrites the skill where it already is**, in the working directory and in the
-  home directory, and installs it nowhere new. It is how a skill installed against an older adiff
-  is brought up to the build that is running, without adiff deciding for an operator which of their
-  repositories should carry one.
-- **The skill travels inside the build, not beside it.** `skill refresh` used to find the shipped
-  skill by walking up from its own module until it saw `skills/adiff/SKILL.md` on disk. That file is
-  in the npm package and in a checkout, and it is not in the compiled binary, which is what Homebrew
-  installs — so the one mechanism that answers skill drift failed on the route most people install
-  by, and `upgrade` reported no skill refresh rather than a failure. The text is carried in a module
-  the build compiles in. The file on disk stays the thing a person edits, and a test proves the two
-  say the same thing.
-- **A skill the skills CLI owns is left alone.** `npx skills add` symlinks by default, so the
-  installed skill is often a link into that tool's own clone. Writing through the link would edit a
-  cache adiff does not own and be reverted by the next `skills update`, so a link is reported as
-  `linked` and not written. Two tools silently fighting over one file is worse than one tool saying
-  it will not.
+- **The agent skill ships in the repo** at `skills/adiff/SKILL.md`, and the skills CLI installs it:
+  `npx skills add Newbie012/agent-diff --skill adiff -g`. adiff names no agent. The skill is prose
+  for whichever coding agent the reader uses, that CLI knows where seventy-odd of them keep their
+  skills, and the question it asks when no `--agent` is given is the reader choosing, not a prompt
+  to suppress. `-g` is the one flag adiff argues for: an agent works in a worktree, and a worktree
+  does not see an untracked file in the checkout beside it, so a skill written into
+  `./<agent>/skills/` never reaches the agent it was installed for unless it is committed.
+  Committing it is a decision a team makes, not a default.
+- **Updating the skill belongs to the tool that installed it.** `npx skills update` does it. adiff
+  had a `skill refresh` of its own, which looked in `.claude/skills/adiff/SKILL.md` and nowhere
+  else, so it did nothing at all for a reader on Codex, Cursor, OpenCode or anything else, and said
+  it had found nothing rather than that it had not looked. The skills CLI installs a symlink by
+  default, so on the ordinary install there was also nothing there to rewrite that would survive
+  the next `skills update`. Matching a registry of seventy-seven agent directories to keep a second
+  updater working was the wrong side of the trade.
+- **`upgrade` names the command that brings the skill with it.** A person who upgrades adiff wants
+  the skill to match, and one line of prose saying which command does that is the whole of what the
+  old machinery achieved on any install it could reach.
+- **An agent holding a stale skill recovers on its own.** Every failure answers with a `suggestion`
+  naming the command that resolves it, `describe` returns the catalog, and the skill tells the agent
+  to ask rather than guess. A skill a version behind costs one refused command and a correction,
+  which is why keeping skill and binary in lockstep was never worth a subsystem.
+
 - **Copied text is offered to the terminal and to the machine.** A terminal is told through the
   escape that carries a clipboard, wrapped for tmux and screen, which swallow it otherwise. The
   machine is told through whatever it has — pbcopy, wl-copy, xclip, clip — because a terminal that
@@ -136,14 +132,7 @@ Behaviors that must be covered:
   as though it were the test's.
 - The binary starts under a real Node process, proving the flag plumbing works. Any test failing
   to start is this contract breaking.
-- `skill refresh` rewrites a skill that is already installed, and reports it as updated.
-- `skill refresh` where no skill is installed reports no changes and writes nothing.
-- What `skill refresh` writes is the whole of `skills/adiff/SKILL.md`, so the copy compiled into the
-  build cannot drift from the file a person edits.
-- `skill refresh` on a symlinked skill reports it as `linked` and leaves both the link and its
-  target as they were.
-- The compiled binary refreshes a skill with no runtime on PATH. Only a test that runs the compiled
-  binary can see this contract break; every other route has the file on disk beside it.
+- An upgrade that ran names the command that updates the skill beside it.
 
 ## Out of Scope
 

@@ -66,7 +66,6 @@ takes either.
 | `review open` | `--repo` | opens the terminal |
 | `review pane` | `--repo` | `{ok, opened, pane, command}` |
 | `upgrade` | `[--check] [--json]` | plain text, or `{ok, upgrade}` |
-| `skill refresh` | `[--json]` | `{ok, changes}` |
 | `describe` | `[--command <name>]` | `{ok, commands: [...]}` |
 
 - **Success is `{"ok":true, …}` on stdout, exit 0.** One line, no indentation. The caller pays for
@@ -157,8 +156,10 @@ takes either.
   installed the build, which registry tag matters and what adiff is about to do is a wall of prose
   standing between them and the one fact they came for. The command is on its own line, prefixed
   `$`, because they asked what was run; the installer's own output is left alone rather than
-  swallowed, so a slow install visibly lives; and the last line names the version. `--json` runs it
-  silently, because a caller parses stdout.
+  swallowed, so a slow install visibly lives; and the last line names the version. Under that sits
+  one line naming `npx skills update adiff`, because the skill is half of what was installed and
+  adiff cannot update it: the skills CLI owns where it went. `--json` runs it silently, because a
+  caller parses stdout.
 - **Explanation is what a refusal is for.** A route adiff cannot run has to say why, because
   otherwise doing nothing reads as a failure. A route it can run does not, because the outcome
   speaks. So the one-clause reason lives on the paths that need it and nowhere else.
@@ -166,15 +167,15 @@ takes either.
   nothing to say beyond which build is installed.
 - **A registry that never answered is worth a line even mid-upgrade**, because the version cannot be
   named afterwards and a person who is told neither the old nor the new number has learned nothing.
-- **The last line is what happened, not what to do next.** After a successful upgrade it names the
-  version now installed, which is what a person who just upgraded wants to know. When the registry
-  never answered, adiff does not know that version and says so instead of guessing.
-- **Upgrading rewrites the skill wherever it is already installed.** A build and the skill that
-  documents it are one thing, so leaving last month's skill beside this month's binary hands an
-  agent instructions for a tool that has moved. It rewrites what is there, in the working directory
-  and in the home directory, and installs nothing that was not already there: a skill nobody asked
-  for is not adiff's to add. The line saying so appears only when a file actually changed. `adiff
-  skill refresh` does the same thing on its own.
+- **What happened comes before what to do next.** After a successful upgrade adiff names the version
+  now installed, which is what a person who just upgraded wants to know, and only under that the one
+  thing they still have to do themselves. When the registry never answered, adiff does not know that
+  version and says so instead of guessing.
+- **Upgrading names the command that updates the skill.** A build and the skill that documents it
+  are one thing, so leaving last month's skill beside this month's binary hands an agent
+  instructions for a tool that has moved. adiff used to rewrite the skill itself, which only ever
+  worked for a Claude Code install that had been copied rather than linked; `npx skills update
+  adiff` works for every agent and every install, so the line says that and adiff writes nothing.
 - **A route adiff cannot perform explains rather than pretends.** A downloaded binary cannot rewrite
   itself while it is running, and a checkout is not adiff's to pull. Both print why, and the command
   that does it. Doing nothing is the right outcome; sounding like it upgraded is not.

@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
-import { homedir } from "node:os"
 import { text as readStream } from "node:stream/consumers"
 import { Cause, Effect, Layer } from "effect"
 import {
@@ -20,9 +19,6 @@ import {
   fieldsOf,
   findCommand,
   findUpgrade,
-  refreshSkill,
-  refreshSkills,
-  sayRefreshed,
   openPane,
   listBranches,
   setBase,
@@ -45,9 +41,9 @@ import {
   repoOf,
   restoreComment,
   runUpgrade,
-  type SkillsRefreshed,
   type UpgradeFound,
   sayDone,
+  SAY_SKILL_TOO,
   sayFound,
   settleThread,
   setLayers,
@@ -291,11 +287,6 @@ const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
   yield* answer(options, { layers })
 })
 
-const skillRefresh = Effect.fn("Main.skillRefresh")(function* (options: Options) {
-  const report = yield* refreshSkill([process.cwd(), homedir()])
-  yield* answer(options, { changes: report.changes })
-})
-
 const configList = Effect.fn("Main.configList")(function* (options: Options) {
   yield* answer(options, { preferences: yield* readPreferences() })
 })
@@ -323,8 +314,6 @@ const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
 const say = (line: string): Effect.Effect<void> =>
   Effect.sync(() => process.stdout.write(line))
 
-const NOTHING_REFRESHED: SkillsRefreshed = { updated: [], failed: false }
-
 const settledUpgrade = (found: UpgradeFound, check: boolean, ran: boolean): Effect.Effect<void> =>
   Effect.sync(() => {
     if (check || found.current === true || ran) return
@@ -334,11 +323,9 @@ const settledUpgrade = (found: UpgradeFound, check: boolean, ran: boolean): Effe
 const saidUpgrade = Effect.fn("Main.saidUpgrade")(function* (
   found: UpgradeFound,
   ran: boolean,
-  skills: SkillsRefreshed,
 ) {
   yield* say(`\n${sayDone(found, ran)}\n`)
-  const also = sayRefreshed(skills)
-  if (also !== undefined) yield* say(`${also}\n`)
+  yield* say(`${SAY_SKILL_TOO}\n`)
 })
 
 const upgrade = Effect.fn("Main.upgrade")(function* (options: Options) {
@@ -348,12 +335,10 @@ const upgrade = Effect.fn("Main.upgrade")(function* (options: Options) {
   const upgrading = willUpgrade(found, check)
   if (!quiet) yield* say(`${sayFound(found, check)}\n${upgrading ? "\n" : ""}`)
   const ran = upgrading ? yield* runUpgrade(found, quiet) : false
-  const skills = ran ? yield* refreshSkills : NOTHING_REFRESHED
   if (quiet) {
-    const also = skills.updated.length === 0 ? {} : { skills: skills.updated }
-    return yield* answer(options, { upgrade: upgradeReport(found, ran, check), ...also })
+    return yield* answer(options, { upgrade: upgradeReport(found, ran, check) })
   }
-  if (upgrading) yield* saidUpgrade(found, ran, skills)
+  if (upgrading) yield* saidUpgrade(found, ran)
   return yield* settledUpgrade(found, check, ran)
 })
 
@@ -391,7 +376,6 @@ const routes = {
   "review progress": reviewStatus,
   "layers set": layersSet,
   "layers show": layersShow,
-  "skill refresh": skillRefresh,
   upgrade,
   describe,
 } as const

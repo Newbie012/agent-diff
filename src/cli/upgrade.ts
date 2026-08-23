@@ -207,51 +207,8 @@ const attempted = (found: UpgradeFound, ran: boolean): string => {
   return `Ran \`${found.command}\`, and adiff ${found.latest} is installed now.`
 }
 
-const REFRESH_MS = 10_000
-
-export type SkillsRefreshed = {
-  readonly updated: ReadonlyArray<string>
-  readonly failed: boolean
-}
-
-const NOT_ASKED: SkillsRefreshed = { updated: [], failed: false }
-
-export const refreshSkills: Effect.Effect<SkillsRefreshed> = ranChild(
-  {
-    command: "adiff",
-    args: ["skill", "refresh", "--json"],
-    timeout: REFRESH_MS,
-    stdio: ["ignore", "pipe", "ignore"],
-  },
-  (code, said): SkillsRefreshed =>
-    code === 0 ? { updated: updatedIn(said), failed: false } : { updated: [], failed: true },
-  NOT_ASKED,
-).pipe(Effect.withSpan("Cli.refreshedSkill"))
-
-type Changed = { readonly changes?: ReadonlyArray<{ path?: string; action?: string }> }
-
-const updatedIn = (said: string): ReadonlyArray<string> => {
-  const parsed = Effect.runSync(
-    Effect.try(() => JSON.parse(said) as Changed).pipe(
-      Effect.orElseSucceed((): Changed => ({})),
-    ),
-  )
-  return (parsed.changes ?? [])
-    .filter((change) => change.action === "update")
-    .flatMap((change) => (change.path === undefined ? [] : [change.path]))
-}
-
-export const sayRefreshed = (refreshed: SkillsRefreshed): string | undefined => {
-  if (refreshed.failed) {
-    return "The skill installed beside this could not be rewritten, so it still describes the older adiff. Run `adiff skill refresh` to see why."
-  }
-  const first = refreshed.updated[0]
-  if (first === undefined) return undefined
-  const rest = refreshed.updated.length - 1
-  return rest === 0
-    ? `The skill at ${first} is the newest one too.`
-    : `The skill at ${first} and ${rest} more is the newest one too.`
-}
+export const SAY_SKILL_TOO =
+  "Run `npx skills update adiff` to bring the skill up with it."
 
 export const upgradeReport = (
   found: UpgradeFound,

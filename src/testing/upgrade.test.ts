@@ -20,7 +20,7 @@ describe("when a person runs adiff upgrade", () => {
     expect(result.envelope).toBeUndefined()
   })
 
-  test("then adiff upgrades, shows the installer working, and ends on the version now installed", async () => {
+  test("then adiff upgrades, shows the installer working, names the version, and names the skill", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const registry = await driver.app.setRegistry({ alpha: "9.9.9" })
@@ -33,7 +33,9 @@ describe("when a person runs adiff upgrade", () => {
     expect(result.code).toBe(0)
     expect(result.stdout).toContain("npm i -g @eliya-oss/agent-diff@alpha")
     expect(result.stdout).toContain("npm ran with i -g @eliya-oss/agent-diff@alpha")
-    expect(result.stdout.trim().split("\n").at(-1)).toBe("adiff 9.9.9 is installed now.")
+    const lines = result.stdout.trim().split("\n")
+    expect(lines.at(-2)).toBe("adiff 9.9.9 is installed now.")
+    expect(lines.at(-1)).toBe("Run `npx skills update adiff` to bring the skill up with it.")
   })
 
   test("then the output reports the upgrade failed and the exit code is 1", async () => {

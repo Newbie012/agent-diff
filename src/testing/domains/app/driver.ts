@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { createServer } from "node:http"
-import { dirname, join } from "node:path"
+import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { series, type DriverState } from "../../state.ts"
@@ -263,26 +263,6 @@ export class AppTestDriver {
   ): Promise<CliResult> {
     const base = options.base === undefined ? [] : ["--base", options.base]
     return this.run(["review", "pane", "--repo", this.state.repo, ...base], options.env ?? {})
-  }
-
-  runSkillRefresh(): Promise<CliResult> {
-    return this.run(["skill", "refresh"], { HOME: this.state.workspace }, this.state.repo)
-  }
-
-  async writeOutside(name: string, contents: string): Promise<void> {
-    const path = join(this.state.repo, name)
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, contents, "utf8")
-  }
-
-  async makeRoomFor(name: string): Promise<void> {
-    await mkdir(dirname(join(this.state.repo, name)), { recursive: true })
-  }
-
-  async installTheSkill(contents: string): Promise<void> {
-    const path = join(this.state.repo, ".claude", "skills", "adiff", "SKILL.md")
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, contents, "utf8")
   }
 
   repoPath(): string {
