@@ -242,6 +242,10 @@
     - a-comment-finds-its-line
     - getting-started-is-two-commands
     - the-base-the-terminal-was-opened-with
+"@eliya-oss/agent-diff@0.1.0-alpha.144":
+  dir: ""
+  intents:
+    - the-terminal-says-branch-not-worktree
 "@eliya-oss/agent-diff@0.1.0-alpha.15":
   dir: ""
   intents:
