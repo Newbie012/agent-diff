@@ -22,7 +22,7 @@
     "build": "rolldown -c rolldown.config.ts",
     "prepack": "pnpm run build",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint && node scripts/check-rules.ts",
+    "lint": "oxlint && node scripts/check-rules.ts && node scripts/check-film.ts",
     "test": "NODE_OPTIONS=--experimental-ffi vitest run",
     "test:watch": "NODE_OPTIONS=--experimental-ffi vitest",
     "dev": "node --experimental-ffi --disable-warning=ExperimentalWarning src/main.ts",
