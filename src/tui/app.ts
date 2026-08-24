@@ -23,6 +23,7 @@ import {
   fileSource,
   fileBefore,
   listSent,
+  aroundIn,
   searchBranch,
   searchIn,
   layersIn,
@@ -129,6 +130,7 @@ import {
   withFull,
   withPatches,
   withFinder,
+  withAround,
   withMatches,
   allRevealed,
   withRemarks,
@@ -144,11 +146,13 @@ import { readSession, sessionOf, writeSession, type Session } from "./session.ts
 import { upgradeHint } from "./upgrade.ts"
 
 const LEAVING_MS = 3000
-const LOOK_MS = 110
+const LOOK_MS = 260
+const LEAST_TERM = 2
 const AGE_TICK_MS = 30_000
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
+const NOTHING_COUNTED = { file: 0, branch: 0, worktree: 0 }
 const READING_PULL = "reading the pull request"
 const FORGE_QUIET = "the forge did not answer, so no remarks are shown"
 
@@ -359,6 +363,7 @@ export class App {
   private lighting: Fiber.Fiber<void, unknown> | undefined
   private sourcing: Fiber.Fiber<void, unknown> | undefined
   private fetching: Fiber.Fiber<void, unknown> | undefined
+  private searching: Fiber.Fiber<void, unknown> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -542,7 +547,7 @@ export class App {
         Effect.andThen(
           Effect.andThen(this.drained(), Effect.suspend(() => this.stillSourcing())),
           Effect.suspend(() => this.stillFetching()),
-        ),
+        ).pipe(Effect.andThen(Effect.suspend(() => this.stillSearching()))),
         Effect.suspend(() => this.stillLighting()),
       ),
     )
@@ -550,6 +555,11 @@ export class App {
 
   private stillFetching(): Effect.Effect<void> {
     const fiber = this.fetching
+    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
+  }
+
+  private stillSearching(): Effect.Effect<void> {
+    const fiber = this.searching
     return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
   }
 
@@ -750,7 +760,16 @@ export class App {
       "context.whole": () => this.widen(contextToggled(this.state)),
       "tree.expand": () => this.unfold(1),
       "tree.collapse": () => this.unfold(-1),
+      "match.next": () => this.walkMatches(1),
+      "match.prev": () => this.walkMatches(-1),
     }
+  }
+
+  private walkMatches(delta: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      this.commit(reduce(this.measured(), delta > 0 ? "match.next" : "match.prev"))
+      yield* this.readAround()
+    })
   }
 
   private unfold(delta: number): Work {
@@ -989,7 +1008,7 @@ export class App {
       this.looking = undefined
       const asked = wanted.trim()
       if (this.state.screen !== "search" || this.state.query.trim() !== asked) return
-      this.dispatchTask(asked.length === 0 ? this.forgetMatches() : this.lookFor(asked))
+      this.dispatchTask(asked.length < LEAST_TERM ? this.forgetMatches() : this.searchAside(asked))
     }, LOOK_MS)
   }
 
@@ -1000,13 +1019,18 @@ export class App {
   }
 
   private forgetMatches(): Work {
-    return Effect.sync(() => this.commit(withMatches(this.state, [], "")))
+    return Effect.sync(() =>
+      this.commit(
+        withMatches(this.state, { matches: [], counted: NOTHING_COUNTED, left: 0 }, ""),
+      ),
+    )
   }
 
   private runFinder(): Work {
     return Effect.gen({ self: this }, function* () {
       const wanted = this.state.query.trim()
-      if (wanted.length > 0 && wanted !== this.state.term) {
+      if (wanted.length < LEAST_TERM) return
+      if (wanted !== this.state.term) {
         this.stopLooking()
         yield* this.lookFor(wanted)
         return
@@ -1015,16 +1039,44 @@ export class App {
     })
   }
 
+  private searchAside(wanted: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      this.stopSearching()
+      this.searching = yield* Effect.forkDetach(this.lookFor(wanted))
+    })
+  }
+
+  private stopSearching(): void {
+    const fiber = this.searching
+    this.searching = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
+  }
+
   private lookFor(wanted: string): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
       const reading = this.reading
+      const here = selectedPatch(this.state)?.path ?? ""
       const found =
         reading === undefined || reading.worktree.branch !== branch.branch
-          ? yield* searchBranch(this.repo, branch.branch, wanted)
-          : yield* searchIn(reading, wanted)
+          ? yield* searchBranch(this.repo, branch.branch, wanted, here)
+          : yield* searchIn(reading, wanted, here)
+      if (this.state.screen !== "search" || this.state.query.trim() !== wanted) return
       this.commit(withMatches(this.state, found, wanted))
+      yield* this.readAround()
+    })
+  }
+
+  private readAround(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const reading = this.reading
+      const match = matchHere(this.state)
+      if (reading === undefined || match === undefined) return
+      const lines = yield* aroundIn(reading, match.path, match.line)
+      const still = matchHere(this.state)
+      if (still?.path !== match.path || still.line !== match.line) return
+      this.commit(withAround(this.state, lines))
     })
   }
 
@@ -1604,6 +1656,7 @@ export class App {
     this.stopLighting()
     this.stopSourcing()
     this.stopFetching()
+    this.stopSearching()
     this.stopPainting()
     this.stopConsuming()
     void getTreeSitterClient().destroy()

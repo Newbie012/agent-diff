@@ -855,13 +855,29 @@ export const withFinder = (state: TuiState, seed: string): TuiState => ({
   selecting: false,
 })
 
-export const withMatches = (state: TuiState, matches: TuiState["matches"], term: string): TuiState => ({
+export const withMatches = (
+  state: TuiState,
+  found: {
+    readonly matches: TuiState["matches"]
+    readonly counted: TuiState["counted"]
+    readonly left: number
+  },
+  term: string,
+): TuiState => ({
   ...state,
   screen: "search",
-  matches,
+  matches: found.matches,
+  counted: found.counted,
+  leftOut: found.left,
+  around: [],
   matchIndex: 0,
   term,
   selecting: false,
+})
+
+export const withAround = (state: TuiState, around: ReadonlyArray<string>): TuiState => ({
+  ...state,
+  around,
 })
 
 export const withNoticeHere = (state: TuiState, notice: string): TuiState => ({

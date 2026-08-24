@@ -41,7 +41,7 @@ describe("when the reviewer searches", () => {
     await driver.screen.typeText("useProcessFold")
 
     // ASSERT
-    expect(await driver.screen.untilShown("places")).toBe(true)
+    expect(await driver.screen.untilShown("in the worktree")).toBe(true)
     expect(await driver.screen.getFrame()).toContain("useProcessFold  ·")
   })
 
@@ -57,7 +57,7 @@ describe("when the reviewer searches", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toMatch(/\d+ places?/)
+    expect(await driver.screen.getFrame()).toMatch(/\d+ in the worktree/)
   })
 })
 
@@ -74,7 +74,7 @@ describe("when a search counts its matches", () => {
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toMatch(/\d+ places?/)
+    expect(await driver.screen.getFrame()).toMatch(/\d+ in the worktree/)
   })
 
   test("then the branch is read once and only git searches", async () => {

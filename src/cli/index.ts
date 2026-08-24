@@ -56,8 +56,8 @@ export {
   willUpgrade,
 } from "./upgrade.ts"
 export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
-export { searchBranch, searchIn } from "./search.ts"
-export type { Match } from "./search.ts"
+export { aroundIn, searchBranch, searchIn } from "./search.ts"
+export type { Match, Searched } from "./search.ts"
 export { layersIn, setLayers, showLayers } from "./layers.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
 export {
