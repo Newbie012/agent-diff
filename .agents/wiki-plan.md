@@ -36,7 +36,9 @@ prints the rest.
 
 ## 2. The page list
 
-Nine pages. Reading order, which is also sidebar order.
+Nine pages, in reading order. The wiki lists them itself, alphabetically and with each page's
+sections under it, so there is no `_Sidebar.md` to keep in step. Reading order lives where a reader
+meets it: Home ends on Read next, and each page names the one after it.
 
 ```
 Home
