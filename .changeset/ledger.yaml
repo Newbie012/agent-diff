@@ -276,6 +276,10 @@
   dir: ""
   intents:
     - remarks-wait-for-the-reviewer-to-ask
+"@eliya-oss/agent-diff@0.1.0-alpha.151":
+  dir: ""
+  intents:
+    - the-footer-says-one-thing-at-a-time
 "@eliya-oss/agent-diff@0.1.0-alpha.16":
   dir: ""
   intents:
