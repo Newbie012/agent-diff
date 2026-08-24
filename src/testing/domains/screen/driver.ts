@@ -101,6 +101,8 @@ export type OpenOptions = {
   readonly review?: boolean
   readonly forgeWatched?: boolean
   readonly noticeMs?: number
+  readonly slowGrepMs?: number
+  readonly slowFirstGrepMs?: number
 }
 
 export class ScreenTestDriver {
@@ -108,6 +110,9 @@ export class ScreenTestDriver {
   private scope: Scope.Closeable | undefined
   private app: App | undefined
   private diffs = 0
+  private greps = 0
+  private slowGrepMs = 0
+  private slowFirstGrepMs = 0
   private readonly order: Array<string> = []
   private readonly crashes: Array<string> = []
   private watching: ((cause: unknown) => void) | undefined
@@ -147,6 +152,7 @@ export class ScreenTestDriver {
       exitOnCtrlC: false,
     })
     this.setup = setup
+    this.slowedBy(options)
     this.watch()
     this.countKeys(setup)
     const layer = Layer.mergeAll(
@@ -188,6 +194,11 @@ export class ScreenTestDriver {
     process.on("unhandledRejection", record)
   }
 
+  private slowedBy(options: OpenOptions): void {
+    this.slowGrepMs = options.slowGrepMs ?? 0
+    this.slowFirstGrepMs = options.slowFirstGrepMs ?? 0
+  }
+
   private countingGit(): Layer.Layer<Git> {
     return Layer.effect(Git)(
       Effect.gen({ self: this }, function* () {
@@ -199,6 +210,17 @@ export class ScreenTestDriver {
             this.order.push("diff")
             return git.diff(worktree, context, only)
           },
+          grep: (worktree, term) => {
+            this.greps += 1
+            this.order.push("grep")
+            const asked = git.grep(worktree, term)
+            const waiting = this.greps === 1 && this.slowFirstGrepMs > 0
+              ? this.slowFirstGrepMs
+              : this.slowGrepMs
+            return waiting === 0
+              ? asked
+              : Effect.andThen(Effect.sleep(`${waiting} millis`), asked)
+          },
         }
       }),
     ).pipe(Layer.provide(GitLive))
@@ -206,6 +228,14 @@ export class ScreenTestDriver {
 
   diffsRun(): number {
     return this.diffs
+  }
+
+  grepsRun(): number {
+    return this.greps
+  }
+
+  forgetGreps(): void {
+    this.greps = 0
   }
 
   askedInOrder(): ReadonlyArray<string> {
@@ -275,6 +305,24 @@ export class ScreenTestDriver {
     }
     await this.app?.settled()
     await setup.waitForVisualIdle()
+  }
+
+  private async letterByLetter(text: string, everyMs: number): Promise<void> {
+    const setup = this.active()
+    await series(text.split(""), async (letter) => {
+      await setup.mockInput.typeText(letter)
+      await new Promise((resolve) => setTimeout(resolve, everyMs))
+    })
+  }
+
+  async typeSlowly(text: string, everyMs: number): Promise<number> {
+    this.state.tracer.sawText(text)
+    const began = Date.now()
+    await this.letterByLetter(text, everyMs)
+    const took = Date.now() - began
+    await this.app?.settled()
+    await this.active().flush()
+    return took
   }
 
   async typeText(text: string): Promise<void> {
@@ -376,6 +424,23 @@ export class ScreenTestDriver {
     const y = Math.floor(HEIGHT / 2)
     await Promise.all(wheel.map((direction) => setup.mockMouse.scroll(x, y, direction)))
     await setup.flush()
+  }
+
+  async typeLoosely(text: string, everyMs: number): Promise<void> {
+    this.state.tracer.cannotReplay("typing that overlaps an answer")
+    await this.letterByLetter(text, everyMs)
+    await this.active().flush()
+  }
+
+  async paused(everyMs: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, everyMs))
+    await this.active().flush()
+  }
+
+  async waited(everyMs: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, everyMs))
+    await this.app?.settled()
+    await this.active().flush()
   }
 
   async rest(): Promise<void> {
