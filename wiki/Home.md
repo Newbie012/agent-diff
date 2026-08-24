@@ -1,12 +1,10 @@
-# adiff
-
 adiff is a terminal for reviewing the work a coding agent left in a branch, and for handing the
 comments back to the agent that wrote the code. It is for one engineer running several agents at
 once, and it needs an agent that can run commands in the repository.
 
 ![The adiff branch list, with each branch's files and its lines added and removed](https://github.com/user-attachments/assets/af2b4442-1b08-448d-a180-5f00856e1b6e)
 
-## What changes when an agent wrote the code
+## What changes with an agent
 
 You select the lines and write a comment there. The comment is filed against the branch, and it
 carries the file, the side of the diff, the line range, the commit the diff was read at, and the exact
@@ -18,7 +16,7 @@ hand and neither can tell which comment was addressed.
 
 ![A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch](https://github.com/user-attachments/assets/ddecba63-1f9c-4dc5-a3f5-dec057908b8f)
 
-## Install
+## Install adiff
 
     brew install Newbie012/tap/adiff
     npx skills add Newbie012/agent-diff --skill adiff -g

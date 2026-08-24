@@ -1,5 +1,3 @@
-# Install adiff
-
 adiff installs in two pieces: the tool, and the skill that teaches your agent to pick up your
 comments. Pick one route below for the tool, then install the skill.
 
@@ -39,7 +37,7 @@ repository with seven branches an agent has already worked on, from a three-file
 repositories and `~/.adiff` are untouched, and the workspace goes when you quit. `pnpm simulate
 --probe` runs the same round trip headless and prints it.
 
-## Node versions
+## Which Node adiff needs
 
 The Homebrew formula installs one compiled binary, which draws the terminal itself and needs no Node at
 all. A global npm install runs on Node 22 or newer, and the terminal there needs Node 26: adiff finds
@@ -49,7 +47,7 @@ when there is none, while every other command runs where you are.
 When there is none, `adiff review open` prints which Node this is, says no Node 26 was found, names
 installing Node 26 as the fix, and exits `1`. `adiff branch list` and the whole agent loop still work.
 
-## The agent skill, and which agent it is for
+## Install the agent skill
 
     npx skills add Newbie012/agent-diff --skill adiff -g
 
@@ -62,14 +60,14 @@ Your agent finds the skill on its own from then on, by its description. adiff wr
 repository, and it has no command that writes or rewrites a skill: the tool that installed the skill is
 the one that updates it.
 
-## Where the skill lives, and why `-g`
+## Why the skill needs `-g`
 
 `-g` puts the skill in your home directory. Written into the repository instead, the skill is an
 untracked file, and an agent working in a worktree of that repository does not see an untracked file
 in the checkout beside it. So the skill reaches that agent only once you commit it. Drop `-g` when your
 team has adopted adiff and wants the skill committed.
 
-## Upgrade
+## Upgrade with `adiff upgrade`
 
     adiff upgrade
 
@@ -97,7 +95,7 @@ network is never on a command's path. The hint reaches a person in the terminal 
 not added to any JSON envelope and never written to stderr, because an agent parsing adiff's output
 should not find a new key or a line that reads like an instruction.
 
-## The environment variables, and where the store lives
+## The store and its variables
 
 adiff keeps every review in its own store at `~/.adiff`: the comments, the answers, the files you have
 marked reviewed, the layers, the remarks you have triaged, the preferences, and the reports you write.
@@ -109,7 +107,7 @@ Your repository holds none of it.
 - `ADIFF_UPGRADE_ROUTE` names the install adiff should believe it has, one of `brew`, `npm`, `bun`,
   `binary` or `source`, for when detection guesses wrong.
 
-## Next
+## Read next
 
 - [Your first review](Your-first-review), one branch from the first key to a settled thread.
 - [Commands](Commands), the loop an agent runs and the JSON it answers in.

@@ -1,5 +1,3 @@
-# Remarks
-
 The branch's pull request often already has a review on it, left by a colleague or by a bot. adiff
 brings those in as remarks, so you can triage them beside the diff rather than in a browser.
 
@@ -10,7 +8,7 @@ adiff. It carries the handle that left it, which may be your own, and every repl
 remark is context, and a comment is work: nothing reaches the agent until you take a remark on as your
 own comment.
 
-## You ask for them first
+## Turn remarks on with `,`
 
 Remarks are off until you turn them on. "Read the pull request's review" in the
 [preferences](Preferences) is the switch, or `adiff config set --name remarks --value on` from a shell.
@@ -22,7 +20,7 @@ forge, so no pull request is shown", and there are no remarks to read.
 The remarks arrive behind the diff, in one request rather than one per thread, so a branch draws before
 GitHub has answered and the remarks appear when they land.
 
-## Where remarks sit in the review panel
+## Where remarks sit
 
 The review panel gains two sections, `Remarks` and `Dismissed`, above the threads of your own. Each row
 names the file and the line the remark sits on, the handle that left it, and its first line. In the diff
@@ -36,7 +34,7 @@ inline in the diff and nowhere else.
 The keys that act on a remark are offered only while the cursor is on one. With the cursor a line
 above, the footer offers `p pull request` and nothing about accepting or dismissing.
 
-## A remark whose code is not on screen
+## When the code is not on screen
 
 Three markers say a remark is not sitting on the code you can see, and they mean different things:
 
@@ -47,7 +45,7 @@ Three markers say a remark is not sitting on the code you can see, and they mean
 A remark too long for the room it has ends with "more lines, press p to read it on the pull request",
 and `p` opens the pull request in a browser.
 
-## `A` takes one on as your own comment
+## Take one on with `A`
 
 `A` on a remark writes it as your own comment against the same lines, which is what puts it in front of
 the agent. The remark leaves the `Remarks` section and the new comment joins your threads. While you are
@@ -58,7 +56,7 @@ holding comments, an accepted remark waits with the rest until you press `C`.
 `--body` accepts the remark in your own words, for a remark whose point is right and whose wording is
 not. Without it the remark's own words go to the agent.
 
-## `X` dismisses one
+## Dismiss one with `X`
 
 `X` on a remark moves it to `Dismissed`. It stays on the pull request; adiff stops drawing it in the
 diff. A second press restores it. The footer reads `dismiss` in place of `remove` while the cursor is on
@@ -66,7 +64,7 @@ a remark, and `restore` on a dismissed one.
 
 `d` does nothing on a remark, and the footer says "no thread here". Settling is for a thread of your own.
 
-## `R` writes back in its thread on the pull request
+## Write back with `R`
 
 `R` on a remark opens a box that quotes the remark and offers `reply on the pull request` where a comment
 box would offer `send it`, so the box says where the words are going before you write them. It posts a
@@ -74,7 +72,7 @@ threaded reply in that remark's thread, and the footer then says "replied on the
 would not take that reply", and the words did not leave your machine. On a thread of your own, `R`
 writes back to the agent as it always did, and *answer* stays the agent's word.
 
-## Why a remark only lands where its code is
+## Why a remark anchors exactly
 
 Your own comment re-anchors loosely. It follows the line it was written on into a new wording of that
 line, up to about one character changed in four. A remark lands only where its code is still exactly
@@ -94,7 +92,7 @@ the thing this prevents.
 Each takes `--repo` with `--branch`, or `--worktree`, and each but `list` takes `--id`. An agent reads
 remarks when you ask it to, and never accepts one itself.
 
-## Next
+## Read next
 
 - [Threads](Threads), for the threads of your own that sit below these.
 - [Commands](Commands), the JSON contract these five answer in.

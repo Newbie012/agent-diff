@@ -62,19 +62,40 @@ are one feature each; Commands is the contract under all of them.
 
 | Page | Answers | Sections | Length |
 | --- | --- | --- | --- |
-| **Home** | What is adiff, who is it for, what does it do that `git diff` does not | What adiff is, What changes when an agent wrote the code, Install, Read next | 53 lines |
-| **Install** | How do I get it, and what does it need | Homebrew, npm, bun, From source, Node versions, The agent skill and which agent it is for, Where the skill lives, and why `-g`, Upgrade, The environment variables, and where the store lives | 116 lines |
-| **Your first review** | A branch is waiting, walk me through it | Before you start, Open the review, Read the diff, Comment on lines, Send the comment, Mark a file reviewed, Tell the agent, Read the answer, Settle the thread, When the code moves under a comment | 145 lines |
-| **Branches** | Which branch do I open, and why is mine missing | What the list shows, Why a branch is missing, An empty list, The pull request line, The keys | 62 lines |
-| **The diff** | How do I move through the code | Move through it, Read more or less of it, The panes, What the header carries, Search this branch, The mouse, The footer, `?` lists every key | 74 lines |
-| **Comments** | How do I say something about these lines | Select the lines, Write it, Send it, What a comment carries, Hold several and send them together, Remove one, What reaches the agent | 65 lines |
-| **Threads** | The agent answered, now what | The panel and the sections it groups by, Move between them, Write back, A thread waiting on you, Settle it, When the code moves under a comment | 55 lines |
-| **Reviewed files** | How do I tick a file off | Mark one, Hide what you have read, The mark lapses when the file changes, From the command line | 39 lines |
-| **Layers** | What are layers, and when are they worth asking for | What a layer is, `L` asks the agent for one, The layers rail, Coverage, A layer set pinned to an older commit | 89 lines |
-| **Remarks** | The pull request already has a review on it, can adiff use it | What a remark is, You ask for them first, Where remarks sit in the review panel, A remark whose code is not on screen, `A` takes one on as your own comment, `X` dismisses one, `R` writes back in its thread on the pull request, Why a remark only lands where its code is, The five commands | 100 lines |
-| **Preferences** | What can I change, and what does adiff remember | The eight, From the command line, What carries between sessions | 52 lines |
-| **Commands** | What is the command contract, and what does an agent run | One JSON line and the one command that answers in none, Address a branch, Failures and exit codes, `--fields`, `adiff describe`, From the command line, The loop an agent runs, `--wait` and the take rule, `review pane`, Where the skill has to live, Drafts on a pull request | 170 lines |
-| **When something goes wrong** | The terminal will not draw, or the list is empty | The terminal will not draw, An empty branch list, No pull request on the list, A branch diffed against the wrong ref, `UnknownBranch`, A dead `adiff:begin` block, A report, and the switch between a full one and a minimal one | 83 lines |
+| **Home** | What is adiff, who is it for, what does it do that `git diff` does not | What changes with an agent, Install adiff, Read next | 53 lines |
+| **Install** | How do I get it, and what does it need | Homebrew, npm, bun, From source, Which Node adiff needs, Install the agent skill, Why the skill needs `-g`, Upgrade with `adiff upgrade`, The store and its variables, Read next | 116 lines |
+| **Your first review** | A branch is waiting, walk me through it | Before you start, Open the review, Read the diff, Comment on lines, Send the comment, Mark a file reviewed, Tell the agent, Read the answer, Settle the thread, When the code moves, Read next | 145 lines |
+| **Branches** | Which branch do I open, and why is mine missing | What the list shows, Why a branch is missing, What an empty list means, The pull request line, The keys on this screen, Read next | 62 lines |
+| **The diff** | How do I move through the code | Move through the diff, Read more or less code, Show and hide the panes, What the header carries, Search the branch with `/`, What the mouse does, What the footer carries, List every key with `?`, Read next | 74 lines |
+| **Comments** | How do I say something about these lines | Select the lines with `v`, Write it with `c`, Send it with `ctrl+s`, What a comment carries, Send several together with `C`, Remove one with `X`, What reaches the agent, Read next | 65 lines |
+| **Threads** | The agent answered, now what | What the panel lists, Move between threads with `n`, Write back with `R`, A thread waiting on you, Settle one with `d`, When the code moves, Read next | 55 lines |
+| **Reviewed files** | How do I tick a file off | Mark one with `m`, Hide what you read with `f`, When the mark lapses, From the command line, Read next | 39 lines |
+| **Layers** | What are layers, and when are they worth asking for | What a layer is, Ask for layers with `L`, What the rail shows, What coverage counts, Layers from an older commit, Read next | 89 lines |
+| **Remarks** | The pull request already has a review on it, can adiff use it | What a remark is, Turn remarks on with `,`, Where remarks sit, When the code is not on screen, Take one on with `A`, Dismiss one with `X`, Write back with `R`, Why a remark anchors exactly, The five commands, Read next | 100 lines |
+| **Preferences** | What can I change, and what does adiff remember | The eight toggles, From the command line, What carries between sessions, Read next | 52 lines |
+| **Commands** | What is the command contract, and what does an agent run | What a command answers, Address a branch, Failures and exit codes, Trim an answer with `--fields`, What `describe` prints, From the command line, The loop an agent runs, The take rule and `--wait`, Open a pane with `review pane`, Where the skill has to live, Drafts on a pull request, Read next | 170 lines |
+| **When something goes wrong** | The terminal will not draw, or the list is empty | The terminal will not draw, An empty branch list, No pull request on the list, A diff against the wrong ref, `UnknownBranch`, A dead `adiff:begin` block, Report a bug with `ctrl+b`, Read next | 83 lines |
+
+### How a heading reads
+
+The wiki's own page tree lists every heading under its page, so a heading is read on its own, beside
+twelve others, with nothing around it. Four rules make that list scannable:
+
+- **A section about a concept takes a noun phrase that says something about its subject.** "What a
+  remark is", "What coverage counts", "What the footer carries". A bare noun naming the subject and
+  nothing else, such as "Coverage" or "The footer", is the shape this replaced.
+- **A section about doing something takes the imperative, with the key last, in backticks.** "Take one
+  on with `A`", "Ask for layers with `L`", "Send it with `ctrl+s`". Never open with a bare key: in the
+  tree "`A` takes one on" reads as the article "a", and "`X` dismisses one" makes a key the subject of
+  a person's verb.
+- **Thirty characters.** The tree wraps past roughly that, and a wrapped heading is read twice. The
+  detail a long heading was carrying goes in the prose under it, which is where a reader is by then.
+- **No gerund.** The imperative is what replaces it, and the last section of every page is
+  "Read next".
+
+No page opens with an H1 of its own name. The wiki prints the page title above the content, so an H1
+put it on screen twice and pushed a level into the tree that said nothing. The first real section is
+the first heading, and the sentence above it carries the page.
 
 Two naming decisions worth keeping:
 

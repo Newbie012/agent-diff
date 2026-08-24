@@ -1,6 +1,4 @@
-# Layers
-
-Layers are a reading order an agent writes over its own diff, so a large branch can be read in the
+A layers is a reading order an agent writes over its own diff, so a large branch can be read in the
 order the change was made rather than by filename. The agent already knows that order, and publishing it
 costs less than a reviewer working it out from forty files.
 
@@ -13,7 +11,7 @@ then the mechanical leftovers.
 
 adiff works out the coverage itself, so the layers cannot hide code from you.
 
-## `L` asks the agent for one
+## Ask for layers with `L`
 
 `L` inside a branch sends the agent a comment asking for a reading order, and the footer says "asked for
 a reading order". The comment is about the branch rather than a line, and it says which of three things
@@ -43,7 +41,7 @@ before it starts, a span starting below line 1, a start or end that is not a who
 no `kind`, or a layer with no title. Setting layers again supersedes the previous set and bumps
 `version`.
 
-## The layers rail
+## What the rail shows
 
 Where the agent published layers, the rail opens in place of the file list, and `s` swaps the pane
 between the layers and the files. The rail lists each layer numbered, with its note, and the files it
@@ -60,7 +58,7 @@ place of its files, and a layer whose every file is marked reviewed is ticked.
 
 The prose the agent wrote sits above the code it describes, in the diff.
 
-## Coverage
+## What coverage counts
 
 adiff works out which changed lines each layer claims, and the ones no layer claims go into a last rail
 entry titled "not in any layer", numbered `0`. So a layers that skips a third of the diff shows you
@@ -71,7 +69,7 @@ The agent sees the same count when it publishes: `covered` for the hunks a layer
 lines nobody claimed, and `vanished` for paths a layer points at that this branch does not change, which
 is usually a typo. Done means `uncovered` is empty.
 
-## A layer set pinned to an older commit
+## Layers from an older commit
 
 The layers records the commit it was written for. Once the branch moves past that commit adiff reports the
 layers stale, because the line numbers in it have moved. The branch list reads `2 stale` in place of `2
@@ -82,7 +80,7 @@ reads "layers stale · L for a new one".
 
 `L` asks for a new one. The agent reads the diff again from scratch rather than patching the old layers.
 
-## Next
+## Read next
 
 - [Commands](Commands), the loop this sits beside.
 - [Reviewed files](Reviewed-files), for the ticks the rail carries.
