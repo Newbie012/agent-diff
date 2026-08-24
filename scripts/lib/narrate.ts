@@ -73,13 +73,13 @@ const text = (ink: Ink, when: string): string =>
 const between = (beat: Beat): string => `between(t,${beat.from.toFixed(2)},${beat.to.toFixed(2)})`
 
 const keyCap = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> => {
+  const strip = stripOf(tall)
   const size = Math.round(tall / 30)
-  const pad = Math.round(size * 0.7)
-  const band = Math.round(size * 2.4)
+  const pad = Math.round(size * 0.5)
   const height = Math.round(size + pad * 2)
   const width = Math.round(beat.does.length * size * 0.66 + pad * 2)
   const x = wide - width - Math.round(size * 1.2)
-  const y = tall - band - height - Math.round(size * 0.7)
+  const y = tall + Math.round((strip - height) / 2)
   const when = between(beat)
   return [
     `drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x1b2233:t=fill:enable='${when}'`,
@@ -91,10 +91,12 @@ const keyCap = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> =
   ]
 }
 
+const stripOf = (tall: number): number => Math.round((tall * 0.1) / 2) * 2
+
 const stepBand = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> => {
+  const height = stripOf(tall)
   const size = Math.round(tall / 32)
-  const height = Math.round(size * 2.4)
-  const y = tall - height
+  const y = tall
   const when = between(beat)
   return [
     box({ y, height, wide }, "0x0b0e13", when),
@@ -132,12 +134,12 @@ const checkCard = (
   wide: number,
   tall: number,
 ): ReadonlyArray<string> => {
-  const size = Math.round(tall / 24)
-  const height = Math.round(size * 2.3)
-  const y = tall - height
+  const height = stripOf(tall)
+  const size = Math.round(tall / 26)
+  const y = tall
   const when = between(beat)
   return [
-    ...(beat.where === undefined ? [] : [ringOn(beat.where, { seat, wide, tall }, when, y - 6)]),
+    ...(beat.where === undefined ? [] : [ringOn(beat.where, { seat, wide, tall }, when, tall - RING)]),
     box({ y, height, wide }, "0x11301c", when),
     box({ y, height: 5, wide }, "0x7bc275", when),
     text(
@@ -175,8 +177,10 @@ export const narrate = (raw: string, out: string, said: Narration): void => {
     from: beat.from + said.lead,
     to: beat.to + said.lead,
   }))
+  const strip = stripOf(tall)
   const filters = [
-    ...titleCard(said, wide, tall),
+    `pad=${wide}:${tall + strip}:0:0:color=0x05070a`,
+    ...titleCard(said, wide, tall + strip),
     ...shifted.flatMap((beat) =>
       beat.kind === "check"
         ? checkCard(beat, said.seat, wide, tall)
