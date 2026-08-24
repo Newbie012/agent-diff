@@ -288,6 +288,10 @@
   dir: ""
   intents:
     - a-layer-shows-only-its-own-runs
+"@eliya-oss/agent-diff@0.1.0-alpha.154":
+  dir: ""
+  intents:
+    - a-layer-shows-the-lines-it-claims
 "@eliya-oss/agent-diff@0.1.0-alpha.16":
   dir: ""
   intents:
