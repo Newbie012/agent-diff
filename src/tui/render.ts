@@ -1730,15 +1730,13 @@ export class Screen {
     const readout = selectionReadout(state)
     this.lead = readout.length === 0 ? 0 : readout.length + 3
     const lead = readout.length === 0 ? [] : [fg(palette.muted)(`${readout}   `)]
-    const held = [
-      { said: state.waiting, colour: palette.accent },
-      { said: state.notice, colour: palette.attention },
-    ].filter((one) => one.said.length > 0)
-    const tail = held.map((one) => `  ${one.said}`).join("")
+    const said = state.notice.length === 0 ? state.waiting : state.notice
+    const tail = said.length === 0 ? "" : `  ${said}`
     const width = this.footer.width > 0 ? this.footer.width : this.renderer.width
     const room = Math.max(0, width - this.lead - tail.length)
     const chips = keptWithin(this.chipRow().chunks, room)
-    const notice = held.map((one) => fg(one.colour)(`  ${one.said}`))
+    const colour = state.notice.length === 0 ? palette.accent : palette.attention
+    const notice = tail.length === 0 ? [] : [fg(colour)(tail)]
     return new StyledText([...lead, ...chips, ...notice])
   }
 

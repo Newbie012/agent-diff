@@ -84,6 +84,9 @@ its snippet match ([PRD 002](002-diff-and-anchoring.md)); the inbox and the hand
 - **The branch opens before the forge answers.** A branch draws from the snapshot adiff read last
   time, the fetch runs behind the diff, the review says it is reading the pull request while it
   runs, and the remarks fill in when they land. Reloading the branch never waits on the forge.
+- **The footer says one thing at a time.** Reading the pull request is said where nothing else is
+  being said, and anything the reviewer just did takes the line back. Two messages at once read as
+  two things going wrong.
 - **The threads come back in one request.** adiff asks the forge for the branch's pull request and
   its threads together, rather than listing the pull requests, looking one up, and asking who owns
   the repository first.
@@ -189,7 +192,10 @@ Behaviors that must be covered:
 - A reviewer who has not turned remarks on sees no remark and the forge is never asked for a thread.
 - Reading a branch's threads is one request, and the forge is never asked to look the pull request up
   first.
-- The branch redraws and says it is reading the pull request while the forge is still answering.
+- The branch redraws while the forge is still answering, and says it is reading the pull request.
+- The footer holds the reload's own words rather than both them and the reading line.
+- The branch read again with remarks on shows the newest lines, on the second reading as well as the
+  first, and with the file list focused.
 - The reply box quotes the remark and says the reply goes to the pull request; the comment box
   quotes the code and offers to send the comment.
 
