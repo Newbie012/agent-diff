@@ -284,6 +284,10 @@
   dir: ""
   intents:
     - what-a-search-puts-first
+"@eliya-oss/agent-diff@0.1.0-alpha.153":
+  dir: ""
+  intents:
+    - a-layer-shows-only-its-own-runs
 "@eliya-oss/agent-diff@0.1.0-alpha.16":
   dir: ""
   intents:
