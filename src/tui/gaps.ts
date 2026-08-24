@@ -1,5 +1,5 @@
 import { Option } from "effect"
-import { claimsHunk, REMAINDER_TITLE } from "../domain/layers/index.ts"
+import { REMAINDER_TITLE, type Span as Span2 } from "../domain/layers/index.ts"
 import type { Hunk, Patch, Row } from "../domain/patch/index.ts"
 import type { TuiState } from "./model.ts"
 
@@ -33,8 +33,9 @@ type Build = {
 }
 
 type Claim = {
-  readonly claimed: ReadonlySet<number>
-  readonly explains: ReadonlyMap<number, string>
+  readonly mine: (row: Row) => boolean
+  readonly said: (row: Row) => string
+  readonly holds: (hunk: Hunk) => boolean
 }
 
 type Made = {
@@ -118,36 +119,57 @@ const openBelow = (made: Made, build: Build): void => {
   if (count - open > 0) markGap(made, index, count - open)
 }
 
-const changedIn = (hunk: Hunk): number =>
-  hunk.rows.filter((row) => row.kind !== "context").length
+const elsewhereText = (lines: number, said: string): string =>
+  `⋯ ${lines} changed ${lines === 1 ? "line" : "lines"} · ${said}`
 
-const elsewhereText = (hunk: Hunk, said: string): string => {
-  const lines = changedIn(hunk)
-  return `⋯ ${lines} changed ${lines === 1 ? "line" : "lines"} · ${said}`
-}
-
-const markElsewhere = (made: Made, hunk: Hunk, said: string): void => {
+const markElsewhere = (made: Made, lines: number, said: string): void => {
   push(made, {
     kind: "context",
     oldLine: Option.none(),
     newLine: Option.none(),
-    text: elsewhereText(hunk, said),
+    text: elsewhereText(lines, said),
   })
 }
+
+type Run = { readonly lines: number; readonly said: string }
+
+const flushed = (made: Made, run: Run | undefined): undefined => {
+  if (run !== undefined) markElsewhere(made, run.lines, run.said)
+  return undefined
+}
+
+const someRows = (made: Made, hunk: Hunk, claim: Claim): void => {
+  let run: Run | undefined
+  for (const row of hunk.rows) {
+    if (row.kind === "context" || claim.mine(row)) {
+      run = flushed(made, run)
+      push(made, row)
+      continue
+    }
+    run = { lines: (run?.lines ?? 0) + 1, said: run?.said ?? claim.said(row) }
+  }
+  flushed(made, run)
+}
+
+const changedIn = (hunk: Hunk): number =>
+  hunk.rows.filter((row) => row.kind !== "context").length
+
+const firstChanged = (hunk: Hunk): Row | undefined =>
+  hunk.rows.find((row) => row.kind !== "context")
 
 const makeRows = (build: Build): Made => {
   const made: Made = { rows: [], hunks: [], gaps: [] }
   for (const [index, hunk] of build.base.hunks.entries()) {
     const left = openAbove(made, build, index)
-    const said = build.claim === undefined || build.claim.claimed.has(index)
-      ? undefined
-      : (build.claim.explains.get(index) ?? "no layer claims them")
-    if (said !== undefined) {
-      markElsewhere(made, hunk, said)
+    const claim = build.claim
+    const gone = firstChanged(hunk)
+    if (claim !== undefined && gone !== undefined && !claim.holds(hunk)) {
+      markElsewhere(made, changedIn(hunk), claim.said(gone))
       continue
     }
     const startRow = made.rows.length
-    for (const row of hunk.rows) push(made, row)
+    if (claim === undefined) for (const row of hunk.rows) push(made, row)
+    else someRows(made, hunk, claim)
     made.hunks.push({
       ...hunk,
       startRow,
@@ -170,13 +192,13 @@ const keyOf = (
   total: number,
   full: Patch | undefined,
   reveals: ReadonlyArray<Reveal>,
-  claim: Claim | undefined,
+  spans: ReadonlyArray<Span2>,
 ): string =>
   [
     total,
     full === undefined ? 0 : full.rows.length,
     reveals.map((entry) => `${entry.gap}-${entry.lines}`).join(","),
-    claim === undefined ? "all" : [...claim.claimed].toSorted((a, b) => a - b).join("-"),
+    spans.map((span) => `${span.start}-${span.end}`).join(","),
   ].join(":")
 
 const saidOf = (state: TuiState, at: number): string => {
@@ -186,20 +208,35 @@ const saidOf = (state: TuiState, at: number): string => {
   return `layer ${at + 1} explains them`
 }
 
+const lineOf = (row: Row): number | undefined =>
+  Option.getOrUndefined(Option.orElse(row.newLine, () => row.oldLine))
+
+const inSpans = (spans: ReadonlyArray<Span2>, path: string, line: number): boolean =>
+  spans.some((span) => span.path === path && span.start <= line && span.end >= line)
+
+const spansFor = (state: TuiState, path: string): ReadonlyArray<Span2> =>
+  (state.layers[state.layerIndex]?.spans ?? []).filter((span) => span.path === path)
+
 const claimOf = (state: TuiState, base: Patch): Claim | undefined => {
   if (state.rail !== "layers" || state.layers.length === 0) return undefined
-  const layer = state.layers[state.layerIndex]
-  if (layer === undefined) return undefined
-  const claimed = new Set<number>()
-  const explains = new Map<number, string>()
-  for (const [at, hunk] of base.hunks.entries()) {
-    if (claimsHunk(layer.spans, base.path, hunk)) {
-      claimed.add(at)
-      continue
-    }
-    explains.set(at, saidOf(state, state.layers.findIndex((one) => claimsHunk(one.spans, base.path, hunk))))
+  if (state.layers[state.layerIndex] === undefined) return undefined
+  const mineSpans = spansFor(state, base.path)
+  const mine = (row: Row): boolean => {
+    const line = lineOf(row)
+    return line !== undefined && inSpans(mineSpans, base.path, line)
   }
-  return claimed.size === base.hunks.length ? undefined : { claimed, explains }
+  const said = (row: Row): string => {
+    const line = lineOf(row)
+    if (line === undefined) return "no layer claims them"
+    return saidOf(
+      state,
+      state.layers.findIndex((one) => inSpans(one.spans, base.path, line)),
+    )
+  }
+  const holds = (hunk: Hunk): boolean => hunk.rows.some((row) => row.kind !== "context" && mine(row))
+  return base.hunks.every(holds) && base.hunks.every((hunk) => hunk.rows.every((row) => row.kind === "context" || mine(row)))
+    ? undefined
+    : { mine, said, holds }
 }
 
 export const shownOf = (state: TuiState): Shown | undefined => {
@@ -209,7 +246,7 @@ export const shownOf = (state: TuiState): Shown | undefined => {
   const total = sourceLength(state.source)
   const reveals = state.revealed.filter((entry) => entry.file === base.path)
   const claim = claimOf(state, base)
-  const key = keyOf(total, full, reveals, claim)
+  const key = keyOf(total, full, reveals, claim === undefined ? [] : spansFor(state, base.path))
   const known = cache.get(base)
   const found = known?.get(key)
   if (found !== undefined) return found

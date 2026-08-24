@@ -119,3 +119,55 @@ describe("when three layers each claim one run of the same file", () => {
     expect(words).toBeLessThan(code)
   })
 })
+
+const CLOSE_BEFORE = Array.from({ length: 20 }, (_, at) => `const held${at + 1} = ${at + 1}`)
+
+const CLOSE_AFTER = [
+  ...CLOSE_BEFORE.slice(0, 5),
+  "const mine = 'mine'",
+  CLOSE_BEFORE[5] ?? "",
+  "const yours = 'yours'",
+  ...CLOSE_BEFORE.slice(6),
+]
+
+const shoulder = {
+  files: [{ path: "src/close.ts", before: CLOSE_BEFORE, after: CLOSE_AFTER }],
+}
+
+const twoInOneHunk = {
+  summary: "Two layers inside one hunk",
+  layers: [
+    {
+      title: "Mine alone",
+      blocks: [
+        { kind: "prose" as const, markdown: "This layer claims one line of the hunk." },
+        { kind: "code" as const, path: "src/close.ts", start: 6, end: 6 },
+      ],
+    },
+    {
+      title: "Yours alone",
+      blocks: [
+        { kind: "prose" as const, markdown: "This layer claims the other line." },
+        { kind: "code" as const, path: "src/close.ts", start: 8, end: 8 },
+      ],
+    },
+  ],
+}
+
+describe("when two layers claim different lines of one hunk", () => {
+  test("then the first layer shows its own line and not the line the second claims", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(shoulder)
+    await driver.app.runLayersSet(branch.worktree, twoInOneHunk)
+
+    // ACT
+    await driver.screen.open({ width: 150, height: 30, review: true })
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("const mine = 'mine'")
+    expect(frame).not.toContain("const yours = 'yours'")
+    expect(frame).toContain("layer 2 explains them")
+  })
+})
