@@ -43,6 +43,12 @@ export const preferences: ReadonlyArray<Preference> = [
     byDefault: true,
   },
   {
+    name: "remarks",
+    title: "Read the pull request's review",
+    about: "The review shows the remarks left on the branch's pull request.",
+    byDefault: false,
+  },
+  {
     name: "hold",
     title: "Hold comments until you send them",
     about: "Comments wait until you send them together, rather than going one at a time.",

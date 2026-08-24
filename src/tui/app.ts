@@ -149,6 +149,8 @@ const AGE_TICK_MS = 30_000
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
+const READING_PULL = "reading the pull request"
+const FORGE_QUIET = "the forge did not answer, so no remarks are shown"
 
 const countOf = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
 
@@ -356,6 +358,7 @@ export class App {
   private listening: Fiber.Fiber<void> | undefined
   private lighting: Fiber.Fiber<void, unknown> | undefined
   private sourcing: Fiber.Fiber<void, unknown> | undefined
+  private fetching: Fiber.Fiber<void, unknown> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
@@ -536,10 +539,18 @@ export class App {
     if (this.consuming === undefined) return Promise.resolve()
     return Effect.runPromise(
       Effect.andThen(
-        Effect.andThen(this.drained(), Effect.suspend(() => this.stillSourcing())),
+        Effect.andThen(
+          Effect.andThen(this.drained(), Effect.suspend(() => this.stillSourcing())),
+          Effect.suspend(() => this.stillFetching()),
+        ),
         Effect.suspend(() => this.stillLighting()),
       ),
     )
+  }
+
+  private stillFetching(): Effect.Effect<void> {
+    const fiber = this.fetching
+    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
   }
 
   private stillSourcing(): Effect.Effect<void> {
@@ -860,19 +871,50 @@ export class App {
           progressIn(reading),
           layersIn(reading),
           sentIn(reading),
-          Effect.result(remarksIn(this.repo, reading)),
+          this.state.remarksOn
+            ? remarksHeldIn(reading)
+            : Effect.succeed([] as ReadonlyArray<Remark>),
         ],
         { concurrency: "unbounded" },
       )
       const opened = withVouched(withPatches(this.state, reading.patches), progress.vouched)
-      const read = withRemarks(
-        withLayers(withSent(opened, sent), layers),
-        Result.getOrElse(remarks, () => [] as ReadonlyArray<Remark>),
-      )
+      return withRemarks(withLayers(withSent(opened, sent), layers), remarks)
+    })
+  }
+
+  private remarksHeld(reading: BranchReading): Work<ReadonlyArray<Remark>> {
+    return this.state.remarksOn
+      ? remarksHeldIn(reading)
+      : Effect.succeed([] as ReadonlyArray<Remark>)
+  }
+
+  private fetchRemarks(): Work {
+    return Effect.gen({ self: this }, function* () {
+      this.stopFetching()
+      if (!this.state.remarksOn || this.reading === undefined) return
+      this.fetching = yield* Effect.forkDetach(this.readRemarks(this.reading))
+    })
+  }
+
+  private stopFetching(): void {
+    const fiber = this.fetching
+    this.fetching = undefined
+    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
+  }
+
+  private readRemarks(reading: BranchReading): Work {
+    return Effect.gen({ self: this }, function* () {
+      const said = this.state.waiting
+      this.commit(withWaiting(this.state, READING_PULL))
+      const found = yield* Effect.result(remarksIn(this.repo, reading))
+      if (this.reading !== reading) return
+      const rested = withWaiting(this.state, said)
       const hasPull = (this.state.pulls[reading.worktree.branch] ?? "").length > 0
-      return Result.isSuccess(remarks) || !hasPull
-        ? read
-        : withNoticeHere(read, "the forge did not answer, so no remarks are shown")
+      if (Result.isFailure(found)) {
+        this.commit(hasPull ? withNoticeHere(rested, FORGE_QUIET) : rested)
+        return
+      }
+      this.commit(withRemarks(rested, Result.getOrElse(found, () => this.state.remarks)))
     })
   }
 
@@ -881,6 +923,7 @@ export class App {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
       this.commit(yield* this.readBranch(branch.branch))
+      yield* this.fetchRemarks()
       yield* this.loadSource()
     })
   }
@@ -1235,7 +1278,7 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const reading = this.reading
       if (reading === undefined) return
-      const [remarks, sent] = yield* Effect.all([remarksHeldIn(reading), sentIn(reading)], {
+      const [remarks, sent] = yield* Effect.all([this.remarksHeld(reading), sentIn(reading)], {
         concurrency: "unbounded",
       })
       const held = this.staying(withRemarks(withSent(this.state, sent), remarks), this.state.panelIndex)
@@ -1275,7 +1318,7 @@ export class App {
       const kept = { ...this.state, opened: this.state.opened.filter((one) => one !== id) }
       const said = back ? "restored" : "removed, it is under Removed in the review"
       const held = this.reading
-      const remarks = held === undefined ? this.state.remarks : yield* remarksHeldIn(held)
+      const remarks = held === undefined ? this.state.remarks : yield* this.remarksHeld(held)
       this.commit(
         withNotice(this.staying(withRemarks(withSent(kept, sent), remarks), was), said),
       )
@@ -1315,6 +1358,7 @@ export class App {
       const read = yield* this.readBranch(branch.branch)
       const held = restoredTo(read, path, line, offset)
       this.commit(withWaiting(withNotice(held, "read the branch again"), ""))
+      yield* this.fetchRemarks()
       yield* this.loadSource()
     })
   }
@@ -1559,6 +1603,7 @@ export class App {
     this.stopTicking()
     this.stopLighting()
     this.stopSourcing()
+    this.stopFetching()
     this.stopPainting()
     this.stopConsuming()
     void getTreeSitterClient().destroy()
@@ -1837,6 +1882,7 @@ const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
   hideReviewed: state.hideReviewed,
   hideSettled: state.hideSettled,
   newestFirst: state.newestFirst,
+  remarks: state.remarksOn,
   hold: state.hold,
 })
 
@@ -1851,6 +1897,7 @@ const settingsHeld = Effect.gen(function* () {
     hideReviewed: kept["hideReviewed"] === true,
     hideSettled: kept["hideSettled"] === true,
     newestFirst: kept["newestFirst"] === true,
+    remarksOn: kept["remarks"] === true,
     hold: kept["hold"] === true,
   }
 })

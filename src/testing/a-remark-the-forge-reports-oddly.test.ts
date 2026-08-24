@@ -41,14 +41,14 @@ const holding = async (
   return branch
 }
 
-const nulled = `{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[{
+const nulled = `{"data":{"repository":{"pullRequests":{"nodes":[{"reviewThreads":{"nodes":[{
   "id":"PRRT_null","isResolved":false,"isOutdated":true,"path":"src/api.ts","diffSide":"RIGHT",
   "line":null,"originalLine":4,"startLine":null,"originalStartLine":null,
   "comments":{"nodes":[{
     "author":null,"body":"this loop reads the file twice",
     "diffHunk":"@@ -1 +1,4 @@\\n+const gone = 1","originalCommit":null
   }]}
-}]}}}}}`
+}]}}]}}}}`
 
 describe("when a thread has no line because the forge calls it outdated", () => {
   test("then the remark is still listed, marked outdated, and the fetch does not fail", async () => {

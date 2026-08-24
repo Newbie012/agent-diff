@@ -99,6 +99,7 @@ export const Settings = Schema.Struct({
   hideReviewed: Schema.optionalKey(Schema.Boolean),
   hideSettled: Schema.optionalKey(Schema.Boolean),
   newestFirst: Schema.optionalKey(Schema.Boolean),
+  remarks: Schema.optionalKey(Schema.Boolean),
   hold: Schema.optionalKey(Schema.Boolean),
 })
 

@@ -70,6 +70,7 @@ import {
   composeRoom as composeText,
   panelEntries,
   panelEntry,
+  remarkQuote,
   remarkShown,
   remarkToTakeOn,
   remarkUnderCursor,
@@ -100,8 +101,11 @@ const COMPOSE_ACTION_ROWS = 2
 const reportActions = (full: boolean): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^t")} ${fg(palette.muted)(full ? "sending everything" : "sending the least")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
 
-const actionsText = (): StyledText =>
-  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("send it")}`
+const SENDS = "send it"
+const REPLIES = "reply on the pull request"
+
+const actionsText = (said: string): StyledText =>
+  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)(said)}`
 const SNIPPET_LINES = 4
 const PALETTE_KEY = 11
 const PALETTE_TITLE = 60
@@ -739,6 +743,10 @@ const stillThere = (sent: TuiState["sent"]): TuiState["sent"] =>
   sent.filter((one) => one.removed !== true)
 
 const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyArray<string> => {
+  const answering = remarkQuote(state, room)
+  if (answering.length > 0) {
+    return answering.slice(0, shownLines * 2).map((line) => clip(line, room))
+  }
   const said = threadQuote(state, room)
   if (said.length > 0) return said.slice(0, shownLines * 2).map((line) => clip(line, room))
   const snippet = snippetOf(state, shownLines)
@@ -1722,13 +1730,15 @@ export class Screen {
     const readout = selectionReadout(state)
     this.lead = readout.length === 0 ? 0 : readout.length + 3
     const lead = readout.length === 0 ? [] : [fg(palette.muted)(`${readout}   `)]
-    const said = state.notice.length === 0 ? state.waiting : state.notice
-    const tail = said.length === 0 ? "" : `  ${said}`
+    const held = [
+      { said: state.waiting, colour: palette.accent },
+      { said: state.notice, colour: palette.attention },
+    ].filter((one) => one.said.length > 0)
+    const tail = held.map((one) => `  ${one.said}`).join("")
     const width = this.footer.width > 0 ? this.footer.width : this.renderer.width
     const room = Math.max(0, width - this.lead - tail.length)
     const chips = keptWithin(this.chipRow().chunks, room)
-    const colour = state.notice.length === 0 ? palette.accent : palette.attention
-    const notice = tail.length === 0 ? [] : [fg(colour)(tail)]
+    const notice = held.map((one) => fg(one.colour)(`  ${one.said}`))
     return new StyledText([...lead, ...chips, ...notice])
   }
 
@@ -2102,7 +2112,7 @@ export class Screen {
     const spare =
       this.renderer.height - quoted.length - 1 - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - COMPOSE_EDGE
     const written = this.fitBody(state, room.text, Math.max(1, spare))
-    this.composeActions.content = actionsText()
+    this.composeActions.content = actionsText(state.answerTo === undefined ? SENDS : REPLIES)
     const height = quoted.length + 1 + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.height = height
     this.compose.width = room.box

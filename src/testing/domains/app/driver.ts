@@ -126,7 +126,7 @@ export class AppTestDriver {
       url: `https://forge.test/someone/their-repo/pull/${at + 1}`,
     }))
     const noThreads = JSON.stringify({
-      data: { repository: { pullRequest: { reviewThreads: { nodes: [] } } } },
+      data: { repository: { pullRequests: { nodes: [{ reviewThreads: { nodes: [] } }] } } },
     })
     const script = [
       "#!/bin/sh",
