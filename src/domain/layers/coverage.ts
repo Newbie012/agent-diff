@@ -93,6 +93,22 @@ export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<La
   }
 }
 
+export const sharedHunks = (
+  patches: ReadonlyArray<Patch>,
+  layers: ReadonlyArray<Layer>,
+): number => {
+  const claiming = (patch: Patch, hunk: Hunk): number =>
+    layers.filter((layer) => claimsHunk(spansOf([layer]), patch.path, hunk)).length
+  return patches.reduce(
+    (sum, patch) =>
+      sum +
+      patch.hunks.filter(
+        (hunk) => changedLines(hunk).length > 0 && claiming(patch, hunk) > 1,
+      ).length,
+    0,
+  )
+}
+
 const runsSaid = (count: number): string =>
   count === 1
     ? "One run of changed lines the layers do not account for."

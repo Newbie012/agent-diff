@@ -2,16 +2,19 @@ import { hostname, platform } from "node:os"
 import { absurd } from "effect"
 import manifest from "../../package.json" with { type: "json" }
 import type { RowKind } from "../domain/patch/index.ts"
-import { selectedBranch, selectedPatch, treeWindow, type TuiState } from "./model.ts"
+import { chosenNow, selectedBranch, selectedPatch, treeWindow, WHOLE_FILE, type TuiState } from "./model.ts"
+import { preferences } from "../domain/preferences/index.ts"
 
 export type Surroundings = {
   readonly repo: string
+  readonly base: string
   readonly keys: ReadonlyArray<string>
   readonly trail: ReadonlyArray<string>
   readonly failure: string
   readonly failureKind: string
   readonly width: number
   readonly height: number
+  readonly slowest: ReadonlyArray<{ readonly action: string; readonly ms: number }>
 }
 
 const AROUND_CURSOR = 8
@@ -48,9 +51,46 @@ const visibleTree = (state: TuiState): ReadonlyArray<string> =>
 
 const whereabouts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
   `- repo \`${around.repo}\``,
-  `- branch \`${selectedBranch(state)?.branch ?? "none"}\``,
+  `- branch \`${selectedBranch(state)?.branch ?? "none"}\`, base \`${around.base.length === 0 ? "resolved by adiff" : around.base}\``,
   `- file \`${selectedPatch(state)?.path ?? "none"}\`, row ${state.cursor + 1}`,
 ]
+
+const said = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
+
+const chosenAway = (state: TuiState): string => {
+  const held = chosenNow(state)
+  const away = preferences.filter((one) => (held[one.name] ?? one.byDefault) !== one.byDefault)
+  return away.length === 0 ? "every preference at its default" : away.map((one) => one.name).join(", ")
+}
+
+const standingOn = (state: TuiState): string => {
+  if (!state.reportFull) return `standing on layer ${state.layerIndex + 1}`
+  return `standing on \`${state.layers[state.layerIndex]?.title ?? "none"}\``
+}
+
+const layersLine = (state: TuiState): string => {
+  if (state.layers.length === 0) return "- no reading order on this branch"
+  const spans = state.layers.reduce((sum, layer) => sum + layer.spans.length, 0)
+  return `- reading order: ${said(state.layers.length, "layer")} over ${said(spans, "span")}, rail on ${state.rail}, ${state.layersStale ? "stale" : "current"}, ${standingOn(state)}`
+}
+
+const remarksLine = (state: TuiState): string => {
+  if (!state.remarksOn) return "- the pull request's remarks are off"
+  const waiting = state.remarks.filter((one) => one.state === "waiting").length
+  return `- remarks on: ${said(state.remarks.length, "remark")}, ${waiting} waiting`
+}
+
+const shapeLine = (state: TuiState): string => {
+  const patch = selectedPatch(state)
+  const hunks = patch?.hunks.length ?? 0
+  const whole = state.context >= WHOLE_FILE ? "the whole file" : `${state.context} lines of context`
+  return `- this file: ${said(hunks, "hunk")} shown, ${whole}, ${state.wrap ? "wrapped" : "not wrapped"}`
+}
+
+const tookLine = (around: Surroundings): ReadonlyArray<string> => {
+  if (around.slowest.length === 0) return []
+  return [`- slowest: ${around.slowest.map((one) => `${one.action} ${one.ms}ms`).join(", ")}`]
+}
 
 const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
   `- adiff ${manifest.version} on Node ${process.version}, ${platform()}${state.reportFull ? `, ${hostname()}` : ""}`,
@@ -58,6 +98,11 @@ const facts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => 
   ...(state.reportFull ? whereabouts(state, around) : []),
   `- screen \`${state.screen}\`, focus \`${state.focus}\`, selecting ${String(state.selecting)}`,
   `- ${state.vouched.length} of ${state.patches.length} reviewed`,
+  `- preferences away from default: ${chosenAway(state)}`,
+  layersLine(state),
+  remarksLine(state),
+  shapeLine(state),
+  ...tookLine(around),
 ]
 
 const fenced = (title: string, lines: ReadonlyArray<string>): ReadonlyArray<string> => [

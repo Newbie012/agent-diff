@@ -5,6 +5,7 @@ import {
   coverage,
   noteOf,
   proseAnchors,
+  sharedHunks,
   statusOf,
   withFullCoverage,
   type Span,
@@ -46,6 +47,7 @@ export type LayersReport = {
   readonly partial: number
   readonly total: number
   readonly uncovered: ReadonlyArray<Span>
+  readonly shared: number
   readonly vanished: ReadonlyArray<string>
   readonly layers: ReadonlyArray<ReportedLayer>
 }
@@ -213,6 +215,7 @@ const reportOf = (
     partial: status.partial,
     total: status.total,
     uncovered: status.uncovered,
+    shared: sharedHunks(patches, layers.layers),
     vanished: status.vanished,
     layers: reportedLayers(patches, layers),
   }
