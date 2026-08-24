@@ -257,9 +257,9 @@ used to cover less than you thought now fails loudly instead.
 `total` counts hunks. `covered` counts the ones where every changed line sits inside a layer, and
 `partial` the ones a layer explains only some of. `uncovered` names the runs of changed lines no
 layer claims, so it reads as line numbers a reviewer would otherwise have to find alone: claim them
-and set the layers again. Done means `uncovered` is empty. `vanished` names paths a layer points at
-that this branch does not change, which usually means a typo in a path. Read it back at any time
-with:
+and set the layers again. Done means `uncovered` is empty and `shared` is zero. `vanished` names
+paths a layer points at that this branch does not change, which usually means a typo in a path. Read
+it back at any time with:
 
 ```bash
 adiff layers show --worktree . --fields covered,partial,total,uncovered
@@ -271,8 +271,15 @@ uncovered run at 395-409 — line numbers past the end of the file as it now sta
 new file cannot reach them; only a span whose `end` runs past the end of the file can. Write one, or
 say the run is unreachable, rather than reading the leftover as a layer you forgot.
 
-That is also the case for spans generally: `start` 1 to past the last line covers a file whatever
-happens to it, while a tight range goes stale on the next push that moves the lines under it.
+That case aside, claim the runs you explain and nothing more. A span from line 1 to past the end of
+the file covers whatever happens to it, and it is the wrong trade: the terminal scopes a layer to the
+lines it claims, so a layer claiming the whole file draws the whole diff, and eleven layers over one
+file draw it eleven times. Staleness is cheap by comparison — adiff says when a set is stale and the
+reviewer asks for another.
+
+`shared` in the answer counts the hunks more than one layer claims. Coverage cannot see this: a
+reading order whose layers each claim the whole diff reports the same `covered` as one whose layers
+each claim their own run. Done means `uncovered` is empty **and** `shared` is zero.
 
 Setting layers again supersedes the previous set and bumps `version`; the set records the commit it
 was written for, and adiff reports it as `stale` once the branch moves past that commit. Once a
