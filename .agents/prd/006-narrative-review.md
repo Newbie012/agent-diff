@@ -126,11 +126,14 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   runs, and one key switches back to the file tree. The hunks no layer claims appear as a final
   layer, `not in any layer`, so a layers can never hide code from the reviewer.
 
-- **A layer shows the runs it claims, not every run in the files it names.** Eleven layers over one
-  file drew that file's whole diff eleven times, with the layer's prose landing in a different place
-  each time and the reviewer left to work out which part they were meant to be reading. A change in
-  a shown file that this layer does not claim is drawn as one line saying how many lines it holds and
-  which layer explains them, so the reviewer can see it is accounted for without reading it twice.
+- **A layer shows the lines it claims, not every line in the runs or the files it names.** Eleven
+  layers over one file drew that file's whole diff eleven times, with the layer's prose landing in a
+  different place each time and the reviewer left to work out which part they were meant to be
+  reading. Changed lines a shown file holds that this layer does not claim are drawn as one line
+  saying how many there are and which layer explains them, whether they sit in another run entirely
+  or in the middle of the run this layer is showing — a reading order written one layer to a commit
+  splits a long run between layers, and a layer that shows the whole run because it claims one line
+  of it is the same file over again.
 
 - **Moving to a layer puts the cursor on the first line that layer claims.** A layer whose runs sit
   at line 1,600 opened at line 800 and left the reviewer to find it, which is the work the reading
