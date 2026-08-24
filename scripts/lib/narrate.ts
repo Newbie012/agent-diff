@@ -53,8 +53,37 @@ const sizeOf = (path: string): { readonly wide: number; readonly tall: number } 
 
 type Band = { readonly y: number; readonly height: number; readonly wide: number }
 
-const box = (band: Band, colour: string, when: string): string =>
-  `drawbox=x=0:y=${band.y}:w=${band.wide}:h=${band.height}:color=${colour}:t=fill:enable='${when}'`
+export type Drawn = {
+  readonly filter: string
+  readonly y: number
+  readonly height: number
+}
+
+export const drawn = (filter: string, y: number, height: number): Drawn => ({ filter, y, height })
+
+const box = (band: Band, colour: string, when: string): Drawn =>
+  drawn(
+    `drawbox=x=0:y=${band.y}:w=${band.wide}:h=${band.height}:color=${colour}:t=fill:enable='${when}'`,
+    band.y,
+    band.height,
+  )
+
+const lowered = (held: Drawn, by: number): Drawn =>
+  drawn(held.filter.replaceAll(`y=${held.y}`, `y=${held.y + by}`), held.y + by, held.height)
+
+export const inStrip = (
+  held: ReadonlyArray<Drawn>,
+  tall: number,
+  strip: number,
+): ReadonlyArray<Drawn> =>
+  held.map((one) => {
+    if (one.y < 0 || one.y + one.height > strip) {
+      throw new Error(
+        `the narration must draw inside the strip: a band at y=${one.y} of ${one.height} does not fit ${strip}`,
+      )
+    }
+    return lowered(one, tall)
+  })
 
 type Ink = {
   readonly said: string
@@ -67,23 +96,27 @@ type Ink = {
 
 const inkAt = (ink: Ink): string => (ink.centred ? "(w-tw)/2" : String(ink.x ?? 48))
 
-const text = (ink: Ink, when: string): string =>
-  `drawtext=fontfile=${FONT}:text='${clean(ink.said)}':fontcolor=${ink.colour}:fontsize=${ink.size}:x=${inkAt(ink)}:y=${ink.y}:enable='${when}'`
+const text = (ink: Ink, when: string): Drawn =>
+  drawn(
+    `drawtext=fontfile=${FONT}:text='${clean(ink.said)}':fontcolor=${ink.colour}:fontsize=${ink.size}:x=${inkAt(ink)}:y=${ink.y}:enable='${when}'`,
+    ink.y,
+    ink.size,
+  )
 
 const between = (beat: Beat): string => `between(t,${beat.from.toFixed(2)},${beat.to.toFixed(2)})`
 
-const keyCap = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> => {
+const keyCap = (beat: Beat, wide: number, tall: number): ReadonlyArray<Drawn> => {
   const strip = stripOf(tall)
   const size = Math.round(tall / 30)
   const pad = Math.round(size * 0.5)
   const height = Math.round(size + pad * 2)
   const width = Math.round(beat.does.length * size * 0.66 + pad * 2)
   const x = wide - width - Math.round(size * 1.2)
-  const y = tall + Math.round((strip - height) / 2)
+  const y = Math.round((strip - height) / 2)
   const when = between(beat)
   return [
-    `drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x1b2233:t=fill:enable='${when}'`,
-    `drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x7aa2f7:t=3:enable='${when}'`,
+    drawn(`drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x1b2233:t=fill:enable='${when}'`, y, height),
+    drawn(`drawbox=x=${x}:y=${y}:w=${width}:h=${height}:color=0x7aa2f7:t=3:enable='${when}'`, y, height),
     text(
       { said: beat.does, size, colour: "0xdbe4f3", y: y + pad, centred: false, x: x + pad },
       when,
@@ -91,12 +124,12 @@ const keyCap = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> =
   ]
 }
 
-const stripOf = (tall: number): number => Math.round((tall * 0.1) / 2) * 2
+export const stripOf = (tall: number): number => Math.round((tall * 0.1) / 2) * 2
 
-const stepBand = (beat: Beat, wide: number, tall: number): ReadonlyArray<string> => {
+const stepBand = (beat: Beat, wide: number, tall: number): ReadonlyArray<Drawn> => {
   const height = stripOf(tall)
   const size = Math.round(tall / 32)
-  const y = tall
+  const y = 0
   const when = between(beat)
   return [
     box({ y, height, wide }, "0x0b0e13", when),
@@ -133,27 +166,29 @@ const checkCard = (
   seat: Seat,
   wide: number,
   tall: number,
-): ReadonlyArray<string> => {
+): { readonly strip: ReadonlyArray<Drawn>; readonly screen: ReadonlyArray<string> } => {
   const height = stripOf(tall)
   const size = Math.round(tall / 26)
-  const y = tall
+  const y = 0
   const when = between(beat)
-  return [
-    ...(beat.where === undefined ? [] : [ringOn(beat.where, { seat, wide, tall }, when, tall - RING)]),
-    box({ y, height, wide }, "0x11301c", when),
-    box({ y, height: 5, wide }, "0x7bc275", when),
-    text(
-      { said: beat.does, size, colour: "0xffffff", y: Math.round(y + height / 2 - size * 0.62), centred: true },
-      when,
-    ),
-  ]
+  return {
+    screen: beat.where === undefined ? [] : [ringOn(beat.where, { seat, wide, tall }, when, tall - RING)],
+    strip: [
+      box({ y, height, wide }, "0x11301c", when),
+      box({ y, height: 5, wide }, "0x7bc275", when),
+      text(
+        { said: beat.does, size, colour: "0xffffff", y: Math.round(y + height / 2 - size * 0.62), centred: true },
+        when,
+      ),
+    ],
+  }
 }
 
 const titleCard = (
   said: Narration,
   wide: number,
   tall: number,
-): ReadonlyArray<string> => {
+): ReadonlyArray<Drawn> => {
   const size = Math.round(tall / 20)
   const small = Math.round(tall / 38)
   const when = `lt(t,${said.lead})`
@@ -170,23 +205,25 @@ const titleCard = (
   ]
 }
 
+const shiftedBy = (beat: Beat, lead: number): Beat =>
+  beat.where === undefined
+    ? { kind: beat.kind, does: beat.does, from: beat.from + lead, to: beat.to + lead }
+    : { kind: beat.kind, does: beat.does, from: beat.from + lead, to: beat.to + lead, where: beat.where }
+
 export const narrate = (raw: string, out: string, said: Narration): void => {
   const { wide, tall } = sizeOf(raw)
-  const shifted = said.beats.map((beat) => ({
-    ...beat,
-    from: beat.from + said.lead,
-    to: beat.to + said.lead,
-  }))
+  const shifted = said.beats.map((beat) => shiftedBy(beat, said.lead))
   const strip = stripOf(tall)
+  const spoken = shifted.map((beat) =>
+    beat.kind === "check"
+      ? checkCard(beat, said.seat, wide, tall)
+      : { screen: [] as ReadonlyArray<string>, strip: beat.kind === "key" ? keyCap(beat, wide, tall) : stepBand(beat, wide, tall) },
+  )
   const filters = [
     `pad=${wide}:${tall + strip}:0:0:color=0x05070a`,
-    ...titleCard(said, wide, tall + strip),
-    ...shifted.flatMap((beat) =>
-      beat.kind === "check"
-        ? checkCard(beat, said.seat, wide, tall)
-        : beat.kind === "key"
-          ? keyCap(beat, wide, tall)
-          : stepBand(beat, wide, tall),
+    ...titleCard(said, wide, tall + strip).map((one) => one.filter),
+    ...spoken.flatMap((held) =>
+      held.screen.concat(inStrip(held.strip, tall, strip).map((one) => one.filter)),
     ),
   ]
   execFileSync(
@@ -202,4 +239,10 @@ export const narrate = (raw: string, out: string, said: Narration): void => {
     ],
     { stdio: ["ignore", "pipe", "inherit"] },
   )
+  const made = sizeOf(out)
+  if (made.tall !== tall + strip || made.wide !== wide) {
+    throw new Error(
+      `the narration must sit below the screen: the film is ${made.wide}x${made.tall} where the screen is ${wide}x${tall} and the strip ${strip}`,
+    )
+  }
 }
