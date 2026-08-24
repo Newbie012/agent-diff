@@ -1,4 +1,5 @@
 import { Option } from "effect"
+import { claimsHunk, REMAINDER_TITLE } from "../domain/layers/index.ts"
 import type { Hunk, Patch, Row } from "../domain/patch/index.ts"
 import type { TuiState } from "./model.ts"
 
@@ -28,6 +29,12 @@ type Build = {
   readonly full: Patch | undefined
   readonly spans: ReadonlyArray<Span>
   readonly reveals: ReadonlyArray<Reveal>
+  readonly claim: Claim | undefined
+}
+
+type Claim = {
+  readonly claimed: ReadonlySet<number>
+  readonly explains: ReadonlyMap<number, string>
 }
 
 type Made = {
@@ -111,10 +118,34 @@ const openBelow = (made: Made, build: Build): void => {
   if (count - open > 0) markGap(made, index, count - open)
 }
 
+const changedIn = (hunk: Hunk): number =>
+  hunk.rows.filter((row) => row.kind !== "context").length
+
+const elsewhereText = (hunk: Hunk, said: string): string => {
+  const lines = changedIn(hunk)
+  return `⋯ ${lines} changed ${lines === 1 ? "line" : "lines"} · ${said}`
+}
+
+const markElsewhere = (made: Made, hunk: Hunk, said: string): void => {
+  push(made, {
+    kind: "context",
+    oldLine: Option.none(),
+    newLine: Option.none(),
+    text: elsewhereText(hunk, said),
+  })
+}
+
 const makeRows = (build: Build): Made => {
   const made: Made = { rows: [], hunks: [], gaps: [] }
   for (const [index, hunk] of build.base.hunks.entries()) {
     const left = openAbove(made, build, index)
+    const said = build.claim === undefined || build.claim.claimed.has(index)
+      ? undefined
+      : (build.claim.explains.get(index) ?? "no layer claims them")
+    if (said !== undefined) {
+      markElsewhere(made, hunk, said)
+      continue
+    }
     const startRow = made.rows.length
     for (const row of hunk.rows) push(made, row)
     made.hunks.push({
@@ -135,12 +166,41 @@ const compose = (build: Build): Shown => {
 
 const cache = new WeakMap<Patch, Map<string, Shown>>()
 
-const keyOf = (total: number, full: Patch | undefined, reveals: ReadonlyArray<Reveal>): string =>
+const keyOf = (
+  total: number,
+  full: Patch | undefined,
+  reveals: ReadonlyArray<Reveal>,
+  claim: Claim | undefined,
+): string =>
   [
     total,
     full === undefined ? 0 : full.rows.length,
     reveals.map((entry) => `${entry.gap}-${entry.lines}`).join(","),
+    claim === undefined ? "all" : [...claim.claimed].toSorted((a, b) => a - b).join("-"),
   ].join(":")
+
+const saidOf = (state: TuiState, at: number): string => {
+  if (at === -1) return "no layer claims them"
+  const layer = state.layers[at]
+  if (layer === undefined || layer.title === REMAINDER_TITLE) return "no layer claims them"
+  return `layer ${at + 1} explains them`
+}
+
+const claimOf = (state: TuiState, base: Patch): Claim | undefined => {
+  if (state.rail !== "layers" || state.layers.length === 0) return undefined
+  const layer = state.layers[state.layerIndex]
+  if (layer === undefined) return undefined
+  const claimed = new Set<number>()
+  const explains = new Map<number, string>()
+  for (const [at, hunk] of base.hunks.entries()) {
+    if (claimsHunk(layer.spans, base.path, hunk)) {
+      claimed.add(at)
+      continue
+    }
+    explains.set(at, saidOf(state, state.layers.findIndex((one) => claimsHunk(one.spans, base.path, hunk))))
+  }
+  return claimed.size === base.hunks.length ? undefined : { claimed, explains }
+}
 
 export const shownOf = (state: TuiState): Shown | undefined => {
   const base = state.patches[state.patchIndex]
@@ -148,11 +208,12 @@ export const shownOf = (state: TuiState): Shown | undefined => {
   const full = state.full.find((patch) => patch.path === base.path)
   const total = sourceLength(state.source)
   const reveals = state.revealed.filter((entry) => entry.file === base.path)
-  const key = keyOf(total, full, reveals)
+  const claim = claimOf(state, base)
+  const key = keyOf(total, full, reveals, claim)
   const known = cache.get(base)
   const found = known?.get(key)
   if (found !== undefined) return found
-  const made = compose({ base, full, spans: spansOf(base, total), reveals })
+  const made = compose({ base, full, spans: spansOf(base, total), reveals, claim })
   const map = known ?? new Map<string, Shown>()
   map.set(key, made)
   cache.set(base, map)

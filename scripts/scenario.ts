@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process"
+import { execFileSync, spawn } from "node:child_process"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { argv, env, exit, stderr } from "node:process"
@@ -111,8 +111,25 @@ const forgeFor = (space: Workspace, held: Trace): string => {
   return bin
 }
 
+const layersInto = (space: Workspace, held: Trace): void => {
+  const layers = held.world.layers
+  const worktree = space.branches[0]?.worktree
+  if (layers === undefined || worktree === undefined) return
+  execFileSync(
+    NODE,
+    runArgs(["layers", "set", "--worktree", worktree, "--json", "-"]),
+    {
+      cwd: space.repo,
+      input: JSON.stringify(layers),
+      env: { ...env, ADIFF_ROOT: space.storeRoot, ADIFF_NO_UPGRADE_CHECK: "1" },
+      stdio: ["pipe", "ignore", "inherit"],
+    },
+  )
+}
+
 export const openTerminal = (space: Workspace, held: Trace): Promise<number> =>
   new Promise((resolve) => {
+    layersInto(space, held)
     const child = spawn(NODE, runArgs(["review", "open", "--repo", space.repo]), {
       cwd: space.repo,
       env: {

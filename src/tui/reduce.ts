@@ -1,5 +1,5 @@
 import { Option } from "effect"
-import { anchorFor, type Patch } from "../domain/patch/index.ts"
+import { anchorFor, type Patch, type Row } from "../domain/patch/index.ts"
 import { type Action } from "./command.ts"
 import { gapNumbered, gapRowSet, shownOf } from "./gaps.ts"
 import { searchCommands, searchGlossary } from "./match.ts"
@@ -179,7 +179,7 @@ const moveLayer = (state: TuiState, delta: number): TuiState => {
     patchIndex: landed.file,
     railScroll: -1,
     top: 0,
-    cursor: landingOn(state, landed.file),
+    cursor: landingOn({ ...state, layerIndex: landed.layer }, landed.file),
     anchorRow: 0,
     selecting: false,
   }
@@ -351,7 +351,12 @@ const landingOn = (state: TuiState, patchIndex: number): number => {
   const drawn = shownOf(held)
   if (drawn === undefined) return openingRow(state, patchIndex)
   const hidden = gapRowSet(drawn)
-  const at = drawn.patch.rows.findIndex((row) => !hidden.has(row.index) && carriesLine(row))
+  const shows = (row: Row): boolean => !hidden.has(row.index) && carriesLine(row)
+  const changed = onLayers(held)
+    ? drawn.patch.rows.findIndex((row) => shows(row) && row.kind !== "context")
+    : -1
+  if (changed !== -1) return changed
+  const at = drawn.patch.rows.findIndex(shows)
   return at === -1 ? openingRow(state, patchIndex) : at
 }
 
@@ -382,7 +387,7 @@ const moveFile = (state: TuiState, delta: number): TuiState => {
     closed: revealing(state, next),
     patchIndex: next,
     top: 0,
-    cursor: landingOn(state, next),
+    cursor: landingOn({ ...state, layerIndex: layer }, next),
     anchorRow: 0,
     selecting: false,
   }

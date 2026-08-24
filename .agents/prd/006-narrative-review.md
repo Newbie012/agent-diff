@@ -123,8 +123,18 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
 
 - **A branch with a layers reads by layer.** The review terminal replaces the file tree with the
   layers's numbered layers and their file counts; moving to a layer scopes the diff to that layer's
-  files, and one key switches back to the file tree. The hunks no layer claims appear as a final
+  runs, and one key switches back to the file tree. The hunks no layer claims appear as a final
   layer, `not in any layer`, so a layers can never hide code from the reviewer.
+
+- **A layer shows the runs it claims, not every run in the files it names.** Eleven layers over one
+  file drew that file's whole diff eleven times, with the layer's prose landing in a different place
+  each time and the reviewer left to work out which part they were meant to be reading. A change in
+  a shown file that this layer does not claim is drawn as one line saying how many lines it holds and
+  which layer explains them, so the reviewer can see it is accounted for without reading it twice.
+
+- **Moving to a layer puts the cursor on the first line that layer claims.** A layer whose runs sit
+  at line 1,600 opened at line 800 and left the reviewer to find it, which is the work the reading
+  order exists to save.
 - **A layer's title is readable in full.** The rail wraps a title over as many lines as it needs.
   The layer number leads the first line and the file count closes it. Nothing is cut off, because a
   title the reviewer can only half read is a title that cannot be checked against the code.
