@@ -45,7 +45,8 @@ const threadsFor = (held: Trace): string =>
   JSON.stringify({
     data: {
       repository: {
-        pullRequest: {
+        pullRequests: {
+          nodes: [{
           reviewThreads: {
             pageInfo: { hasNextPage: false },
             nodes: (held.world.remarks ?? []).map((one) => ({
@@ -67,6 +68,7 @@ const threadsFor = (held: Trace): string =>
               },
             })),
           },
+          }],
         },
       },
     },
@@ -75,6 +77,10 @@ const threadsFor = (held: Trace): string =>
 const forgeFor = (space: Workspace, held: Trace): string => {
   const bin = join(space.root, "bin")
   mkdirSync(bin, { recursive: true })
+  if (held.world.readsRemarks === true) {
+    mkdirSync(space.storeRoot, { recursive: true })
+    writeFileSync(join(space.storeRoot, "settings.json"), JSON.stringify({ remarks: true }))
+  }
   const branch = space.branches[0]?.name ?? "review"
   const lines =
     (held.world.remarks ?? []).length === 0

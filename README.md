@@ -20,7 +20,7 @@ point stays open until you settle it.
 - ⚡ **Live review** - A comment reaches the agent at once, and it starts work.
 - 💬 **Answers in place** - The agent replies under your comment, or asks you to decide.
 - 🌿 **Review in parallel** - Keep several agents going from one list of branches.
-- 🔗 **Pull request remarks** - Accept or dismiss each one without leaving the terminal.
+- 🔗 **Pull request remarks** - Turn them on, then accept or dismiss each one without leaving the terminal.
 - 🗺️ **Read in layers** - Follow the agent's own order, or read the diff by file.
 
 ### Usage

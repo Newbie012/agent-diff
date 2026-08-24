@@ -29,6 +29,7 @@ export type Trace = {
     readonly branch: Partial<BranchTestModel>
     readonly layers?: LayersInput
     readonly remarks?: ReadonlyArray<ThreadOnForge>
+    readonly readsRemarks?: boolean
   }
   readonly seat: Seat
   readonly changes?: ReadonlyArray<Change>
@@ -101,8 +102,8 @@ export class Tracer {
     this.world = { ...this.world, layers }
   }
 
-  sawForge(remarks: ReadonlyArray<ThreadOnForge>): void {
-    this.world = { ...this.world, remarks }
+  sawForge(remarks: ReadonlyArray<ThreadOnForge>, readsRemarks: boolean): void {
+    this.world = { ...this.world, remarks, readsRemarks }
   }
 
   sawSeat(seat: Seat): void {

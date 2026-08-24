@@ -255,17 +255,19 @@ const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArr
   })
 }
 
-const THREADS = `query($owner:String!,$name:String!,$number:Int!,$after:String){
+const THREADS = `query($owner:String!,$name:String!,$branch:String!,$after:String){
   repository(owner:$owner,name:$name){
-    pullRequest(number:$number){
-      reviewThreads(first:50,after:$after){
-        pageInfo{ hasNextPage endCursor }
-        nodes{
-          id isResolved isOutdated path diffSide
-          line originalLine startLine originalStartLine
-          comments(first:50){
-            totalCount
-            nodes{ databaseId author{login} body diffHunk originalCommit{oid} }
+    pullRequests(headRefName:$branch,first:1,orderBy:{field:CREATED_AT,direction:DESC}){
+      nodes{
+        reviewThreads(first:50,after:$after){
+          pageInfo{ hasNextPage endCursor }
+          nodes{
+            id isResolved isOutdated path diffSide
+            line originalLine startLine originalStartLine
+            comments(first:50){
+              totalCount
+              nodes{ databaseId author{login} body diffHunk originalCommit{oid} }
+            }
           }
         }
       }
@@ -302,14 +304,18 @@ const Page = Schema.Struct({
   endCursor: Schema.optionalKey(Schema.NullishOr(Schema.String)),
 })
 
+const Held = Schema.Struct({
+  reviewThreads: Schema.Struct({
+    pageInfo: Schema.optionalKey(Page),
+    nodes: Schema.Array(Thread),
+  }),
+})
+
 const Threads = Schema.Struct({
   data: Schema.Struct({
     repository: Schema.Struct({
-      pullRequest: Schema.Struct({
-        reviewThreads: Schema.Struct({
-          pageInfo: Schema.optionalKey(Page),
-          nodes: Schema.Array(Thread),
-        }),
+      pullRequests: Schema.Struct({
+        nodes: Schema.Array(Held),
       }),
     }),
   }),
@@ -369,18 +375,17 @@ const ownerOf = Effect.fn("Forge.owner")(function* (repo: string) {
 
 type Where = { readonly owner: string; readonly name: string; readonly number: number }
 
-const asked = (repo: string, where: Where, after: string | undefined) =>
+const HERE: ReadonlyArray<string> = ["-F", "owner={owner}", "-F", "name={repo}"]
+
+const asked = (repo: string, branch: string, after: string | undefined) =>
   gh(repo, [
     "api",
     "graphql",
     "-f",
     `query=${THREADS}`,
+    ...HERE,
     "-f",
-    `owner=${where.owner}`,
-    "-f",
-    `name=${where.name}`,
-    "-F",
-    `number=${where.number}`,
+    `branch=${branch}`,
     ...(after === undefined ? [] : ["-f", `after=${after}`]),
   ])
 
@@ -399,7 +404,7 @@ const threadsIn = Effect.fn("Forge.threadsIn")(function* (repo: string, raw: str
     readThreads(parsed),
     (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
   )
-  return held.data.repository.pullRequest.reviewThreads
+  return held.data.repository.pullRequests.nodes[0]?.reviewThreads
 })
 
 const unresolved = (nodes: ReadonlyArray<typeof Thread.Type>): ReadonlyArray<ForgeRemark> =>
@@ -412,13 +417,13 @@ const unresolved = (nodes: ReadonlyArray<typeof Thread.Type>): ReadonlyArray<For
 
 const PAGES = 20
 
-const everyThread = Effect.fn("Forge.everyThread")(function* (repo: string, where: Where) {
+const everyThread = Effect.fn("Forge.everyThread")(function* (repo: string, branch: string) {
   const held: Array<typeof Thread.Type> = []
   let after: string | undefined
   for (let page = 0; page < PAGES; page += 1) {
-    const raw: string = yield* asked(repo, where, after)
-    const found: typeof Threads.Type["data"]["repository"]["pullRequest"]["reviewThreads"] =
-      yield* threadsIn(repo, raw)
+    const raw: string = yield* asked(repo, branch, after)
+    const found: typeof Held.Type["reviewThreads"] | undefined = yield* threadsIn(repo, raw)
+    if (found === undefined) return held
     held.push(...found.nodes)
     if (found.pageInfo?.hasNextPage !== true) return held
     const next = found.pageInfo.endCursor
@@ -451,9 +456,7 @@ const answer = Effect.fn("Forge.answer")(function* (
 })
 
 const remarks = Effect.fn("Forge.remarks")(function* (repo: string, branch: string) {
-  const open = yield* pulls(repo)
-  if (!open.some((one) => one.branch === branch)) return [] as ReadonlyArray<ForgeRemark>
-  return unresolved(yield* everyThread(repo, yield* whereOf(repo, branch)))
+  return unresolved(yield* everyThread(repo, branch))
 })
 
 const review = Effect.fn("Forge.review")(function* (

@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-23
+- **Last updated:** 2026-08-24
 
 ## Problem Statement
 
@@ -33,6 +33,11 @@ and leaves it untouched on the pull request.
 A remark belongs to the pull request it was left on, so each branch of a stack carries its own, and
 the branch list says how many are waiting on each.
 
+Reading the pull request is a choice, and it is off until the reviewer makes it. A reviewer who has
+not turned it on never waits on the forge and never sees a word about a remark. A reviewer who has
+turned it on does not wait either: the branch opens from what adiff read last time, the fetch runs
+behind it, and the remarks fill in when they land.
+
 ## User Stories
 
 1. As a `reviewer`, I want the pull request's remarks shown against my diff, so that I can read the
@@ -50,6 +55,12 @@ the branch list says how many are waiting on each.
    on a point the reviewer has not agreed with.
 8. As a `reviewer`, I want triage to survive a refetch and a restart, so that walking a stack twice
    is not walking it from the start.
+9. As a `reviewer`, I want the branch to open and reload at the speed it did before remarks existed,
+   so that reading the pull request never costs me the diff.
+10. As a `reviewer`, I want adiff to leave the pull request alone until I ask for it, so that a repo
+    with no review to read costs nothing.
+11. As a `reviewer`, I want the box I write a reply in to say it is going to the pull request, so
+    that I never post to the forge thinking I am writing to the agent.
 
 ## Implementation Decisions
 
@@ -67,6 +78,18 @@ its snippet match ([PRD 002](002-diff-and-anchoring.md)); the inbox and the hand
 
 ### Public contract
 
+- **Reading the pull request is off until the reviewer turns it on.** The `remarks` preference sits
+  with the rest ([PRD 011](011-preferences.md)) and is off by default. With it off adiff asks the
+  forge nothing, the review holds no remarks, and no pane, footer or panel section mentions one.
+- **The branch opens before the forge answers.** A branch draws from the snapshot adiff read last
+  time, the fetch runs behind the diff, the review says it is reading the pull request while it
+  runs, and the remarks fill in when they land. Reloading the branch never waits on the forge.
+- **The threads come back in one request.** adiff asks the forge for the branch's pull request and
+  its threads together, rather than listing the pull requests, looking one up, and asking who owns
+  the repository first.
+- **A reply to a remark does not look like a comment.** The box quotes the remark it is answering,
+  with the handle that left it, and says on its own actions row that what you write goes to the pull
+  request. The box for a comment quotes the code and says it is sending it.
 - **A remark carries** its forge id, the pull request it was left on, the path, the side, the line
   range, the handle that left it, the body, every reply in the thread with its own handle, the
   commit it was left on, and whether the forge calls the thread outdated.
@@ -163,6 +186,12 @@ Behaviors that must be covered:
 - Each branch of a stack reads the remarks on its own pull request and no other's, and accepting on
   one hands nothing to the agent in the other.
 - Replying to a remark reaches the thread it belongs to, and nothing reaches the agent.
+- A reviewer who has not turned remarks on sees no remark and the forge is never asked for a thread.
+- Reading a branch's threads is one request, and the forge is never asked to look the pull request up
+  first.
+- The branch redraws and says it is reading the pull request while the forge is still answering.
+- The reply box quotes the remark and says the reply goes to the pull request; the comment box
+  quotes the code and says it sends it.
 
 ## Out of Scope
 

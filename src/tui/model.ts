@@ -64,6 +64,7 @@ const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   hideReviewed: "hideReviewed",
   hideSettled: "hideSettled",
   newestFirst: "newestFirst",
+  remarks: "remarksOn",
   hold: "hold",
 }
 
@@ -156,6 +157,7 @@ export type TuiState = {
   readonly hideSettled: boolean
   readonly picked: Picked | undefined
   readonly newestFirst: boolean
+  readonly remarksOn: boolean
   readonly hold: boolean
   readonly tallest: number
   readonly scroll: number
@@ -178,6 +180,7 @@ const nothingReviewed = {
   hideSettled: false,
   picked: undefined,
   newestFirst: true,
+  remarksOn: false,
   hold: false,
   tallest: 0,
   scroll: -1,
@@ -846,6 +849,17 @@ export const threadReplying = (state: TuiState): StagedComment | undefined =>
 const VOICES: Readonly<Record<"reviewer" | "agent", string>> = {
   reviewer: "you",
   agent: "the agent",
+}
+
+export const remarkQuote = (state: TuiState, room: number): ReadonlyArray<string> => {
+  const remark = remarkAnswering(state)
+  if (remark === undefined) return []
+  const said = [{ by: remark.by, body: remark.body }, ...remark.replies]
+  const saidBy = (turn: { readonly by: string; readonly body: string }): ReadonlyArray<string> => {
+    const lines = wrapped(turn.body, Math.max(8, room - 4)).map((line) => `    ${line}`)
+    return [`  @${turn.by}`, ...lines]
+  }
+  return said.flatMap(saidBy)
 }
 
 export const threadQuote = (state: TuiState, room: number): ReadonlyArray<string> => {

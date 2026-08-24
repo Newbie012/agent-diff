@@ -33,6 +33,8 @@ export type Landing = {
 }
 
 export type ForgeOptions = {
+  readonly remarksOn?: boolean
+  readonly threadsSlowMs?: number
   readonly threadsRaw?: string
   readonly morePages?: ReadonlyArray<ReadonlyArray<ThreadOnForge>>
   readonly refuses?: boolean
@@ -73,11 +75,14 @@ const answerFor = (options: ForgeOptions): ReadonlyArray<string> => {
 const threadsPage = (
   threads: ReadonlyArray<ThreadOnForge>,
   cursor: string | undefined,
+  number = 1,
 ): string =>
   JSON.stringify({
     data: {
       repository: {
-        pullRequest: {
+        pullRequests: {
+          nodes: [{
+          number,
           reviewThreads: {
             pageInfo: { hasNextPage: cursor !== undefined, endCursor: cursor },
             nodes: threads.map((one) => ({
@@ -99,10 +104,14 @@ const threadsPage = (
               },
             })),
           },
+          }],
         },
       },
     },
   })
+
+const noPull = (): string =>
+  JSON.stringify({ data: { repository: { pullRequests: { nodes: [] } } } })
 
 const numberOf = (pull: PullOnForge, at: number): number => pull.number ?? at + 1
 
@@ -117,24 +126,26 @@ const pageCase = (
   threads: ReadonlyArray<ThreadOnForge>,
   at: number,
   last: number,
+  number: number,
 ): ReadonlyArray<string> => {
   const cursor = at === last ? undefined : `page${at + 1}`
   const pattern = at === 0 ? "*)" : `*"after=page${at}"*)`
-  return [pattern, `cat <<'JSON'`, threadsPage(threads, cursor), "JSON", "exit 0", ";;"]
+  return [pattern, `cat <<'JSON'`, threadsPage(threads, cursor, number), "JSON", "exit 0", ";;"]
 }
 
 const pullCase = (pull: PullOnForge, at: number, options: ForgeOptions): ReadonlyArray<string> => {
   const pages = pagesFor(pull, at, options)
   const last = pages.length - 1
+  const number = numberOf(pull, at)
   const later = pages.flatMap((threads, page) =>
-    page === 0 ? [] : pageCase(threads, page, last),
+    page === 0 ? [] : pageCase(threads, page, last, number),
   )
   const first = pages[0] ?? []
   return [
-    `*"number=${numberOf(pull, at)}"*)`,
+    `*"branch=${pull.branch}"*)`,
     'case "$*" in',
     ...later,
-    ...pageCase(first, 0, last),
+    ...pageCase(first, 0, last, number),
     "esac",
     ";;",
   ]
@@ -154,23 +165,22 @@ const graphqlBranch = (
   options: ForgeOptions,
 ): ReadonlyArray<string> => [
   'if [ "$1" = "api" ] && [ "$2" = "graphql" ]; then',
+  ...(options.threadsSlowMs === undefined
+    ? []
+    : [`sleep ${(options.threadsSlowMs / 1000).toFixed(2)}`]),
   ...(oddAnswer(options) ?? [
     'case "$*" in',
     ...pulls.flatMap((pull, at) => pullCase(pull, at, options)),
     "esac",
     `cat <<'JSON'`,
-    threadsPage([], undefined),
+    noPull(),
     "JSON",
     "exit 0",
   ]),
   "fi",
 ]
 
-const scriptFor = (
-  pulls: ReadonlyArray<PullOnForge>,
-  posted: string,
-  options: ForgeOptions,
-): string => {
+const pullBranch = (pulls: ReadonlyArray<PullOnForge>): ReadonlyArray<string> => {
   const rows = pulls.map((pull) => ({
     headRefName: pull.branch,
     state: "OPEN",
@@ -187,7 +197,6 @@ const scriptFor = (
     ]),
   )
   return [
-    "#!/bin/sh",
     'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then',
     `cat <<'JSON'`,
     JSON.stringify(rows),
@@ -202,6 +211,19 @@ const scriptFor = (
     `printf '%s\\n' '${OWNER}'`,
     "exit 0",
     "fi",
+  ]
+}
+
+const scriptFor = (
+  pulls: ReadonlyArray<PullOnForge>,
+  posted: string,
+  asked: string,
+  options: ForgeOptions,
+): string => {
+  return [
+    "#!/bin/sh",
+    `printf '%s\\n' "$*" >> "${asked}"`,
+    ...pullBranch(pulls),
     ...graphqlBranch(pulls, options),
     'if [ "$1" = "api" ]; then',
     "body=$(cat)",
@@ -216,6 +238,13 @@ const scriptFor = (
     .join("\n")
 }
 
+const readsRemarks = (
+  pulls: ReadonlyArray<PullOnForge>,
+  options: ForgeOptions,
+): boolean =>
+  options.remarksOn ??
+  (options.threadsRaw !== undefined || pulls.some((pull) => (pull.threads ?? []).length > 0))
+
 export class ForgeTestDriver {
   private readonly state: DriverState
 
@@ -227,17 +256,38 @@ export class ForgeTestDriver {
     return join(this.state.workspace, "bin", "posted.jsonl")
   }
 
+  private askedPath(): string {
+    return join(this.state.workspace, "bin", "asked.txt")
+  }
+
+  async asks(): Promise<ReadonlyArray<string>> {
+    const raw = await readFile(this.askedPath(), "utf8").catch(() => "")
+    return raw.split("\n").filter((line) => line.trim().length > 0)
+  }
+
   async holds(pulls: ReadonlyArray<PullOnForge>, options: ForgeOptions = {}): Promise<void> {
+    const reads = readsRemarks(pulls, options)
     if (options.refuses === true || options.threadsRaw !== undefined) {
       this.state.tracer.cannotReplay("a forge that answers oddly")
     } else {
-      this.state.tracer.sawForge(pulls[0]?.threads ?? [])
+      this.state.tracer.sawForge(pulls[0]?.threads ?? [], reads)
     }
     const bin = join(this.state.workspace, "bin")
     await mkdir(bin, { recursive: true })
     const path = join(bin, "gh")
-    await writeFile(path, `${scriptFor(pulls, this.postedPath(), options)}\n`, { mode: 0o755 })
+    await writeFile(path, `${scriptFor(pulls, this.postedPath(), this.askedPath(), options)}\n`, {
+      mode: 0o755,
+    })
     this.state.prependPath(bin)
+    if (reads) await this.turnRemarksOn()
+  }
+
+  private async turnRemarksOn(): Promise<void> {
+    await mkdir(this.state.storeRoot, { recursive: true })
+    const path = join(this.state.storeRoot, "settings.json")
+    const raw = await readFile(path, "utf8").catch(() => "{}")
+    const held = JSON.parse(raw) as Record<string, boolean>
+    await writeFile(path, JSON.stringify({ ...held, remarks: true }, undefined, 2))
   }
 
   async posted(): Promise<PostedReview | undefined> {
