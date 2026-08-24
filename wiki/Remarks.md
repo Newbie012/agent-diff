@@ -1,4 +1,4 @@
-# Remarks from the pull request
+# Remarks
 
 The branch's pull request often already has a review on it, left by a colleague or by a bot. adiff
 brings those in as remarks, so you can triage them beside the diff rather than in a browser.
@@ -10,8 +10,17 @@ adiff. It carries the handle that left it, which may be your own, and every repl
 remark is context, and a comment is work: nothing reaches the agent until you take a remark on as your
 own comment.
 
-Remarks need `gh` installed and authenticated. Without it the branch list says "could not reach the
+## You ask for them first
+
+Remarks are off until you turn them on. "Read the pull request's review" in the
+[preferences](Preferences) is the switch, or `adiff config set --name remarks --value on` from a shell.
+Until then adiff asks the pull request for nothing, so nothing about opening a branch reaches GitHub.
+
+They also need `gh` installed and authenticated. Without it the branch list says "could not reach the
 forge, so no pull request is shown", and there are no remarks to read.
+
+The remarks arrive behind the diff, in one request rather than one per thread, so a branch draws before
+GitHub has answered and the remarks appear when they land.
 
 ## Where remarks sit in the review panel
 
@@ -59,8 +68,9 @@ a remark, and `restore` on a dismissed one.
 
 ## `R` writes back in its thread on the pull request
 
-`R` on a remark posts a threaded reply in that remark's thread on the pull request, and the footer says
-"replied on the pull request". When GitHub does not confirm the reply with an id, adiff says "the forge
+`R` on a remark opens a box that quotes the remark and offers `reply on the pull request` where a comment
+box would offer `send it`, so the box says where the words are going before you write them. It posts a
+threaded reply in that remark's thread, and the footer then says "replied on the pull request". When GitHub does not confirm the reply with an id, adiff says "the forge
 would not take that reply", and the words did not leave your machine. On a thread of your own, `R`
 writes back to the agent as it always did, and *answer* stays the agent's word.
 
@@ -86,5 +96,5 @@ remarks when you ask it to, and never accepts one itself.
 
 ## Next
 
-- [The keys and what carries between sessions](The-keys-and-what-carries-between-sessions).
-- [The commands](The-commands), the JSON contract these five answer in.
+- [Threads](Threads), for the threads of your own that sit below these.
+- [Commands](Commands), the JSON contract these five answer in.

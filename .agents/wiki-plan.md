@@ -36,56 +36,85 @@ prints the rest.
 
 ## 2. The page list
 
-Nine pages, in reading order. The wiki lists them itself, alphabetically and with each page's
+Thirteen pages, one per feature. The wiki lists them itself, alphabetically and with each page's
 sections under it, so there is no `_Sidebar.md` to keep in step. Reading order lives where a reader
 meets it: Home ends on Read next, and each page names the one after it.
 
 ```
 Home
-Install adiff
+Install
 Your first review
-The keys and what carries between sessions
-Remarks from the pull request
-The agent's side of the review
+Branches
+The diff
+Comments
+Threads
+Reviewed files
 Layers
-The commands
+Remarks
+Preferences
+Commands
 When something goes wrong
 ```
 
+A title is short because every link to it pays for the length, and because a reader scans a list of
+thirteen rather than reads it. Home, Install and Your first review are the way in; the nine after them
+are one feature each; Commands is the contract under all of them.
+
 | Page | Answers | Sections | Length |
 | --- | --- | --- | --- |
-| **Home** | What is adiff, who is it for, what does it do that `git diff` does not | What adiff is, What changes when an agent wrote the code, Install, Read next | 50 lines |
-| **Install adiff** | How do I get it, and what does it need | Homebrew, npm, bun, From source, Node versions, The agent skill and which agent it is for, Where the skill lives, and why `-g`, Upgrade, The environment variables, and where the store lives | 116 lines |
-| **Your first review** | A branch is waiting, walk me through it | Before you start, Open the review, Read the diff, Comment on lines, Send the comment, Mark a file reviewed, Tell the agent, Read the answer, Settle the thread, When the code moves under a comment | 143 lines |
-| **The keys and what carries between sessions** | Which key does what, and what adiff remembers | The branch list, The file list, and the `s` hint that calls it a file tree, The diff, The review panel, and the width it is drawn at, The compose box, The mouse, Remove and restore a comment, The footer, and where `?` works, The command palette, The preferences, What carries between sessions | 116 lines |
-| **Remarks from the pull request** | The pull request already has a review on it, can adiff use it | What a remark is, Where remarks sit in the review panel, A remark whose code is not on screen, `A` takes one on as your own comment, `X` dismisses one, `R` writes back in its thread on the pull request, Why a remark only lands where its code is, The five commands | 90 lines |
-| **The agent's side of the review** | How does the agent get my comments and answer them | The three commands, What a comment carries, The take rule, A question back to the reviewer, Where the skill has to live for an agent in a worktree to find it | 74 lines |
-| **Layers** | What are layers, and when are they worth asking for | What a layer is, `L` asks the agent for one, The layers rail, Coverage, A layer set pinned to an older commit | 71 lines |
-| **The commands** | What is the command contract | One JSON line, and the one command that answers in none, Address a branch, Failures and exit codes, `--fields`, `adiff describe`, From the command line, Drafts on a pull request | 106 lines |
+| **Home** | What is adiff, who is it for, what does it do that `git diff` does not | What adiff is, What changes when an agent wrote the code, Install, Read next | 53 lines |
+| **Install** | How do I get it, and what does it need | Homebrew, npm, bun, From source, Node versions, The agent skill and which agent it is for, Where the skill lives, and why `-g`, Upgrade, The environment variables, and where the store lives | 116 lines |
+| **Your first review** | A branch is waiting, walk me through it | Before you start, Open the review, Read the diff, Comment on lines, Send the comment, Mark a file reviewed, Tell the agent, Read the answer, Settle the thread, When the code moves under a comment | 145 lines |
+| **Branches** | Which branch do I open, and why is mine missing | What the list shows, Why a branch is missing, An empty list, The pull request line, The keys | 62 lines |
+| **The diff** | How do I move through the code | Move through it, Read more or less of it, The panes, What the header carries, Search this branch, The mouse, The footer, `?` lists every key | 74 lines |
+| **Comments** | How do I say something about these lines | Select the lines, Write it, Send it, What a comment carries, Hold several and send them together, Remove one, What reaches the agent | 65 lines |
+| **Threads** | The agent answered, now what | The panel and the sections it groups by, Move between them, Write back, A thread waiting on you, Settle it, When the code moves under a comment | 55 lines |
+| **Reviewed files** | How do I tick a file off | Mark one, Hide what you have read, The mark lapses when the file changes, From the command line | 39 lines |
+| **Layers** | What are layers, and when are they worth asking for | What a layer is, `L` asks the agent for one, The layers rail, Coverage, A layer set pinned to an older commit | 89 lines |
+| **Remarks** | The pull request already has a review on it, can adiff use it | What a remark is, You ask for them first, Where remarks sit in the review panel, A remark whose code is not on screen, `A` takes one on as your own comment, `X` dismisses one, `R` writes back in its thread on the pull request, Why a remark only lands where its code is, The five commands | 100 lines |
+| **Preferences** | What can I change, and what does adiff remember | The eight, From the command line, What carries between sessions | 52 lines |
+| **Commands** | What is the command contract, and what does an agent run | One JSON line and the one command that answers in none, Address a branch, Failures and exit codes, `--fields`, `adiff describe`, From the command line, The loop an agent runs, `--wait` and the take rule, `review pane`, Where the skill has to live, Drafts on a pull request | 170 lines |
 | **When something goes wrong** | The terminal will not draw, or the list is empty | The terminal will not draw, An empty branch list, No pull request on the list, A branch diffed against the wrong ref, `UnknownBranch`, A dead `adiff:begin` block, A report, and the switch between a full one and a minimal one | 83 lines |
+
+Two naming decisions worth keeping:
+
+- **Reviewed files**, not Progress. The page's own words are "marked reviewed" and the footer hint on
+  `f` reads "hide read", so a reader looking for how to tick a file off scans for "reviewed". Progress
+  names no subject, and `adiff review progress` is a command that reports a count rather than the
+  feature.
+- **When something goes wrong** stays, though it is the longest title. Troubleshooting is a gerund.
+  Problems and Faults read as a list of known defects, and the page is what to do about one.
 
 ### Titles and the slugs they produce
 
 GitHub builds a wiki page's URL from its title by turning each space into a dash and keeping the
-punctuation. An internal link uses that slug exactly, apostrophe included, or the reader lands on a
-create-this-page screen. Every link in the wiki is checked against this table, and a tenth page adds a
-row before it adds a link.
+punctuation. An internal link uses that slug exactly, or the reader lands on a create-this-page
+screen. Every link is checked against this table, and a fourteenth page adds a row before it adds a
+link.
 
 | Page title | Link target |
 | --- | --- |
 | Home | `Home` |
-| Install adiff | `Install-adiff` |
+| Install | `Install` |
 | Your first review | `Your-first-review` |
-| The keys and what carries between sessions | `The-keys-and-what-carries-between-sessions` |
-| Remarks from the pull request | `Remarks-from-the-pull-request` |
-| The agent's side of the review | `The-agent's-side-of-the-review` |
+| Branches | `Branches` |
+| The diff | `The-diff` |
+| Comments | `Comments` |
+| Threads | `Threads` |
+| Reviewed files | `Reviewed-files` |
 | Layers | `Layers` |
-| The commands | `The-commands` |
+| Remarks | `Remarks` |
+| Preferences | `Preferences` |
+| Commands | `Commands` |
 | When something goes wrong | `When-something-goes-wrong` |
 
-Punctuation in a title is a cost paid by every link to it, so a title carries it only when the words
-need it. The keys page dropped its comma for that reason; the agent page keeps its apostrophe because
-the phrase reads wrong without it.
+No title carries punctuation any more, so no slug does either. The page that kept an apostrophe, the
+agent's side of the review, folded into Commands and Threads: the loop, the JSON a take answers with,
+`--wait`, the take rule, `review pane` and where the skill has to live went to Commands, because that
+is the page an operator wiring an agent in already reads; the reader-facing half, an answer that asks
+a question back, went to Threads. A thin page naming one audience was worse than either.
+
+The wiki lists its own pages, so there is no `_Sidebar.md` to keep in step.
 
 Traps, and why each of them is not a page:
 
@@ -96,8 +125,8 @@ Traps, and why each of them is not a page:
   never needs it.
 - **A "why adiff works this way" page.** The first draft of this plan had one, and every line of it
   was already in the README or in an ADR.
-- **A staleness page.** A reviewer meets a stale thread inside a review, so the walkthrough owns it,
-  and the Layers page owns a layer set pinned to an older commit.
+- **A staleness page.** Threads owns a comment whose code moved, and Layers owns a reading order
+  pinned to an older commit. Each sits on the feature it belongs to.
 - **A roadmap.** The PRDs carry status.
 - **An FAQ.** Every question worth answering belongs on the page that owns the subject.
 
@@ -186,7 +215,7 @@ One name per thing across the whole wiki:
   hide the file list", "Hide the file list and the review panel") and what the preference calls it
   ("The file list shows only what you have not read yet."), and the changelog runs 16 to 11 the same
   way. The terminal is not uniform: the footer's `s` hint reads "file tree" when the rail is showing
-  layers, so the keys page quotes it there and says the two names are the same pane. PRD 006 also
+  layers, so Layers quotes it there and says the two names are the same pane. PRD 006 also
   writes "file tree", so a quotation from it keeps the word. "Sidebar" is for the wiki's own
   navigation, never for the pane.
 - **layers** for what the agent publishes over a diff, and **the layers rail** for the pane that
@@ -302,27 +331,27 @@ How capture works here, read out of `origin/main`'s `scripts/shot.ts`, `scripts/
 | # | Page | What the reader learns | Command |
 | --- | --- | --- | --- |
 | 1 | Home | The branch list shows every checked-out branch with changes, its files, its lines added and removed, and which branches have layers | `pnpm shot --local --label "the branch list"` |
-| 2 | Home, and the walkthrough's "Read the answer" | A thread inline in the diff, the comment and then the agent's answer under the code it was written on, with the review panel beside it listing every thread grouped by state | `pnpm shot --local --cols 150 --rows 34 --keys "text:jjj" --keys "enter" --label "a thread with an answer"` (row 4, `resend-expired-invites`, carries two answered threads and no layers) |
-| 3 | Your first review | A branch without layers opens on the file list and the diff | `pnpm shot --local --keys "text:jjj" --keys "enter" --label "a branch open"` |
-| 4 | Your first review | A selection is a range of diff lines, drawn where the comment will land | `pnpm shot --local --keys "text:jjj" --keys "enter" --keys "text:jjj" --keys "text:V" --label "a change selected"` |
-| 5 | Your first review | The compose box holds the comment until `ctrl+s`, with the selected code still in view | `pnpm shot --local --keys "text:jjj" --keys "enter" --keys "text:jjj" --keys "text:V" --keys "text:c" --keys "wait:1000" --keys "text:One error shape would do here" --label "the compose box"` |
-| 6 | The keys and what carries between sessions | `?` opens a sheet of every key for the screen you are on, and filters as you type | `pnpm shot --local --keys "enter" --keys "wait:1000" --keys "text:?" --label "the key sheet"` |
-| 7 | The keys and what carries between sessions | The preferences, each with the sentence saying what it does | `pnpm shot --local --keys "enter" --keys "wait:1000" --keys "text:," --label "the preferences"` (`,` from the branch list opens the sheet over an empty review screen, so open a branch first) |
+| 2 | Home, Threads, and the walkthrough's "Read the answer" | A thread inline in the diff, the comment and then the agent's answer under the code it was written on, with the review panel beside it listing every thread grouped by state | `pnpm shot --local --cols 150 --rows 34 --keys "text:jjj" --keys "enter" --label "a thread with an answer"` (row 4, `resend-expired-invites`, carries two answered threads and no layers) |
+| 3 | Your first review, The diff | A branch without layers opens on the file list and the diff | `pnpm shot --local --keys "text:jjj" --keys "enter" --label "a branch open"` |
+| 4 | Your first review, Comments | A selection is a range of diff lines, drawn where the comment will land | `pnpm shot --local --keys "text:jjj" --keys "enter" --keys "text:jjj" --keys "text:V" --label "a change selected"` |
+| 5 | Your first review, Comments | The compose box holds the comment until `ctrl+s`, with the selected code still in view | `pnpm shot --local --keys "text:jjj" --keys "enter" --keys "text:jjj" --keys "text:V" --keys "text:c" --keys "wait:1000" --keys "text:One error shape would do here" --label "the compose box"` |
+| 6 | The diff | `?` opens a sheet of every key for the screen you are on, and filters as you type | `pnpm shot --local --keys "enter" --keys "wait:1000" --keys "text:?" --label "the key sheet"` |
+| 7 | Preferences | The preferences, each with the sentence saying what it does | `pnpm shot --local --keys "enter" --keys "wait:1000" --keys "text:," --label "the preferences"` (`,` from the branch list opens the sheet over an empty review screen, so open a branch first) |
 | 8 | Layers | The layers rail lists the layers, numbered, in place of the file list | `pnpm shot --local --keys "enter" --label "the layers rail"` (row 1 has layers, and a branch with layers opens on the rail) |
 | 9 | Layers | A folded layer gives its read count in place of its files | `pnpm shot --local --keys "enter" --keys "text:jh" --label "a folded layer"` (the layers of the first branch opened in a session start open, so `text:h` is what shows a folded one; `text:l` there changes nothing. Layer 1 of row 1 holds one file and its row reads "0 of 1 file read", so the caption stays out of the singular and the plural, or the keys move to a layer with more than one file) |
 | 10 | Layers | The rail says when the layers describes an older commit | `pnpm shot --local --keys "text:jjjjj" --keys "enter" --label "layers from an older commit"` (row 6, `show-invites-in-settings`, is reported stale) |
-| 11 | Your first review | The search names how many places the term appears in, with the matches grouped under the file each sits in | `pnpm shot --local --keys "text:jjj" --keys "enter" --keys "text:/" --keys "wait:1000" --keys "text:invite" --label "a search over the branch"` (without the wait the term loses its first characters and the frame reads `0 places`) |
-| 12 | Your first review | The panel, headed `Not picked up  2`, lists `src/api.ts · not in the diff` for the comment whose line the agent rewrote and `src/api.ts:3` for the one still anchored, on branch `add-a-third-line` | Two steps, because a mid-review change cannot be pressed. `TRACE=/tmp/adiff-trace-$(date +%s).jsonl; echo "$TRACE"; ADIFF_TRACE=$TRACE NODE_OPTIONS=--experimental-ffi npx vitest run src/testing/a-comment-follows-its-code.test.ts`, then `pnpm shot --local --trace $TRACE --test-name "when the agent rewrites the line a comment was written against > then the review panel says the comment is not in the diff"` |
-| 13 | Remarks from the pull request | A remark inline in the diff under the code it is about, with the handle that left it, and the review panel listing it under `Remarks`. The footer offers `p pull request` and no accept key, because the cursor is a line above the remark | Two steps, the same as image 12, because the simulation seeds no remarks. `TRACE=/tmp/adiff-trace-$(date +%s).jsonl; echo "$TRACE"; ADIFF_TRACE=$TRACE NODE_OPTIONS=--experimental-ffi npx vitest run src/testing/remarks-in-the-review.test.ts`, then `pnpm shot --local --trace $TRACE --test-name "when the pull request has a remark on a line of the diff > then the review panel lists it under Remarks"`. That file writes 12 traces and 10 of them replay; the two that skip are "then A accepts the remark and X removes the comment", which sends a comment from the command line, and "then an accepted remark waits with the rest", which sets a preference from the command line |
+| 11 | Your first review, The diff | The search names how many places the term appears in, with the matches grouped under the file each sits in | `pnpm shot --local --keys "text:jjj" --keys "enter" --keys "text:/" --keys "wait:1000" --keys "text:invite" --label "a search over the branch"` (without the wait the term loses its first characters and the frame reads `0 places`) |
+| 12 | Your first review, Threads | The panel, headed `Not picked up  2`, lists `src/api.ts · not in the diff` for the comment whose line the agent rewrote and `src/api.ts:3` for the one still anchored, on branch `add-a-third-line` | Two steps, because a mid-review change cannot be pressed. `TRACE=/tmp/adiff-trace-$(date +%s).jsonl; echo "$TRACE"; ADIFF_TRACE=$TRACE NODE_OPTIONS=--experimental-ffi npx vitest run src/testing/a-comment-follows-its-code.test.ts`, then `pnpm shot --local --trace $TRACE --test-name "when the agent rewrites the line a comment was written against > then the review panel says the comment is not in the diff"` |
+| 13 | Remarks | A remark inline in the diff under the code it is about, with the handle that left it, and the review panel listing it under `Remarks`. The footer offers `p pull request` and no accept key, because the cursor is a line above the remark | Two steps, the same as image 12, because the simulation seeds no remarks. `TRACE=/tmp/adiff-trace-$(date +%s).jsonl; echo "$TRACE"; ADIFF_TRACE=$TRACE NODE_OPTIONS=--experimental-ffi npx vitest run src/testing/remarks-in-the-review.test.ts`, then `pnpm shot --local --trace $TRACE --test-name "when the pull request has a remark on a line of the diff > then the review panel lists it under Remarks"`. That file writes 12 traces and 10 of them replay; the two that skip are "then A accepts the remark and X removes the comment", which sends a comment from the command line, and "then an accepted remark waits with the rest", which sets a preference from the command line |
 
 ### Recordings
 
 | # | Page | What the reader learns | Command |
 | --- | --- | --- | --- |
 | R1 | Your first review | Four cases, filmed from one file: a comment sits under the code it was written against after the agent adds lines above and between two commented lines; a comment follows its line into a new wording; no comment is drawn against a line that replaced a commented one; and the review panel says that comment is not in the diff | `pnpm record --test src/testing/a-comment-follows-its-code.test.ts` |
-| R2 | Remarks from the pull request | A remark on a line of the diff with the handle that left it, the `Remarks` section listing it, `A` handing it to the agent, and `X` moving it to `Dismissed` | `pnpm record --test src/testing/remarks-in-the-review.test.ts`. The traced world carries the remarks and `scripts/scenario.ts` builds a fake `gh` from it, so these replay. The one case that cannot is in `a-remark-the-forge-reports-oddly.test.ts`, whose arrange is marked as a forge that answers oddly |
+| R2 | Remarks | A remark on a line of the diff with the handle that left it, the `Remarks` section listing it, `A` handing it to the agent, and `X` moving it to `Dismissed` | `pnpm record --test src/testing/remarks-in-the-review.test.ts`. The traced world carries the remarks and `scripts/scenario.ts` builds a fake `gh` from it, so these replay. The one case that cannot is in `a-remark-the-forge-reports-oddly.test.ts`, whose arrange is marked as a forge that answers oddly |
 | R3 | Your first review, under "Read the answer" | A reply the reviewer writes on two lines keeps both rows in the thread | `pnpm record --test src/testing/a-thread-keeps-its-lines.test.ts` (the file's other case, the one with an agent answer, seeds a thread into the store, which a replay cannot do, so it is skipped) |
-| R4 | Remarks from the pull request | One behaviour, not the file: `A` hands a remark to the agent and the remark leaves the `Remarks` section | `pnpm record` takes `--test <path>` and no case name, so it would film all ten replayable cases of that file. Film the one case off the trace instead: generate a trace as for image 13, then `pnpm shot --local --trace $TRACE --test-name "when a remark is accepted from the diff > then the agent is handed it and the remark leaves the Remarks section" --video`, which is the same call `record` makes per case |
+| R4 | Remarks | One behaviour, not the file: `A` hands a remark to the agent and the remark leaves the `Remarks` section | `pnpm record` takes `--test <path>` and no case name, so it would film all ten replayable cases of that file. Film the one case off the trace instead: generate a trace as for image 13, then `pnpm shot --local --trace $TRACE --test-name "when a remark is accepted from the diff > then the agent is handed it and the remark leaves the Remarks section" --video`, which is the same call `record` makes per case |
 
 Any other test that drives the screen can be filmed the same way, so a page that needs a frame nobody
 has yet can usually get one: run the file with a fresh `ADIFF_TRACE` and film it.
@@ -371,18 +400,17 @@ This is the step after the first publish, not part of it. The change that adds t
 nothing from `docs/`, because a file emptied before the wiki renders leaves a reader with neither
 copy. Cut them once a merge has pushed the pages and the wiki reads them back.
 
-- **`docs/install.md` → `wiki/Install-adiff.md`.** That page carries the bun route, `adiff upgrade`
+- **`docs/install.md` → `wiki/Install.md`.** That page carries the bun route, `adiff upgrade`
   with `--check`, the `~/.adiff/upgrade.json` cache and what the file says about itself,
   `ADIFF_NO_UPGRADE_CHECK`, which turns the check and the hint off, `ADIFF_REGISTRY`, which points the
   check at a different endpoint, `ADIFF_UPGRADE_ROUTE`, which names the install adiff should believe it
   has, one of `brew`, `npm`, `bun`, `binary` or `source`, and `ADIFF_ROOT`, which moves the store off
-  `~/.adiff`. Absorbing all of it is why that page is the longest of the nine. `docs/install.md` keeps
-  the Homebrew command and one line pointing at `wiki/Install-adiff.md`.
-- **`docs/handover.md` → three pages.** The loop goes to `wiki/The-agent's-side-of-the-review.md`, the
-  reading order to `wiki/Layers.md`, and `comment send` and `comment list` to `wiki/The-commands.md`.
-  Between them those pages carry the `--wait` contract, the layers document schema, the coverage
-  fields, and what `review pane` answers. `docs/handover.md` keeps a pointer to all three and to
-  `skills/adiff/SKILL.md`, which ships in the package and is what an agent actually reads.
+  `~/.adiff`. Absorbing all of it is why that page is one of the longest. `docs/install.md` keeps
+  the Homebrew command and one line pointing at `wiki/Install.md`.
+- **`docs/handover.md` → two pages.** The loop, the `--wait` contract, what `review pane` answers,
+  `comment send` and `comment list` all sit in `wiki/Commands.md`; the reading order, the layers
+  document and the coverage fields sit in `wiki/Layers.md`. `docs/handover.md` keeps a pointer to both
+  and to `skills/adiff/SKILL.md`, which ships in the package and is what an agent actually reads.
 - **`README.md` → `wiki/Home.md`.** The install lines and the screenshot stay, with a link to the wiki
   above the section links the README already carries.
 
@@ -393,18 +421,18 @@ each keeps its home under the arrangement above:
   to say `draft add` anchors the same way, and never covers `comment list`, so the Commands page gains a
   "From the command line" section for both, including what `comment list` answers with: `state`, `stale`
   and `answers` per comment.
-- **The upgrade hint.** Install adiff says the footer mentions a new version once and never again for
+- **The upgrade hint.** Install says the footer mentions a new version once and never again for
   that version, that it reads the `~/.adiff/upgrade.json` cache refreshed in the background at most
   once a day so the network is never on a command's path, and that it never reaches a JSON envelope or
   stderr, because an agent parsing adiff's output should not find a new key or a line that reads like
   an instruction. That last part is a guarantee to agents and is worth keeping in those terms.
 - **`npx skills update adiff`**, which `adiff upgrade` prints so the skill comes up with the binary.
-  Install adiff carries it beside `adiff upgrade`, along with `--run`, which is still accepted and does
+  Install carries it beside `adiff upgrade`, along with `--run`, which is still accepted and does
   nothing, because it named what now happens by default. `run` sits in the catalog's globally known
   options rather than in `upgrade`'s own list, and nothing reads it.
-- **`ADIFF_ROOT`.** The store sits at `~/.adiff` and `ADIFF_ROOT` moves it. Install adiff says so
+- **`ADIFF_ROOT`.** The store sits at `~/.adiff` and `ADIFF_ROOT` moves it. Install says so
   wherever it names the store, and leaves `ADIFF_SESSION`, `ADIFF_FONT` and `ADIFF_MARKS` out as test hooks.
-- **`pnpm simulate`.** Install adiff's "From source" section says it is the quickest way to see adiff
+- **`pnpm simulate`.** Install's "From source" section says it is the quickest way to see adiff
   without a review of your own. Those facts come from `docs/handover.md`, not `docs/install.md`, whose
   own line says only that it opens a throwaway repository: `corepack disable pnpm` before the pnpm 12
   install, because corepack cannot install a beta; seven branches, from a three-file error type up to a

@@ -84,7 +84,7 @@ had selected.
 the cursor is stopped on a thread.
 
 To write several comments about one file and send them together, press `,` for the preferences and turn
-on "Hold comments until you send them", the seventh toggle, with return or space. It is off by default.
+on "Hold comments until you send them", the last toggle, with return or space. It is off by default.
 The footer then says how many are waiting, and `C` sends them as one review.
 
 ## Mark a file reviewed
@@ -110,8 +110,7 @@ The agent runs two commands from inside the branch:
 `--wait` blocks for up to that many seconds and returns the moment a comment arrives, which is why the
 skill has the agent run it in the background and arm it again after each comment. A comment comes back
 on every take until it is answered, settled or removed.
-[The agent's side of the review](The-agent's-side-of-the-review) covers the third command, `review
-pane`.
+[Commands](Commands) covers the third command, `review pane`.
 
 ![A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch](https://github.com/user-attachments/assets/ddecba63-1f9c-4dc5-a3f5-dec057908b8f)
 
@@ -141,5 +140,6 @@ branch.
 
 ## Next
 
-- [The keys and what carries between sessions](The-keys-and-what-carries-between-sessions).
+- [Branches](Branches), [The diff](The-diff), [Comments](Comments) and [Threads](Threads), a page of
+  keys each.
 - [Layers](Layers), for a branch too large to read in file order.

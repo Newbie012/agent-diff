@@ -84,5 +84,6 @@ reads "layers stale · L for a new one".
 
 ## Next
 
-- [The agent's side of the review](The-agent's-side-of-the-review), the loop this sits beside.
-- [The keys and what carries between sessions](The-keys-and-what-carries-between-sessions).
+- [Commands](Commands), the loop this sits beside.
+- [Reviewed files](Reviewed-files), for the ticks the rail carries.
+- [The diff](The-diff), for reading the code a layer claims.
