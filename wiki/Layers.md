@@ -23,8 +23,25 @@ you want:
 - the layers describes an older commit, so read the diff again and write a new one;
 - there is one and you want it revised.
 
-The agent answers it like any other comment when it is done. It publishes with `adiff layers set
---worktree . --json -`, and reads its own back with `adiff layers show`.
+The agent answers it like any other comment when it is done. It publishes with `adiff layers set`,
+reading the document on stdin, and reads its own back with `adiff layers show`.
+
+    adiff layers set --worktree . --json -
+    {"summary":"Team invitations, end to end",
+     "layers":[{"title":"Add the invitation data model",
+                "note":"The record every later layer leans on",
+                "spans":[{"path":"src/db/invites.ts","start":1,"end":48}]}]}
+
+A layer needs a title and its spans; `note` and the document's `summary` are optional. The line
+numbers are the new side of the diff, the same numbers `adiff comment take` reports. A layer may carry
+`blocks` in place of `spans`, interleaving `{"kind":"prose","markdown":"…"}` with
+`{"kind":"code","path":"…","start":1,"end":9}`, which is what puts the agent's prose above the code it
+describes.
+
+`layers set` refuses a document it cannot use and says which layer is wrong and why: a span that ends
+before it starts, a span starting below line 1, a start or end that is not a whole number, a block with
+no `kind`, or a layer with no title. Setting layers again supersedes the previous set and bumps
+`version`.
 
 ## The layers rail
 
