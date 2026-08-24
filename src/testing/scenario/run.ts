@@ -3,6 +3,7 @@ import { series } from "../state.ts"
 import { noteChecksWith, noteSubject } from "./checking.ts"
 import { tracing } from "./trace.ts"
 import { View } from "./view.ts"
+import { applyWorld, type WorldHands } from "./world.ts"
 import type { Scenario, Step } from "./model.ts"
 import type { CreatedBranch } from "../domains/branch/index.ts"
 import type { DeliveredComment } from "../domains/agent/index.ts"
@@ -52,13 +53,28 @@ export class Review implements AsyncDisposable {
     )
   }
 
+  private hands(): WorldHands {
+    return {
+      branch: async (held) => {
+        const branch = await this.driver.branch.create(held)
+        this.branch = branch
+        this.worktree = branch.worktree
+      },
+      layers: async (held) => {
+        await this.driver.app.runLayersSet(this.worktree, held)
+      },
+      remarks: async (held) => {
+        await this.driver.forge.holds([{ branch: this.branch?.name ?? "", threads: held }])
+      },
+      readsRemarks: async (held) => {
+        if (held) await this.driver.app.runConfigSet("remarks", true)
+      },
+    }
+  }
+
   private async build(): Promise<void> {
     this.noteChecks()
-    const branch = await this.driver.branch.create(this.said.world.branch)
-    this.branch = branch
-    this.worktree = branch.worktree
-    const layers = this.said.world.layers
-    if (layers !== undefined) await this.driver.app.runLayersSet(branch.worktree, layers)
+    await applyWorld(this.said.world, this.hands())
     await this.driver.screen.open({ width: this.said.seat.width, height: this.said.seat.height })
     await series(this.said.steps, (step) => this.take(step))
   }

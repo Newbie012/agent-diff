@@ -4,7 +4,10 @@ import { join } from "node:path"
 import { argv, env, exit, stderr } from "node:process"
 import { NODE, runArgs } from "./lib/entry.ts"
 import { createWorkspace, type Workspace } from "./simulation/workspace.ts"
+import { applyWorld, type WorldHands } from "../src/testing/scenario/index.ts"
 import type { Trace } from "../src/testing/scenario/index.ts"
+import type { LayersInput } from "../src/testing/domains/app/index.ts"
+import type { ThreadOnForge } from "../src/testing/domains/forge/index.ts"
 
 export const tracesIn = (path: string): ReadonlyArray<Trace> =>
   readFileSync(path, "utf8")
@@ -29,19 +32,7 @@ export const traceNamed = (path: string, test: string): Trace => {
   return found
 }
 
-export const worldOf = (held: Trace, at?: string): Promise<Workspace> =>
-  createWorkspace({
-    branches: 1,
-    ...(at === undefined ? {} : { at }),
-    fixtures: [
-      {
-        name: held.world.branch.name ?? "review",
-        files: held.world.branch.files ?? [],
-      },
-    ],
-  })
-
-const threadsFor = (held: Trace): string =>
+const threadsFor = (threads: ReadonlyArray<ThreadOnForge>): string =>
   JSON.stringify({
     data: {
       repository: {
@@ -49,7 +40,7 @@ const threadsFor = (held: Trace): string =>
           nodes: [{
           reviewThreads: {
             pageInfo: { hasNextPage: false },
-            nodes: (held.world.remarks ?? []).map((one) => ({
+            nodes: threads.map((one) => ({
               id: one.id,
               isResolved: one.resolved === true,
               isOutdated: one.outdated === true,
@@ -74,16 +65,12 @@ const threadsFor = (held: Trace): string =>
     },
   })
 
-const forgeFor = (space: Workspace, held: Trace): string => {
+const forgeFor = (space: Workspace, threads: ReadonlyArray<ThreadOnForge>): string => {
   const bin = join(space.root, "bin")
   mkdirSync(bin, { recursive: true })
-  if (held.world.readsRemarks === true) {
-    mkdirSync(space.storeRoot, { recursive: true })
-    writeFileSync(join(space.storeRoot, "settings.json"), JSON.stringify({ remarks: true }))
-  }
   const branch = space.branches[0]?.name ?? "review"
   const lines =
-    (held.world.remarks ?? []).length === 0
+    threads.length === 0
       ? ["#!/bin/sh", "printf '[]'"]
       : [
           "#!/bin/sh",
@@ -101,7 +88,7 @@ const forgeFor = (space: Workspace, held: Trace): string => {
           "fi",
           'if [ "$1" = "api" ]; then',
           `cat <<'JSON'`,
-          threadsFor(held),
+          threadsFor(threads),
           "JSON",
           "exit 0",
           "fi",
@@ -111,10 +98,9 @@ const forgeFor = (space: Workspace, held: Trace): string => {
   return bin
 }
 
-const layersInto = (space: Workspace, held: Trace): void => {
-  const layers = held.world.layers
+const layersInto = (space: Workspace, layers: LayersInput): void => {
   const worktree = space.branches[0]?.worktree
-  if (layers === undefined || worktree === undefined) return
+  if (worktree === undefined) return
   execFileSync(
     NODE,
     runArgs(["layers", "set", "--worktree", worktree, "--json", "-"]),
@@ -127,16 +113,54 @@ const layersInto = (space: Workspace, held: Trace): void => {
   )
 }
 
-export const openTerminal = (space: Workspace, held: Trace): Promise<number> =>
+const remarksOn = (space: Workspace): void => {
+  mkdirSync(space.storeRoot, { recursive: true })
+  writeFileSync(join(space.storeRoot, "settings.json"), JSON.stringify({ remarks: true }))
+}
+
+export const builtWorld = async (
+  held: Trace,
+  at: string | undefined,
+): Promise<{ readonly space: Workspace; readonly bin: string }> => {
+  let space: Workspace | undefined
+  let bin: string | undefined
+  const hands: WorldHands = {
+    branch: async (fixture) => {
+      space = await createWorkspace({
+        branches: 1,
+        ...(at === undefined ? {} : { at }),
+        fixtures: [{ name: fixture.name ?? "review", files: fixture.files ?? [] }],
+      })
+    },
+    remarks: async (threads) => {
+      bin = forgeFor(mustHaveSpace(space), threads)
+    },
+    readsRemarks: async (on) => {
+      if (on) remarksOn(mustHaveSpace(space))
+    },
+    layers: async (layers) => {
+      layersInto(mustHaveSpace(space), layers)
+    },
+  }
+  await applyWorld(held.world, hands)
+  const made = mustHaveSpace(space)
+  return { space: made, bin: bin ?? forgeFor(made, []) }
+}
+
+const mustHaveSpace = (space: Workspace | undefined): Workspace => {
+  if (space === undefined) throw new Error("the world's branch must be built before the rest of it")
+  return space
+}
+
+export const openTerminal = (space: Workspace, bin: string): Promise<number> =>
   new Promise((resolve) => {
-    layersInto(space, held)
     const child = spawn(NODE, runArgs(["review", "open", "--repo", space.repo]), {
       cwd: space.repo,
       env: {
         ...env,
         ADIFF_ROOT: space.storeRoot,
         ADIFF_NO_UPGRADE_CHECK: "1",
-        PATH: `${forgeFor(space, held)}:${env["PATH"] ?? ""}`,
+        PATH: `${bin}:${env["PATH"] ?? ""}`,
       },
       stdio: "inherit",
     })
@@ -150,7 +174,7 @@ const isEntry = argv[1]?.endsWith("scenario.ts") === true
 
 if (isEntry && asked !== undefined && wanted !== undefined) {
   const held = traceNamed(asked, wanted)
-  const space = await worldOf(held, inside)
-  await openTerminal(space, held)
-  await space.dispose()
+  const built = await builtWorld(held, inside)
+  await openTerminal(built.space, built.bin)
+  await built.space.dispose()
 }
