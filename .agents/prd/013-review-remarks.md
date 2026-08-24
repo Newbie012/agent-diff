@@ -191,7 +191,7 @@ Behaviors that must be covered:
   first.
 - The branch redraws and says it is reading the pull request while the forge is still answering.
 - The reply box quotes the remark and says the reply goes to the pull request; the comment box
-  quotes the code and says it sends it.
+  quotes the code and offers to send the comment.
 
 ## Out of Scope
 

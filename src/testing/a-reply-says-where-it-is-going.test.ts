@@ -46,7 +46,7 @@ describe("when a reviewer opens a box on a line a remark sits under", () => {
     expect(frame).not.toContain("send it")
   })
 
-  test("then the comment box quotes the code and says it sends it", async () => {
+  test("then the comment box quotes the code and offers to send the comment", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await reading(driver)
