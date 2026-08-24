@@ -1,5 +1,3 @@
-# When something goes wrong
-
 Seven things that go wrong in adiff, what each one looks like, and what fixes it.
 
 ## The terminal will not draw
@@ -25,7 +23,7 @@ forge, so no pull request is shown" when adiff cannot reach it. Check `gh` is in
 authenticated and that the repository has a remote. Everything else works without it, and the remarks
 on the pull request are the one part that needs it.
 
-## A branch diffed against the wrong ref
+## A diff against the wrong ref
 
 A branch stacked on another is diffed against the ref it is stacked on. A diff that looks far too large
 or too small is usually diffed against the wrong one.
@@ -57,7 +55,7 @@ Both that block and a skill an agent cannot see go back to one command:
 Run it again to refresh the skill, and run it with `-g` when an agent working in a worktree cannot see a
 skill that was written into the repository and never committed.
 
-## A report, and the switch between a full one and a minimal one
+## Report a bug with `ctrl+b`
 
 `ctrl+b` opens a report, from the branch list or from inside a branch. Write what went wrong, `ctrl+t` switches the open
 report between a full one and a minimal one, and `ctrl+s` saves whichever is showing. Nothing leaves your
@@ -77,7 +75,7 @@ keys and no trail. The box reads "Only what you type is sent." while it is showi
 
 Paste a minimal one in public. A full one is for a report only you and the maintainer read.
 
-## Next
+## Read next
 
 - [Install adiff](Install), the Node versions and the environment variables.
 - [Commands](Commands), the failure shape and the exit codes.

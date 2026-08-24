@@ -1,11 +1,9 @@
-# The diff
-
 The diff is the middle pane inside a branch, and the pane the cursor starts in. The file list sits on
 its left and the review panel on its right.
 
 ![A branch open, with the file list on the left and the diff beside it](https://github.com/user-attachments/assets/a366d3dc-8104-452d-b0d0-ce3197796ae4)
 
-## Move through it
+## Move through the diff
 
 `j` and `k` move the cursor a line, `ctrl+d` and `ctrl+u` half a screen, `g` and `G` the top and the
 bottom. `}` and `{` jump to the next and previous change.
@@ -13,13 +11,13 @@ bottom. `}` and `{` jump to the next and previous change.
 `]` and `[` walk between the files in the order the pane on the left lists them, which is the layers
 order whenever that pane shows layers.
 
-## Read more or less of it
+## Read more or less code
 
 `+` and `-` widen and narrow the context around each change, and `F` swaps between the whole file and
 the diff. `w` wraps long lines, and `S` pins the class or function you are inside above the diff. `<`
 and `>` pan a wide diff sideways.
 
-## The panes
+## Show and hide the panes
 
 `tab` moves between the panes, `t` shows or hides the file list, `a` the review panel, and `z` hides
 both together.
@@ -38,7 +36,7 @@ request, how many files you have marked reviewed, the context width while it is 
 stale · L for a new one" while the reading order describes an older commit, how many lines are hidden in
 a fold, and how many columns are cut off while a wide line runs past the edge.
 
-## Search this branch
+## Search the branch with `/`
 
 `/` searches the branch. The box names how many places the term appears in, groups the matches under the
 file each one sits in, marks a file this branch changed, and `return` opens the file the match sits in.
@@ -46,19 +44,19 @@ file each one sits in, marks a file this branch changed, and `return` opens the 
 
 ![A search over the branch, its matches grouped under the file each one sits in](https://github.com/user-attachments/assets/d742a7a8-c974-4b38-abee-a0ae234560a7)
 
-## The mouse
+## What the mouse does
 
 The wheel scrolls the diff, the file list and the sheets. Dragging over diff lines selects that range,
 and the selection is copied as the drag ends. Clicking a footer hint runs the key it names.
 
-## The footer
+## What the footer carries
 
 The footer carries the keys worth pressing for where the cursor is, so `settle` appears only on a
 thread, `send 2` only while two comments are waiting, `pull request` only on a branch that has one, and
 `accept` only on a remark. It also carries the last thing adiff did, such as "marked src/api.ts" or
 "sent to the agent".
 
-## `?` lists every key
+## List every key with `?`
 
 `?` opens the sheet of every key for the screen you are on, and filters as you type. It works on the
 branch list, inside a branch, and in the search box.
@@ -71,7 +69,7 @@ finds settle, "shortcuts" finds the sheet, and "reading order" finds the ask for
 
 `r` reads the branch again, and `q` or `escape` goes back to the branch list.
 
-## Next
+## Read next
 
 - [Comments](Comments), for selecting lines and writing on them.
 - [Reviewed files](Reviewed-files), for ticking a file off.

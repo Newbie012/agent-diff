@@ -1,12 +1,10 @@
-# Preferences
-
 `,` opens the preferences from the branch list or from inside a branch. `j` and `k` move between them,
 `return` or space turns one on or off, and `escape` closes them. Each one carries the sentence saying
 what it does.
 
 ![The preferences, each with the sentence saying what it does](https://github.com/user-attachments/assets/beb09d71-a298-49a7-b656-f2e283a28d96)
 
-## The eight
+## The eight toggles
 
 | Preference | On by default | What it does |
 | --- | --- | --- |
@@ -46,7 +44,7 @@ One thing does not carry: comments you are holding rather than sending are only 
 says how many were never sent before it leaves, and they are gone when you come back. Send them with `C`
 first.
 
-## Next
+## Read next
 
 - [Install](Install), for `ADIFF_ROOT` and the rest of the environment variables.
 - [The diff](The-diff), for the keys the display preferences change.

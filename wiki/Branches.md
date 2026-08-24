@@ -1,5 +1,3 @@
-# Branches
-
 The branch list is the first screen adiff draws. It is every branch of this repository with something
 to review, and it is where you pick one.
 
@@ -24,7 +22,7 @@ standing in. A branch that exists only as a ref has no row.
 The list also leaves out a branch with nothing to review, so a branch identical to the one it started
 from is not there.
 
-## An empty list
+## What an empty list means
 
 An empty list reads "nothing to review. No branch differs from the one it started from." Two things
 produce it: no branch has changes against its merge base, or `--repo` points at a different repository
@@ -38,7 +36,7 @@ is shown", and everything else works.
 
 `gh` is what [Remarks](Remarks) needs too, and nothing else in adiff asks for it.
 
-## The keys
+## The keys on this screen
 
 | Key | What it does |
 | --- | --- |
@@ -56,7 +54,7 @@ is shown", and everything else works.
 `adiff review open --repo . --branch <name>` opens straight onto one branch and skips this screen.
 `--branch` takes the name the list reports.
 
-## Next
+## Read next
 
 - [The diff](The-diff), the keys inside a branch.
 - [Layers](Layers), for a branch too large to read in file order.

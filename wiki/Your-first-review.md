@@ -1,5 +1,3 @@
-# Your first review
-
 One branch, from the first key to a settled thread.
 
 ## Before you start
@@ -129,7 +127,7 @@ restores it.
 You are done with a branch when every file is marked reviewed or commented on, and every comment has
 reached the agent.
 
-## When the code moves under a comment
+## When the code moves
 
 The agent keeps working while you read, so a comment can end up on code that has changed. A comment
 follows the line it was written on, including into a new wording of that line. Where the agent
@@ -138,7 +136,7 @@ branch.
 
 ![The review panel headed Not picked up with two threads on it, one reading src/api.ts followed by not in the diff, for the comment whose line the agent rewrote, and one reading src/api.ts:3 for the comment still sitting on its line](https://github.com/user-attachments/assets/5144577c-3388-4339-beb8-26ce90396315)
 
-## Next
+## Read next
 
 - [Branches](Branches), [The diff](The-diff), [Comments](Comments) and [Threads](Threads), a page of
   keys each.

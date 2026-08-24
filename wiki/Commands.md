@@ -1,10 +1,8 @@
-# Commands
-
 Every adiff command answers in one line of JSON on stdout, takes the same options for saying which
 branch it means, and reports a failure in the same shape. This page is that contract, and the loop an
 agent runs against it. `adiff describe` prints the commands themselves, so nothing here lists them.
 
-## One JSON line, and the one command that answers in none
+## What a command answers
 
 A command that succeeds prints one line on stdout:
 
@@ -39,7 +37,7 @@ The exit code says what kind of problem it is: `2` the request was malformed, `3
 comment or remark does not exist, `1` something unexpected. Read `suggestion` first, because it names
 the command that resolves the failure, and retry only when `retriable` is true.
 
-## `--fields`
+## Trim an answer with `--fields`
 
 `--fields` keeps only the fields named, comma separated, so an answer stays small:
 
@@ -48,7 +46,7 @@ the command that resolves the failure, and retry only when `retriable` is true.
 
 An unknown field name is refused, and the failure names the fields the answer does carry.
 
-## `adiff describe`
+## What `describe` prints
 
     adiff describe
     adiff describe --command 'comment send'
@@ -112,7 +110,7 @@ A reply is short because it is the rest of a sentence, so read the thread before
 waiting on the reviewer instead, for a decision the work stops without; it is not for checking in.
 Settling is the reviewer's, and the agent that wrote the answer cannot close the thread.
 
-## `--wait`, and the take rule
+## The take rule, and `--wait`
 
 `--wait` blocks until a comment arrives or that many seconds elapse, and takes a whole number from 1 to
 86400. Anything else is refused on stderr with exit `2`, because an instant empty answer reads exactly
@@ -127,7 +125,7 @@ A comment comes back on every take until it is retired, and three things retire 
 it, the reviewer settles it, or the reviewer removes it. So a take that runs twice hands the same comment
 twice, and a crash or a second reader loses nothing.
 
-## `review pane`
+## Open a pane with `review pane`
 
 `review pane` opens the review beside the conversation, in tmux, Zellij, WezTerm or kitty:
 
@@ -163,7 +161,7 @@ wording and lists the drafts back; it never sends. Where GitHub confirms some of
 nothing about the rest, adiff reports `PartlySent`: what it confirmed is on the pull request, what it did
 not is still held, and running the same send again sends only those.
 
-## Next
+## Read next
 
 - [Threads](Threads), the reviewer's side of an answer.
 - [Layers](Layers), the reading order an agent publishes when the reviewer asks for one.
