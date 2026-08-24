@@ -31,9 +31,10 @@ point stays open until you settle it.
 
 ## Requirements
 
-The commands run on Node 22 or newer. The terminal wants Node 26, which Homebrew brings along; on a
-global npm install adiff finds a Node 26 among your fnm, nvm, asdf, volta and Homebrew installs and
-runs the terminal on that.
+The Homebrew formula installs one compiled binary, which draws the terminal itself and needs no Node
+at all. A global npm install runs on Node 22 or newer, and the terminal there needs Node 26: adiff
+finds one among your fnm, nvm, asdf, volta and Homebrew installs and runs the terminal on that, and
+says so when there is none, while every other command runs where you are.
 
 ## Notes
 
