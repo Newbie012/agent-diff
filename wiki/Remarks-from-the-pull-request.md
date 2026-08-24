@@ -22,7 +22,7 @@ a remark shows under the code it is about, with every handle in its thread.
 Both sections need 130 columns or wider, the same as the rest of the panel. Below that a remark shows
 inline in the diff and nowhere else.
 
-<!-- IMAGE-13: A remark under line 2 of the diff, drawn as the handle that left it and then its first line, with the review panel on the right headed Remarks and listing that remark by its file and line. The footer offers the key that opens the pull request, and offers no accept key, because the cursor is on line 1 and the remark is on line 2. -->
+![A remark under line 2 of the diff, drawn as the handle that left it and then its first line, with the review panel on the right headed Remarks and listing that remark by its file and line. The footer offers the key that opens the pull request, and offers no accept key, because the cursor is on line 1 and the remark is on line 2.](https://github.com/user-attachments/assets/084e615f-9442-4c7b-a41e-7ff09ce0cbec)
 
 The keys that act on a remark are offered only while the cursor is on one. With the cursor a line
 above, the footer offers `p pull request` and nothing about accepting or dismissing.

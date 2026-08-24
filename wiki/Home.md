@@ -4,7 +4,7 @@ adiff is a terminal for reviewing the work a coding agent left in a branch, and 
 comments back to the agent that wrote the code. It is for one engineer running several agents at
 once, and it needs an agent that can run commands in the repository.
 
-<!-- IMAGE-1: The adiff branch list, with each branch's files and its lines added and removed -->
+![The adiff branch list, with each branch's files and its lines added and removed](https://github.com/user-attachments/assets/af2b4442-1b08-448d-a180-5f00856e1b6e)
 
 ## What changes when an agent wrote the code
 
@@ -16,7 +16,7 @@ answer sits under the comment, and the thread stays open until you settle it.
 With `git diff` the location and the reply are both prose, so each side rebuilds the line reference by
 hand and neither can tell which comment was addressed.
 
-<!-- IMAGE-2: A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch -->
+![A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch](https://github.com/user-attachments/assets/ddecba63-1f9c-4dc5-a3f5-dec057908b8f)
 
 ## Install
 

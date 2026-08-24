@@ -76,7 +76,7 @@ remark. It also carries the last thing adiff did, such as "marked src/api.ts" or
 `?` opens the sheet of every key for the screen you are on, and filters as you type. It works on the
 branch list, inside a branch, and in the search box.
 
-<!-- IMAGE-6: The sheet of every key for the screen, filtering as the reviewer types -->
+![The sheet of every key for the screen, filtering as the reviewer types](https://github.com/user-attachments/assets/bfa306c1-c111-4844-90b2-68f51d3620fb)
 
 ## The command palette
 
@@ -99,7 +99,7 @@ finds settle, "shortcuts" finds the key sheet, and "reading order" finds the ask
 | Read the newest comment first | yes |
 | Hold comments until you send them | no |
 
-<!-- IMAGE-7: The preferences, each with the sentence saying what it does -->
+![The preferences, each with the sentence saying what it does](https://github.com/user-attachments/assets/fc15ae53-9c1c-4f60-91d8-671cf15b2f46)
 
 A preference holds for every repository on this machine, and `adiff config list`, `config get` and
 `config set` read and set the same seven from the command line.

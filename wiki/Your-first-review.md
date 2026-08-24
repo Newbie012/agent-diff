@@ -44,7 +44,7 @@ repository.
 leaves. `return` opens the branch under the cursor, and `adiff review open --repo . --branch <name>`
 opens straight onto one.
 
-<!-- IMAGE-3: A branch open, with the file list on the left and the diff beside it -->
+![A branch open, with the file list on the left and the diff beside it](https://github.com/user-attachments/assets/a366d3dc-8104-452d-b0d0-ce3197796ae4)
 
 The file list sits on the left, the diff beside it, and the review panel on the right at 130 columns or
 wider. `tab` moves between the panes, `t` shows or hides the file list, `a` the review
@@ -60,19 +60,19 @@ shows layers. `g` jumps to the top, `G` to the bottom, `ctrl+d` and `ctrl+u` mov
 diff. `w` wraps long lines, `S` pins the function or class you are inside above the diff, `<` and `>`
 pan a wide diff sideways, and `/` searches the branch, with each match carrying the file it sits in.
 
-<!-- IMAGE-11: A search over the branch, its matches grouped under the file each one sits in -->
+![A search over the branch, its matches grouped under the file each one sits in](https://github.com/user-attachments/assets/d742a7a8-c974-4b38-abee-a0ae234560a7)
 
 ## Comment on lines
 
 `v` starts a selection at the cursor and `V` selects the whole change under it. `shift+down` extends
 the selection a line, `shift+up` pulls it back, and `o` extends it from the other end.
 
-<!-- IMAGE-4: The change under the cursor selected in the diff -->
+![The change under the cursor selected in the diff](https://github.com/user-attachments/assets/73340211-4532-4957-8032-854d3f5575ee)
 
 `c` opens the compose box. Write what you want the agent to do. `escape` leaves the box without
 sending.
 
-<!-- IMAGE-5: The compose box, with a comment written and not yet sent -->
+![The compose box, with a comment written and not yet sent](https://github.com/user-attachments/assets/3551300c-b6a2-45e6-9905-38b3bf0cae04)
 
 ## Send the comment
 
@@ -113,7 +113,7 @@ on every take until it is answered, settled or removed.
 [The agent's side of the review](The-agent's-side-of-the-review) covers the third command, `review
 pane`.
 
-<!-- IMAGE-2: A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch -->
+![A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch](https://github.com/user-attachments/assets/ddecba63-1f9c-4dc5-a3f5-dec057908b8f)
 
 The answer sits under the comment, inline in the diff, under the code the comment was written on. The
 review panel on the right lists every thread on the branch as a one-line summary, grouped by state:
@@ -137,7 +137,7 @@ follows the line it was written on, including into a new wording of that line. W
 replaced the line altogether, the panel marks that thread ` · not in the diff`. `r` reloads the
 branch.
 
-<!-- IMAGE-12: The review panel headed Not picked up with two threads on it, one reading src/api.ts followed by not in the diff, for the comment whose line the agent rewrote, and one reading src/api.ts:3 for the comment still sitting on its line -->
+![The review panel headed Not picked up with two threads on it, one reading src/api.ts followed by not in the diff, for the comment whose line the agent rewrote, and one reading src/api.ts:3 for the comment still sitting on its line](https://github.com/user-attachments/assets/5144577c-3388-4339-beb8-26ce90396315)
 
 ## Next
 

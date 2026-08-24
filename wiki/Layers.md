@@ -34,12 +34,12 @@ covers underneath; a file already marked reviewed is ticked, and a file with ope
 count. `]` and `[` then walk the files in the layers order, out of the last file of one layer and into
 the first of the next.
 
-<!-- IMAGE-8: The layers rail listing the layers, numbered, in place of the file list -->
+![The layers rail listing the layers, numbered, in place of the file list](https://github.com/user-attachments/assets/2a0502ee-96c2-4658-9f71-4e41a277493b)
 
 `h` closes the layer under the cursor and `l` opens it. A closed layer reads "2 of 2 files read" in
 place of its files, and a layer whose every file is marked reviewed is ticked.
 
-<!-- IMAGE-9: A closed layer giving its read count in place of its files -->
+![A closed layer giving its read count in place of its files](https://github.com/user-attachments/assets/7a9c5f03-8f48-40cd-938a-dafa5ca0e329)
 
 The prose the agent wrote sits above the code it describes, in the diff.
 
@@ -61,7 +61,7 @@ layers stale, because the line numbers in it have moved. The branch list reads `
 layers`, the rail carries a banner that reads "stale, the branch moved on" and names `L`, and the diff header
 reads "layers stale · L for a new one".
 
-<!-- IMAGE-10: The rail saying the layers describes an older commit -->
+![The rail saying the layers describes an older commit](https://github.com/user-attachments/assets/07355c28-3d3f-4433-bbdb-087168c61e1a)
 
 `L` asks for a new one. The agent reads the diff again from scratch rather than patching the old layers.
 
