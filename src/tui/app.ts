@@ -152,6 +152,9 @@ const AGE_TICK_MS = 30_000
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
+const WORTH_TIMING_MS = 250
+const TIMES_KEPT = 40
+const SLOWEST_KEPT = 3
 const NOTHING_COUNTED = { file: 0, branch: 0, worktree: 0 }
 const READING_PULL = "reading the pull request"
 const FORGE_QUIET = "the forge did not answer, so no remarks are shown"
@@ -354,6 +357,7 @@ export class App {
   private ticking: ReturnType<typeof setInterval> | undefined
   private grewWithShift = false
   private readonly keys: Array<string> = []
+  private readonly took: Array<{ readonly action: string; readonly ms: number }> = []
   private readonly trail: Array<string> = []
   private readonly began = Date.now()
   private fading: Fiber.Fiber<void> | undefined
@@ -437,6 +441,10 @@ export class App {
     return Effect.sync(() => this.commit(withWaiting(this.state, "the agent answered · press r")))
   }
 
+  private slowest(): ReadonlyArray<{ readonly action: string; readonly ms: number }> {
+    return [...this.took].toSorted((left, right) => right.ms - left.ms).slice(0, SLOWEST_KEPT)
+  }
+
   private dispatchTask(task: Work): void {
     Queue.offerUnsafe(this.intents, Intent.Task({ run: task }))
   }
@@ -446,9 +454,18 @@ export class App {
   }
 
   private act(intent: Intent): Effect.Effect<void, never, Needs> {
+    const began = Date.now()
     return this.answer(intent).pipe(
       Effect.catchCause((cause) => Effect.sync(() => this.fail(Cause.squash(cause)))),
+      Effect.ensuring(Effect.sync(() => this.timed(began))),
     )
+  }
+
+  private timed(began: number): void {
+    const ms = Date.now() - began
+    if (ms < WORTH_TIMING_MS) return
+    this.took.push({ action: this.trail.at(-1)?.trim().split(/\s+/)[1] ?? "a key", ms })
+    if (this.took.length > TIMES_KEPT) this.took.shift()
   }
 
   private answer(intent: Intent): Work {
@@ -1749,6 +1766,8 @@ export class App {
       }
       const text = buildReport(this.state, {
         repo: this.repo,
+        base: this.base ?? "",
+        slowest: this.slowest(),
         keys: this.keys,
         trail: this.trail,
         failure: this.failure,

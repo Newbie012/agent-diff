@@ -72,6 +72,18 @@ The keys themselves ([PRD 003](003-review-terminal.md)); the store's root
   ([PRD 003](003-review-terminal.md)).
 - **A report is markdown**, in this order: the reviewer's description first, because that is the
   part a human reads; then the facts.
+
+- **A report carries what it takes to build the same review again.** Two reports cost a day between
+  them because the facts they held could not rebuild the screen: neither said which base the diff was
+  computed against, which preferences were away from their default, that the branch had a reading
+  order at all, or how long the slow thing took. So a report says the base, the preferences that
+  differ from their default, what the reading order holds and where the reviewer was standing in it,
+  whether the pull request's remarks are read, the shape of the file on screen, and the slowest few
+  actions with their milliseconds.
+
+- **The shape of a thing is not private, its words are.** Counts, spans, flags and timings go in
+  every report, minimal ones included, because they name nothing. A layer's title is the agent's
+  prose about private code, so a minimal report says which layer by number and not by name.
 - **`ctrl+t` sends a minimal report**, which never contains the hostname, the repo path, the branch,
   the file path, or the message of the last internal failure — only that failure's kind.
 - **The facts are** the adiff version as the build reports it, the Node version and platform, the terminal size, the repo,
