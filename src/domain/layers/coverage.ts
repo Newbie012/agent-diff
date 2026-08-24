@@ -47,6 +47,13 @@ const changedLines = (hunk: Hunk): ReadonlyArray<number> =>
 const holds = (span: Span, path: string, line: number): boolean =>
   span.path === path && span.start <= line && span.end >= line
 
+export const claimsHunk = (
+  spans: ReadonlyArray<Span>,
+  path: string,
+  hunk: Hunk,
+): boolean =>
+  changedLines(hunk).some((line) => spans.some((span) => holds(span, path, line)))
+
 const runsOf = (path: string, lines: ReadonlyArray<number>): ReadonlyArray<Span> => {
   const runs: Array<{ path: string; start: number; end: number }> = []
   for (const line of lines.toSorted((a, b) => a - b)) {
