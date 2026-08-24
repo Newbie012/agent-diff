@@ -29,7 +29,7 @@ which agent you use, or name it up front with `--agent codex`, more than once fo
 `--agent '*'` for all of them. `-g` puts the skill in your home directory rather
 than in the repository you are standing in, which matters because a skill written into the repository
 is invisible to an agent working in a worktree of it unless you commit it. Drop `-g` once your team has
-adopted adiff and wants it committed. [Other ways to install](Install-adiff).
+adopted adiff and wants it committed. [Other ways to install](Install).
 
 adiff writes nothing into your repository. The review lives in adiff's own store at `~/.adiff`.
 
@@ -43,9 +43,11 @@ Open a review yourself with `adiff review open --repo .`, and press `?` for ever
 ## Read next
 
 - [Your first review](Your-first-review), one branch from the first key to a settled thread.
-- [The agent's side of the review](The-agent's-side-of-the-review), the three commands the agent runs.
-- [The keys and what carries between sessions](The-keys-and-what-carries-between-sessions).
-- [Layers](Layers), the reading order an agent can publish over its own diff.
-- [The commands](The-commands), the JSON contract, and the one command that answers in none.
+- [Branches](Branches) and [The diff](The-diff), the two screens and their keys.
+- [Comments](Comments) and [Threads](Threads), writing on lines and reading the answer.
+- [Reviewed files](Reviewed-files), [Layers](Layers) and [Remarks](Remarks), one feature each.
+- [Preferences](Preferences), the eight toggles and what carries between sessions.
+- [Commands](Commands), the JSON contract, the loop an agent runs, and the one command that answers in
+  no JSON.
 
 adiff is alpha and one person's tool. Every release goes out under the `alpha` tag.

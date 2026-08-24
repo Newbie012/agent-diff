@@ -112,5 +112,5 @@ Your repository holds none of it.
 ## Next
 
 - [Your first review](Your-first-review), one branch from the first key to a settled thread.
-- [The agent's side of the review](The-agent's-side-of-the-review), the three commands the agent runs.
+- [Commands](Commands), the loop an agent runs and the JSON it answers in.
 - [When something goes wrong](When-something-goes-wrong).

@@ -79,5 +79,5 @@ Paste a minimal one in public. A full one is for a report only you and the maint
 
 ## Next
 
-- [Install adiff](Install-adiff), the Node versions and the environment variables.
-- [The commands](The-commands), the failure shape and the exit codes.
+- [Install adiff](Install), the Node versions and the environment variables.
+- [Commands](Commands), the failure shape and the exit codes.
