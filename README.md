@@ -38,9 +38,14 @@ says so when there is none, while every other command runs where you are.
 
 ## Notes
 
-adiff is alpha, and one person's tool. Every release goes out under the `alpha` tag. The agent's
-side of the loop is in [docs/handover.md](docs/handover.md), and the project docs live in `.agents/`:
-`AGENTS.md` covers making a change, `ARCHITECTURE.md` how the code is laid out.
+adiff is alpha, and one person's tool. Every release goes out under the `alpha` tag.
+
+The [wiki](https://github.com/Newbie012/agent-diff/wiki) is the documentation: installing adiff, a
+walkthrough of one review, every key, the commands an agent runs, and what to do when something goes
+wrong. Its pages are written in `wiki/` in this repository and published from there.
+
+The project docs live in `.agents/`: `AGENTS.md` covers making a change, `ARCHITECTURE.md` how the code
+is laid out.
 
 ## License
 
