@@ -17,17 +17,11 @@ point stays open until you settle it.
 
 ### Features
 
-- 💬 **Comment on the lines.** The agent gets your words with the code they were about.
-- 🔁 **Nothing gets dropped.** A comment comes back until the agent answers it.
-- 🚦 **Every point has a state**: sent, picked up, answered, settled.
-- 🧷 **A comment follows its code** when the agent rewrites the file.
-- 🌱 **Review a worktree**, before anything is pushed.
-- 🪜 **Stacked branches** are diffed against the branch below.
-- 🔗 **Read the pull request's review here.** Accept a remark and your agent gets it.
-- ✅ **Mark a file reviewed.** The mark lapses when the agent rewrites it.
-- 🗺️ **Ask for a reading order.** adiff checks it covers every change.
-- 🤖 **Every key is also a command**, and every command answers JSON.
-- 🪟 **`adiff review pane`** puts the review beside your agent.
+- ⚡ **Live review** - A comment reaches the agent at once, and it starts work.
+- 💬 **Answers in place** - The agent replies under your comment, or asks you to decide.
+- 🌿 **Review in parallel** - Keep several agents going from one list of branches.
+- 🔗 **Pull request remarks** - Accept or dismiss each one without leaving the terminal.
+- 🗺️ **Read in layers** - Follow the agent's own order, or read the diff by file.
 
 ### Usage
 
