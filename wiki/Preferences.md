@@ -4,7 +4,7 @@
 `return` or space turns one on or off, and `escape` closes them. Each one carries the sentence saying
 what it does.
 
-![The preferences, each with the sentence saying what it does](https://github.com/user-attachments/assets/fc15ae53-9c1c-4f60-91d8-671cf15b2f46)
+![The preferences, each with the sentence saying what it does](https://github.com/user-attachments/assets/beb09d71-a298-49a7-b656-f2e283a28d96)
 
 ## The eight
 
