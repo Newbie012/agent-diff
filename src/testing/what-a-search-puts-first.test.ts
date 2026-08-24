@@ -41,6 +41,26 @@ const world = {
       after: ["const start = 1", "expect(identity()).toBe(2)"],
     },
     {
+      path: "src/zfields.ts",
+      before: ["class Held {", "}"],
+      after: ["class Held {", "  private readonly identity: string;", "}"],
+    },
+    {
+      path: "docs/notes.md",
+      before: ["The type identity of a program is the key it groups under."],
+      after: ["The type identity of a program is the key it groups under."],
+    },
+    {
+      path: ".github/workflows/build.yml",
+      before: ["      - run: deploy --service identity"],
+      after: ["      - run: deploy --service identity"],
+    },
+    {
+      path: "apps/api/Dockerfile.fips",
+      before: ["COPY apps/identity/package.json ./"],
+      after: ["COPY apps/identity/package.json ./"],
+    },
+    {
       path: "fixtures/corpus.txt",
       before: CORPUS,
       after: CORPUS,
@@ -55,7 +75,7 @@ const rowAt = (frame: string, text: string): number =>
 
 const searching = async (driver: TestDriver) => {
   await driver.branch.create(world)
-  await driver.screen.open({ width: 150, height: 40, review: true })
+  await driver.screen.open({ width: 150, height: 60, review: true })
   await driver.screen.pressKeys(["/"])
   await driver.screen.typeText("identity")
   await driver.screen.pressKeys(["RETURN"])
@@ -152,6 +172,48 @@ describe("when a name is searched for across a worktree", () => {
     expect(rows[at]).not.toContain("declared")
   })
 
+  test("then a sentence in a document is not called a declaration, and the document comes after the code", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    await searching(driver)
+
+    // ASSERT
+    const rows = rowsOf(await driver.screen.getFrame())
+    const at = rows.findIndex((row, index) => index > 0 && row.includes("docs/notes.md"))
+    expect(at).toBeGreaterThan(0)
+    expect(rows[at]).not.toContain("declared")
+    expect(at).toBeGreaterThan(rowAt(await driver.screen.getFrame(), "src/legacy.ts"))
+  })
+
+  test("then a workflow file and a Dockerfile come after the code that changed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    await searching(driver)
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(rowAt(frame, "src/legacy.ts")).toBeLessThan(rowAt(frame, "workflows/build.yml"))
+    expect(rowAt(frame, "src/legacy.ts")).toBeLessThan(rowAt(frame, "Dockerfile.fips"))
+  })
+
+  test("then a field declared with a modifier says it is the declaration", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    await searching(driver)
+
+    // ASSERT
+    const rows = rowsOf(await driver.screen.getFrame())
+    const at = rows.findIndex((row, index) => index > 0 && row.includes("src/zfields.ts"))
+    expect(at).toBeGreaterThan(0)
+    expect(rows[at]).toContain("declared")
+  })
+
   test("then the count for each distance is said", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -162,8 +224,8 @@ describe("when a name is searched for across a worktree", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).toContain("2 in this file")
-    expect(frame).toContain("5 on this branch")
-    expect(frame).toContain("48 in the worktree")
+    expect(frame).toContain("6 on this branch")
+    expect(frame).toContain("52 in the worktree")
   })
 })
 
