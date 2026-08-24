@@ -292,6 +292,32 @@ Three screens, and the keys each answers to:
   typing `useprocessfold` means the same thing, and a search that answers "nothing" to the second
   is answering a question about typing rather than about the code.
 
+- **What is found is ordered by how near it is to the reader.** The file on screen first, then the
+  files the branch changes, then the rest of the worktree. A reviewer searching a monorepo for a
+  common name was handed twenty-three thousand places in the order git happened to print them, and
+  the one they were reading was somewhere in the middle of it.
+
+- **At the same distance, a place that declares the name comes before a place that uses it.** "Where
+  is this defined" is the question a reviewer asks first, and reading it off a list means finding one
+  row among hundreds. A row that declares the name is marked as the declaration. A declaration does
+  not jump the queue from further away: a name common enough to be declared in twenty packages would
+  bury the file the reviewer is reading under declarations of things they never asked about.
+
+- **Tests come after code, and prose, config and data come last.** Snapshots, fixtures, lockfiles,
+  documents, workflow files and captured text are where a name appears most and matters least, and a
+  sentence in a document is not a declaration however it is worded. Nothing is hidden for being one
+  of these; it is last.
+
+- **A search says how many places it did not show.** The count for each of the three distances is
+  said, whatever was searched, so a reviewer who is shown ten places in their file still knows the
+  name appears in twelve hundred elsewhere. What the cap left out is said in the list rather than
+  quietly dropped.
+
+- **A search reads the lines around one place, not around all of them.** Asking git for the
+  neighbours of every match meant a common name in a monorepo returned megabytes to be parsed into
+  a hundred thousand rows, and each of them was then scanned once per match. Only the place the
+  cursor is on is worth showing lines around, so only that one is read.
+
 - **A match is a place in a file, not a line of text.** Every match drew one row that began with
   the same long path, cut where the reader could not see, so a list of twenty said one thing twenty
   times. A file is named once and its matches sit under it by line number, and the one under the

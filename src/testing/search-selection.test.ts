@@ -87,7 +87,7 @@ describe("when the branch is searched for the selected text", () => {
 
     // ASSERT
     const whole = (await driver.screen.getFrame()).split("\n")
-    const from = whole.findIndex((line) => /\d+ places?/.test(line))
+    const from = whole.findIndex((line) => /\d+ in the worktree/.test(line))
     const lines = whole.slice(from)
     const inDiff = lines.findIndex((line) => line.includes("src/seats.ts"))
     const outside = lines.findIndex((line) => line.includes("src/invite.ts"))

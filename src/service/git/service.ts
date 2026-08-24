@@ -5,7 +5,6 @@ import { FileUnreadable, NotARepository } from "./error.ts"
 import type { DiffStat, Worktree } from "./model.ts"
 import { gitOrEmpty } from "./run.ts"
 
-const GREP_CONTEXT = 2
 export const AT_ONCE = 8
 
 const CACHE_SIZE = 256
@@ -209,8 +208,6 @@ const readGrep = Effect.fn("Git.grep")(function* (worktree: Worktree, term: stri
     "-F",
     "-i",
     "-w",
-    "-C",
-    String(GREP_CONTEXT),
     "-e",
     term,
   ])

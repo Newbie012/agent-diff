@@ -27,6 +27,7 @@ import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
 import type { ThreadStand } from "./marks.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
 import type { BranchSummary, Match, Remark, ReportedLayer } from "../cli/index.ts"
+import type { Counted } from "../domain/search/index.ts"
 import type { ProseAnchor } from "../domain/layers/index.ts"
 
 export type LayerRow = {
@@ -146,6 +147,9 @@ export type TuiState = {
   readonly rail: "tree" | "layers"
   readonly term: string
   readonly matches: ReadonlyArray<Match>
+  readonly counted: Counted
+  readonly leftOut: number
+  readonly around: ReadonlyArray<string>
   readonly matchIndex: number
   readonly arrived: ReadonlyArray<StagedComment>
   readonly panelOpen: boolean
@@ -235,6 +239,9 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   openLayers: [],
   term: "",
   matches: [],
+  counted: { file: 0, branch: 0, worktree: 0 },
+  leftOut: 0,
+  around: [],
   matchIndex: 0,
   rail: "tree",
 })

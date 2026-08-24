@@ -86,7 +86,7 @@ import {
   laidDraft,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
-import type { Remark } from "../cli/index.ts"
+import type { Match, Remark } from "../cli/index.ts"
 import { marks, standMark } from "./marks.ts"
 import { palette } from "./theme.ts"
 
@@ -1208,43 +1208,92 @@ const nothingYet = (state: TuiState, room: number): string => {
   return clip(` nothing uses ${wanted}`, room).padEnd(room)
 }
 
-const foundTitle = (state: TuiState): string => {
-  const all = state.matches.length
+const counting = (many: number): string => many.toLocaleString("en-US")
+
+const foundBlocks = (
+  state: TuiState,
+  shown: ReadonlyArray<Match>,
+  wide: number,
+): { readonly blocks: ReadonlyArray<Block>; readonly chosen: number } => {
+  const blocks: Array<Block> = []
+  let chosen = 0
+  for (const [at, match] of shown.entries()) {
+    if (shown[at - 1]?.path !== match.path) {
+      blocks.push(fileRow(match, wide, shown.some((one) => one.path === match.path && one.declares)))
+    }
+    if (at === state.matchIndex) chosen = blocks.length
+    blocks.push(blockOf(match, wide, at === state.matchIndex, state.around))
+  }
+  if (state.leftOut > 0 && shown.length > 0) blocks.push(leftRow(state.leftOut, wide))
+  return { blocks, chosen }
+}
+
+const JOIN = "  ·  "
+
+const foundTitle = (state: TuiState, room: number): string => {
   if (state.term.length === 0) return "Look for something"
-  return `${state.term}  ·  ${all === 1 ? "1 place" : `${all} places`}`
+  const counted = state.counted
+  if (counted.worktree === 0) return state.term
+  const here = `${counting(counted.file)} in this file`
+  const branch = `${counting(counted.branch)} on this branch`
+  const whole = `${counting(counted.worktree)} in the worktree`
+  const tried = [
+    [state.term, here, branch, whole],
+    [state.term, here, whole],
+    [state.term, whole],
+    [state.term],
+  ].map((parts) => parts.join(JOIN))
+  return tried.find((one) => one.length <= room) ?? clip(tried.at(-1) ?? "", room)
 }
 
 type Block = { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> }
 
 type Found = {
   readonly changed: boolean
+  readonly declares: boolean
   readonly path: string
   readonly line: number
   readonly text: string
-  readonly around: ReadonlyArray<string>
 }
 
 const CHANGED_MARK = "*"
 
-const fileRow = (match: Found, room: number): Block => {
+const DECLARED = "declared"
+
+const fileRow = (match: Found, room: number, declares: boolean): Block => {
   const lead = match.changed ? CHANGED_MARK : " "
-  const said = ` ${lead} ${clipHead(match.path, Math.max(8, room - 3))}`
+  const tail = declares ? `  ${DECLARED}` : ""
+  const shown = ` ${lead} ${clipHead(match.path, Math.max(8, room - 3 - tail.length))}${tail}`
   return {
     rows: 1,
-    chunks: [fg(palette.accent)(said.padEnd(room)), fg(palette.faint)("\n")],
+    chunks: [fg(palette.accent)(shown.padEnd(room)), fg(palette.faint)("\n")],
   }
 }
 
-const blockOf = (match: Found, room: number, here: boolean): Block => {
-  const rows = here
-    ? match.around.map((line) => aroundRow(line, match.line, room))
-    : [
-        fg(palette.muted)(
-          `   ${String(match.line).padStart(5)}  ${clip(match.text.trim(), Math.max(1, room - 11))}`.padEnd(
-            room,
-          ),
-        ),
-      ]
+const leftRow = (left: number, room: number): Block => ({
+  rows: 1,
+  chunks: [
+    fg(palette.faint)(clip(`   … ${counting(left)} more places not shown`, room).padEnd(room)),
+    fg(palette.faint)("\n"),
+  ],
+})
+
+const placeRow = (match: Found, room: number): TextChunk => {
+  const tail = match.declares ? `  ${DECLARED}` : ""
+  const text = clip(match.text.trim(), Math.max(1, room - 11 - tail.length))
+  const line = `   ${String(match.line).padStart(5)}  ${text}${tail}`
+  return fg(match.declares ? palette.ink : palette.muted)(line.padEnd(room))
+}
+
+const blockOf = (
+  match: Found,
+  room: number,
+  here: boolean,
+  around: ReadonlyArray<string>,
+): Block => {
+  const rows = here && around.length > 0
+    ? around.map((line) => aroundRow(line, match.line, room))
+    : [placeRow(match, room)]
   const lit = rows.map((chunk) => (here ? bg(palette.selection)(chunk) : chunk))
   return {
     rows: lit.length,
@@ -2000,16 +2049,10 @@ export class Screen {
     }
     const room = panelWidth(this.renderer.width)
     const wide = Math.max(1, room - MODAL_ROOM)
-    this.foundTitle.content = foundTitle(state)
+    this.foundTitle.content = foundTitle(state, wide)
     const shown = shownMatches(state)
     const most = panelRows(this.renderer.height, PANEL_FIFTH)
-    const blocks: Array<Block> = []
-    let chosen = 0
-    for (const [at, match] of shown.entries()) {
-      if (shown[at - 1]?.path !== match.path) blocks.push(fileRow(match, wide))
-      if (at === state.matchIndex) chosen = blocks.length
-      blocks.push(blockOf(match, wide, at === state.matchIndex))
-    }
+    const { blocks, chosen } = foundBlocks(state, shown, wide)
     const tall = Math.max(FOUND_LEAST, most - PALETTE_CHROME)
     const window = windowedBlocks(blocks, chosen, tall)
     this.foundChoices.content =

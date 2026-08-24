@@ -1,4 +1,13 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
+import {
+  bandOf,
+  declaresIn,
+  ranked,
+  tierOf,
+  type Band,
+  type Counted,
+  type Place,
+} from "../domain/search/index.ts"
 import { Git } from "../service/git/index.ts"
 import { readingOf, type BranchReading } from "./commands.ts"
 
@@ -7,72 +16,96 @@ export type Match = {
   readonly line: number
   readonly text: string
   readonly changed: boolean
+  readonly declares: boolean
+  readonly band: Band
   readonly around: ReadonlyArray<string>
 }
 
+export type Searched = {
+  readonly matches: ReadonlyArray<Match>
+  readonly counted: Counted
+  readonly left: number
+}
+
 const HIT = /^(.+?):(\d+):(.*)$/
-const NEAR = /^(.+?)-(\d+)-(.*)$/
 
-type Row = { readonly path: string; readonly line: number; readonly text: string; readonly hit: boolean }
+const AROUND = 2
 
-const rowOf = (line: string): Row | undefined => {
-  const hit = HIT.exec(line)
-  if (hit !== null) {
-    return { path: hit[1] ?? "", line: Number(hit[2]), text: hit[3] ?? "", hit: true }
+const placeIn = (
+  raw: string,
+  term: string,
+  reading: { readonly here: string; readonly changed: ReadonlySet<string> },
+): Place | undefined => {
+  const hit = HIT.exec(raw)
+  if (hit === null) return undefined
+  const path = hit[1] ?? ""
+  const text = (hit[3] ?? "").trim()
+  const tier = tierOf(path)
+  return {
+    path,
+    line: Number(hit[2]),
+    text,
+    declares: tier === "data" ? false : declaresIn(text, term),
+    band: bandOf(path, reading),
+    tier,
   }
-  const near = NEAR.exec(line)
-  if (near === null) return undefined
-  return { path: near[1] ?? "", line: Number(near[2]), text: near[3] ?? "", hit: false }
 }
 
-const readRows = (raw: string): ReadonlyArray<Row> =>
-  raw
-    .split("\n")
-    .filter((line) => line.length > 0 && line !== "--")
-    .flatMap((line) => {
-      const row = rowOf(line)
-      return row === undefined ? [] : [row]
-    })
-
-const near = (rows: ReadonlyArray<Row>, at: number): ReadonlyArray<string> => {
-  const found = rows[at]
-  if (found === undefined) return []
-  return rows
-    .filter((row) => row.path === found.path && Math.abs(row.line - found.line) <= 2)
-    .map((row) => `${String(row.line).padStart(5)} ${row.text}`)
-}
-
-const byChangedFirst = (left: Match, right: Match): number => {
-  if (left.changed !== right.changed) return left.changed ? -1 : 1
-  return left.path === right.path ? left.line - right.line : left.path.localeCompare(right.path)
-}
+const matchOf = (place: Place): Match => ({
+  path: place.path,
+  line: place.line,
+  text: place.text,
+  changed: place.band !== "worktree",
+  declares: place.declares,
+  band: place.band,
+  around: [],
+})
 
 export const searchIn = Effect.fn("Cli.searchIn")(function* (
   reading: BranchReading,
   term: string,
+  here = "",
 ) {
   const git = yield* Git
-  const worktree = reading.worktree
-  const touched = new Set(reading.patches.map((patch) => patch.path))
-  const rows = readRows(yield* git.grep(worktree, term))
-  const found: Array<Match> = []
-  for (const [at, row] of rows.entries()) {
-    if (!row.hit) continue
-    found.push({
-      path: row.path,
-      line: row.line,
-      text: row.text.trim(),
-      changed: touched.has(row.path),
-      around: near(rows, at),
+  const changed = new Set(reading.patches.map((patch) => patch.path))
+  const raw = yield* git.grep(reading.worktree, term)
+  const places = raw
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .flatMap((line) => {
+      const place = placeIn(line, term, { here, changed })
+      return place === undefined ? [] : [place]
     })
-  }
-  return found.toSorted(byChangedFirst)
+  const found = ranked(places)
+  return {
+    matches: found.places.map(matchOf),
+    counted: found.counted,
+    left: found.left,
+  } satisfies Searched
+})
+
+export const aroundIn = Effect.fn("Cli.aroundIn")(function* (
+  reading: BranchReading,
+  path: string,
+  line: number,
+) {
+  const git = yield* Git
+  const source = Option.getOrElse(
+    yield* git.source(reading.worktree, path),
+    (): ReadonlyArray<string> => [],
+  )
+  const from = Math.max(0, line - 1 - AROUND)
+  const to = Math.min(source.length, line + AROUND)
+  return source
+    .slice(from, to)
+    .map((text, at) => `${String(from + at + 1).padStart(5)} ${text}`)
 })
 
 export const searchBranch = Effect.fn("Cli.searchBranch")(function* (
   repo: string,
   branch: string,
   term: string,
+  here = "",
 ) {
-  return yield* searchIn(yield* readingOf(repo, branch), term)
+  return yield* searchIn(yield* readingOf(repo, branch), term, here)
 })
