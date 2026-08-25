@@ -46,6 +46,23 @@ const guessed = (told: Told): string | undefined => {
   return KNOWN.find(([mark]) => marks.includes(mark))?.[1]
 }
 
+export const KNOWN_EDITORS: ReadonlyArray<string> = [
+  "code",
+  "cursor",
+  "windsurf",
+  "zed",
+  "idea",
+  "subl",
+  "nvim",
+  "vim",
+  "hx",
+  "emacs",
+  "nano",
+]
+
+export const editorsAround = (found: (name: string) => boolean): ReadonlyArray<string> =>
+  KNOWN_EDITORS.filter((name) => found(name)).map((name) => shaped(name))
+
 export const templateFor = (told: Told): string | undefined => {
   const asked = told.editor ?? told.visual ?? told.fallback
   return asked === undefined || asked.trim().length === 0 ? guessed(told) : shaped(asked)

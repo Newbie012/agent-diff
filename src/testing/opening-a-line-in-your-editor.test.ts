@@ -42,7 +42,7 @@ describe("when a reviewer opens the line under the cursor in their editor", () =
     expect(await wrote(driver)).toContain("src/api.ts:2")
   })
 
-  test("then a reviewer with no editor anywhere is told what to set", async () => {
+  test("then a reviewer with no editor set is offered the choice rather than a notice", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files })
@@ -52,6 +52,23 @@ describe("when a reviewer opens the line under the cursor in their editor", () =
     await driver.screen.pressKeys(["e"])
 
     // ASSERT
-    expect(await driver.screen.untilShown("no editor to open it in")).toBe(true)
+    expect(await driver.screen.untilShown("Editor")).toBe(true)
+  })
+
+  test("then a command the reviewer types is the one that opens the line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files })
+    const said = join(driver.workspacePath, "opened.txt")
+    await driver.app.scriptOnPath("mine", `printf '%s' "$*" > ${said}`)
+    await driver.screen.open({ width: 150, height: 30, review: true, withoutEditor: true })
+    await driver.screen.pressKeys(["j", "e"])
+
+    // ACT
+    await driver.screen.typeText("mine {file}:{line}")
+    await driver.screen.pressKeys(["RETURN"])
+
+    // ASSERT
+    expect(await wrote(driver)).toContain("src/api.ts:2")
   })
 })

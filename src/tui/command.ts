@@ -45,6 +45,7 @@ export type Action =
   | "base.next"
   | "base.prev"
   | "line.open"
+  | "editor.open"
   | "thread.settle"
   | "thread.settleRead"
   | "thread.remove"
@@ -468,36 +469,44 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "base.set",
-    title: "Use the base under the cursor",
+    title: "Use the one under the cursor",
     category: "Branches",
     keys: ["return"],
-    screens: ["base"],
+    screens: ["base", "editor"],
     listed: false,
   }),
   command({
     action: "base.clear",
-    title: "Let adiff work the base out again",
+    title: "Hand the choice back to adiff",
     category: "Branches",
     keys: ["ctrl+x"],
-    screens: ["base"],
+    screens: ["base", "editor"],
     hint: "automatic",
     listed: false,
   }),
   command({
     action: "base.next",
-    title: "Next base",
+    title: "Next one",
     category: "Branches",
     keys: ["down"],
-    screens: ["base"],
+    screens: ["base", "editor"],
     listed: false,
   }),
   command({
     action: "base.prev",
-    title: "Previous base",
+    title: "Previous one",
     category: "Branches",
     keys: ["up"],
-    screens: ["base"],
+    screens: ["base", "editor"],
     listed: false,
+  }),
+  command({
+    action: "editor.open",
+    also: ["editor", "ide", "choose editor", "which editor"],
+    title: "Choose the editor a line opens in",
+    category: "Reading",
+    keys: [],
+    screens: ["review"],
   }),
   command({
     action: "line.open",

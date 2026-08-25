@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
+import { existsSync } from "node:fs"
 import { realpath } from "node:fs/promises"
 import { platform } from "node:os"
-import { resolve } from "node:path"
+import { join, resolve } from "node:path"
 import {
   createCliRenderer,
   getTreeSitterClient,
@@ -13,7 +14,7 @@ import {
 import { Cause, Deferred, Effect, Fiber, Option, Queue, Result, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
-import { openingOf, templateFor } from "../domain/editor/index.ts"
+import { editorsAround, openingOf, templateFor } from "../domain/editor/index.ts"
 import {
   listBranches,
   listRefs,
@@ -136,6 +137,7 @@ import {
   withPatches,
   withFinder,
   withAround,
+  withChoices,
   withMatches,
   withRefs,
   allRevealed,
@@ -158,7 +160,6 @@ const AGE_TICK_MS = 30_000
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
-const NO_EDITOR = "no editor to open it in: set $VISUAL, or editor in the settings file"
 const WORTH_TIMING_MS = 250
 const TIMES_KEPT = 40
 const SLOWEST_KEPT = 3
@@ -269,6 +270,19 @@ const ranAside = (command: string, args: ReadonlyArray<string>): boolean => {
   }
 }
 
+const onThePath = (name: string): boolean =>
+  (process.env["PATH"] ?? "")
+    .split(":")
+    .some((where) => where.length > 0 && existsSync(join(where, name)))
+
+const saveEditor = Effect.fn("Tui.saveEditor")(function* (command: string) {
+  const store = yield* Store
+  const current = yield* store.settings
+  const held = { ...current }
+  if (command.length === 0) delete (held as Record<string, unknown>)["editor"]
+  yield* store.saveSettings(command.length === 0 ? held : { ...held, editor: command })
+})
+
 const editorTold = Effect.gen(function* () {
   const store = yield* Store
   const kept = yield* store.settings
@@ -302,7 +316,7 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
-const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search", "base"])
+const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search", "base", "editor"])
 
 const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
 
@@ -314,6 +328,7 @@ const OVER: ReadonlySet<string> = new Set([
   "search",
   "settings",
   "base",
+  "editor",
 ])
 
 export const overReview = (screen: TuiState["screen"]): boolean => OVER.has(screen)
@@ -802,9 +817,10 @@ export class App {
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
       "base.open": () => this.openBases(),
-      "base.set": () => this.setBaseHere(),
-      "base.clear": () => this.clearBaseHere(),
+      "base.set": () => (this.state.screen === "editor" ? this.editorChosen() : this.setBaseHere()),
+      "base.clear": () => (this.state.screen === "editor" ? this.forgetEditor() : this.clearBaseHere()),
       "line.open": () => this.openInEditor(),
+      "editor.open": () => this.chooseEditor(),
       "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
       back: () => this.goBack(),
       "report.send": () => this.sendReport(),
@@ -1716,6 +1732,33 @@ export class App {
     }
   }
 
+  private chooseEditor(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const around = editorsAround(onThePath)
+      const held = templateFor(yield* editorTold)
+      const offered = held === undefined || around.includes(held) ? around : [held, ...around]
+      this.commit(withChoices(this.state, offered, "editor", held ?? ""))
+    })
+  }
+
+  private editorChosen(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const chosen = refHere(this.state)
+      if (chosen === undefined) return
+      yield* saveEditor(chosen)
+      this.commit({ ...this.state, screen: this.state.returnTo, query: "" })
+      yield* this.openInEditor()
+    })
+  }
+
+  private forgetEditor(): Work {
+    return Effect.gen({ self: this }, function* () {
+      yield* saveEditor("")
+      const back = { ...this.state, screen: this.state.returnTo, query: "" }
+      this.commit(withNotice(back, "the editor is the environment's again"))
+    })
+  }
+
   private openInEditor(): Work {
     return Effect.gen({ self: this }, function* () {
       const where = this.whereTheLineIs()
@@ -1723,7 +1766,7 @@ export class App {
       const template = templateFor(yield* editorTold)
       const opening = template === undefined ? undefined : openingOf(template, where.file, where.line)
       if (opening === undefined) {
-        this.commit(withNoticeHere(this.state, NO_EDITOR))
+        yield* this.chooseEditor()
         return
       }
       const said = ranAside(opening.command, opening.args)
