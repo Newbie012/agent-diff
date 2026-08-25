@@ -52,7 +52,7 @@ const visibleTree = (state: TuiState): ReadonlyArray<string> =>
 const whereabouts = (state: TuiState, around: Surroundings): ReadonlyArray<string> => [
   `- repo \`${around.repo}\``,
   `- branch \`${selectedBranch(state)?.branch ?? "none"}\`, base \`${around.base.length === 0 ? "resolved by adiff" : around.base}\``,
-  `- file \`${selectedPatch(state)?.path ?? "none"}\`, row ${state.cursor + 1}`,
+  `- file \`${selectedPatch(state)?.path ?? "none"}\`, row ${state.cursor}`,
 ]
 
 const said = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
