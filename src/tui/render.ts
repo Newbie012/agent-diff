@@ -19,7 +19,7 @@ import { absurd } from "effect"
 import { displayKey, hintsFor, takesText, type Command, type Offered } from "./command.ts"
 import { REMAINDER_TITLE } from "../domain/layers/index.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
-import { DiffView, type LinePaint, type Note } from "./diffview.ts"
+import { ANSWER_MARK, DiffView, REPLY_MARK, type LinePaint, type Note } from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
 import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
@@ -89,7 +89,7 @@ import {
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import type { Match, Remark } from "../cli/index.ts"
-import { marks, standMark } from "./marks.ts"
+import { marks, standMark, type MarkSet } from "./marks.ts"
 import { palette } from "./theme.ts"
 
 const ROW_HEIGHT = 1
@@ -114,6 +114,21 @@ const PALETTE_TITLE = 60
 const PALETTE_GAP = 2
 const PALETTE_CHROME = 4
 const PENDING_CHROME = 4
+const LEGEND_ROWS = 1
+
+const LEGEND: ReadonlyArray<readonly [keyof MarkSet, string]> = [
+  ["filed", "written"],
+  ["waiting", "picked up"],
+  ["answered", "answered"],
+  ["asked", "waiting on you"],
+  ["done", "settled"],
+]
+
+const legendText = (room: number): string => {
+  const said = LEGEND.map(([key, means]) => `${marks()[key]} ${means}`)
+  const voices = [`${REMARK_MARK} remark`, `${REPLY_MARK} you`, `${ANSWER_MARK} the agent`]
+  return clip([...said, ...voices].join("   "), room)
+}
 
 const keysTitle = (found: number, whole: boolean): string => {
   if (found === 0) return "No key matches"
@@ -397,6 +412,8 @@ type PaletteParts = {
   readonly choices: TextRenderable
 }
 
+type KeysParts = PaletteParts & { readonly legend: TextRenderable }
+
 type FoundParts = {
   readonly box: BoxRenderable
   readonly title: TextRenderable
@@ -635,10 +652,12 @@ const makeSettingsParts = (renderer: CliRenderer) => {
   return { box, title, choices }
 }
 
-const makeKeysParts = (renderer: CliRenderer): PaletteParts => {
+const makeKeysParts = (renderer: CliRenderer): KeysParts => {
   const parts = makePaletteParts(renderer)
   parts.box.id = "keys"
-  return parts
+  const legend = bar(renderer, "keys-legend", palette.faint)
+  parts.box.add(legend)
+  return { ...parts, legend }
 }
 
 const makeFoundParts = (renderer: CliRenderer): FoundParts => {
@@ -1547,6 +1566,7 @@ export class Screen {
   private readonly keysQuery: TextareaRenderable
   private readonly foundQuery: TextareaRenderable
   private readonly keysChoices: TextRenderable
+  private readonly keysLegend: TextRenderable
   private readonly found: BoxRenderable
   private readonly foundTitle: TextRenderable
   private readonly foundPeek: TextRenderable
@@ -1599,6 +1619,7 @@ export class Screen {
     this.keysTitle = modals.keys.title
     this.keysQuery = modals.keys.query
     this.keysChoices = modals.keys.choices
+    this.keysLegend = modals.keys.legend
     this.baseBox = modals.bases
     this.found = modals.found.box
     this.foundTitle = modals.found.title
@@ -1840,18 +1861,20 @@ export class Screen {
     if (state.screen !== "keys") {
       this.keysTitle.content = ""
       this.keysChoices.content = ""
+      this.keysLegend.content = ""
       return
     }
     const rows = keyMatches(state)
     const room = this.renderer.width
     const keysRoom = this.renderer.height
-    const shown = Math.max(1, keysRoom - PENDING_CHROME)
+    const shown = Math.max(1, keysRoom - PENDING_CHROME - LEGEND_ROWS)
     this.keysTitle.content = keysTitle(rows.length, sheetDeep(rows, room - MODAL_ROOM) <= shown)
     this.keysChoices.content = sheetText(
       rows,
       Math.min(state.paletteIndex, Math.max(0, rows.length - 1)),
       { height: shown, room: room - MODAL_ROOM },
     )
+    this.keysLegend.content = legendText(room - MODAL_ROOM)
     this.keys.height = keysRoom
     this.keys.width = room
     this.keys.left = 0

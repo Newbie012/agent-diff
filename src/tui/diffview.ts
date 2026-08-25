@@ -63,8 +63,8 @@ const WASH: Partial<Record<RowKind, LinePaint>> = {
 }
 
 const NOTE_MIN = 24
-const ANSWER_MARK = "↳"
-const REPLY_MARK = "»"
+export const ANSWER_MARK = "↳"
+export const REPLY_MARK = "»"
 const OVERSCAN = 2
 const SIGN_WIDTH = 2
 const SCROLL_ROWS = 1

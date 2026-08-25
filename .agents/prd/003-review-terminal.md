@@ -312,6 +312,14 @@ Three screens, and the keys each answers to:
   of those: `○` written, `◎` picked up, `●` answered, and `◉` waiting on the reviewer, which carries
   the ring because it is the thread to go to.
 
+- **The sheet of keys says what the marks mean, under the keys.** The screen is full of marks a
+  reviewer was never told: a circle beside a thread, a diamond beside a remark, an arrow before an
+  answer. Every one of them was learned by guessing, and a mark you have guessed wrong is worse than
+  one you have not read. `?` already answers "what can I press here", so it answers "what am I
+  looking at" on the same sheet: a row along its foot naming each thread mark, the remark mark, and
+  the two voices. It is drawn from the marks in use, so a sheet cannot say one thing while the panel
+  draws another.
+
 - **A search asks git to search, and nothing else.** Every search resolved the branch and read its
   whole diff again to learn which files it changes, so a search of a hundred and thirty-one files
   cost two hundred milliseconds before a single line had been looked at — and it cost that again
