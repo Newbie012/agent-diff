@@ -35,6 +35,7 @@ import {
   panelFits,
   panelShown,
   chosenNow,
+  refsShown,
   treeRows,
   withChosen,
   treeStart,
@@ -503,6 +504,20 @@ const flipSetting = (state: TuiState): TuiState => {
   return withChosen(state, wanted.name, !(held[wanted.name] ?? wanted.byDefault))
 }
 
+const moveRef = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  refIndex: clamp(state.refIndex + delta, 0, Math.max(0, refsShown(state).length - 1)),
+})
+
+export const withRefs = (state: TuiState, refs: ReadonlyArray<string>): TuiState => ({
+  ...state,
+  screen: "base",
+  returnTo: state.screen,
+  refs,
+  refIndex: 0,
+  query: "",
+})
+
 const movePalette = (state: TuiState, delta: number): TuiState => ({
   ...state,
   paletteIndex: clamp(state.paletteIndex + delta, 0, Math.max(0, offered(state).length - 1)),
@@ -561,6 +576,11 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "pan.right": (state) => panned(state, PAN_STEP),
   "pan.left": (state) => panned(state, -PAN_STEP),
   "review.reload": (state) => state,
+  "base.open": (state) => state,
+  "base.set": (state) => state,
+  "base.clear": (state) => state,
+  "base.next": (state) => moveRef(state, 1),
+  "base.prev": (state) => moveRef(state, -1),
   "thread.settle": (state) => state,
   "thread.settleRead": (state) => state,
   "thread.remove": (state) => state,

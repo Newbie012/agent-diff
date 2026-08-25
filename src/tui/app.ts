@@ -15,6 +15,7 @@ import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import {
   listBranches,
+  listRefs,
   summaryFor,
   markRead,
   type BranchSummary,
@@ -30,6 +31,8 @@ import {
   progressIn,
   readingOf,
   sentIn,
+  setBase,
+  clearBase,
   saveReport,
   commentIn,
   commentsIn,
@@ -85,6 +88,7 @@ import {
   selectedLines,
   type Spot,
   matchHere,
+  refHere,
   selectionRange,
   spokenSince,
   panelEntry,
@@ -132,6 +136,7 @@ import {
   withFinder,
   withAround,
   withMatches,
+  withRefs,
   allRevealed,
   withRemarks,
   withSent,
@@ -271,7 +276,7 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
-const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search"])
+const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search", "base"])
 
 const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
 
@@ -282,6 +287,7 @@ const OVER: ReadonlySet<string> = new Set([
   "palette",
   "search",
   "settings",
+  "base",
 ])
 
 export const overReview = (screen: TuiState["screen"]): boolean => OVER.has(screen)
@@ -769,6 +775,9 @@ export class App {
       "search.jump": () => this.runFinder(),
       "review.reload": () =>
         this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
+      "base.open": () => this.openBases(),
+      "base.set": () => this.setBaseHere(),
+      "base.clear": () => this.clearBaseHere(),
       "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
       back: () => this.goBack(),
       "report.send": () => this.sendReport(),
@@ -871,7 +880,7 @@ export class App {
       return
     }
     if (!listens(this.state.screen) || clean === this.state.query) return
-    this.commit({ ...this.state, query: clean, paletteIndex: 0 })
+    this.commit({ ...this.state, query: clean, paletteIndex: 0, refIndex: 0 })
     if (this.state.screen === "search") this.lookSoon(clean)
   }
 
@@ -883,6 +892,56 @@ export class App {
     }
     if (text === this.state.draft) return
     this.commit(withDraft(this.state, text))
+  }
+
+  private openBases(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      const refs = yield* listRefs(this.repo)
+      this.commit(withRefs(this.state, refs.filter((ref) => ref !== branch.branch)))
+    })
+  }
+
+  private basedOnRef(ref: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      const held = yield* Effect.result(setBase(this.repo, branch.branch, ref))
+      if (Result.isFailure(held)) {
+        this.commit(withNotice(this.state, `${ref} names nothing here`))
+        return
+      }
+      yield* this.afterBase(branch.branch, `based on ${ref}`)
+    })
+  }
+
+  private clearBaseHere(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      yield* clearBase(this.repo, branch.branch)
+      yield* this.afterBase(branch.branch, "the base is adiff's guess again")
+    })
+  }
+
+  private afterBase(branch: string, said: string): Work {
+    return Effect.gen({ self: this }, function* () {
+      const listed = yield* listBranches(this.repo, this.base)
+      const back = { ...this.state, screen: this.state.returnTo, query: "" }
+      const held = withBranches(back, listed)
+      const at = listed.findIndex((one) => one.branch === branch)
+      this.commit(withNotice(at === -1 ? held : { ...held, branchIndex: at }, said))
+      if (this.state.screen !== "review") return
+      this.commit(yield* this.readBranch(branch))
+      yield* this.fetchRemarks()
+      yield* this.loadSource()
+    })
+  }
+
+  private setBaseHere(): Work {
+    const ref = refHere(this.state)
+    return ref === undefined ? Effect.void : this.basedOnRef(ref)
   }
 
   private runChoice(): Work {

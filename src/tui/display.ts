@@ -4,7 +4,7 @@ import { Context, Effect, Layer } from "effect"
 import type { Screen as ScreenName, TuiState } from "./model.ts"
 import { Screen, type Mouse } from "./render.ts"
 
-const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys", "search"]
+const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys", "search", "base"]
 
 export type Shape = {
   readonly paint: (state: TuiState) => Effect.Effect<void>

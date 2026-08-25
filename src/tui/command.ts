@@ -39,6 +39,11 @@ export type Action =
   | "remark.accept"
   | "panel.flip"
   | "review.reload"
+  | "base.open"
+  | "base.set"
+  | "base.clear"
+  | "base.next"
+  | "base.prev"
   | "thread.settle"
   | "thread.settleRead"
   | "thread.remove"
@@ -449,6 +454,49 @@ export const commands: ReadonlyArray<Command> = [
     title: "Pan the diff left",
     keys: ["<"],
     screens: ["review"],
+  }),
+  command({
+    action: "base.open",
+    also: ["base", "stacked on", "compare against", "diff against"],
+    title: "Set what this branch is compared against",
+    category: "Branches",
+    keys: ["b"],
+    screens: ["branches", "review"],
+    hint: "base",
+    rank: 5,
+  }),
+  command({
+    action: "base.set",
+    title: "Use the base under the cursor",
+    category: "Branches",
+    keys: ["return"],
+    screens: ["base"],
+    listed: false,
+  }),
+  command({
+    action: "base.clear",
+    title: "Let adiff work the base out again",
+    category: "Branches",
+    keys: ["ctrl+x"],
+    screens: ["base"],
+    hint: "automatic",
+    listed: false,
+  }),
+  command({
+    action: "base.next",
+    title: "Next base",
+    category: "Branches",
+    keys: ["down"],
+    screens: ["base"],
+    listed: false,
+  }),
+  command({
+    action: "base.prev",
+    title: "Previous base",
+    category: "Branches",
+    keys: ["up"],
+    screens: ["base"],
+    listed: false,
   }),
   command({
     action: "review.reload",

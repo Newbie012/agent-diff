@@ -701,6 +701,11 @@ export const savePreference = Effect.fn("Cli.savePreference")(function* (
   return { name, about: known.about, value, byDefault: known.byDefault }
 })
 
+export const listRefs = Effect.fn("Cli.listRefs")(function* (repo: string) {
+  const git = yield* Git
+  return yield* git.refs(repo)
+})
+
 export const setBase = Effect.fn("Cli.setBase")(function* (
   repo: string,
   branch: string,

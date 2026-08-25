@@ -70,6 +70,7 @@ import {
   composeRoom as composeText,
   panelEntries,
   panelEntry,
+  refsShown,
   remarkQuote,
   remarkShown,
   remarkToTakeOn,
@@ -601,7 +602,27 @@ const makeModals = (renderer: CliRenderer) => ({
   found: makeFoundParts(renderer),
   keys: makeKeysParts(renderer),
   settings: makeSettingsParts(renderer),
+  bases: makeBaseParts(renderer),
 })
+
+type BaseParts = {
+  readonly box: BoxRenderable
+  readonly title: TextRenderable
+  readonly query: TextareaRenderable
+  readonly choices: TextRenderable
+}
+
+const makeBaseParts = (renderer: CliRenderer): BaseParts => {
+  const box = makePalette(renderer)
+  const title = bar(renderer, "base-title", palette.faint)
+  const query = asking(renderer, "base-query", "Type a branch, a tag or a commit…")
+  const choices = makeChoices(renderer)
+  box.id = "base"
+  box.add(title)
+  box.add(query)
+  box.add(choices)
+  return { box, title, query, choices }
+}
 
 const makeSettingsParts = (renderer: CliRenderer) => {
   const box = makePalette(renderer)
@@ -1472,6 +1493,7 @@ export class Screen {
   private readonly paletteChoices: TextRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
+  private readonly baseBox: BaseParts
   private readonly settings: BoxRenderable
   private readonly settingsTitle: TextRenderable
   private readonly settingsChoices: TextRenderable
@@ -1529,13 +1551,13 @@ export class Screen {
     this.settingsChoices = modals.settings.choices
     this.keysTitle = modals.keys.title
     this.keysQuery = modals.keys.query
-    this.foundQuery = modals.found.query
     this.keysChoices = modals.keys.choices
+    this.baseBox = modals.bases
     this.found = modals.found.box
     this.foundTitle = modals.found.title
+    this.foundQuery = modals.found.query
     this.foundPeek = modals.found.peek
     this.foundChoices = modals.found.choices
-
     this.assemble(renderer)
   }
 
@@ -1625,6 +1647,8 @@ export class Screen {
         return this.foundQuery
       case "keys":
         return this.keysQuery
+      case "base":
+        return this.baseBox.query
       default:
         return undefined
     }
@@ -1675,6 +1699,7 @@ export class Screen {
     this.paintPalette(state)
     this.paintKeys(state)
     this.paintSettings(state)
+    this.paintBases(state)
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
@@ -1713,6 +1738,37 @@ export class Screen {
     this.palette.width = room
     this.palette.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.palette.top = panelTop(this.renderer.height, PANEL_QUARTER)
+  }
+
+  private paintBases(state: TuiState): void {
+    this.baseBox.box.visible = state.screen === "base"
+    if (state.screen !== "base") {
+      this.baseBox.title.content = ""
+      this.baseBox.choices.content = ""
+      return
+    }
+    const shown = refsShown(state)
+    const room = panelWidth(this.renderer.width)
+    const here = selectedBranch(state)
+    const on = here === undefined ? "" : `${here.base}${here.basis === "set" ? "" : ", adiff's guess"}`
+    this.baseBox.title.content = clip(
+      `Base for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` — now ${on}`}`,
+      room - MODAL_ROOM,
+    )
+    this.baseBox.query.visible = true
+    const tall = Math.min(
+      panelRows(this.renderer.height, PANEL_QUARTER),
+      shown.length + PALETTE_CHROME + 1,
+    )
+    this.baseBox.choices.content = listText(
+      shown.map((ref) => clip(` ${ref}`, room - MODAL_ROOM)),
+      Math.min(state.refIndex, Math.max(0, shown.length - 1)),
+      Math.max(1, tall - PALETTE_CHROME - 1),
+    )
+    this.baseBox.box.height = tall
+    this.baseBox.box.width = room
+    this.baseBox.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.baseBox.box.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private paintSettings(state: TuiState): void {
@@ -1925,6 +1981,7 @@ export class Screen {
       this.found,
       this.keys,
       this.settings,
+      this.baseBox.box,
     ])
   }
 
