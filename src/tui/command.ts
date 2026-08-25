@@ -505,7 +505,7 @@ export const commands: ReadonlyArray<Command> = [
     also: ["editor", "ide", "choose editor", "which editor"],
     title: "Choose the editor a line opens in",
     category: "Reading",
-    keys: ["E"],
+    keys: [],
     screens: ["review"],
   }),
   command({

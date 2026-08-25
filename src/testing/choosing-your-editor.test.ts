@@ -78,15 +78,17 @@ describe("when a reviewer has no editor and asks to open a line", () => {
   })
 })
 
-describe("when a reviewer wants a different editor", () => {
-  test("then the list says which one is in use, and one key hands the choice back", async () => {
+describe("when a reviewer looks for the editor choice in the palette", () => {
+  test("then the list says which editor is in use, and one key hands the choice back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await withFakeCode(driver)
     await driver.app.editorIs("code --goto {file}:{line}")
 
     // ACT
-    await driver.screen.pressKeys(["E"])
+    await driver.screen.pressCtrl("p")
+    await driver.screen.typeText("which editor")
+    await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
     const frame = await driver.screen.getFrame()

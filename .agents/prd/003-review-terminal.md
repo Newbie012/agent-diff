@@ -290,8 +290,9 @@ Three screens, and the keys each answers to:
 - **A reviewer with no editor found is offered the ones on their machine, not a file to edit.**
   Pressing the key with nothing to open in opens the editors found on the path, narrowed by typing,
   and choosing one opens the line straight away — the reviewer asked to read a line, not to
-  configure a tool. `E` opens the same list when one is already chosen, and one key hands the choice
-  back to the environment. The settings file is where the choice is kept, never how it is made: a
+  configure a tool. Changing the editor afterwards is a once-a-machine act, so it lives in the
+  palette rather than on a letter of its own — the list says which editor is in use, and one key
+  hands the choice back to the environment. The settings file is where the choice is kept, never how it is made: a
   reviewer told to edit a file to make a key work has been given a chore instead of an editor.
 
 - **Every message under a line says who said it, and they read down in the order they were said.**
