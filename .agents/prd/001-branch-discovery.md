@@ -102,6 +102,11 @@ Each branch reports:
   base does not move during a review and retyping it on every command invites the two to disagree.
   `base set` records it, `base clear` returns the branch to detection. A recorded base beats
   detection; `--base` beats both, for the one command it is passed to.
+- **The base can be set where the diff is read.** A reviewer who can see that the base is wrong —
+  the row says so — had to leave the terminal, remember a command and come back. `b` opens the refs
+  this repository has, newest first, narrowed by typing; return records the one under the cursor and
+  reads the branch again against it, and one key returns the branch to detection. A ref that is typed
+  and not listed is still tried, because a tag or a commit is a base a reviewer sometimes means.
 - **A base that cannot be resolved is an error, never a quiet fall back to the default.** A base
   that does not name a ref, or names one with no common ancestor, fails the way every other read
   fails: `ok:false`, exit 3, and a suggestion naming `adiff base clear`. Falling back would report

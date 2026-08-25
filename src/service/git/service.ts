@@ -34,6 +34,7 @@ type Shape = {
   ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
   readonly defaultBranch: (repo: string) => Effect.Effect<string>
   readonly stackParent: (repo: string, branch: string) => Effect.Effect<string>
+  readonly refs: (repo: string) => Effect.Effect<ReadonlyArray<string>>
   readonly resolves: (repo: string, ref: string) => Effect.Effect<boolean>
   readonly sharedWith: (repo: string, branch: string, ref: string) => Effect.Effect<string>
 }
@@ -223,6 +224,23 @@ const findRepo = Effect.fn("Git.repoOf")(function* (worktree: string) {
   return trimmed.length === 0 ? resolve(worktree) : resolve(trimmed, "..")
 })
 
+const REFS_MOST = 200
+
+const readRefs = Effect.fn("Git.refs")(function* (repo: string) {
+  const said = yield* gitOrEmpty(repo, [
+    "for-each-ref",
+    "--sort=-committerdate",
+    `--count=${REFS_MOST}`,
+    "--format=%(refname:short)",
+    "refs/heads",
+    "refs/remotes",
+  ])
+  return said
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.endsWith("/HEAD"))
+})
+
 const refResolves = Effect.fn("Git.resolves")(function* (repo: string, ref: string) {
   const found = yield* gitOrEmpty(repo, ["rev-parse", "--verify", `${ref}^{commit}`])
   return found.trim().length > 0
@@ -270,6 +288,7 @@ const shapeWith = (caches: Caches): Shape => ({
         Cache.get(caches.parent, `${repo}${SPLIT}${branch}${SPLIT}${fallback}`),
       ),
     ),
+  refs: readRefs,
   resolves: refResolves,
   sharedWith: sharedCommit,
 })

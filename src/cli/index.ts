@@ -18,6 +18,7 @@ export {
   listBranches,
   summaryFor,
   markRead,
+  listRefs,
   setBase,
   clearBase,
   baseFor,

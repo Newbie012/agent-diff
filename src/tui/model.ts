@@ -57,6 +57,7 @@ export type Screen =
   | "search"
   | "keys"
   | "settings"
+  | "base"
 
 const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   wrap: "wrap",
@@ -147,6 +148,8 @@ export type TuiState = {
   readonly rail: "tree" | "layers"
   readonly term: string
   readonly matches: ReadonlyArray<Match>
+  readonly refs: ReadonlyArray<string>
+  readonly refIndex: number
   readonly counted: Counted
   readonly leftOut: number
   readonly around: ReadonlyArray<string>
@@ -195,6 +198,16 @@ const nothingReviewed = {
   focusWas: "diff" as Focus,
 }
 
+const nothingFound = {
+  matches: [] as ReadonlyArray<Match>,
+  refs: [] as ReadonlyArray<string>,
+  refIndex: 0,
+  matchIndex: 0,
+  term: "",
+  query: "",
+  paletteIndex: 0,
+}
+
 export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState => ({
   ...nothingReviewed,
   screen: "branches",
@@ -211,8 +224,6 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   draftAt: "",
   notice: "",
   waiting: "",
-  query: "",
-  paletteIndex: 0,
   returnTo: "branches",
   closed: [],
   vouched: [],
@@ -237,12 +248,10 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   forge: "asking",
   layerIndex: 0,
   openLayers: [],
-  term: "",
-  matches: [],
+  ...nothingFound,
   counted: { file: 0, branch: 0, worktree: 0 },
   leftOut: 0,
   around: [],
-  matchIndex: 0,
   rail: "tree",
 })
 
@@ -911,6 +920,17 @@ export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
     `${match.path}:${match.line} ${match.text}`.toLowerCase().includes(wanted),
   )
 }
+
+export const refsShown = (state: TuiState): ReadonlyArray<string> => {
+  const wanted = state.query.trim().toLowerCase()
+  const held = state.refs.filter((ref) => ref.toLowerCase().includes(wanted))
+  return wanted.length === 0 || held.some((ref) => ref.toLowerCase() === wanted)
+    ? held
+    : [...held, state.query.trim()]
+}
+
+export const refHere = (state: TuiState): string | undefined =>
+  refsShown(state)[state.refIndex]
 
 export const matchHere = (state: TuiState): Match | undefined =>
   shownMatches(state)[state.matchIndex]
