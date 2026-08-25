@@ -10,8 +10,9 @@ sits, and the first line of what was said. The sections read `Remarks`, `Dismiss
 sent`, `Waiting on you`, `Not picked up`, `Picked up, no answer`, `Answered, not settled`, `Settled` and
 `Removed`, and each names how many it holds.
 
-The mark on a thread says how far it has gone: `○` written, `◐` picked up, `●` answered, `◉` waiting on
-you, `✓` settled. One circle, filling up, so the marks read as one scale rather than as five signs.
+The mark on a thread says how far it has gone: `○` written, `◎` picked up, `●` answered, `◉` waiting on
+you, `✓` settled. One circle at one size, so the marks read as a scale rather than as five signs, and
+the foot of the `?` sheet names every one of them.
 
 An answer sits under your comment, inline in the diff, under the code the comment was written on. Every
 message says who said it — `»` your words, `↳` the agent's answer, `@handle` somebody on the pull

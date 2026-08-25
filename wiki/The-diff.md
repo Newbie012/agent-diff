@@ -57,9 +57,10 @@ answer that arrives is always the answer to what is in the box.
 the `editor` command in the settings file, whichever it finds.
 
 With none of them set, `e` opens a list of the editors it found on your `PATH`; typing narrows it, and
-`return` saves the one you chose and opens the line. `E` opens that list again to change it, marking the
-one in use `now`, and accepts a command you type in full — `code -g {file}:{line}` — for an editor the
-list does not know. `ctrl+x` hands the choice back to `$VISUAL` and `$EDITOR`.
+`return` saves the one you chose and opens the line. The list accepts a command you type in full —
+`code -g {file}:{line}` — for an editor it does not know. Changing your mind later is a once-a-machine
+act, so it lives in the command palette rather than on a key: `ctrl+p`, then "which editor". The list
+marks the one in use `now`, and `ctrl+x` hands the choice back to `$VISUAL` and `$EDITOR`.
 
 ## Set what the branch is compared against with `b`
 
@@ -83,7 +84,9 @@ thread, `send 2` only while two comments are waiting, `pull request` only on a b
 ## List every key with `?`
 
 `?` opens the sheet of every key for the screen you are on, and filters as you type. It works on the
-branch list, inside a branch, and in the search box.
+branch list, inside a branch, and in the search box. Along its foot is a legend naming every mark on
+the screen: the four a thread can carry, the one on a remark, and the two that say whose words you are
+reading.
 
 ![The sheet of every key for the screen, filtering as the reviewer types](https://github.com/user-attachments/assets/bfa306c1-c111-4844-90b2-68f51d3620fb)
 
