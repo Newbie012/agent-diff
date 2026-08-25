@@ -101,6 +101,6 @@ describe("when the file tree is read", () => {
 
     // ASSERT
     const rows = pane(await driver.screen.getFrame())
-    expect(rows.every((line) => !/\d[○◐●◉]/.test(line))).toBe(true)
+    expect(rows.every((line) => !/\d[○◎●◉]/.test(line))).toBe(true)
   })
 })
