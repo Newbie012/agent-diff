@@ -1377,6 +1377,15 @@ const pickingTitle = (state: TuiState): string => {
   return `Base for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` — now ${on}`}`
 }
 
+const YOURS = "   ← the command you typed"
+
+const YOUR_REF = "   ← the ref you typed"
+
+const pickedTail = (state: TuiState, ref: string, typed: string): string => {
+  if (typed.length === 0 || ref !== typed || state.refs.includes(ref)) return ""
+  return state.screen === "editor" ? YOURS : YOUR_REF
+}
+
 const REMARK_MARK = "◇"
 
 const remarkWhere = (remark: Remark, known: boolean): string => {
@@ -1824,8 +1833,9 @@ export class Screen {
       panelRows(this.renderer.height, PANEL_QUARTER),
       shown.length + PALETTE_CHROME + 1,
     )
+    const typed = state.query.trim()
     this.baseBox.choices.content = listText(
-      shown.map((ref) => clip(` ${ref}`, room - MODAL_ROOM)),
+      shown.map((ref) => clip(` ${ref}${pickedTail(state, ref, typed)}`, room - MODAL_ROOM)),
       Math.min(state.refIndex, Math.max(0, shown.length - 1)),
       Math.max(1, tall - PALETTE_CHROME - 1),
     )
