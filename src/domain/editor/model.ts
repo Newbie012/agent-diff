@@ -12,19 +12,20 @@ export type Opening = {
 }
 
 const KNOWN: ReadonlyArray<readonly [string, string]> = [
-  ["vscode", "code --goto {file}:{line}"],
-  ["cursor", "cursor --goto {file}:{line}"],
-  ["windsurf", "windsurf --goto {file}:{line}"],
-  ["zed", "zed {file}:{line}"],
+  ["vscode", "code {repo} --goto {file}:{line}"],
+  ["cursor", "cursor {repo} --goto {file}:{line}"],
+  ["windsurf", "windsurf {repo} --goto {file}:{line}"],
+  ["zed", "zed {repo} {file}:{line}"],
   ["jetbrains", "idea --line {line} {file}"],
 ]
 
 const LINED: ReadonlyArray<readonly [string, string]> = [
-  ["code", "{command} --goto {file}:{line}"],
-  ["cursor", "{command} --goto {file}:{line}"],
-  ["zed", "{command} {file}:{line}"],
+  ["code", "{command} {repo} --goto {file}:{line}"],
+  ["cursor", "{command} {repo} --goto {file}:{line}"],
+  ["windsurf", "{command} {repo} --goto {file}:{line}"],
+  ["zed", "{command} {repo} {file}:{line}"],
   ["idea", "{command} --line {line} {file}"],
-  ["subl", "{command} {file}:{line}"],
+  ["subl", "{command} {repo} {file}:{line}"],
   ["vim", "{command} +{line} {file}"],
   ["nvim", "{command} +{line} {file}"],
   ["hx", "{command} {file}:{line}"],
@@ -72,8 +73,12 @@ export const openingOf = (
   template: string,
   file: string,
   line: number,
+  repo: string,
 ): Opening | undefined => {
-  const filled = template.replaceAll("{file}", file).replaceAll("{line}", String(line))
+  const filled = template
+    .replaceAll("{repo}", repo)
+    .replaceAll("{file}", file)
+    .replaceAll("{line}", String(line))
   const [command, ...args] = filled.trim().split(/\s+/)
   return command === undefined ? undefined : { command, args }
 }

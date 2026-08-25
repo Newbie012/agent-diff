@@ -259,9 +259,9 @@ const throughMultiplexer = (sequence: string): string => {
   return process.env["STY"] === undefined ? sequence : `\u001BP${sequence}\u001B\\`
 }
 
-const ranAside = (command: string, args: ReadonlyArray<string>): boolean => {
+const ranAside = (command: string, args: ReadonlyArray<string>, from: string): boolean => {
   try {
-    const child = spawn(command, [...args], { detached: true, stdio: "ignore" })
+    const child = spawn(command, [...args], { detached: true, stdio: "ignore", cwd: from })
     child.on("error", () => undefined)
     child.unref()
     return true
@@ -1720,7 +1720,14 @@ export class App {
       : sentIn(reading)
   }
 
-  private whereTheLineIs(): { readonly file: string; readonly path: string; readonly line: number } | undefined {
+  private whereTheLineIs():
+    | {
+        readonly file: string
+        readonly path: string
+        readonly root: string
+        readonly line: number
+      }
+    | undefined {
     const branch = selectedBranch(this.state)
     const patch = selectedPatch(this.state)
     if (branch === undefined || patch === undefined) return undefined
@@ -1728,6 +1735,7 @@ export class App {
     return {
       file: resolve(held, patch.path),
       path: patch.path,
+      root: held,
       line: sourceLineAt(this.state, this.state.cursor) ?? 1,
     }
   }
@@ -1764,12 +1772,15 @@ export class App {
       const where = this.whereTheLineIs()
       if (where === undefined) return
       const template = templateFor(yield* editorTold)
-      const opening = template === undefined ? undefined : openingOf(template, where.file, where.line)
+      const opening =
+        template === undefined
+          ? undefined
+          : openingOf(template, where.file, where.line, where.root)
       if (opening === undefined) {
         yield* this.chooseEditor()
         return
       }
-      const said = ranAside(opening.command, opening.args)
+      const said = ranAside(opening.command, opening.args, where.root)
         ? `${where.path}:${where.line} in ${opening.command}`
         : `${opening.command} would not start`
       this.commit(withNoticeHere(this.state, said))

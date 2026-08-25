@@ -284,8 +284,16 @@ Three screens, and the keys each answers to:
 
 - **The editor is found, and chosen in the terminal when it is not.** `$VISUAL`, then `$EDITOR`, then
   whatever launched adiff — VS Code, Cursor, Windsurf, Zed and JetBrains all say so in the
-  environment. A known editor is given its own line flag, so `code` becomes `code --goto file:line`
-  and `vim` becomes `vim +line file`.
+  environment. A known editor is given its own line flag, so `code` becomes
+  `code repo --goto file:line` and `vim` becomes `vim +line file`.
+
+- **A line is opened inside its project, not on its own.** Handing an editor one absolute path
+  opened the file and nothing else: no project, so no imports resolved, no definitions, no
+  completion — the reviewer got a text editor where they wanted their editor. An editor that takes a
+  folder is handed the branch's worktree as well as the file, which is what `{repo}` in a template
+  fills, and every editor is started in that worktree, so the ones that read their project from the
+  working directory find it too. A command of the reviewer's own is left as it is written: their
+  template, their arguments, and `{repo}` there if they want it.
 
 - **A reviewer with no editor found is offered the ones on their machine, not a file to edit.**
   Pressing the key with nothing to open in opens the editors found on the path, narrowed by typing,

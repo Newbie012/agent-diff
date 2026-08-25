@@ -56,11 +56,17 @@ answer that arrives is always the answer to what is in the box.
 `e` opens the line under the cursor in your editor, at that line. adiff uses `$VISUAL` or `$EDITOR`, or
 the `editor` command in the settings file, whichever it finds.
 
+The line opens inside its project rather than on its own: an editor that takes a folder is handed the
+branch's worktree as well as the file, so imports resolve and completion works, and every editor is
+started in that worktree for the ones that read their project from the working directory.
+
 With none of them set, `e` opens a list of the editors it found on your `PATH`; typing narrows it, and
-`return` saves the one you chose and opens the line. The list accepts a command you type in full —
-`code -g {file}:{line}` — for an editor it does not know. Changing your mind later is a once-a-machine
-act, so it lives in the command palette rather than on a key: `ctrl+p`, then "which editor". The list
-marks the one in use `now`, and `ctrl+x` hands the choice back to `$VISUAL` and `$EDITOR`.
+`return` saves the one you chose and opens the line. Type a command in full and the list offers it back
+marked "the command you typed", so your own is a first-class answer: `{repo}` is the branch's folder,
+`{file}` the file and `{line}` the line, as in `mine --at {file}:{line}`. Changing your mind later is a
+once-a-machine act, so it lives in the command palette rather than on a key: `ctrl+p`, then "which
+editor". The list marks the one in use `now`, and `ctrl+x` hands the choice back to `$VISUAL` and
+`$EDITOR`.
 
 ## Set what the branch is compared against with `b`
 
