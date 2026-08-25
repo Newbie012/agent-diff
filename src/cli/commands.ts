@@ -346,6 +346,7 @@ const sentOf = (
     start: comment.start,
     end: comment.end,
     body: comment.body,
+    snippet: comment.snippet,
     settled: Object.hasOwn(settled, comment.id),
     removed: Object.hasOwn(removed, comment.id),
     stale: comment.head !== head,

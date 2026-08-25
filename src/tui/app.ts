@@ -1269,7 +1269,7 @@ export class App {
       const shown = selectedPatch(wide)
       if (shown === undefined || rowShowing(shown, entry.comment.end) === undefined) {
         yield* this.readAnswers(entry.comment.id)
-        this.commit(withNoticeHere(this.state, "that comment is outside this diff"))
+        this.commit(withNoticeHere(this.state, "the diff no longer has that line · the panel shows the code it was written on"))
         return
       }
       this.commit(openedAt({ ...this.measured(), revealed: wide.revealed }, at, entry.comment.end))

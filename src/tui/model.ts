@@ -12,6 +12,7 @@ export type StagedComment = {
   readonly start: number
   readonly end: number
   readonly body: string
+  readonly snippet?: string
   readonly settled?: boolean
   readonly removed?: boolean
   readonly outside?: boolean

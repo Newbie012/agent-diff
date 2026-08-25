@@ -1392,6 +1392,41 @@ const panelMark = (entry: PanelEntry): string =>
 
 type Placed = { readonly entry: PanelEntry; readonly at: number }
 
+const WRITTEN_ON = 4
+
+const lostCode = (entry: PanelEntry): ReadonlyArray<string> => {
+  const said = entry.kind === "remark" ? entry.remark.code : (entry.comment.snippet ?? "").split("\n")
+  return said.filter((line) => line.trim().length > 0)
+}
+
+const lostEntry = (state: TuiState, entry: PanelEntry): boolean =>
+  entry.kind === "remark"
+    ? !entry.remark.placed && state.patches.some((patch) => patch.path === entry.remark.file)
+    : entry.comment.outside === true
+
+const writtenOn = (
+  state: TuiState,
+  placed: Placed,
+  room: number,
+): ReadonlyArray<PanelLine> => {
+  const { entry } = placed
+  if (placed.at !== state.panelIndex || !lostEntry(state, entry)) return []
+  const code = lostCode(entry)
+  if (code.length === 0) return []
+  const shown = code.slice(-WRITTEN_ON)
+  const cut = code.length - shown.length
+  const rows = shown.map((line) => ({
+    text: clip(`   │ ${line.trim()}`, room),
+    tone: palette.faint,
+  }))
+  const more = cut === 0 ? [] : [{ text: clip(`   │ ⋯ ${cut} more`, room), tone: palette.faint }]
+  return [
+    { text: clip("   the code it was written on", room), tone: palette.faint },
+    ...more,
+    ...rows,
+  ]
+}
+
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
   const lead = ` ${panelMark(entry)} `
@@ -1399,6 +1434,7 @@ const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray
   return [
     { text: `${lead}${panelWhere(state, entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
     { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted, here },
+    ...writtenOn(state, placed, room),
   ]
 }
 
