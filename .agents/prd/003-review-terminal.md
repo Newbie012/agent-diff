@@ -278,6 +278,17 @@ Three screens, and the keys each answers to:
   are typed rather than when a key says to go. Nothing is read from the clipboard: what a reviewer
   copied is theirs, and a review that pastes it into a box unasked has helped itself.
 
+- **`e` opens the line under the cursor in the reviewer's editor.** Reading a diff is where a
+  reviewer decides to change something, and the file and line they want are already under the cursor.
+  The file is passed absolute, so it opens whichever worktree the branch lives in.
+
+- **The editor is found, not configured.** `$VISUAL`, then `$EDITOR`, then whatever launched adiff —
+  VS Code, Cursor, Windsurf, Zed and JetBrains all say so in the environment. A known editor is given
+  its own line flag, so `code` becomes `code --goto file:line` and `vim` becomes `vim +line file`. The
+  settings file may hold an `editor` command with `{file}` and `{line}` in it, which is an argument
+  rather than a preference ([PRD 011](011-preferences.md)) because it is neither on nor off. A
+  reviewer with none of these is told which to set rather than left with a key that does nothing.
+
 - **A search asks git to search, and nothing else.** Every search resolved the branch and read its
   whole diff again to learn which files it changes, so a search of a hundred and thirty-one files
   cost two hundred milliseconds before a single line had been looked at — and it cost that again

@@ -13,6 +13,7 @@ import {
 import { Cause, Deferred, Effect, Fiber, Option, Queue, Result, Stream, SubscriptionRef } from "effect"
 import { buildReport } from "./report.ts"
 import { anchorFor } from "../domain/patch/index.ts"
+import { openingOf, templateFor } from "../domain/editor/index.ts"
 import {
   listBranches,
   listRefs,
@@ -157,6 +158,7 @@ const AGE_TICK_MS = 30_000
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 const NOTHING_WRITTEN = "nothing written yet"
+const NO_EDITOR = "no editor to open it in: set $VISUAL, or editor in the settings file"
 const WORTH_TIMING_MS = 250
 const TIMES_KEPT = 40
 const SLOWEST_KEPT = 3
@@ -255,6 +257,30 @@ const throughMultiplexer = (sequence: string): string => {
   if (process.env["TMUX"] !== undefined) return `\u001BPtmux;\u001B${sequence}\u001B\\`
   return process.env["STY"] === undefined ? sequence : `\u001BP${sequence}\u001B\\`
 }
+
+const ranAside = (command: string, args: ReadonlyArray<string>): boolean => {
+  try {
+    const child = spawn(command, [...args], { detached: true, stdio: "ignore" })
+    child.on("error", () => undefined)
+    child.unref()
+    return true
+  } catch {
+    return false
+  }
+}
+
+const editorTold = Effect.gen(function* () {
+  const store = yield* Store
+  const kept = yield* store.settings
+  const held = kept["editor"]
+  return {
+    editor: typeof held === "string" ? held : undefined,
+    visual: process.env["VISUAL"],
+    fallback: process.env["EDITOR"],
+    termProgram: process.env["TERM_PROGRAM"],
+    terminalEmulator: process.env["TERMINAL_EMULATOR"],
+  }
+})
 
 const copyToClipboard = (text: string): void => {
   const encoded = Buffer.from(text, "utf8").toString("base64")
@@ -778,6 +804,7 @@ export class App {
       "base.open": () => this.openBases(),
       "base.set": () => this.setBaseHere(),
       "base.clear": () => this.clearBaseHere(),
+      "line.open": () => this.openInEditor(),
       "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
       back: () => this.goBack(),
       "report.send": () => this.sendReport(),
@@ -1677,10 +1704,40 @@ export class App {
       : sentIn(reading)
   }
 
+  private whereTheLineIs(): { readonly file: string; readonly path: string; readonly line: number } | undefined {
+    const branch = selectedBranch(this.state)
+    const patch = selectedPatch(this.state)
+    if (branch === undefined || patch === undefined) return undefined
+    const held = this.worktreeFor(branch.branch)?.path ?? this.repo
+    return {
+      file: resolve(held, patch.path),
+      path: patch.path,
+      line: sourceLineAt(this.state, this.state.cursor) ?? 1,
+    }
+  }
+
+  private openInEditor(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const where = this.whereTheLineIs()
+      if (where === undefined) return
+      const template = templateFor(yield* editorTold)
+      const opening = template === undefined ? undefined : openingOf(template, where.file, where.line)
+      if (opening === undefined) {
+        this.commit(withNoticeHere(this.state, NO_EDITOR))
+        return
+      }
+      const said = ranAside(opening.command, opening.args)
+        ? `${where.path}:${where.line} in ${opening.command}`
+        : `${opening.command} would not start`
+      this.commit(withNoticeHere(this.state, said))
+    })
+  }
+
   private showPull(): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
+      if (pullHere(this.state).length === 0) yield* this.loadPulls()
       if (knownToHaveNoPull(this.state)) {
         this.commit(withNoticeHere(this.state, "no pull request for this branch"))
         return

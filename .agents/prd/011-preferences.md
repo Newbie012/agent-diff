@@ -69,6 +69,11 @@ store's location and the `ADIFF_ROOT` override belong to
   nesting. Every preference can be drawn as a line with a mark against it and toggled with one key,
   and anything that cannot be is not a preference — it is a command, or an argument.
 
+- **A setting that is not on or off lives in the file, and is not a preference.** The `editor`
+  command is the first of these: it is a string with `{file}` and `{line}` in it, so it cannot be a
+  line with a mark against it, and the screen that lists preferences does not list it. The file holds
+  it, the terminal reads it, and `config` neither reports nor sets it.
+
 - **Preferences are global.** One file, one answer, for every repository on the machine. A review
   is a thing a person does the same way wherever they are, and a per-repository answer is a second
   place to look when the terminal does something surprising.

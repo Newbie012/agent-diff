@@ -101,6 +101,7 @@ export const Settings = Schema.Struct({
   newestFirst: Schema.optionalKey(Schema.Boolean),
   remarks: Schema.optionalKey(Schema.Boolean),
   hold: Schema.optionalKey(Schema.Boolean),
+  editor: Schema.optionalKey(Schema.String),
 })
 
 export const Watching = Schema.Struct({

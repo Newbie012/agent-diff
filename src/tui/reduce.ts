@@ -581,6 +581,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "base.clear": (state) => state,
   "base.next": (state) => moveRef(state, 1),
   "base.prev": (state) => moveRef(state, -1),
+  "line.open": (state) => state,
   "thread.settle": (state) => state,
   "thread.settleRead": (state) => state,
   "thread.remove": (state) => state,

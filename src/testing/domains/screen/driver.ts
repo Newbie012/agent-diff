@@ -103,6 +103,7 @@ export type OpenOptions = {
   readonly noticeMs?: number
   readonly slowGrepMs?: number
   readonly slowFirstGrepMs?: number
+  readonly withoutEditor?: boolean
 }
 
 export class ScreenTestDriver {
@@ -152,6 +153,7 @@ export class ScreenTestDriver {
       exitOnCtrlC: false,
     })
     this.setup = setup
+    if (options.withoutEditor === true) this.forgetEditor()
     this.slowedBy(options)
     this.watch()
     this.countKeys(setup)
@@ -192,6 +194,12 @@ export class ScreenTestDriver {
     this.watching = record
     process.on("uncaughtException", record)
     process.on("unhandledRejection", record)
+  }
+
+  private forgetEditor(): void {
+    for (const name of ["VISUAL", "EDITOR", "TERM_PROGRAM", "TERMINAL_EMULATOR"]) {
+      delete process.env[name]
+    }
   }
 
   private slowedBy(options: OpenOptions): void {

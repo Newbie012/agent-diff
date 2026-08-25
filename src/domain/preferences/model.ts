@@ -61,12 +61,13 @@ export const preferenceNames: ReadonlyArray<string> = preferences.map((one) => o
 export const preferenceNamed = (name: string): Preference | undefined =>
   preferences.find((one) => one.name === name)
 
-export const heldValue = (
-  kept: Readonly<Record<string, boolean | undefined>>,
-  name: string,
-): boolean => kept[name] ?? preferenceNamed(name)?.byDefault ?? false
+export type Kept = Readonly<Record<string, boolean | string | undefined>>
 
-export const heldValues = (
-  kept: Readonly<Record<string, boolean | undefined>>,
-): Readonly<Record<string, boolean>> =>
+const asFlag = (held: boolean | string | undefined): boolean | undefined =>
+  typeof held === "boolean" ? held : undefined
+
+export const heldValue = (kept: Kept, name: string): boolean =>
+  asFlag(kept[name]) ?? preferenceNamed(name)?.byDefault ?? false
+
+export const heldValues = (kept: Kept): Readonly<Record<string, boolean>> =>
   Object.fromEntries(preferences.map((one) => [one.name, heldValue(kept, one.name)]))
