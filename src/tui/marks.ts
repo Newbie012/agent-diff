@@ -25,14 +25,14 @@ const shared = {
   tab: "→",
 } as const
 
-const ring: MarkSet = { ...shared, filed: "○", waiting: "◔", answered: "◐", asked: "●", rule: "│" }
+const ring: MarkSet = { ...shared, filed: "○", waiting: "◎", answered: "●", asked: "◉", rule: "│" }
 
 const sets: Readonly<Record<string, MarkSet>> = {
   ring,
-  bubble: { ...shared, filed: "◌", waiting: "◔", answered: "◑", asked: "◗", rule: "┃", cursor: "▌" },
+  bubble: { ...shared, filed: "◌", waiting: "◎", answered: "●", asked: "◉", rule: "┃", cursor: "▌" },
   quote: { ...shared, filed: "❞", waiting: "❟", answered: "❠", asked: "❝", rule: "┊" },
-  diamond: { ...shared, filed: "◇", waiting: "◊", answered: "◈", asked: "◆", rule: "╎" },
-  dot: { ...shared, filed: "○", waiting: "◔", answered: "◉", asked: "●", rule: "▏" },
+  diamond: { ...shared, filed: "◇", waiting: "◈", answered: "◆", asked: "❖", rule: "╎" },
+  dot: { ...shared, filed: "·", waiting: "◎", answered: "●", asked: "◉", rule: "▏" },
 }
 
 export const markSetNames: ReadonlyArray<string> = Object.keys(sets)
