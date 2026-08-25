@@ -308,6 +308,10 @@
   dir: ""
   intents:
     - opening-a-line-in-your-editor
+"@eliya-oss/agent-diff@0.1.0-alpha.159":
+  dir: ""
+  intents:
+    - every-message-says-who-said-it
 "@eliya-oss/agent-diff@0.1.0-alpha.16":
   dir: ""
   intents:
