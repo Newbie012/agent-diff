@@ -31,6 +31,7 @@ export type Remark = {
   readonly moreReplies: number
   readonly outdated: boolean
   readonly placed: boolean
+  readonly code: ReadonlyArray<string>
   readonly state: RemarkState
   readonly comment: string
 }
@@ -139,6 +140,7 @@ const shownOf = (
     moreReplies: held.moreReplies,
     outdated: held.outdated,
     placed: sits.placed,
+    code: quotedCode(held.hunk, held.side),
     state: stateOf(held, dismissed, accepted),
     comment: comment ?? "",
   }

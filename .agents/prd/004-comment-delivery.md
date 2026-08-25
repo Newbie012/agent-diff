@@ -119,6 +119,14 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   they could see, could not settle, and could only be rid of from the command line. With the panel
   focused, settling and removing act on the entry under its cursor, and the footer offers the key
   there for the same reason it offers it on a thread in the diff.
+- **A comment the diff can no longer place shows the code it was written on.** The usual reason a
+  comment loses its line is that the agent did what the comment asked, so the code it quoted is not
+  in the diff any more. The panel said "not in the diff" and going to it said it was outside this
+  diff, which left the reviewer holding a sentence about code they could no longer read, on the one
+  occasion they most wanted to compare it with the fix. The panel now quotes, under the comment it
+  is standing on, the lines that were stored with it when it was written, oldest state and all, and
+  going to it says the diff no longer has that line rather than only refusing.
+
 - **Settling a thread leaves the cursor where the reviewer was.** Reading the review again after a
   settle rebuilds the list from the top, and the panel went with it, so settling the second of
   three threads put the reviewer back on the first. Where they were is what they were reading, so
