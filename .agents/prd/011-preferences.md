@@ -72,7 +72,8 @@ store's location and the `ADIFF_ROOT` override belong to
 - **A setting that is not on or off lives in the file, and is not a preference.** The `editor`
   command is the first of these: it is a string with `{file}` and `{line}` in it, so it cannot be a
   line with a mark against it, and the screen that lists preferences does not list it. The file holds
-  it, the terminal reads it, and `config` neither reports nor sets it.
+  it, the terminal reads it, and `config` neither reports nor sets it. It is still set from the
+  terminal — the file is storage, not an interface ([PRD 003](003-review-terminal.md)).
 
 - **Preferences are global.** One file, one answer, for every repository on the machine. A review
   is a thing a person does the same way wherever they are, and a per-repository answer is a second

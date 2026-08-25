@@ -59,6 +59,7 @@ export type Screen =
   | "keys"
   | "settings"
   | "base"
+  | "editor"
 
 const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   wrap: "wrap",
@@ -151,6 +152,7 @@ export type TuiState = {
   readonly matches: ReadonlyArray<Match>
   readonly refs: ReadonlyArray<string>
   readonly refIndex: number
+  readonly editorNow: string
   readonly counted: Counted
   readonly leftOut: number
   readonly around: ReadonlyArray<string>
@@ -203,6 +205,7 @@ const nothingFound = {
   matches: [] as ReadonlyArray<Match>,
   refs: [] as ReadonlyArray<string>,
   refIndex: 0,
+  editorNow: "",
   matchIndex: 0,
   term: "",
   query: "",
@@ -927,8 +930,11 @@ export const refsShown = (state: TuiState): ReadonlyArray<string> => {
   const held = state.refs.filter((ref) => ref.toLowerCase().includes(wanted))
   return wanted.length === 0 || held.some((ref) => ref.toLowerCase() === wanted)
     ? held
-    : [...held, state.query.trim()]
+    : held.concat([state.query.trim()])
 }
+
+export const picking = (state: TuiState): boolean =>
+  state.screen === "base" || state.screen === "editor"
 
 export const refHere = (state: TuiState): string | undefined =>
   refsShown(state)[state.refIndex]

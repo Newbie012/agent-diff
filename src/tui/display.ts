@@ -4,7 +4,7 @@ import { Context, Effect, Layer } from "effect"
 import type { Screen as ScreenName, TuiState } from "./model.ts"
 import { Screen, type Mouse } from "./render.ts"
 
-const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys", "search", "base"]
+const ASKING: ReadonlyArray<ScreenName> = ["palette", "keys", "search", "base", "editor"]
 
 export type Shape = {
   readonly paint: (state: TuiState) => Effect.Effect<void>
@@ -81,14 +81,15 @@ const shapeOf = (screen: Screen): Shape => ({
     Effect.sync(() => (on ? screen.writing().focus() : screen.writing().blur())),
   askOn: (which) =>
     Effect.sync(() => {
+      const wanted = which === undefined ? undefined : screen.asking(which)
       for (const name of ASKING) {
         const box = screen.asking(name)
-        if (box === undefined) continue
-        if (name === which) {
-          box.setText("")
-          box.focus()
-        } else box.blur()
+        if (box === undefined || box === wanted) continue
+        box.blur()
       }
+      if (wanted === undefined) return
+      wanted.setText("")
+      wanted.focus()
     }),
   askWith: (text) =>
     Effect.sync(() => {

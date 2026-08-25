@@ -509,14 +509,23 @@ const moveRef = (state: TuiState, delta: number): TuiState => ({
   refIndex: clamp(state.refIndex + delta, 0, Math.max(0, refsShown(state).length - 1)),
 })
 
-export const withRefs = (state: TuiState, refs: ReadonlyArray<string>): TuiState => ({
+export const withChoices = (
+  state: TuiState,
+  refs: ReadonlyArray<string>,
+  screen: "base" | "editor",
+  now = "",
+): TuiState => ({
   ...state,
-  screen: "base",
+  screen,
+  editorNow: now,
   returnTo: state.screen,
   refs,
   refIndex: 0,
   query: "",
 })
+
+export const withRefs = (state: TuiState, refs: ReadonlyArray<string>): TuiState =>
+  withChoices(state, refs, "base")
 
 const movePalette = (state: TuiState, delta: number): TuiState => ({
   ...state,
@@ -582,6 +591,7 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "base.next": (state) => moveRef(state, 1),
   "base.prev": (state) => moveRef(state, -1),
   "line.open": (state) => state,
+  "editor.open": (state) => state,
   "thread.settle": (state) => state,
   "thread.settleRead": (state) => state,
   "thread.remove": (state) => state,

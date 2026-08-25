@@ -70,6 +70,7 @@ import {
   composeRoom as composeText,
   panelEntries,
   panelEntry,
+  picking,
   refsShown,
   remarkQuote,
   remarkShown,
@@ -1348,6 +1349,15 @@ const windowedBlocks = (
   return { rows, chunks: kept.flatMap((block) => block.chunks) }
 }
 
+const pickingTitle = (state: TuiState): string => {
+  if (state.screen === "editor") {
+    return `Editor${state.editorNow.length === 0 ? " — none found" : ` — now ${state.editorNow}`}`
+  }
+  const here = selectedBranch(state)
+  const on = here === undefined ? "" : `${here.base}${here.basis === "set" ? "" : ", adiff's guess"}`
+  return `Base for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` — now ${on}`}`
+}
+
 const REMARK_MARK = "◇"
 
 const remarkWhere = (remark: Remark, known: boolean): string => {
@@ -1649,6 +1659,7 @@ export class Screen {
       case "keys":
         return this.keysQuery
       case "base":
+      case "editor":
         return this.baseBox.query
       default:
         return undefined
@@ -1742,20 +1753,15 @@ export class Screen {
   }
 
   private paintBases(state: TuiState): void {
-    this.baseBox.box.visible = state.screen === "base"
-    if (state.screen !== "base") {
+    this.baseBox.box.visible = picking(state)
+    if (!picking(state)) {
       this.baseBox.title.content = ""
       this.baseBox.choices.content = ""
       return
     }
     const shown = refsShown(state)
     const room = panelWidth(this.renderer.width)
-    const here = selectedBranch(state)
-    const on = here === undefined ? "" : `${here.base}${here.basis === "set" ? "" : ", adiff's guess"}`
-    this.baseBox.title.content = clip(
-      `Base for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` — now ${on}`}`,
-      room - MODAL_ROOM,
-    )
+    this.baseBox.title.content = clip(pickingTitle(state), room - MODAL_ROOM)
     this.baseBox.query.visible = true
     const tall = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),

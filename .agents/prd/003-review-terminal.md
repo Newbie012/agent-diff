@@ -282,12 +282,17 @@ Three screens, and the keys each answers to:
   reviewer decides to change something, and the file and line they want are already under the cursor.
   The file is passed absolute, so it opens whichever worktree the branch lives in.
 
-- **The editor is found, not configured.** `$VISUAL`, then `$EDITOR`, then whatever launched adiff —
-  VS Code, Cursor, Windsurf, Zed and JetBrains all say so in the environment. A known editor is given
-  its own line flag, so `code` becomes `code --goto file:line` and `vim` becomes `vim +line file`. The
-  settings file may hold an `editor` command with `{file}` and `{line}` in it, which is an argument
-  rather than a preference ([PRD 011](011-preferences.md)) because it is neither on nor off. A
-  reviewer with none of these is told which to set rather than left with a key that does nothing.
+- **The editor is found, and chosen in the terminal when it is not.** `$VISUAL`, then `$EDITOR`, then
+  whatever launched adiff — VS Code, Cursor, Windsurf, Zed and JetBrains all say so in the
+  environment. A known editor is given its own line flag, so `code` becomes `code --goto file:line`
+  and `vim` becomes `vim +line file`.
+
+- **A reviewer with no editor found is offered the ones on their machine, not a file to edit.**
+  Pressing the key with nothing to open in opens the editors found on the path, narrowed by typing,
+  and choosing one opens the line straight away — the reviewer asked to read a line, not to
+  configure a tool. `E` opens the same list when one is already chosen, and one key hands the choice
+  back to the environment. The settings file is where the choice is kept, never how it is made: a
+  reviewer told to edit a file to make a key work has been given a chore instead of an editor.
 
 - **Every message under a line says who said it, and they read down in the order they were said.**
   A thread drew the reviewer's own words with no mark at all, so they read as a continuation of the
