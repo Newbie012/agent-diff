@@ -316,6 +316,14 @@
   dir: ""
   intents:
     - sweet-tables-sneeze
+"@eliya-oss/agent-diff@0.1.0-alpha.160":
+  dir: ""
+  intents:
+    - a-legend-under-the-keys
+    - choose-your-editor-in-the-terminal
+    - code-a-lost-comment-was-written-on
+    - one-row-one-number
+    - one-size-stands
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
