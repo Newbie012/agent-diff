@@ -30,10 +30,19 @@ const bodyOf = (raw: string): string => {
   return (parts.length > 2 ? parts.slice(2).join("---") : raw).trim()
 }
 
-const readingOf = async (name: string): Promise<{ name: string; body: string }> => ({
-  name,
-  body: bodyOf(await readFile(join(".changeset", `${name}.md`), "utf8")),
-})
+const readingOf = async (name: string): Promise<{ name: string; body: string; raw: string }> => {
+  const raw = await readFile(join(".changeset", `${name}.md`), "utf8")
+  return { name, body: bodyOf(raw), raw }
+}
+
+const namesElsewhere = (raw: string, here: string): boolean =>
+  packagesNamed(raw).some((named) => named !== here)
+
+const packagesNamed = (raw: string): ReadonlyArray<string> =>
+  linesIn(raw.split("---")[1] ?? "").flatMap((line) => {
+    const named = /^"(?<name>[^"]+)":/.exec(line.trim())?.groups?.["name"]
+    return named === undefined ? [] : [named]
+  })
 
 const KIND = /^(?:breaking|feat|fix|perf)\(/
 
@@ -78,6 +87,24 @@ describe("when a release note is written", () => {
     expect(bullets.length).toBeGreaterThan(0)
     expect(bullets.filter((line) => !line.startsWith("- **"))).toEqual([])
     expect(headingsIn(newest).length).toBeGreaterThan(0)
+  })
+
+  test("then every unreleased intent names a package this workspace has", async () => {
+    // ARRANGE
+    const released = await releasedIntents()
+    const here = JSON.parse(await readFile("package.json", "utf8")) as { readonly name: string }
+    const names = (await readdir(".changeset"))
+      .filter((name) => name.endsWith(".md"))
+      .map((name) => name.slice(0, -3))
+      .filter((name) => !released.has(name))
+
+    // ACT
+    const readings = await Promise.all(names.map(readingOf))
+
+    // ASSERT
+    const wrong = readings.filter(({ raw }) => namesElsewhere(raw, here.name))
+    expect(wrong.map(({ name }) => name)).toEqual([])
+    expect(readings.every(({ raw }) => packagesNamed(raw).length > 0)).toBe(true)
   })
 
   test("then every unreleased intent is held to the same shape", async () => {
