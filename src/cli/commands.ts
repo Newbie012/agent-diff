@@ -340,6 +340,7 @@ const sentOf = (
   const takenAt = [...ids].flatMap((id) => taken[id] ?? []).toSorted().at(-1)
   return {
     id: comment.id,
+    at: comment.at,
     file: comment.file,
     side: comment.side,
     start: comment.start,

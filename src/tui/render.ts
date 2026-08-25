@@ -826,6 +826,7 @@ const notesOf = (
 ): ReadonlyArray<Note> =>
   comments
     .filter((entry) => entry.file === path && entry.outside !== true)
+    .toSorted((left, right) => (left.at ?? "").localeCompare(right.at ?? ""))
     .map((entry) => ({
       id: entry.id ?? "",
       folded: entry.settled === true && !(entry.id !== undefined && shown.opened.includes(entry.id)),

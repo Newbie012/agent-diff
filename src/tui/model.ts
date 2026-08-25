@@ -6,6 +6,7 @@ export type Focus = "tree" | "diff" | "review"
 
 export type StagedComment = {
   readonly id?: string
+  readonly at?: string
   readonly file: string
   readonly side: "old" | "new"
   readonly start: number

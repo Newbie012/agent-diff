@@ -289,6 +289,14 @@ Three screens, and the keys each answers to:
   rather than a preference ([PRD 011](011-preferences.md)) because it is neither on nor off. A
   reviewer with none of these is told which to set rather than left with a key that does nothing.
 
+- **Every message under a line says who said it, and they read down in the order they were said.**
+  A thread drew the reviewer's own words with no mark at all, so they read as a continuation of the
+  heading above them, while the agent's answer had an arrow and somebody else's remark had a handle —
+  one voice of three was anonymous, and it was the reviewer's. Their words carry the reply mark now.
+  Two threads on one line also ran together with nothing between them, and the newer was drawn first
+  because that is the order the store keeps them in; a line's threads are ordered by when they were
+  sent, oldest first, with a rule between them.
+
 - **A search asks git to search, and nothing else.** Every search resolved the branch and read its
   whole diff again to learn which files it changes, so a search of a hundred and thirty-one files
   cost two hundred milliseconds before a single line had been looked at — and it cost that again

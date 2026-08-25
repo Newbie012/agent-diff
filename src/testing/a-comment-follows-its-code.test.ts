@@ -34,7 +34,8 @@ const twoComments = scenario({
 
 const under = (rows: ReadonlyArray<string>, code: string): string => {
   const at = rows.findIndex((row) => row.includes(code))
-  return at === -1 ? "" : (rows[at + 2] ?? "").replace(/^[^│]*│/, "").trim()
+  if (at === -1) return ""
+  return (rows[at + 2] ?? "").replace(/^[^│]*│/, "").replace("»", "").trim()
 }
 
 const afterTheAgent = async (
