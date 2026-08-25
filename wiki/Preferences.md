@@ -21,6 +21,14 @@ what it does.
 adiff reads no pull request on its own. "Hold comments until you send them" is what
 [Comments](Comments) means by holding.
 
+## The editor is not a toggle
+
+A preference is on or off, and your editor is neither, so it is not in this list. `e` in the diff opens
+the line you are on in `$VISUAL`, `$EDITOR`, or the `editor` command in the settings file. With none of
+them set, `e` offers the editors it found on your `PATH`, and `ctrl+p` then "which editor" changes the
+choice later, so the settings file is somewhere adiff writes rather than somewhere you edit. [The
+diff](The-diff) has the keys.
+
 ## From the command line
 
     adiff config list

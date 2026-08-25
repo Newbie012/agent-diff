@@ -45,11 +45,22 @@ is shown", and everything else works.
 | `return` | Open the branch under the cursor for review |
 | `r` | Read the branches again |
 | `p` | Open the branch's pull request in a browser |
+| `b` | Set what the branch under the cursor is compared against |
 | `,` | Open the [preferences](Preferences) |
 | `?` | List every key for this screen |
 | `q` | Leave adiff |
 
 `p` is offered only on a branch that has a pull request.
+
+## Set the base with `b`
+
+A branch is read against the ref it is stacked on, and `b` changes that where you noticed it was wrong —
+from this list or from inside the branch. It lists the refs the branch could be read against, narrows as
+you type, and reads the diff again against the one you pick; `STATE` then carries `on <ref>`. `ctrl+x`
+hands the choice back to adiff. The base holds for that branch until you clear it, so it is not retyped.
+
+    adiff base set --repo . --branch <name> --base <ref>
+    adiff base clear --repo . --branch <name>
 
 `adiff review open --repo . --branch <name>` opens straight onto one branch and skips this screen.
 `--branch` takes the name the list reports.

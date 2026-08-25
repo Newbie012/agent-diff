@@ -42,6 +42,9 @@ Three markers say a remark is not sitting on the code you can see, and they mean
 - ` · outside this diff`, when the file is in the diff but that code is not shown.
 - ` · not in the diff`, when the file is not in the diff at all.
 
+For the first two the panel quotes the code the remark was written on under the remark it is standing on,
+so a remark about code the branch has moved past still reads as a point about something.
+
 A remark too long for the room it has ends with "more lines, press p to read it on the pull request",
 and `p` opens the pull request in a browser.
 

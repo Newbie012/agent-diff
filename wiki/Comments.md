@@ -13,9 +13,11 @@ the cursor is stopped on a thread.
 
 ## Write it with `c`
 
-`c` opens the compose box on the selection, and `return` in the diff opens it too. The box is titled
-with the file you are commenting on, and it quotes the code you selected above what you type. `escape`
-closes it without sending.
+`c` opens the compose box on the selection, and `return` in the diff opens it too. The box quotes the
+code you selected above what you type, and its title says which box you are in: `Comment on
+src/api.ts:12` for a new comment, `Reply on src/api.ts:12` for `R` on a thread of your own, and `Reply to
+@handle on the pull request` for a reply to a [remark](Remarks), which is the one that leaves your
+machine. `escape` closes it without sending.
 
 ![The compose box, with a comment written and not yet sent](https://github.com/user-attachments/assets/3551300c-b6a2-45e6-9905-38b3bf0cae04)
 
