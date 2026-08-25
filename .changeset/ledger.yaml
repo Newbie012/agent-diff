@@ -300,6 +300,10 @@
   dir: ""
   intents:
     - claim-the-runs-you-explain
+"@eliya-oss/agent-diff@0.1.0-alpha.157":
+  dir: ""
+  intents:
+    - setting-the-base-from-the-terminal
 "@eliya-oss/agent-diff@0.1.0-alpha.16":
   dir: ""
   intents:
