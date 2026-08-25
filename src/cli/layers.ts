@@ -17,7 +17,14 @@ import {
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import { basedOn, patchesOf, type BranchReading } from "./commands.ts"
+import {
+  basedOn,
+  patchesOf,
+  readParts,
+  type BranchReading,
+  type VouchReport,
+} from "./commands.ts"
+import { isPartVouched, isVouched, partOf, vouch, vouchPart } from "../domain/review/index.ts"
 import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
 
 const STALE_ADVICE =
@@ -295,4 +302,37 @@ export const layersIn = Effect.fn("Cli.layersIn")(function* (reading: BranchRead
     rebased: found.value.base !== worktree.base,
     summary: found.value.summary,
   }
+})
+
+const partsOfFile = (
+  layers: ReadonlyArray<ReportedLayer>,
+  file: string,
+): ReadonlyArray<string> =>
+  layers
+    .map((layer) => layer.spans.filter((span) => span.path === file))
+    .filter((spans) => spans.length > 0)
+    .map((spans) => partOf(file, spans))
+
+export const vouchPartIn = Effect.fn("Cli.vouchPartIn")(function* (
+  reading: BranchReading,
+  file: string,
+  part: string,
+) {
+  const store = yield* Store
+  const patch = reading.patches.find((one) => one.path === file)
+  const blob = patch?.blob ?? ""
+  const held = yield* layersIn(reading)
+  const wanted = partsOfFile(held.layers, file)
+  const current = yield* store.state(reading.worktree.path)
+  const parts = vouchPart(current.parts, part, blob)
+  const whole = wanted.length > 0 && wanted.every((one) => isPartVouched(parts, one, blob))
+  const vouches =
+    whole === isVouched(current.vouches, file, blob) ? current.vouches : vouch(current.vouches, file, blob)
+  yield* store.changeState(reading.worktree.path, (was) => ({ ...was, parts, vouches }))
+  const files = reading.patches.map((one) => ({ path: one.path, blob: one.blob }))
+  return {
+    vouched: files.filter((one) => isVouched(vouches, one.path, one.blob)).map((one) => one.path),
+    parts: readParts(parts, files),
+    total: reading.patches.length,
+  } satisfies VouchReport
 })

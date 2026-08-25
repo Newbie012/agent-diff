@@ -794,9 +794,14 @@ export const withSource = (state: TuiState, source: ReadonlyArray<string>): TuiS
   source,
 })
 
-export const withVouched = (state: TuiState, vouched: ReadonlyArray<string>): TuiState => ({
+export const withVouched = (
+  state: TuiState,
+  vouched: ReadonlyArray<string>,
+  parts?: ReadonlyArray<string>,
+): TuiState => ({
   ...state,
   vouched,
+  partsRead: parts ?? state.partsRead,
 })
 
 export const restoredTo = (

@@ -44,6 +44,7 @@ import {
   submitReply,
   toggleVouch,
   vouchIn,
+  vouchPartIn,
   type BranchReading,
   type CommentRequest,
   type Written,
@@ -75,6 +76,9 @@ import { gapAtRow, shownOf, GAP_CHUNK } from "./gaps.ts"
 import {
   initialState,
   isReviewed,
+  layersHolding,
+  partHere,
+  readIn,
   nextUnreviewed,
   onLayers,
   rowAtSourceLine,
@@ -1626,24 +1630,33 @@ export class App {
       const branch = selectedBranch(this.state)
       const patch = selectedPatch(this.state)
       if (branch === undefined || patch === undefined) return
-      if (advance && isReviewed(this.state, this.state.patchIndex)) {
+      if (advance && this.readHere()) {
         this.commit(alongFrom(this.state))
         return
       }
       const report = yield* this.vouching(branch.branch, patch.path)
-      const marked = report.vouched.includes(patch.path)
-      const next = withVouched(this.state, report.vouched)
+      const next = withVouched(this.state, report.vouched, report.parts)
       if (!advance) {
-        this.commit(withNotice(next, marked ? `marked ${patch.path}` : `unmarked ${patch.path}`))
+        this.commit(withNotice(next, this.markedSaid(report, patch.path)))
         return
       }
-      const target = nextUnreviewed(next, next.patchIndex)
-      if (target === undefined) {
-        this.commit(withNotice(next, "every file reviewed"))
-        return
-      }
-      this.commit(withNotice(atFile(next, target), `marked ${patch.path}`))
+      this.movedOn(next, patch.path)
     })
+  }
+
+  private markedSaid(report: VouchReport, path: string): string {
+    const part = this.partHereNow()
+    const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
+    return marked ? `marked ${path}` : `unmarked ${path}`
+  }
+
+  private movedOn(next: TuiState, path: string): void {
+    const target = nextUnreviewed(next, next.patchIndex)
+    if (target === undefined) {
+      this.commit(withNotice(next, "every file reviewed"))
+      return
+    }
+    this.commit(withNotice(atFile(next, target), `marked ${path}`))
   }
 
   private forgetLeaving(): void {
@@ -1706,11 +1719,26 @@ export class App {
       : removeIn(worktree, id, at)
   }
 
+  private readHere(): boolean {
+    return onLayers(this.state)
+      ? readIn(this.state, this.state.layerIndex, this.state.patchIndex)
+      : isReviewed(this.state, this.state.patchIndex)
+  }
+
+  private partHereNow(): string | undefined {
+    if (!onLayers(this.state) || layersHolding(this.state, this.state.patchIndex) < 2) {
+      return undefined
+    }
+    return partHere(this.state, this.state.layerIndex, this.state.patchIndex)
+  }
+
   private vouching(branch: string, file: string): Work<VouchReport> {
     const held = this.reading
-    return held === undefined || held.worktree.branch !== branch
-      ? toggleVouch({ repo: this.repo, branch, file })
-      : vouchIn(held, file)
+    if (held === undefined || held.worktree.branch !== branch) {
+      return toggleVouch({ repo: this.repo, branch, file })
+    }
+    const part = this.partHereNow()
+    return part === undefined ? vouchIn(held, file) : vouchPartIn(held, file, part)
   }
 
   private loadSent(branch: string): Work<TuiState["sent"]> {

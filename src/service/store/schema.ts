@@ -56,6 +56,7 @@ const noStamps = Schema.withDecodingDefaultKey<typeof Stamps>(Effect.succeed({})
 export const BranchState = Schema.Struct({
   taken: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   vouches: Stamps.pipe(noStamps),
+  parts: Stamps.pipe(noStamps),
   consumed: Schema.Int.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   settled: Stamps.pipe(noStamps),
   removed: Stamps.pipe(noStamps),

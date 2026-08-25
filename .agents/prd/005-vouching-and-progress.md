@@ -60,6 +60,14 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
 - **A file counts as vouched when the recorded blob equals its current blob.** A file with no
   record, or with a different blob, is not vouched. There is no third state.
 - **Vouching is a toggle.** Vouching a vouched file removes the record.
+- **On a reading order, a file is read one layer at a time.** A vouch was a path, so marking a file
+  read while standing on one layer marked it read under every other layer that touches it, and a
+  reviewer who read ten lines of a forty-line file was shown a reading order with every layer ticked.
+  Where more than one layer claims a file, the mark records the layer's own runs of that file — the
+  path with the runs it covers, stamped with the same blob a whole-file vouch is stamped with, so a
+  file the agent changes again loses its marks like any other. A layer is read when its own runs are,
+  and the file itself is read when every layer's runs of it are, which is when the file list ticks it
+  and the count at the top counts it. Unmarking one layer's runs takes the file back out.
 - **Progress reports the vouched paths and the branch's total file count**, so the caller can
   render a fraction without a second call.
 - **Vouching a file the diff does not contain is refused**, and the refusal names the files that

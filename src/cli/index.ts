@@ -59,7 +59,7 @@ export {
 export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
 export { aroundIn, searchBranch, searchIn } from "./search.ts"
 export type { Match, Searched } from "./search.ts"
-export { layersIn, setLayers, showLayers } from "./layers.ts"
+export { layersIn, setLayers, showLayers, vouchPartIn } from "./layers.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
 export {
   answerComment,
