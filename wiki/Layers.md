@@ -58,6 +58,16 @@ place of its files, and a layer whose every file is marked reviewed is ticked.
 
 The prose the agent wrote sits above the code it describes, in the diff.
 
+## What a layer shows of a file
+
+A layer shows the lines it claims, not the whole file it touches. Where another layer claims changed
+lines in the same file, those collapse to one row — `⋯ 6 changed lines · layer 3 explains them` — and
+`l` opens it if you want to look anyway. So eleven layers over one file are eleven short reads rather
+than eleven copies of the file, and the layer you are on is the only thing you are asked to read.
+
+Moving to a layer puts the cursor on a line that layer claims, so the first `j` you press moves through
+its own code.
+
 ## What coverage counts
 
 adiff works out which changed lines each layer claims, and the ones no layer claims go into a last rail
@@ -66,8 +76,10 @@ the third it skipped.
 
 The agent sees the same count when it publishes: `covered` for the hunks a layer explains whole,
 `partial` for the ones it explains some of, `total` for all of them, `uncovered` for the runs of changed
-lines nobody claimed, and `vanished` for paths a layer points at that this branch does not change, which
-is usually a typo. Done means `uncovered` is empty.
+lines nobody claimed, `shared` for the hunks two layers both claim, and `vanished` for paths a layer
+points at that this branch does not change, which is usually a typo. Done means `uncovered` is empty. A
+high `shared` means the spans are wider than the change they describe — a layer that claims a whole file
+to explain six lines of it takes those lines away from the layer they belong to.
 
 ## Layers from an older commit
 

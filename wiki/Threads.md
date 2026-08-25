@@ -10,7 +10,13 @@ sits, and the first line of what was said. The sections read `Remarks`, `Dismiss
 sent`, `Waiting on you`, `Not picked up`, `Picked up, no answer`, `Answered, not settled`, `Settled` and
 `Removed`, and each names how many it holds.
 
-An answer sits under your comment, inline in the diff, under the code the comment was written on.
+The mark on a thread says how far it has gone: `○` written, `◐` picked up, `●` answered, `◉` waiting on
+you, `✓` settled. One circle, filling up, so the marks read as one scale rather than as five signs.
+
+An answer sits under your comment, inline in the diff, under the code the comment was written on. Every
+message says who said it — `»` your words, `↳` the agent's answer, `@handle` somebody on the pull
+request — and they read down in the order they were said, oldest first. Two threads on one line are
+ordered the same way, with a rule between them.
 
 ## Move between threads with `n`
 
@@ -42,6 +48,10 @@ The agent keeps working while you read, so a comment can end up on code that has
 follows the line it was written on, including into a new wording of that line, up to about one character
 changed in four. Where the agent replaced the line altogether, the thread leaves the diff and the panel
 marks it ` · not in the diff`.
+
+That usually means the agent did what the comment asked, which is when you most want to read the two
+together, so the panel quotes the code the comment was written on under the thread it is standing on.
+Going to such a thread says "the diff no longer has that line" and points you at that quote.
 
 `r` reads the branch again.
 

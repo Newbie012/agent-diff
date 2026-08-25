@@ -38,11 +38,35 @@ a fold, and how many columns are cut off while a wide line runs past the edge.
 
 ## Search the branch with `/`
 
-`/` searches the branch. The box names how many places the term appears in, groups the matches under the
-file each one sits in, marks a file this branch changed, and `return` opens the file the match sits in.
-`j` and `k` move between matches.
+`/` searches. The title carries the term and three counts — `3 in this file · 12 on this branch · 120 in
+the worktree` — so a term that appears everywhere says so before you scroll. Matches are grouped under
+the file each one sits in, nearest first: this file, then the files this branch changed, then the rest of
+the worktree. A file the branch changed carries `*`, and a file where the term is declared rather than
+merely used carries `declared`, because that is usually the place you were looking for. Tests and data
+files come last. `j` and `k` move between matches, `return` opens the file the match sits in.
+
+A search that would fill the pane stops and reads "… 400 more places not shown" rather than drawing
+them: narrow the term instead. The search asks git and nothing else, so it starts as you type and the
+answer that arrives is always the answer to what is in the box.
 
 ![A search over the branch, its matches grouped under the file each one sits in](https://github.com/user-attachments/assets/d742a7a8-c974-4b38-abee-a0ae234560a7)
+
+## Open a line in your editor with `e`
+
+`e` opens the line under the cursor in your editor, at that line. adiff uses `$VISUAL` or `$EDITOR`, or
+the `editor` command in the settings file, whichever it finds.
+
+With none of them set, `e` opens a list of the editors it found on your `PATH`; typing narrows it, and
+`return` saves the one you chose and opens the line. `E` opens that list again to change it, marking the
+one in use `now`, and accepts a command you type in full — `code -g {file}:{line}` — for an editor the
+list does not know. `ctrl+x` hands the choice back to `$VISUAL` and `$EDITOR`.
+
+## Set what the branch is compared against with `b`
+
+`b` lists the refs this branch could be read against and reads the diff again against the one you pick,
+so a branch stacked on the wrong parent is fixed where you noticed it. The list narrows as you type,
+`ctrl+x` hands the choice back to adiff, and the branch list then reads `on <ref>` for that branch. The
+base holds until you clear it. [Branches](Branches) has the same from the command line.
 
 ## What the mouse does
 

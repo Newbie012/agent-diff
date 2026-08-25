@@ -28,6 +28,9 @@ on the pull request are the one part that needs it.
 A branch stacked on another is diffed against the ref it is stacked on. A diff that looks far too large
 or too small is usually diffed against the wrong one.
 
+`b` sets it from the terminal, on the branch list or inside the branch: it lists the refs the branch could
+be read against and reads the diff again against the one you pick. From a shell it is two commands.
+
     adiff base set --repo . --branch <name> --base <ref>
     adiff base clear --repo . --branch <name>
 
@@ -62,11 +65,15 @@ report between a full one and a minimal one, and `ctrl+s` saves whichever is sho
 machine: the report is written to `~/.adiff/reports/<stamp>.md` and copied to your clipboard, and the
 footer names the path.
 
-A full one is what you get if you do not press `ctrl+t`. It carries the adiff version, the Node version,
-the platform, your machine's hostname, the terminal size, the repository path, the branch, the file and
-row, the screen and pane, how many of the branch's files you have marked reviewed, the first line of the
-last internal failure, what led here, the keys you pressed, the file list as drawn, and the diff rows
-around the cursor.
+A full one is what you get if you do not press `ctrl+t`. It carries enough to rebuild the review it was
+sent from: the adiff version, the Node version, the platform, your machine's hostname, the terminal size,
+the repository path, the branch and what it is read against, the file and row, the screen and pane,
+whether anything is selected, how many of the branch's files you have marked reviewed, the preferences
+away from their default, the reading order — how many layers over how many spans, which pane the rail is
+showing, whether it is stale, and the layer you are standing on — how many remarks are in and how many
+are waiting, the shape of the file on screen, the slowest few things adiff did and how long they took,
+the first line of the last internal failure, what led here, the keys you pressed, the file list as drawn,
+and the diff rows around the cursor.
 
 A minimal one carries the words you typed, the adiff and Node versions, the platform, the terminal size,
 the screen and pane, how many of the branch's files you had marked reviewed, and the kind of the last
