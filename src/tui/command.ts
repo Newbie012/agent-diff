@@ -44,6 +44,7 @@ export type Action =
   | "base.clear"
   | "base.next"
   | "base.prev"
+  | "line.open"
   | "thread.settle"
   | "thread.settleRead"
   | "thread.remove"
@@ -497,6 +498,17 @@ export const commands: ReadonlyArray<Command> = [
     keys: ["up"],
     screens: ["base"],
     listed: false,
+  }),
+  command({
+    action: "line.open",
+    also: ["editor", "ide", "vscode", "open in", "jump to"],
+    panes: ["diff"],
+    title: "Open this line in your editor",
+    category: "Reading",
+    keys: ["e"],
+    screens: ["review"],
+    hint: "editor",
+    rank: 5,
   }),
   command({
     action: "review.reload",

@@ -390,6 +390,25 @@ export class AppTestDriver {
     ])
   }
 
+  async scriptOnPath(name: string, body: string): Promise<string> {
+    this.state.tracer.cannotReplay("a script on the path")
+    const bin = join(this.state.workspace, "bin")
+    await mkdir(bin, { recursive: true })
+    const path = join(bin, name)
+    await writeFile(path, `#!/bin/sh\n${body}\n`, { mode: 0o755 })
+    this.state.prependPath(bin)
+    return path
+  }
+
+  async editorIs(command: string): Promise<void> {
+    this.state.tracer.cannotReplay("an editor set in the settings file")
+    const path = join(this.state.storeRoot, "settings.json")
+    const raw = await readFile(path, "utf8").catch(() => "{}")
+    const held = JSON.parse(raw) as Record<string, unknown>
+    await mkdir(this.state.storeRoot, { recursive: true })
+    await writeFile(path, JSON.stringify({ ...held, editor: command }, undefined, 2))
+  }
+
   runConfigList(): Promise<CliResult> {
     return this.run(["config", "list"])
   }
