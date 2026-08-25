@@ -93,7 +93,7 @@ describe("when the file tree is read", () => {
     const [one] = await driver.agent.listComments(branch.worktree)
     await driver.app.runAnswer({ worktree: branch.worktree, id: one?.id ?? "", body: "done" })
     await driver.screen.pressKeys(["r"])
-    expect(pane(await driver.screen.getFrame()).some((line) => line.includes("1◐"))).toBe(true)
+    expect(pane(await driver.screen.getFrame()).some((line) => line.includes("1●"))).toBe(true)
 
     // ACT
     await driver.screen.pressKeys(["shift+tab"])
@@ -101,6 +101,6 @@ describe("when the file tree is read", () => {
 
     // ASSERT
     const rows = pane(await driver.screen.getFrame())
-    expect(rows.every((line) => !/\d[○◐●]/.test(line))).toBe(true)
+    expect(rows.every((line) => !/\d[○◐●◉]/.test(line))).toBe(true)
   })
 })

@@ -297,6 +297,15 @@ Three screens, and the keys each answers to:
   because that is the order the store keeps them in; a line's threads are ordered by when they were
   sent, oldest first, with a rule between them.
 
+- **A thread's stand is drawn as one circle filling up, and every one of them is the same circle.**
+  The four stands a thread passes through — filed, waiting, answered, asked — were drawn `○ ◔ ◐ ●`,
+  and a terminal draws a quarter-filled circle smaller than a half-filled one, often from a
+  different font altogether. So the rail showed one thread's mark noticeably smaller than the one
+  above it while both meant the same kind of thing at a different point in its life, and the size
+  read as a difference in importance it did not have. The stands are `○ ◐ ● ◉` now: one circle, one
+  size, more ink the further a thread has gone, and a ring around the last because a thread that
+  asks the reviewer something is the one to go to.
+
 - **A search asks git to search, and nothing else.** Every search resolved the branch and read its
   whole diff again to learn which files it changes, so a search of a hundred and thirty-one files
   cost two hundred milliseconds before a single line had been looked at — and it cost that again
