@@ -762,10 +762,15 @@ const bodyLines = (note: Note, room: number): ReadonlyArray<string> => {
   return note.from === undefined ? said : capped(said, REMARK_LINES)
 }
 
+const saidLines = (note: Note, room: number): ReadonlyArray<string> =>
+  note.from === undefined
+    ? bodyLines(note, room).map((line, at) => (at === 0 ? `${REPLY_MARK} ${line}` : `  ${line}`))
+    : bodyLines(note, room)
+
 const noteLines = (note: Note, room: number): ReadonlyArray<string> =>
   note.folded
     ? [`${headOf(note)} · press l`]
-    : [headOf(note), ...bodyLines(note, room), ...answerLines(note, room)]
+    : [headOf(note), ...saidLines(note, room), ...answerLines(note, room)]
 
 const REMARK_RULE = "\u250a"
 
@@ -816,10 +821,25 @@ const proseAt = (plan: Plan, row: Row, after: boolean): ReadonlyArray<Prose> => 
   return fresh !== undefined ? wanted : wanted.filter(() => !plan.fresh.has(line))
 }
 
+const apart = (row: number, stop: number): Display => ({
+  text: marks().rule,
+  row,
+  stop,
+  comment: true,
+  sent: false,
+  label: false,
+  gap: false,
+  prose: false,
+})
+
 const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>
   plan.notes
     .filter((note) => sideLineOf(row, note.side) === note.line)
-    .flatMap((note, at) => noteRows(note, row.index, plan.room, at + 1))
+    .flatMap((note, at) =>
+      at === 0
+        ? noteRows(note, row.index, plan.room, at + 1)
+        : [apart(row.index, at + 1)].concat(noteRows(note, row.index, plan.room, at + 1)),
+    )
 
 const TRAILING = /[ \t]+$/
 
