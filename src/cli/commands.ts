@@ -389,18 +389,31 @@ const whereItSitsNow = (
 const linesIn = (found: Option.Option<ReadonlyArray<string>>): ReadonlyArray<string> =>
   Option.getOrElse(found, (): ReadonlyArray<string> => [])
 
-const lastLineOf = (snippet: string): string =>
+const trimmedLines = (snippet: string): ReadonlyArray<string> =>
   snippet
     .split("\n")
     .map((line) => line.trim())
-    .findLast((line) => line.length > 0) ?? ""
+    .filter((line) => line.length > 0)
 
-const nearestLine = (
+const NAMES_SOMETHING = /[A-Za-z0-9_$]{3}/
+
+const worthMatching = (wanted: ReadonlyArray<string>): boolean =>
+  wanted.length > 1 || (wanted[0] !== undefined && NAMES_SOMETHING.test(wanted[0]))
+
+const blockAt = (
   source: ReadonlyArray<string>,
-  wanted: string,
+  wanted: ReadonlyArray<string>,
+  at: number,
+): boolean => wanted.every((line, step) => (source[at + step] ?? "").trim() === line)
+
+const wholeSnippetIn = (
+  source: ReadonlyArray<string>,
+  wanted: ReadonlyArray<string>,
   was: number,
 ): number | undefined => {
-  const found = source.flatMap((line, at) => (line.trim() === wanted ? [at + 1] : []))
+  const found = source.flatMap((_, at) =>
+    blockAt(source, wanted, at) ? [at + wanted.length] : [],
+  )
   if (found.length === 0) return undefined
   return found.reduce((best, line) => (Math.abs(line - was) < Math.abs(best - was) ? line : best))
 }
@@ -409,7 +422,9 @@ const stillInFile = (
   comment: PendingComment,
   source: ReadonlyArray<string>,
 ): PendingComment => {
-  const line = nearestLine(source, lastLineOf(comment.snippet), comment.end)
+  const wanted = trimmedLines(comment.snippet)
+  if (!worthMatching(wanted)) return comment
+  const line = wholeSnippetIn(source, wanted, comment.end)
   if (line === undefined) return comment
   const span = Math.max(0, comment.end - comment.start)
   return { ...comment, start: line - span, end: line, placed: true }

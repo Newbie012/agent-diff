@@ -123,8 +123,11 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   for the snippet in the rows the diff holds, and a diff holds a few lines of context, so a
   comment on a line ten lines above a change was reported as not in the diff — reliably, on every
   reload, for a comment sitting in a fold the reviewer could open. Where the hunks cannot place a
-  comment, the file itself is searched, and the nearest line matching what was quoted is where the
-  comment sits. Only a comment whose file has left the branch, or whose quoted line is nowhere in
+  comment, the file itself is searched — for every line of the quote, in order, not just its last
+  one, and only when the quote names something rather than being a brace or a `*/`. The nearest
+  place the whole quote still reads the same is where the comment sits. Matching one line was enough
+  to hang a comment about a deleted doc comment on the next `*/` in the file, which is worse than
+  saying the code is gone. Only a comment whose file has left the branch, or whose quoted line is nowhere in
   that file, counts as lost.
 
 - **The comments the branch moved past are folded away, and counted.** They cannot be acted on where
