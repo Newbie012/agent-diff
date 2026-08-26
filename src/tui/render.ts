@@ -86,6 +86,7 @@ import {
   type PanelSection,
   type Spot,
   laidDraft,
+  panelHolds,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import type { Match, Remark } from "../cli/index.ts"
@@ -1229,6 +1230,7 @@ const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   filed: "Not picked up",
   with: "Picked up, no answer",
   answered: "Answered, not settled",
+  movedOn: "The branch moved past these",
   settled: "Settled",
   removed: "Removed",
 }
@@ -1395,6 +1397,7 @@ const remarkWhere = (remark: Remark, known: boolean): string => {
 }
 
 const wherePart = (state: TuiState, entry: PanelEntry): string => {
+  if (entry.kind === "fold") return ""
   if (entry.kind === "remark") {
     const known = state.patches.some((patch) => patch.path === entry.remark.file)
     return remarkWhere(entry.remark, known)
@@ -1402,8 +1405,10 @@ const wherePart = (state: TuiState, entry: PanelEntry): string => {
   return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}`
 }
 
-const panelFile = (entry: PanelEntry): string =>
-  entry.kind === "remark" ? entry.remark.file : entry.comment.file
+const panelFile = (entry: PanelEntry): string => {
+  if (entry.kind === "fold") return ""
+  return entry.kind === "remark" ? entry.remark.file : entry.comment.file
+}
 
 const panelWhere = (state: TuiState, entry: PanelEntry, room: number): string => {
   const where = wherePart(state, entry)
@@ -1411,24 +1416,30 @@ const panelWhere = (state: TuiState, entry: PanelEntry, room: number): string =>
 }
 
 const panelBody = (entry: PanelEntry): string => {
+  if (entry.kind === "fold") return ""
   const said = entry.kind === "remark" ? `@${entry.remark.by} ${entry.remark.body}` : entry.comment.body
   return said.split("\n").find((line) => line.trim().length > 0) ?? ""
 }
 
-const panelMark = (entry: PanelEntry): string =>
-  entry.kind === "remark" ? REMARK_MARK : standMark(threadStand(entry.comment))
+const panelMark = (entry: PanelEntry): string => {
+  if (entry.kind === "fold") return entry.open ? marks().open : marks().shut
+  return entry.kind === "remark" ? REMARK_MARK : standMark(threadStand(entry.comment))
+}
 
 type Placed = { readonly entry: PanelEntry; readonly at: number }
 
 const WRITTEN_ON = 4
 
 const lostCode = (entry: PanelEntry): ReadonlyArray<string> => {
+  if (entry.kind === "fold") return []
   const said = entry.kind === "remark" ? entry.remark.code : (entry.comment.snippet ?? "").split("\n")
   return said.filter((line) => line.trim().length > 0)
 }
 
 const lostEntry = (state: TuiState, entry: PanelEntry): boolean =>
-  entry.kind === "remark"
+  entry.kind === "fold"
+    ? false
+    : entry.kind === "remark"
     ? !entry.remark.placed && state.patches.some((patch) => patch.path === entry.remark.file)
     : entry.comment.outside === true
 
@@ -1455,8 +1466,18 @@ const writtenOn = (
   ]
 }
 
+const foldLine = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
+  const { entry } = placed
+  if (entry.kind !== "fold") return []
+  const here = placed.at === state.panelIndex
+  const said = entry.open ? "h folds them away" : "l opens them"
+  const text = ` ${panelMark(entry)} ${entry.held} ${entry.held === 1 ? "comment" : "comments"} · ${said}`
+  return [{ text: clip(text, room), tone: palette.faint, here }]
+}
+
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
   const { entry } = placed
+  if (entry.kind === "fold") return foldLine(state, placed, room)
   const lead = ` ${panelMark(entry)} `
   const here = placed.at === state.panelIndex
   return [
@@ -1503,8 +1524,9 @@ const moreLine = (count: number, mark: string, room: number): ReadonlyArray<Pane
 
 const panelText = (state: TuiState, room: number, rows: number): StyledText => {
   const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
-  const fresh = placed.filter((one) => one.entry.kind === "comment" && one.entry.fresh).length
-  const unread = placed.filter((one) => one.entry.kind === "comment" && one.entry.unread > 0).length
+  const holds = panelHolds(state)
+  const fresh = holds.filter((entry) => entry.kind === "comment" && entry.fresh).length
+  const unread = holds.filter((entry) => entry.kind === "comment" && entry.unread > 0).length
   const said = fresh > 0 ? `${fresh} ${PULL_HINT}` : unread > 0 ? `${unread} unread` : ""
   const banner: ReadonlyArray<PanelLine> =
     said.length === 0 ? [] : [{ text: clip(said, room), tone: palette.attention }]

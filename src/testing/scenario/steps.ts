@@ -99,4 +99,7 @@ export const dropTheCommentYouAreHolding = (): Step =>
 
 export const openTheFolder = (): Step => step("open the folder", [press("l")])
 
+export const openWhatTheBranchMovedPast = (): Step =>
+  step("open the comments the branch moved past", [press("l")])
+
 export const closeTheFolder = (): Step => step("close the folder", [press("h")])

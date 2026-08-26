@@ -128,6 +128,7 @@ export type TuiState = {
   readonly closed: ReadonlyArray<string>
   readonly vouched: ReadonlyArray<string>
   readonly partsRead: ReadonlyArray<string>
+  readonly openMoved: boolean
   readonly sent: ReadonlyArray<StagedComment>
   readonly remarks: ReadonlyArray<Remark>
   readonly held: ReadonlyArray<StagedComment>
@@ -235,6 +236,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   closed: [],
   vouched: [],
   partsRead: [],
+  openMoved: false,
   sent: [],
   remarks: [],
   viewport: 20,
@@ -1190,6 +1192,7 @@ export type PanelSection =
   | "filed"
   | "with"
   | "answered"
+  | "movedOn"
   | "settled"
   | "removed"
   | "dismissed"
@@ -1201,6 +1204,7 @@ export const PANEL_SECTIONS: ReadonlyArray<PanelSection> = [
   "filed",
   "with",
   "answered",
+  "movedOn",
   "settled",
   "removed",
   "dismissed",
@@ -1218,6 +1222,12 @@ export type PanelEntry =
       readonly kind: "remark"
       readonly section: PanelSection
       readonly remark: Remark
+    }
+  | {
+      readonly kind: "fold"
+      readonly section: PanelSection
+      readonly held: number
+      readonly open: boolean
     }
 
 const answersIn = (comment: StagedComment): number => comment.answers?.length ?? 0
@@ -1241,7 +1251,11 @@ const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
   waiting: "with",
 }
 
-const sectionOf = (comment: StagedComment): PanelSection => SECTION_OF[threadStand(comment)]
+export const movedPast = (comment: StagedComment): boolean =>
+  comment.outside === true && comment.settled !== true && comment.removed !== true
+
+const sectionOf = (comment: StagedComment): PanelSection =>
+  movedPast(comment) ? "movedOn" : SECTION_OF[threadStand(comment)]
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)
@@ -1258,6 +1272,9 @@ const remarkRows = (state: TuiState, section: "remarks" | "dismissed"): Readonly
   state.remarks
     .filter((one) => (section === "remarks" ? one.state === "waiting" : one.state === "dismissed"))
     .map((remark): PanelEntry => ({ kind: "remark", section, remark }))
+
+export const panelHolds = (state: TuiState): ReadonlyArray<PanelEntry> =>
+  panelEntries({ ...state, openMoved: true }).filter((entry) => entry.kind !== "fold")
 
 export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   const shown = state.hideSettled
@@ -1280,7 +1297,15 @@ export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   ]
   const ordered = (section: PanelSection): ReadonlyArray<PanelEntry> => {
     const found = delivered.filter((entry) => entry.section === section)
-    return state.newestFirst ? found.toReversed() : found
+    const held = state.newestFirst ? found.toReversed() : found
+    if (section !== "movedOn" || held.length === 0) return held
+    const fold: PanelEntry = {
+      kind: "fold",
+      section,
+      held: held.length,
+      open: state.openMoved,
+    }
+    return state.openMoved ? [fold, ...held] : [fold]
   }
   return PANEL_SECTIONS.flatMap((section) => ordered(section))
 }

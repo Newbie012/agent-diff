@@ -85,17 +85,32 @@ let bad = found.length
 
 const LONGEST = 300
 
-if (asked !== undefined) {
-  const body = await readFile(asked, "utf8").catch(() => "")
-  const prose = body
-    .split("\n")
-    .filter((line) => !line.startsWith("- ") && !line.startsWith("## "))
+const WHAT = "### What changed"
+
+const RECORDED = "### Recorded tests"
+
+const shapeOf = (body: string): ReadonlyArray<string> => {
+  const lines = body.split("\n")
+  const heads = lines.filter((line) => line.startsWith("#"))
+  const wrong: Array<string> = []
+  if (heads[0] !== WHAT) wrong.push(`opens with "${WHAT}" and nothing above it`)
+  const spare = heads.filter((head) => head !== WHAT && head !== RECORDED)
+  if (spare.length > 0) wrong.push(`carries only ${WHAT} and ${RECORDED}, not ${spare.join(", ")}`)
+  if (heads.length > 1 && heads[1] !== RECORDED) wrong.push(`puts ${RECORDED} second`)
+  const said = lines
+    .slice(1, heads.length > 1 ? lines.indexOf(RECORDED) : undefined)
     .join(" ")
     .trim()
-  if (prose.length > LONGEST) {
-    console.log(
-      `check-public: ${asked} runs to ${prose.length} characters of prose. A body says what changed in ${LONGEST} or fewer.`,
-    )
+  if (said.length > LONGEST) {
+    wrong.push(`says what changed in ${LONGEST} characters or fewer, not ${said.length}`)
+  }
+  return wrong
+}
+
+if (asked !== undefined) {
+  const body = await readFile(asked, "utf8").catch(() => "")
+  for (const wrong of shapeOf(body)) {
+    console.log(`check-public: ${asked} must be a body that ${wrong}.`)
     bad += 1
   }
 }

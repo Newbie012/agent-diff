@@ -20,17 +20,16 @@ const files = [{ path: "src/total.ts", before, after }]
 
 const seed = async (driver: TestDriver): Promise<void> => {
   const branch = await driver.branch.create({ files })
-  await driver.screen.open({ width: 150, height: 26, review: true })
+  await driver.screen.open({ width: 150, height: 30, review: true })
   await driver.screen.pressKeys(["}", "j"])
-  await driver.screen.writeComment("Boolean drops a legitimate zero")
+  await driver.screen.writeComment("kept drops a legitimate zero")
   await driver.branch.changeAndCommit(branch, "src/total.ts", fixed, "keep the zero")
   await driver.screen.pressKeys(["r"])
   await driver.screen.pressKeys(["tab"])
-  await driver.screen.pressKeys(["l"])
 }
 
-describe("when the agent has changed the line a comment was written on", () => {
-  test("then the review panel shows the code the comment was written on", async () => {
+describe("when the branch has moved past the code a comment was written on", () => {
+  test("then the review panel folds that comment away and counts it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
 
@@ -38,18 +37,20 @@ describe("when the agent has changed the line a comment was written on", () => {
     await seed(driver)
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("return rows.filter(kept)")
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain("The branch moved past")
+    expect(frame).not.toContain("kept drops a legitimate zero")
   })
 
-  test("then the panel says the diff no longer has that line", async () => {
+  test("then opening the fold lists the comment again", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await seed(driver)
 
     // ACT
-    await driver.screen.pressKeys(["c"])
+    await driver.screen.pressKeys(["l"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("the diff no longer has that line")
+    expect(await driver.screen.getFrame()).toContain("kept drops a legitimate zero")
   })
 })

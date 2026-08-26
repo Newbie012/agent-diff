@@ -118,6 +118,21 @@ duration, no dimensions, no file size.
 After the prose and after `## What changed`, before anything else. A reviewer reads what changed,
 then watches it.
 
+## The whole template
+
+```markdown
+### What changed
+
+<one paragraph, 200-300 characters, high level, technical>
+
+### Recorded tests
+
+<the pnpm record section, when the branch adds tests that press keys>
+```
+
+Two headings, in that order, and nothing else: no prose above `### What changed`, no "why", no
+investigation, no test counts. A branch with no recordings carries the first heading alone.
+
 ## Check the body before it is posted
 
 ```bash

@@ -42,6 +42,7 @@ describe("when a comment's lines are no longer in the diff", () => {
 
     // ACT
     await driver.screen.pressTab()
+    await driver.screen.pressKeys(["l"])
     await driver.screen.pressKeys(["RETURN"])
 
     // ASSERT
@@ -62,6 +63,7 @@ describe("when a comment's lines are no longer in the diff", () => {
     await driver.branch.setFile(branch, "src/api.ts", ["const keep = 0"])
     await openWide(driver)
     await driver.screen.pressTab()
+    await driver.screen.pressKeys(["l"])
 
     // ACT
     await driver.screen.pressKeys(["d"])
