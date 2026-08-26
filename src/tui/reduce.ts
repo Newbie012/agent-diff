@@ -166,6 +166,21 @@ const panned = (state: TuiState, delta: number): TuiState => {
   return { ...state, pan: Math.max(0, state.pan + delta) }
 }
 
+export const atLayer = (state: TuiState, layer: number): TuiState => {
+  const landed = readingOrder(state).find((one) => one.layer === layer)
+  if (landed === undefined) return { ...state, layerIndex: layer }
+  return {
+    ...state,
+    layerIndex: layer,
+    openLayers: state.openLayers.includes(layer) ? state.openLayers : [...state.openLayers, layer],
+    patchIndex: landed.file,
+    top: 0,
+    cursor: landingOn({ ...state, layerIndex: layer }, landed.file),
+    anchorRow: 0,
+    selecting: false,
+  }
+}
+
 const moveLayer = (state: TuiState, delta: number): TuiState => {
   const order = readingOrder(state)
   if (order.length === 0) return state

@@ -45,6 +45,13 @@ export type LayerRow = {
 
 export type Spot = { readonly row: number; readonly column: number }
 
+export type Clicked = {
+  readonly pane: Focus
+  readonly file?: number | undefined
+  readonly layer?: number | undefined
+  readonly entry?: number | undefined
+}
+
 export type Picked = {
   readonly row: number
   readonly from: number

@@ -108,6 +108,7 @@ import {
   WHOLE_FILE,
   type StagedComment,
   type TuiState,
+  type Clicked,
 } from "./model.ts"
 import {
   atFile,
@@ -150,6 +151,7 @@ import {
   withSource,
   withLayers,
   withVouched,
+  atLayer,
 } from "./reduce.ts"
 import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import type { Needs, Work } from "./needs.ts"
@@ -435,6 +437,7 @@ export class App {
     const { renderer } = options
     Effect.runSync(
       this.display.listen({
+        onClick: (what) => this.dispatchTask(this.clicked(what)),
         onScroll: (delta) => this.onWheel(delta),
         onPan: (delta) => this.onPanWheel(delta),
         onDrag: (from, to, done) => this.dragged(from, to, done),
@@ -640,6 +643,29 @@ export class App {
   private stillLighting(): Effect.Effect<void> {
     const fiber = this.lighting
     return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
+  }
+
+  private clicked(what: Clicked): Work {
+    return Effect.gen({ self: this }, function* () {
+      const held = { ...this.measured(), focus: what.pane }
+      if (what.entry !== undefined) {
+        this.commit({ ...held, panelIndex: what.entry })
+        return
+      }
+      if (what.layer !== undefined && onLayers(held)) {
+        const was = held.patchIndex
+        const moved = atLayer(held, what.layer)
+        this.commit(what.file === undefined ? moved : atFile(moved, what.file))
+        if (this.state.patchIndex !== was) yield* this.turnedTo()
+        return
+      }
+      if (what.file === undefined || what.file === held.patchIndex) {
+        this.commit(held)
+        return
+      }
+      this.commit(atFile(held, what.file))
+      yield* this.turnedTo()
+    })
   }
 
   private onWheel(delta: number): void {
@@ -1072,7 +1098,7 @@ export class App {
   }
 
   private dragged(from: Spot, to: Spot, done: boolean): void {
-    const held = this.measured()
+    const held = { ...this.measured(), focus: "diff" as const }
     if (restsWhereItLanded(from, to) && !this.selectingNow) {
       this.commit(restingOn(held, from.row))
       return
