@@ -349,6 +349,11 @@
   intents:
     - a-click-lands-where-it-was-aimed
     - read-a-thread-in-full
+"@eliya-oss/agent-diff@0.1.0-alpha.167":
+  dir: ""
+  intents:
+    - place-a-comment-on-its-whole-quote
+    - resume-the-review-left-last
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
