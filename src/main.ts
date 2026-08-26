@@ -67,6 +67,7 @@ import {
   upgradeReport,
   willUpgrade,
   type Options,
+  lastOpenedIn,
 } from "./cli/index.ts"
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
@@ -473,11 +474,35 @@ const addressOf = Effect.fn("Main.addressOf")(function* (name: string, options: 
   return yield* new MissingOption({ option: addressing[0]?.name ?? "worktree" })
 })
 
+const RESUME_ADVICE = "Nothing has been opened here yet. Run `adiff review open --repo .` and pick a branch."
+
+const resume = Effect.fn("Main.resume")(function* (options: Options) {
+  const repo = options["repo"] ?? process.cwd()
+  const found = yield* lastOpenedIn(repo)
+  if (options["check"] !== undefined) {
+    return yield* answer(options, {
+      resume: found === undefined ? {} : found,
+      advice: found === undefined ? RESUME_ADVICE : "",
+    })
+  }
+  if (found === undefined) {
+    process.stderr.write(`${RESUME_ADVICE}\n`)
+    return yield* Effect.sync(() => process.exit(3))
+  }
+  const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
+  return yield* runTui(repo, {
+    sessionPath: process.env["ADIFF_SESSION"],
+    branch: found.branch,
+    base: options["base"],
+  })
+})
+
 const dispatch = Effect.fn("Main.dispatch")(function* (name: string, given: Options) {
   const options = yield* addressOf(name, given)
   const route = Object.hasOwn(routes, name) ? routes[name as keyof typeof routes] : undefined
   if (route !== undefined) return yield* route(options)
   if (name === "file review") return yield* fileReview(options)
+  if (name === "resume") return yield* resume(options)
   if (name === "review open") {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
     return yield* runTui(yield* required(options, "repo"), {

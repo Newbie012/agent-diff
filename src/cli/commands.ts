@@ -275,6 +275,22 @@ export const readingOf = Effect.fn("Cli.readingOf")(function* (
   return { worktree, patches: yield* patchesOf(worktree) } satisfies BranchReading
 })
 
+export const markOpened = Effect.fn("Cli.markOpened")(function* (worktreePath: string, at: string) {
+  const store = yield* Store
+  yield* store.changeState(worktreePath, (was) => ({ ...was, openedAt: at }))
+})
+
+export const lastOpenedIn = Effect.fn("Cli.lastOpenedIn")(function* (repo: string) {
+  const store = yield* Store
+  const git = yield* Git
+  const trees = yield* git.worktrees(repo)
+  const openedOf = (tree: Worktree) =>
+    Effect.map(store.state(tree.path), (held) => ({ branch: tree.branch, at: held.openedAt }))
+  const read = yield* Effect.forEach(trees, openedOf)
+  const opened = read.filter((one) => one.at.length > 0)
+  return opened.toSorted((left, right) => right.at.localeCompare(left.at))[0]
+})
+
 export const progressIn = Effect.fn("Cli.progressIn")(function* (reading: BranchReading) {
   const store = yield* Store
   const current = yield* store.state(reading.worktree.path)

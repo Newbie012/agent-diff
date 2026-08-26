@@ -2,6 +2,13 @@
 
 > Every behavior adiff has, reachable as a command that answers in one line of JSON.
 
+- **`resume` opens the review that was left last.** Coming back to a repository meant opening the
+  terminal, reading a list of branches, and finding the one that was being read an hour ago — a list
+  that is longest exactly when the reviewer has the most work in flight. Opening a branch stamps that
+  branch with the moment, and `resume` opens the branch whose stamp is newest, taking the repository
+  from where it is run. `resume --check` names that branch without opening anything, so a caller can
+  ask, and a repository nothing has been opened in says so and names `review open`.
+
 - **Status:** `accepted`
 - **Owner:** TBD
 - **Last updated:** 2026-08-02
