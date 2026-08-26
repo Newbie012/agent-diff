@@ -209,6 +209,26 @@ The repro. Then what the fix was.
   "verified twice". CI says whether the tests pass.
 - **Anything from a private repository.** See below.
 
+### The body says what changed, and nothing about who asked
+
+A body is the change, not its history. Two rules, and a command that enforces both:
+
+- **Never say who reported it.** Not a name, not "a teammate", not "a user", not "somebody on the
+  team". Who found a defect is private to the people who found it, and it changes nothing about the
+  fix. Write what broke and what it does now. "Guy reported it" is the sentence this rule exists to
+  stop, and it reached a public PR once already.
+- **Say it in 300 characters or fewer.** What changed, in the plain case, technical. Not the
+  investigation, not the reasoning, not what it felt like to find.
+
+```bash
+pnpm check-body <path-to-body.md>     # before every gh pr create and gh pr edit
+```
+
+It refuses a body that names who asked, places the defect with somebody at work, carries a private
+repository or a ticket, or runs past 300 characters of prose, and it proves each refusal on its own
+fixtures before it reads yours. `pnpm lint` runs the same rules over every change intent, the wiki,
+the PRDs, the changelog and the README, so nothing in the repository can carry them either.
+
 ### Nothing private, ever
 
 This repository is public, and so is every PR body, screenshot and recording attached to it. Before
@@ -218,6 +238,7 @@ you open or edit a PR, read what you wrote and confirm none of it carries:
 - a ticket id, an internal URL, a dashboard link, or an internal hostname
 - a real branch name, file path, or line of source from private work
 - a colleague's name or address, or any credential, token or key
+- who reported the bug, in any words at all
 
 A screenshot leaks all of this faster than prose does, which is why **every capture runs against the
 synthetic demo repository** — `scripts/simulate.ts` builds a repo of invented invitation code with

@@ -118,6 +118,17 @@ duration, no dimensions, no file size.
 After the prose and after `## What changed`, before anything else. A reviewer reads what changed,
 then watches it.
 
+## Check the body before it is posted
+
+```bash
+pnpm check-body body.md
+```
+
+Run it on the file you are about to pass to `gh pr create --body-file` or `gh pr edit --body-file`,
+every time. It refuses a body that says who reported the change, places it with somebody at work,
+carries a private repository or a ticket, or runs past 300 characters of prose. A body says what
+changed and what it does now — never who asked for it.
+
 ## Nothing private, ever
 
 This repository is public and so is every attachment. `pnpm record` is safe by construction: it

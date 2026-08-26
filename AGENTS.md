@@ -66,6 +66,10 @@ A sentence you are pleased with is worth rereading.
 
 ## Shipping
 
+A PR body says what changed in 300 characters or fewer, and never says who reported it — not a name,
+not "a teammate". `pnpm check-body <file>` refuses one that does, and `pnpm lint` runs the same rules
+over every change intent, the wiki, the PRDs, the changelog and the README.
+
 A change a reviewer would notice needs a change intent in `.changeset/`; a refactor, a test or a
 doc does not. A release consumes its intents and deletes them, so that directory holds only what
 has not shipped. Read `.claude/skills/release-notes/SKILL.md` before writing one and before opening a
