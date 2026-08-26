@@ -29,6 +29,37 @@ const seed = async (driver: TestDriver): Promise<void> => {
 }
 
 describe("when the branch has moved past the code a comment was written on", () => {
+  test("then the section counts the comments and not the row that folds them", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    await seed(driver)
+
+    // ACT
+    await driver.screen.pressKeys(["l"])
+
+    // ASSERT
+    const rows = (await driver.screen.getFrame()).split("\n")
+    const head = rows.find((row) => row.includes("The branch moved past")) ?? ""
+    expect(head).toContain("1")
+    expect(head).not.toContain("2")
+  })
+
+  test("then the count stands whether the fold is open or shut", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await seed(driver)
+    const headOf = async (): Promise<string> =>
+      (await driver.screen.getFrame()).split("\n").find((row) => row.includes("moved past")) ?? ""
+    const shut = await headOf()
+
+    // ACT
+    await driver.screen.pressKeys(["l"])
+
+    // ASSERT
+    expect(await headOf()).toBe(shut)
+  })
+
   test("then the review panel folds that comment away and counts it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

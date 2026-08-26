@@ -343,8 +343,18 @@ const foldMoved = (state: TuiState, shut: boolean): TuiState =>
 const overFold = (state: TuiState): boolean =>
   state.focus === "review" && panelEntry(state)?.kind === "fold"
 
+const readingThread = (state: TuiState): TuiState => ({
+  ...state,
+  screen: "thread",
+  returnTo: state.screen,
+})
+
+const overThread = (state: TuiState): boolean =>
+  state.focus === "review" && panelEntry(state) !== undefined
+
 const fold = (state: TuiState, shut: boolean): TuiState => {
   if (overFold(state)) return foldMoved(state, shut)
+  if (!shut && overThread(state)) return readingThread(state)
   const thread = threadAtStop(state)
   if (thread?.id !== undefined && thread.settled === true) {
     return foldThread(state, shut, thread.id)
@@ -468,6 +478,7 @@ const BACK_FROM: Partial<Record<Screen, (state: TuiState) => TuiState>> = {
   palette: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   keys: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   settings: (state) => ({ ...state, screen: state.returnTo }),
+  thread: (state) => ({ ...state, screen: state.returnTo }),
   compose: (state) => ({ ...state, screen: "review", replyTo: undefined }),
 }
 
