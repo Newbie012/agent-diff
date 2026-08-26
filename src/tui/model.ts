@@ -1,6 +1,7 @@
 import { Option } from "effect"
 import { WHOLE_FILE } from "../domain/patch/index.ts"
 import { preferences } from "../domain/preferences/index.ts"
+import { partOf } from "../domain/review/index.ts"
 
 export type Focus = "tree" | "diff" | "review"
 
@@ -126,6 +127,7 @@ export type TuiState = {
   readonly returnTo: Screen
   readonly closed: ReadonlyArray<string>
   readonly vouched: ReadonlyArray<string>
+  readonly partsRead: ReadonlyArray<string>
   readonly sent: ReadonlyArray<StagedComment>
   readonly remarks: ReadonlyArray<Remark>
   readonly held: ReadonlyArray<StagedComment>
@@ -232,6 +234,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   returnTo: "branches",
   closed: [],
   vouched: [],
+  partsRead: [],
   sent: [],
   remarks: [],
   viewport: 20,
@@ -409,7 +412,7 @@ const fileRow = (state: TuiState, layerIndex: number, at: number, room: number):
     text: clip(name, room),
     lead: false,
     fileIndex: at,
-    reviewed: isReviewed(state, at),
+    reviewed: readIn(state, layerIndex, at),
     here: at === state.patchIndex && layerIndex === state.layerIndex,
   }
 }
@@ -444,7 +447,7 @@ const fileRows = (
 
 export const layerRead = (state: TuiState, layerIndex: number): { done: number; all: number } => {
   const files = layerHolds(state, layerIndex)
-  return { done: files.filter((at) => isReviewed(state, at)).length, all: files.length }
+  return { done: files.filter((at) => readIn(state, layerIndex, at)).length, all: files.length }
 }
 
 export const layerDone = (state: TuiState, layerIndex: number): boolean => {
@@ -652,6 +655,29 @@ export const foldersOfFile = (state: TuiState, fileIndex: number): ReadonlyArray
 export const isReviewed = (state: TuiState, fileIndex: number): boolean => {
   const patch = state.patches[fileIndex]
   return patch !== undefined && state.vouched.includes(patch.path)
+}
+
+export const partHere = (
+  state: TuiState,
+  layerIndex: number,
+  fileIndex: number,
+): string | undefined => {
+  const path = state.patches[fileIndex]?.path
+  const layer = state.layers[layerIndex]
+  if (path === undefined || layer === undefined) return undefined
+  const spans = layer.spans.filter((span) => span.path === path)
+  return spans.length === 0 ? undefined : partOf(path, spans)
+}
+
+export const layersHolding = (state: TuiState, fileIndex: number): number =>
+  state.layers.filter((layer) =>
+    layer.spans.some((span) => span.path === state.patches[fileIndex]?.path),
+  ).length
+
+export const readIn = (state: TuiState, layerIndex: number, fileIndex: number): boolean => {
+  if (isReviewed(state, fileIndex)) return true
+  const part = partHere(state, layerIndex, fileIndex)
+  return part !== undefined && state.partsRead.includes(part)
 }
 
 export const treeStart = (state: TuiState, height: number): number => {

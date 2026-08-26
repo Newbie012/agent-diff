@@ -214,10 +214,21 @@ export type VouchRequest = {
 
 export type VouchReport = {
   readonly vouched: ReadonlyArray<string>
+  readonly parts: ReadonlyArray<string>
   readonly total: number
 }
 
 export type ProgressReport = VouchReport
+
+export const readParts = (
+  parts: Readonly<Record<string, string>>,
+  files: ReadonlyArray<{ readonly path: string; readonly blob: string }>,
+): ReadonlyArray<string> => {
+  const blobs = new Map(files.map((file) => [file.path, file.blob]))
+  return Object.entries(parts)
+    .filter(([part, blob]) => blobs.get(part.split("@")[0] ?? "") === blob)
+    .map(([part]) => part)
+}
 
 const blobOf = (patches: ReadonlyArray<Patch>, file: string): Option.Option<string> =>
   Option.map(findPatch(patches, file), (patch) => patch.blob)
@@ -241,6 +252,7 @@ export const vouchIn = Effect.fn("Cli.vouchIn")(function* (reading: BranchReadin
   const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
   return {
     vouched: files.filter((one) => isVouched(next, one.path, one.blob)).map((one) => one.path),
+    parts: readParts(current.parts, files),
     total: patches.length,
   } satisfies VouchReport
 })
@@ -269,6 +281,7 @@ export const progressIn = Effect.fn("Cli.progressIn")(function* (reading: Branch
   const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
   return {
     vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
+    parts: readParts(current.parts, files),
     total: reading.patches.length,
   }
 })

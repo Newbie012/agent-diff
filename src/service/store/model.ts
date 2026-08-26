@@ -25,6 +25,7 @@ export type UpgradeCheck = typeof Wire.UpgradeCheck.Type
 export const emptyBranchState: BranchState = {
   taken: {},
   vouches: {},
+  parts: {},
   consumed: 0,
   settled: {},
   removed: {},
