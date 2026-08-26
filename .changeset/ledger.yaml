@@ -336,6 +336,10 @@
   dir: ""
   intents:
     - a-body-that-names-nobody
+"@eliya-oss/agent-diff@0.1.0-alpha.164":
+  dir: ""
+  intents:
+    - one-colour-for-one-range
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
