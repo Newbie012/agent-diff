@@ -344,6 +344,11 @@
   dir: ""
   intents:
     - fold-away-what-the-branch-moved-past
+"@eliya-oss/agent-diff@0.1.0-alpha.166":
+  dir: ""
+  intents:
+    - a-click-lands-where-it-was-aimed
+    - read-a-thread-in-full
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
