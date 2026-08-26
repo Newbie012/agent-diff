@@ -328,6 +328,10 @@
   dir: ""
   intents:
     - open-the-line-inside-its-project
+"@eliya-oss/agent-diff@0.1.0-alpha.162":
+  dir: ""
+  intents:
+    - a-file-read-layer-by-layer
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
