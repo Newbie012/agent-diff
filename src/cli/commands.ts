@@ -386,15 +386,70 @@ const whereItSitsNow = (
   })
 }
 
+const linesIn = (found: Option.Option<ReadonlyArray<string>>): ReadonlyArray<string> =>
+  Option.getOrElse(found, (): ReadonlyArray<string> => [])
+
+const lastLineOf = (snippet: string): string =>
+  snippet
+    .split("\n")
+    .map((line) => line.trim())
+    .findLast((line) => line.length > 0) ?? ""
+
+const nearestLine = (
+  source: ReadonlyArray<string>,
+  wanted: string,
+  was: number,
+): number | undefined => {
+  const found = source.flatMap((line, at) => (line.trim() === wanted ? [at + 1] : []))
+  if (found.length === 0) return undefined
+  return found.reduce((best, line) => (Math.abs(line - was) < Math.abs(best - was) ? line : best))
+}
+
+const stillInFile = (
+  comment: PendingComment,
+  source: ReadonlyArray<string>,
+): PendingComment => {
+  const line = nearestLine(source, lastLineOf(comment.snippet), comment.end)
+  if (line === undefined) return comment
+  const span = Math.max(0, comment.end - comment.start)
+  return { ...comment, start: line - span, end: line, placed: true }
+}
+
+const foundOutsideTheHunks = Effect.fn("Cli.foundOutsideTheHunks")(function* (
+  worktree: Worktree,
+  held: ReadonlyArray<PendingComment>,
+  shown: ReadonlySet<string>,
+) {
+  const wanted = held.filter(
+    (comment) =>
+      comment.placed === false &&
+      shown.has(comment.file) &&
+      comment.start !== WHOLE_FILE &&
+      comment.snippet.trim().length > 0,
+  )
+  if (wanted.length === 0) return held
+  const git = yield* Git
+  const paths = [...new Set(wanted.map((comment) => comment.file))]
+  const readOne = (path: string) =>
+    Effect.map(git.source(worktree, path), (found) => [path, linesIn(found)] as const)
+  const read = yield* Effect.forEach(paths, readOne)
+  const sources = new Map(read)
+  const asked = new Set(wanted.map((comment) => comment.id))
+  return held.map((comment) =>
+    asked.has(comment.id) ? stillInFile(comment, sources.get(comment.file) ?? []) : comment,
+  )
+})
+
 export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading) {
   const store = yield* Store
   const worktree = reading.worktree
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
-  const held = flatten(yield* store.inbox(worktree.path)).map((comment) =>
+  const placed = flatten(yield* store.inbox(worktree.path)).map((comment) =>
     whereItSitsNow(reading.patches, comment),
   )
+  const held = yield* foundOutsideTheHunks(worktree, placed, shown)
   const replies = held.filter((comment) => comment.replyTo !== undefined)
   const conversation = {
     spoken,

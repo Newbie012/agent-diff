@@ -119,6 +119,21 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   they could see, could not settle, and could only be rid of from the command line. With the panel
   focused, settling and removing act on the entry under its cursor, and the footer offers the key
   there for the same reason it offers it on a thread in the diff.
+- **A comment is only lost when its code is gone from the file, not from the hunks.** Placement used to look only
+  for the snippet in the rows the diff holds, and a diff holds a few lines of context, so a
+  comment on a line ten lines above a change was reported as not in the diff — reliably, on every
+  reload, for a comment sitting in a fold the reviewer could open. Where the hunks cannot place a
+  comment, the file itself is searched, and the nearest line matching what was quoted is where the
+  comment sits. Only a comment whose file has left the branch, or whose quoted line is nowhere in
+  that file, counts as lost.
+
+- **The comments the branch moved past are folded away, and counted.** They cannot be acted on where
+  they were written, they arrive steadily because the agent keeps working, and every one of them sat
+  in the list between comments that still matter. The panel keeps them in a section of their own,
+  under one row saying how many there are and which key opens them; opening it walks the cursor into
+  the first of them, and closing it puts them away again. Nothing is hidden: the count is always on
+  the screen, and a comment inside the fold can still be read, replied to, settled and removed.
+
 - **A comment the diff can no longer place shows the code it was written on.** The usual reason a
   comment loses its line is that the agent did what the comment asked, so the code it quoted is not
   in the diff any more. The panel said "not in the diff" and going to it said it was outside this

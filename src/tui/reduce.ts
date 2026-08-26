@@ -39,6 +39,7 @@ import {
   treeRows,
   withChosen,
   treeStart,
+  panelEntry,
 } from "./model.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -334,7 +335,16 @@ const foldThread = (state: TuiState, shut: boolean, id: string): TuiState => {
   return { ...state, opened: shut ? rest : [...rest, id] }
 }
 
+const foldMoved = (state: TuiState, shut: boolean): TuiState =>
+  shut
+    ? { ...state, openMoved: false }
+    : { ...state, openMoved: true, panelIndex: state.panelIndex + 1 }
+
+const overFold = (state: TuiState): boolean =>
+  state.focus === "review" && panelEntry(state)?.kind === "fold"
+
 const fold = (state: TuiState, shut: boolean): TuiState => {
+  if (overFold(state)) return foldMoved(state, shut)
   const thread = threadAtStop(state)
   if (thread?.id !== undefined && thread.settled === true) {
     return foldThread(state, shut, thread.id)

@@ -1240,6 +1240,10 @@ export class App {
         this.commit(withNoticeHere(this.state, "nothing in the review yet"))
         return
       }
+      if (entry.kind === "fold") {
+        this.commit({ ...this.state, openMoved: !entry.open })
+        return
+      }
       if (entry.kind === "remark") {
         yield* this.openRemark(entry.remark)
         return

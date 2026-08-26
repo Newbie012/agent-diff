@@ -4,7 +4,9 @@ import {
   goDownALine,
   goUpALine,
   leaveAComment,
+  moveToTheOtherPane,
   openTheBranch,
+  openWhatTheBranchMovedPast,
   readTheBranchAgain,
   reviewing,
   scenario,
@@ -149,6 +151,7 @@ describe("when the agent rewrites the line a comment was written against", () =>
     )
 
     // ACT
+    await review.andThen(moveToTheOtherPane(), goDownALine(), openWhatTheBranchMovedPast())
     const seen = await review.sees()
 
     // ASSERT
