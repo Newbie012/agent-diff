@@ -527,6 +527,25 @@ const commands: ReadonlyArray<CommandSpec> = [
     example: "adiff upgrade --check --json --fields route,latest,current",
   },
   {
+    name: "resume",
+    about:
+      "Open the review you left last in this repository. Opens the terminal, like `review open`, on the branch it was opened on most recently",
+    group: SET_UP,
+    addresses: "none",
+    safety: "read",
+    options: [
+      { name: "repo", required: false, value: "path", about: "The repository, defaulting to where you are" },
+      {
+        name: "check",
+        required: false,
+        value: "flag",
+        about: "Name the branch that would open, without opening anything. Always exits 0",
+      },
+    ],
+    dataKey: "resume",
+    example: "adiff resume",
+  },
+  {
     name: "describe",
     about: "This catalog, as JSON",
     group: SET_UP,

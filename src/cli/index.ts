@@ -43,6 +43,8 @@ export {
   takeComments,
   toggleVouch,
   vouchIn,
+  lastOpenedIn,
+  markOpened,
 } from "./commands.ts"
 export { openPane } from "./pane.ts"
 export {

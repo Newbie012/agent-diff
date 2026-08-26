@@ -65,6 +65,7 @@ import {
   remarksHeldIn,
   remarksAgainst,
   type Remark,
+  markOpened,
 } from "../cli/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
 import type { Worktree } from "../service/git/index.ts"
@@ -1035,6 +1036,7 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const reading = yield* readingOf(this.repo, name, this.base)
       this.reading = reading
+      yield* markOpened(reading.worktree.path, new Date().toISOString())
       const [progress, layers, sent, remarks] = yield* Effect.all(
         [
           progressIn(reading),
