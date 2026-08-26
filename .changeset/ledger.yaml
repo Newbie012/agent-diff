@@ -332,6 +332,10 @@
   dir: ""
   intents:
     - a-file-read-layer-by-layer
+"@eliya-oss/agent-diff@0.1.0-alpha.163":
+  dir: ""
+  intents:
+    - a-body-that-names-nobody
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
