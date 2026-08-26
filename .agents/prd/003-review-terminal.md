@@ -109,6 +109,14 @@ Three screens, and the keys each answers to:
   by line number then land on the wrong words. A row whose source line no longer matches is left
   plain, which reads as unfinished rather than as wrong.
 
+- **One stretch of code takes one colour.** The highlighter answers with a group per range, and for
+  a file of TypeScript with markup in it — a `.tsx` — it answers three times over the same range:
+  `span` in `<span className=…>` came back as a name, a type and a constant at once, so a tag name
+  and half the identifiers in the file were painted the colour of a number. The first group for a
+  range is the one drawn and later groups for the same range are dropped, which is the order the
+  highlighter's own patterns are written in. Ranges that merely overlap are left alone, because a
+  string holding an interpolation is two facts about two stretches of code.
+
 - **Colouring a file waits on nothing the reader is doing.** A grammar is fetched the first time a
   kind of file is opened, and reading it took as long as it took while every key pressed in the
   meantime waited behind it. The colour pass runs beside the review instead, and the file that has

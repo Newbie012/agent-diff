@@ -663,13 +663,27 @@ const acrossLines = (
   }
 }
 
+const firstOfEach = (
+  found: ReadonlyArray<readonly [number, number, string, unknown?]>,
+): ReadonlyArray<readonly [number, number, string]> => {
+  const seen = new Set<string>()
+  const kept: Array<readonly [number, number, string]> = []
+  for (const [from, to, group] of found) {
+    const range = `${from}:${to}`
+    if (seen.has(range)) continue
+    seen.add(range)
+    kept.push([from, to, group])
+  }
+  return kept
+}
+
 const spansByLine = (
   lines: ReadonlyArray<string>,
   found: ReadonlyArray<readonly [number, number, string, unknown?]>,
 ): ReadonlyArray<ReadonlyArray<Span>> => {
   const starts = lineStarts(lines)
   const held: Array<Array<Span>> = lines.map(() => [])
-  for (const [from, to, group] of found) acrossLines(lines, starts, held, [from, to, group])
+  for (const span of firstOfEach(found)) acrossLines(lines, starts, held, span)
   return held
 }
 
