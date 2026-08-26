@@ -87,6 +87,7 @@ import {
   type Spot,
   laidDraft,
   panelHolds,
+  type Clicked,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import type { Match, Remark } from "../cli/index.ts"
@@ -1283,7 +1284,12 @@ const PANEL_ORDER = PANEL_SECTIONS
 const PANEL_LEAD = 3
 const PANEL_EMPTY = "No comment on this branch yet."
 
-type PanelLine = { readonly text: string; readonly tone: string; readonly here?: boolean }
+type PanelLine = {
+  readonly text: string
+  readonly tone: string
+  readonly here?: boolean
+  readonly at?: number
+}
 
 const restingOrHere = (focused: boolean): string =>
   focused ? palette.selection : palette.resting
@@ -1516,7 +1522,7 @@ const foldLine = (state: TuiState, placed: Placed, room: number): ReadonlyArray<
   const here = placed.at === state.panelIndex
   const said = entry.open ? "h folds them away" : "l opens them"
   const text = ` ${panelMark(entry)} ${entry.held} ${entry.held === 1 ? "comment" : "comments"} · ${said}`
-  return [{ text: clip(text, room), tone: palette.faint, here }]
+  return [{ text: clip(text, room), tone: palette.faint, here, at: placed.at }]
 }
 
 const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
@@ -1525,8 +1531,18 @@ const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray
   const lead = ` ${panelMark(entry)} `
   const here = placed.at === state.panelIndex
   return [
-    { text: `${lead}${panelWhere(state, entry, room - PANEL_LEAD)}`, tone: palette.ink, here },
-    { text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`, tone: palette.muted, here },
+    {
+      text: `${lead}${panelWhere(state, entry, room - PANEL_LEAD)}`,
+      tone: palette.ink,
+      here,
+      at: placed.at,
+    },
+    {
+      text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`,
+      tone: palette.muted,
+      here,
+      at: placed.at,
+    },
     ...writtenOn(state, placed, room),
   ]
 }
@@ -1567,7 +1583,21 @@ const panelWindow = (
 const moreLine = (count: number, mark: string, room: number): ReadonlyArray<PanelLine> =>
   count === 0 ? [] : [{ text: clip(` ${mark} ${count} more`, room), tone: palette.faint }]
 
-const panelText = (state: TuiState, room: number, rows: number): StyledText => {
+const panelPicked = (
+  banner: number,
+  above: number,
+  lines: ReadonlyArray<PanelLine>,
+): ReadonlyArray<Clicked> => [
+  ...Array.from({ length: banner + (above > 0 ? 1 : 0) }, () => ({ pane: "review" as const })),
+  ...lines.map((line) => ({ pane: "review" as const, entry: line.at })),
+]
+
+const panelText = (
+  state: TuiState,
+  room: number,
+  rows: number,
+  picked?: (found: ReadonlyArray<Clicked>) => void,
+): StyledText => {
   const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
   const holds = panelHolds(state)
   const fresh = holds.filter((entry) => entry.kind === "comment" && entry.fresh).length
@@ -1585,6 +1615,7 @@ const panelText = (state: TuiState, room: number, rows: number): StyledText => {
     ...window.lines,
     ...moreLine(window.below, "▼", room),
   ]
+  picked?.(panelPicked(banner.length, window.above, shown.slice(banner.length)))
   return new StyledText(
     shown.map((line) => {
       const drawn = fg(line.tone)(`${line.text.padEnd(room)}\n`)
@@ -1594,6 +1625,7 @@ const panelText = (state: TuiState, room: number, rows: number): StyledText => {
 }
 
 export type Mouse = {
+  readonly onClick: (what: Clicked) => void
   readonly onScroll: (delta: number) => void
   readonly onPan: (delta: number) => void
   readonly onDrag: (from: Spot, to: Spot, done: boolean) => void
@@ -1652,6 +1684,8 @@ export class Screen {
   private readonly renderer: CliRenderer
 
   private mouse: Mouse | undefined
+  private listPicks: ReadonlyArray<Clicked> = []
+  private panelPicks: ReadonlyArray<Clicked> = []
   private dragFrom: Spot | undefined
   private lastTop = 0
 
@@ -1719,8 +1753,21 @@ export class Screen {
     }
   }
 
+  private clickIn(
+    box: TextRenderable,
+    picks: () => ReadonlyArray<Clicked>,
+    pane: "tree" | "review",
+  ): (event: { y: number }) => void {
+    return (event) => {
+      const found = picks()[Math.max(0, event.y - box.y)]
+      this.mouse?.onClick(found ?? { pane })
+    }
+  }
+
   listen(mouse: Mouse): void {
     this.mouse = mouse
+    this.list.onMouseDown = this.clickIn(this.list, () => this.listPicks, "tree")
+    this.panel.onMouseDown = this.clickIn(this.panel, () => this.panelPicks, "review")
     this.wheelOnSheet(this.keys)
     this.wheelOnSheet(this.palette)
     this.wheelOnRail(this.listPane)
@@ -2036,7 +2083,9 @@ export class Screen {
     this.panelPane.paddingLeft = shown ? 1 : 0
     this.panelPane.paddingTop = 0
     const rows = Math.max(1, this.panelPane.height - PANE_EDGES)
-    this.panel.content = shown ? panelText(state, reviewWidth() - PANE_CHROME, rows) : ""
+    this.panel.content = shown
+      ? panelText(state, reviewWidth() - PANE_CHROME, rows, (found) => (this.panelPicks = found))
+      : ""
   }
 
   private listText(state: TuiState): string | StyledText {
@@ -2046,6 +2095,7 @@ export class Screen {
     const pane = this.paneRoom()
     const whole = treeWindow(state, room)
     const window = whole.more === 0 ? whole : treeWindow(state, Math.max(1, room - 1))
+    this.listPicks = window.rows.map((row) => ({ pane: "tree" as const, file: row.fileIndex }))
     const rows = window.rows.flatMap((row) => {
       const drawn = fg(row.kind === "file" ? palette.ink : palette.muted)(
         `${treeLine(state, row, pane)}\n`,
@@ -2068,6 +2118,15 @@ export class Screen {
     const height = Math.max(1, this.listRoom() - banner)
     const all = layerFitted(state, room, height)
     const window = this.railFitted(state, all, height)
+    const lead = said.length + (state.layersStale ? 1 : 0) + (window.above > 0 ? 1 : 0)
+    this.listPicks = [
+      ...Array.from({ length: lead }, () => ({ pane: "tree" as const })),
+      ...window.rows.map((row) => ({
+        pane: "tree" as const,
+        file: row.fileIndex,
+        layer: row.index,
+      })),
+    ]
     const rows = window.rows.flatMap((row) => this.layerLine(state, row, room))
     const above =
       window.above > 0 ? [fg(palette.faint)(` ▲ ${window.above} more\n`)] : []

@@ -98,6 +98,13 @@ Three screens, and the keys each answers to:
   the key under the letter alongside it, and that is what a binding is matched against. Typing is
   unaffected: what reaches a comment is still the letter that was typed.
 
+- **A click lands where it was aimed.** The wheel worked over every pane and a drag selected diff
+  lines, but a click did nothing else: the keys stayed in whichever pane they were in, so clicking a
+  file in the list and pressing `j` moved the diff instead of the list, and clicking a layer did not
+  open it. A click now moves the keys into the pane it landed in, a click on a file in the list opens
+  that file, a click on a layer in the rail moves to what that layer claims, and a click on a thread
+  in the review panel stands the cursor on it. Clicking the diff takes the keys back.
+
 - **The wheel over the file list moves the list, not the file.** A branch of forty files is taller
   than the pane, and looking further down it should not mean opening every file on the way: each one
   loads a diff the reader did not ask for. The file being read stays where it is, and the list holds

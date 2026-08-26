@@ -471,6 +471,19 @@ export class ScreenTestDriver {
     this.guard()
   }
 
+  async clickAt(x: number, y: number): Promise<void> {
+    this.state.tracer.cannotReplay("the mouse")
+    const setup = this.active()
+    await setup.mockMouse.drag(x, y, x, y)
+    await this.app?.settled()
+    await setup.waitForVisualIdle()
+    this.guard()
+  }
+
+  async rowAtText(text: string): Promise<number> {
+    return (await this.getFrame()).split("\n").findIndex((row) => row.includes(text))
+  }
+
   async clickOnDiff(y: number): Promise<void> {
     const setup = this.active()
     const x = Math.floor(WIDTH / 2) + 10
