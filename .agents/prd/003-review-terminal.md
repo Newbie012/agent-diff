@@ -319,6 +319,19 @@ Three screens, and the keys each answers to:
   because that is the order the store keeps them in; a line's threads are ordered by when they were
   sent, oldest first, with a rule between them.
 
+- **A thread can be read in full, off the panel.** The panel is a column about thirty characters
+  wide, so a path is cut to its last segment, a sentence to its first few words, and a quoted line
+  to nothing worth reading — for a comment the diff cannot place, that column is the only view of it,
+  and it says almost nothing. `l` on a thread in the panel opens it over the review: the whole path,
+  every message in the order it was said, and the code it was written on, wrapped rather than cut.
+  `escape` closes it. Going to a comment the diff cannot place opens the same reader, because a
+  notice saying the line is gone is not an answer to "what did I say?".
+
+- **A section counts the threads it holds, open or shut.** The row that folds the comments the branch
+  moved past is a row, not a comment, so a section holding thirteen of them read "14" while the fold
+  said "13 comments". The count is of what the section holds either way, so opening and closing the
+  fold never changes it.
+
 - **A thread's stand is drawn as one circle, and every one of them is the same circle.** The four
   stands a thread passes through — filed, waiting, answered, asked — were drawn `○ ◔ ◐ ●`, and a
   terminal draws a quarter-filled and a half-filled circle at sizes of their own, often out of a

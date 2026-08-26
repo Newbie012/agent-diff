@@ -621,6 +621,7 @@ const makeModals = (renderer: CliRenderer) => ({
   found: makeFoundParts(renderer),
   keys: makeKeysParts(renderer),
   settings: makeSettingsParts(renderer),
+  reader: makeReaderParts(renderer),
   bases: makeBaseParts(renderer),
 })
 
@@ -641,6 +642,16 @@ const makeBaseParts = (renderer: CliRenderer): BaseParts => {
   box.add(query)
   box.add(choices)
   return { box, title, query, choices }
+}
+
+const makeReaderParts = (renderer: CliRenderer) => {
+  const box = makePalette(renderer)
+  const title = bar(renderer, "reader-title", palette.faint)
+  const choices = makeChoices(renderer)
+  box.id = "reader"
+  box.add(title)
+  box.add(choices)
+  return { box, title, choices }
 }
 
 const makeSettingsParts = (renderer: CliRenderer) => {
@@ -1222,6 +1233,39 @@ const offeredIn = (state: TuiState): Offered => ({
   onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
 })
 
+const readerTitle = (state: TuiState, entry: PanelEntry): string => {
+  if (entry.kind === "fold") return "The branch moved past these"
+  const where = wherePart(state, entry).replace(" · ", "").trim()
+  return where.length === 0 ? "This thread" : `This thread · ${where}`
+}
+
+const voicesOf = (entry: PanelEntry): ReadonlyArray<string> => {
+  if (entry.kind === "fold") return []
+  if (entry.kind === "remark") {
+    return [
+      `@${entry.remark.by} ${entry.remark.body}`,
+      ...entry.remark.replies.map((reply) => `@${reply.by} ${reply.body}`),
+    ]
+  }
+  const turns = entry.comment.turns
+  if (turns === undefined || turns.length === 0) return [entry.comment.body]
+  return turns.map((turn) => `${turn.voice === "agent" ? "↳" : "»"} ${turn.body}`)
+}
+
+const readerText = (entry: PanelEntry, room: number): StyledText => {
+  const named = entry.kind === "fold" ? [] : [...wrapped(panelFile(entry), room), ""]
+  const said = voicesOf(entry).flatMap((line) => wrapped(line, room))
+  const code = lostCode(entry)
+  const quoted =
+    code.length === 0
+      ? []
+      : ["", "the code it was written on", ...code.map((line) => `│ ${line.trim()}`)]
+  const rows = [...named, ...said, ...quoted].flatMap((line) => wrapped(line, room))
+  return new StyledText(
+    rows.map((line) => fg(line.startsWith("│") ? palette.faint : palette.ink)(`${line.padEnd(room)}\n`)),
+  )
+}
+
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   remarks: "Remarks",
   dismissed: "Dismissed",
@@ -1495,9 +1539,10 @@ const panelSection = (
 ): ReadonlyArray<PanelLine> => {
   const here = placed.filter((one) => one.entry.section === section)
   if (here.length === 0) return []
+  const counted = panelHolds(state).filter((entry) => entry.section === section).length
   return [
     { text: "", tone: palette.faint },
-    { text: `${PANEL_TITLES[section]}  ${here.length}`, tone: palette.faint },
+    { text: `${PANEL_TITLES[section]}  ${counted}`, tone: palette.faint },
     ...here.flatMap((one) => panelPair(state, one, room)),
   ]
 }
@@ -1595,13 +1640,14 @@ export class Screen {
   private readonly settingsTitle: TextRenderable
   private readonly settingsChoices: TextRenderable
   private readonly keysQuery: TextareaRenderable
-  private readonly foundQuery: TextareaRenderable
   private readonly keysChoices: TextRenderable
   private readonly keysLegend: TextRenderable
-  private readonly found: BoxRenderable
-  private readonly foundTitle: TextRenderable
-  private readonly foundPeek: TextRenderable
-  private readonly foundChoices: TextRenderable
+  private readonly reader: {
+    readonly box: BoxRenderable
+    readonly title: TextRenderable
+    readonly choices: TextRenderable
+  }
+  private readonly foundBox: FoundParts
 
   private readonly renderer: CliRenderer
 
@@ -1652,11 +1698,8 @@ export class Screen {
     this.keysChoices = modals.keys.choices
     this.keysLegend = modals.keys.legend
     this.baseBox = modals.bases
-    this.found = modals.found.box
-    this.foundTitle = modals.found.title
-    this.foundQuery = modals.found.query
-    this.foundPeek = modals.found.peek
-    this.foundChoices = modals.found.choices
+    this.reader = modals.reader
+    this.foundBox = modals.found
     this.assemble(renderer)
   }
 
@@ -1743,7 +1786,7 @@ export class Screen {
       case "palette":
         return this.paletteQuery
       case "search":
-        return this.foundQuery
+        return this.foundBox.query
       case "keys":
         return this.keysQuery
       case "base":
@@ -1800,6 +1843,7 @@ export class Screen {
     this.paintKeys(state)
     this.paintSettings(state)
     this.paintBases(state)
+    this.paintReader(state)
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
@@ -1886,6 +1930,26 @@ export class Screen {
     this.settings.width = room
     this.settings.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.settings.top = panelTop(this.renderer.height, PANEL_QUARTER)
+  }
+
+  private paintReader(state: TuiState): void {
+    const entry = panelEntry(state)
+    this.reader.box.visible = state.screen === "thread" && entry !== undefined
+    if (state.screen !== "thread" || entry === undefined) {
+      this.reader.title.content = ""
+      this.reader.choices.content = ""
+      return
+    }
+    const room = panelWidth(this.renderer.width)
+    this.reader.title.content = clip(readerTitle(state, entry), room - MODAL_ROOM)
+    this.reader.choices.content = readerText(entry, room - MODAL_ROOM)
+    this.reader.box.height = Math.min(
+      panelRows(this.renderer.height, PANEL_QUARTER),
+      voicesOf(entry).length + lostCode(entry).length + PALETTE_CHROME + 8,
+    )
+    this.reader.box.width = room
+    this.reader.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.reader.box.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private paintKeys(state: TuiState): void {
@@ -2076,9 +2140,10 @@ export class Screen {
       this.scrim,
       this.compose,
       this.palette,
-      this.found,
+      this.foundBox.box,
       this.keys,
       this.settings,
+      this.reader.box,
       this.baseBox.box,
     ])
   }
@@ -2195,31 +2260,31 @@ export class Screen {
   }
 
   private paintFound(state: TuiState): void {
-    this.found.visible = state.screen === "search"
+    this.foundBox.box.visible = state.screen === "search"
     if (state.screen !== "search") {
-      this.foundTitle.content = ""
-      this.foundPeek.content = ""
-      this.foundChoices.content = ""
+      this.foundBox.title.content = ""
+      this.foundBox.peek.content = ""
+      this.foundBox.choices.content = ""
       return
     }
     const room = panelWidth(this.renderer.width)
     const wide = Math.max(1, room - MODAL_ROOM)
-    this.foundTitle.content = foundTitle(state, wide)
+    this.foundBox.title.content = foundTitle(state, wide)
     const shown = shownMatches(state)
     const most = panelRows(this.renderer.height, PANEL_FIFTH)
     const { blocks, chosen } = foundBlocks(state, shown, wide)
     const tall = Math.max(FOUND_LEAST, most - PALETTE_CHROME)
     const window = windowedBlocks(blocks, chosen, tall)
-    this.foundChoices.content =
+    this.foundBox.choices.content =
       blocks.length === 0
         ? new StyledText([fg(palette.faint)(nothingYet(state, wide))])
         : new StyledText([...window.chunks])
-    this.foundPeek.content = ""
-    this.foundPeek.height = 0
-    this.found.height = Math.min(most, Math.max(FOUND_LEAST, window.rows) + PALETTE_CHROME)
-    this.found.width = room
-    this.found.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.found.top = panelTop(this.renderer.height, PANEL_FIFTH)
+    this.foundBox.peek.content = ""
+    this.foundBox.peek.height = 0
+    this.foundBox.box.height = Math.min(most, Math.max(FOUND_LEAST, window.rows) + PALETTE_CHROME)
+    this.foundBox.box.width = room
+    this.foundBox.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.foundBox.box.top = panelTop(this.renderer.height, PANEL_FIFTH)
   }
 
   private paintReport(state: TuiState): void {

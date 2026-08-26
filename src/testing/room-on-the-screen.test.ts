@@ -11,7 +11,7 @@ const oneFile = {
   ],
 }
 
-const LONG_TITLE = "Open the folder, layer, gap, or settled thread"
+const LONG_TITLE = "Open the folder, layer, gap, or the thread in the panel"
 const LONG_NAME = "reworking-the-invitation-scheduler-and-its-tests"
 
 const listedKeys = (frame: string): ReadonlyArray<string> =>

@@ -62,6 +62,7 @@ export type Screen =
   | "settings"
   | "base"
   | "editor"
+  | "thread"
 
 const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   wrap: "wrap",

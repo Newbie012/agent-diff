@@ -656,7 +656,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "tree.collapse",
     also: ["fold", "hide", "shrink"],
-    title: "Close the folder, layer, gap, or settled thread",
+    title: "Close the folder, layer, gap, or the thread in the panel",
     category: "Files",
     keys: ["h"],
     screens: ["review"],
@@ -664,7 +664,7 @@ export const commands: ReadonlyArray<Command> = [
   command({
     action: "tree.expand",
     also: ["expand", "unfold", "show more", "open"],
-    title: "Open the folder, layer, gap, or settled thread",
+    title: "Open the folder, layer, gap, or the thread in the panel",
     category: "Files",
     keys: ["l"],
     screens: ["review"],
@@ -844,7 +844,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Go back",
     category: "App",
     keys: ["escape", "q"],
-    screens: ["review", "compose", "palette", "report", "search", "keys"],
+    screens: ["review", "compose", "palette", "report", "search", "keys", "thread"],
     hint: "back",
     listed: false,
     rank: 9,
