@@ -1273,6 +1273,9 @@ const remarkRows = (state: TuiState, section: "remarks" | "dismissed"): Readonly
     .filter((one) => (section === "remarks" ? one.state === "waiting" : one.state === "dismissed"))
     .map((remark): PanelEntry => ({ kind: "remark", section, remark }))
 
+export const panelHolds = (state: TuiState): ReadonlyArray<PanelEntry> =>
+  panelEntries({ ...state, openMoved: true }).filter((entry) => entry.kind !== "fold")
+
 export const panelEntries = (state: TuiState): ReadonlyArray<PanelEntry> => {
   const shown = state.hideSettled
     ? state.sent.filter((comment) => comment.settled !== true)

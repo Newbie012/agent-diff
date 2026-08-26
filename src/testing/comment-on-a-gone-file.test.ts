@@ -23,6 +23,7 @@ const commentedThenGone = async (driver: TestDriver) => {
   await driver.branch.setFile(branch, "src/gone.ts", ["const g = 1"])
   await driver.screen.open({ ...WIDE, review: true })
   await driver.screen.pressKeys(["TAB"])
+  await driver.screen.pressKeys(["l"])
   return branch
 }
 

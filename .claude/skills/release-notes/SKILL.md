@@ -209,6 +209,20 @@ The repro. Then what the fix was.
   "verified twice". CI says whether the tests pass.
 - **Anything from a private repository.** See below.
 
+### The template
+
+A body is two headings and nothing else:
+
+```markdown
+### What changed
+
+<one paragraph, 200-300 characters, high level, technical>
+
+### Recorded tests
+
+<what pnpm record printed>
+```
+
 ### The body says what changed, and nothing about who asked
 
 A body is the change, not its history. Two rules, and a command that enforces both:

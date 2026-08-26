@@ -86,6 +86,7 @@ import {
   type PanelSection,
   type Spot,
   laidDraft,
+  panelHolds,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import type { Match, Remark } from "../cli/index.ts"
@@ -1523,8 +1524,9 @@ const moreLine = (count: number, mark: string, room: number): ReadonlyArray<Pane
 
 const panelText = (state: TuiState, room: number, rows: number): StyledText => {
   const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
-  const fresh = placed.filter((one) => one.entry.kind === "comment" && one.entry.fresh).length
-  const unread = placed.filter((one) => one.entry.kind === "comment" && one.entry.unread > 0).length
+  const holds = panelHolds(state)
+  const fresh = holds.filter((entry) => entry.kind === "comment" && entry.fresh).length
+  const unread = holds.filter((entry) => entry.kind === "comment" && entry.unread > 0).length
   const said = fresh > 0 ? `${fresh} ${PULL_HINT}` : unread > 0 ? `${unread} unread` : ""
   const banner: ReadonlyArray<PanelLine> =
     said.length === 0 ? [] : [{ text: clip(said, room), tone: palette.attention }]
