@@ -110,7 +110,8 @@ Each branch reports:
 - **The newest commits are offered as bases, named by what they are.** Reading only what the agent
   just did is the commonest narrowing there is, and it was reachable only by knowing that `HEAD~1`
   could be typed into the picker. The picker opens with the last five commits above the refs — "the
-  last commit", "the last 2 commits", each carrying the message of the newest commit it takes in —
+  last commit", "the last 2 commits", the first carrying that commit's message and the rest saying
+  which commit they read back to —
   and picking one records that commit's own base, so the diff holds those commits and nothing else.
   Typing narrows on the message as well as the ref, so "last" finds them.
 - **A base that cannot be resolved is an error, never a quiet fall back to the default.** A base

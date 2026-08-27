@@ -818,11 +818,12 @@ export const recentBases = Effect.fn("Cli.recentBases")(function* (
 ) {
   const git = yield* Git
   const found = yield* git.commits(repo, branch, MOST_RECENT + 1)
-  return found.flatMap((commit, at) =>
-    at === 0 || found[at] === undefined
-      ? []
-      : [{ ref: commit.sha, said: `${forOne(at)} · ${found[at - 1]?.said ?? ""}` }],
-  )
+  return found.flatMap((commit, at) => {
+    if (at === 0) return []
+    const oldest = found[at - 1]?.said ?? ""
+    const said = at === 1 ? oldest : `back to ${oldest}`
+    return [{ ref: commit.sha, said: `${forOne(at)} · ${said}` }]
+  })
 })
 
 export const setBase = Effect.fn("Cli.setBase")(function* (

@@ -4,6 +4,7 @@
 // checked before it is posted; with no argument it checks every change intent, the changelog, the
 // wiki and the PRD contracts. Proves each refusal on its own fixtures first.
 import { readFile } from "node:fs/promises"
+import { execFileSync } from "node:child_process"
 import { globSync } from "node:fs"
 
 type Rule = { readonly name: string; readonly of: RegExp; readonly why: string }
@@ -89,6 +90,19 @@ const WHAT = "### What changed"
 
 const RECORDED = "### Recorded tests"
 
+const testsChanged = (): ReadonlyArray<string> => {
+  try {
+    const said = execFileSync("git", ["diff", "--name-only", "origin/main...HEAD"], {
+      encoding: "utf8",
+    })
+    return said.split("\n").filter((path) => /^src\/testing\/.+\.test\.ts$/.test(path.trim()))
+  } catch {
+    return []
+  }
+}
+
+const NO_FILM = /no recording/i
+
 const shapeOf = (body: string): ReadonlyArray<string> => {
   const lines = body.split("\n")
   const heads = lines.filter((line) => line.startsWith("#"))
@@ -103,6 +117,12 @@ const shapeOf = (body: string): ReadonlyArray<string> => {
     .trim()
   if (said.length > LONGEST) {
     wrong.push(`says what changed in ${LONGEST} characters or fewer, not ${said.length}`)
+  }
+  const filmed = heads.includes(RECORDED) || NO_FILM.test(body)
+  if (!filmed && testsChanged().length > 0) {
+    wrong.push(
+      `carries ${RECORDED} from \`pnpm record\`, because this branch changes ${testsChanged().length} test file(s) — or a line saying "No recording" and why`,
+    )
   }
   return wrong
 }
