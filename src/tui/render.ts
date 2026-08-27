@@ -88,6 +88,7 @@ import {
   laidDraft,
   panelHolds,
   type Clicked,
+  refSaidOf,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
 import type { Match, Remark } from "../cli/index.ts"
@@ -1948,7 +1949,12 @@ export class Screen {
     )
     const typed = state.query.trim()
     this.baseBox.choices.content = listText(
-      shown.map((ref) => clip(` ${ref}${pickedTail(state, ref, typed)}`, room - MODAL_ROOM)),
+      shown.map((ref) =>
+        clip(
+          ` ${ref}${refSaidOf(state, ref).length === 0 ? "" : `  ${refSaidOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
+          room - MODAL_ROOM,
+        ),
+      ),
       Math.min(state.refIndex, Math.max(0, shown.length - 1)),
       Math.max(1, tall - PALETTE_CHROME - 1),
     )

@@ -35,6 +35,11 @@ type Shape = {
   readonly defaultBranch: (repo: string) => Effect.Effect<string>
   readonly stackParent: (repo: string, branch: string) => Effect.Effect<string>
   readonly refs: (repo: string) => Effect.Effect<ReadonlyArray<string>>
+  readonly commits: (
+    repo: string,
+    branch: string,
+    most: number,
+  ) => Effect.Effect<ReadonlyArray<Commit>>
   readonly resolves: (repo: string, ref: string) => Effect.Effect<boolean>
   readonly sharedWith: (repo: string, branch: string, ref: string) => Effect.Effect<string>
 }
@@ -226,6 +231,30 @@ const findRepo = Effect.fn("Git.repoOf")(function* (worktree: string) {
 
 const REFS_MOST = 200
 
+export type Commit = { readonly sha: string; readonly said: string }
+
+const readCommits = Effect.fn("Git.commits")(function* (
+  repo: string,
+  branch: string,
+  most: number,
+) {
+  const said = yield* gitOrEmpty(repo, [
+    "log",
+    `--max-count=${most}`,
+    "--format=%h%x09%s",
+    branch,
+    "--",
+  ])
+  return said
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .flatMap(([sha, subject]) =>
+      sha === undefined || sha.trim().length === 0
+        ? []
+        : [{ sha: sha.trim(), said: (subject ?? "").trim() }],
+    )
+})
+
 const readRefs = Effect.fn("Git.refs")(function* (repo: string) {
   const said = yield* gitOrEmpty(repo, [
     "for-each-ref",
@@ -289,6 +318,7 @@ const shapeWith = (caches: Caches): Shape => ({
       ),
     ),
   refs: readRefs,
+  commits: (repo: string, branch: string, most: number) => readCommits(repo, branch, most),
   resolves: refResolves,
   sharedWith: sharedCommit,
 })

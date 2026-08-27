@@ -807,6 +807,24 @@ export const listRefs = Effect.fn("Cli.listRefs")(function* (repo: string) {
   return yield* git.refs(repo)
 })
 
+const MOST_RECENT = 5
+
+const forOne = (count: number): string =>
+  count === 1 ? "the last commit" : `the last ${count} commits`
+
+export const recentBases = Effect.fn("Cli.recentBases")(function* (
+  repo: string,
+  branch: string,
+) {
+  const git = yield* Git
+  const found = yield* git.commits(repo, branch, MOST_RECENT + 1)
+  return found.flatMap((commit, at) =>
+    at === 0 || found[at] === undefined
+      ? []
+      : [{ ref: commit.sha, said: `${forOne(at)} · ${found[at - 1]?.said ?? ""}` }],
+  )
+})
+
 export const setBase = Effect.fn("Cli.setBase")(function* (
   repo: string,
   branch: string,

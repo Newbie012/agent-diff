@@ -107,6 +107,12 @@ Each branch reports:
   this repository has, newest first, narrowed by typing; return records the one under the cursor and
   reads the branch again against it, and one key returns the branch to detection. A ref that is typed
   and not listed is still tried, because a tag or a commit is a base a reviewer sometimes means.
+- **The newest commits are offered as bases, named by what they are.** Reading only what the agent
+  just did is the commonest narrowing there is, and it was reachable only by knowing that `HEAD~1`
+  could be typed into the picker. The picker opens with the last five commits above the refs — "the
+  last commit", "the last 2 commits", each carrying the message of the newest commit it takes in —
+  and picking one records that commit's own base, so the diff holds those commits and nothing else.
+  Typing narrows on the message as well as the ref, so "last" finds them.
 - **A base that cannot be resolved is an error, never a quiet fall back to the default.** A base
   that does not name a ref, or names one with no common ancestor, fails the way every other read
   fails: `ok:false`, exit 3, and a suggestion naming `adiff base clear`. Falling back would report

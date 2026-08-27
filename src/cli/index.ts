@@ -45,6 +45,7 @@ export {
   vouchIn,
   lastOpenedIn,
   markOpened,
+  recentBases,
 } from "./commands.ts"
 export { openPane } from "./pane.ts"
 export {
