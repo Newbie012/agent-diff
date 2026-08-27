@@ -103,28 +103,39 @@ const testsChanged = (): ReadonlyArray<string> => {
 
 const NO_FILM = /no recording/i
 
-const shapeOf = (body: string): ReadonlyArray<string> => {
-  const lines = body.split("\n")
-  const heads = lines.filter((line) => line.startsWith("#"))
+const headingsWrong = (heads: ReadonlyArray<string>): ReadonlyArray<string> => {
   const wrong: Array<string> = []
   if (heads[0] !== WHAT) wrong.push(`opens with "${WHAT}" and nothing above it`)
   const spare = heads.filter((head) => head !== WHAT && head !== RECORDED)
   if (spare.length > 0) wrong.push(`carries only ${WHAT} and ${RECORDED}, not ${spare.join(", ")}`)
   if (heads.length > 1 && heads[1] !== RECORDED) wrong.push(`puts ${RECORDED} second`)
-  const said = lines
+  return wrong
+}
+
+const proseIn = (lines: ReadonlyArray<string>, heads: ReadonlyArray<string>): string =>
+  lines
     .slice(1, heads.length > 1 ? lines.indexOf(RECORDED) : undefined)
     .join(" ")
     .trim()
-  if (said.length > LONGEST) {
-    wrong.push(`says what changed in ${LONGEST} characters or fewer, not ${said.length}`)
-  }
-  const filmed = heads.includes(RECORDED) || NO_FILM.test(body)
-  if (!filmed && testsChanged().length > 0) {
-    wrong.push(
-      `carries ${RECORDED} from \`pnpm record\`, because this branch changes ${testsChanged().length} test file(s) — or a line saying "No recording" and why`,
-    )
-  }
-  return wrong
+
+const filmWrong = (body: string, heads: ReadonlyArray<string>): ReadonlyArray<string> => {
+  if (heads.includes(RECORDED) || NO_FILM.test(body)) return []
+  const changed = testsChanged().length
+  if (changed === 0) return []
+  return [
+    `carries ${RECORDED} from \`pnpm record\`, because this branch changes ${changed} test file(s) — or a line saying "No recording" and why`,
+  ]
+}
+
+const shapeOf = (body: string): ReadonlyArray<string> => {
+  const lines = body.split("\n")
+  const heads = lines.filter((line) => line.startsWith("#"))
+  const said = proseIn(lines, heads)
+  const long =
+    said.length > LONGEST
+      ? [`says what changed in ${LONGEST} characters or fewer, not ${said.length}`]
+      : []
+  return [...headingsWrong(heads), ...long, ...filmWrong(body, heads)]
 }
 
 if (asked !== undefined) {
