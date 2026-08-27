@@ -66,6 +66,7 @@ import {
   remarksAgainst,
   type Remark,
   markOpened,
+  recentBases,
 } from "../cli/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
 import type { Worktree } from "../service/git/index.ts"
@@ -973,8 +974,13 @@ export class App {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
-      const refs = yield* listRefs(this.repo)
-      this.commit(withRefs(this.state, refs.filter((ref) => ref !== branch.branch)))
+      const [refs, recent] = yield* Effect.all([
+        listRefs(this.repo),
+        recentBases(this.repo, branch.branch),
+      ])
+      const said = Object.fromEntries(recent.map((one) => [one.ref, one.said]))
+      const kept = refs.filter((ref) => ref !== branch.branch)
+      this.commit(withRefs(this.state, [...recent.map((one) => one.ref), ...kept], said))
     })
   }
 

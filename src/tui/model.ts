@@ -137,6 +137,7 @@ export type TuiState = {
   readonly vouched: ReadonlyArray<string>
   readonly partsRead: ReadonlyArray<string>
   readonly openMoved: boolean
+  readonly refSaid: Readonly<Record<string, string>>
   readonly sent: ReadonlyArray<StagedComment>
   readonly remarks: ReadonlyArray<Remark>
   readonly held: ReadonlyArray<StagedComment>
@@ -245,6 +246,7 @@ export const initialState = (branches: ReadonlyArray<BranchSummary>): TuiState =
   vouched: [],
   partsRead: [],
   openMoved: false,
+  refSaid: {},
   sent: [],
   remarks: [],
   viewport: 20,
@@ -962,9 +964,13 @@ export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
   )
 }
 
+export const refSaidOf = (state: TuiState, ref: string): string => state.refSaid[ref] ?? ""
+
 export const refsShown = (state: TuiState): ReadonlyArray<string> => {
   const wanted = state.query.trim().toLowerCase()
-  const held = state.refs.filter((ref) => ref.toLowerCase().includes(wanted))
+  const held = state.refs.filter((ref) =>
+    `${ref} ${refSaidOf(state, ref)}`.toLowerCase().includes(wanted),
+  )
   return wanted.length === 0 || held.some((ref) => ref.toLowerCase() === wanted)
     ? held
     : held.concat([state.query.trim()])

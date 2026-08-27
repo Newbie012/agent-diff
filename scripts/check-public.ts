@@ -4,6 +4,7 @@
 // checked before it is posted; with no argument it checks every change intent, the changelog, the
 // wiki and the PRD contracts. Proves each refusal on its own fixtures first.
 import { readFile } from "node:fs/promises"
+import { execFileSync } from "node:child_process"
 import { globSync } from "node:fs"
 
 type Rule = { readonly name: string; readonly of: RegExp; readonly why: string }
@@ -89,22 +90,52 @@ const WHAT = "### What changed"
 
 const RECORDED = "### Recorded tests"
 
-const shapeOf = (body: string): ReadonlyArray<string> => {
-  const lines = body.split("\n")
-  const heads = lines.filter((line) => line.startsWith("#"))
+const testsChanged = (): ReadonlyArray<string> => {
+  try {
+    const said = execFileSync("git", ["diff", "--name-only", "origin/main...HEAD"], {
+      encoding: "utf8",
+    })
+    return said.split("\n").filter((path) => /^src\/testing\/.+\.test\.ts$/.test(path.trim()))
+  } catch {
+    return []
+  }
+}
+
+const NO_FILM = /no recording/i
+
+const headingsWrong = (heads: ReadonlyArray<string>): ReadonlyArray<string> => {
   const wrong: Array<string> = []
   if (heads[0] !== WHAT) wrong.push(`opens with "${WHAT}" and nothing above it`)
   const spare = heads.filter((head) => head !== WHAT && head !== RECORDED)
   if (spare.length > 0) wrong.push(`carries only ${WHAT} and ${RECORDED}, not ${spare.join(", ")}`)
   if (heads.length > 1 && heads[1] !== RECORDED) wrong.push(`puts ${RECORDED} second`)
-  const said = lines
+  return wrong
+}
+
+const proseIn = (lines: ReadonlyArray<string>, heads: ReadonlyArray<string>): string =>
+  lines
     .slice(1, heads.length > 1 ? lines.indexOf(RECORDED) : undefined)
     .join(" ")
     .trim()
-  if (said.length > LONGEST) {
-    wrong.push(`says what changed in ${LONGEST} characters or fewer, not ${said.length}`)
-  }
-  return wrong
+
+const filmWrong = (body: string, heads: ReadonlyArray<string>): ReadonlyArray<string> => {
+  if (heads.includes(RECORDED) || NO_FILM.test(body)) return []
+  const changed = testsChanged().length
+  if (changed === 0) return []
+  return [
+    `carries ${RECORDED} from \`pnpm record\`, because this branch changes ${changed} test file(s) — or a line saying "No recording" and why`,
+  ]
+}
+
+const shapeOf = (body: string): ReadonlyArray<string> => {
+  const lines = body.split("\n")
+  const heads = lines.filter((line) => line.startsWith("#"))
+  const said = proseIn(lines, heads)
+  const long =
+    said.length > LONGEST
+      ? [`says what changed in ${LONGEST} characters or fewer, not ${said.length}`]
+      : []
+  return [...headingsWrong(heads), ...long, ...filmWrong(body, heads)]
 }
 
 if (asked !== undefined) {

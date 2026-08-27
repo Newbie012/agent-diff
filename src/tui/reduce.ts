@@ -560,8 +560,11 @@ export const withChoices = (
   query: "",
 })
 
-export const withRefs = (state: TuiState, refs: ReadonlyArray<string>): TuiState =>
-  withChoices(state, refs, "base")
+export const withRefs = (
+  state: TuiState,
+  refs: ReadonlyArray<string>,
+  said: Readonly<Record<string, string>> = {},
+): TuiState => ({ ...withChoices(state, refs, "base"), refSaid: said })
 
 const movePalette = (state: TuiState, delta: number): TuiState => ({
   ...state,
