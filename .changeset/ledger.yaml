@@ -354,6 +354,10 @@
   intents:
     - place-a-comment-on-its-whole-quote
     - resume-the-review-left-last
+"@eliya-oss/agent-diff@0.1.0-alpha.168":
+  dir: ""
+  intents:
+    - offer-the-newest-commits-as-bases
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:

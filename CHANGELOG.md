@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.168
+
+### Added
+
+- **Branches** — `b` offers the last five commits as bases, each named by the message of the newest commit it takes in, so reading just what the agent last did is one keypress and a return.
+
 ## 0.1.0-alpha.167
 
 ### Added
