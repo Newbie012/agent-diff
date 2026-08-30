@@ -476,6 +476,16 @@ export const commands: ReadonlyArray<Command> = [
     listed: false,
   }),
   command({
+    action: "back",
+    title: "Go back",
+    category: "Branches",
+    keys: ["escape"],
+    screens: ["base", "editor"],
+    hint: "back",
+    listed: false,
+    rank: 9,
+  }),
+  command({
     action: "base.clear",
     title: "Hand the choice back to adiff",
     category: "Branches",

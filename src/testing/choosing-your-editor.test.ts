@@ -76,6 +76,22 @@ describe("when a reviewer has no editor and asks to open a line", () => {
     expect(await driver.screen.untilShown("src/api.ts:2 in")).toBe(true)
     expect(await driver.screen.getFrame()).not.toContain("Editor  ·")
   })
+
+  test("then escape closes the editor list and leaves the diff where it was", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await withFakeCode(driver)
+    await driver.screen.pressKeys(["e"])
+    expect(await driver.screen.getFrame()).toContain("Editor")
+
+    // ACT
+    await driver.screen.pressEscape()
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).not.toContain("Editor")
+    expect(frame).toContain("src/api.ts")
+  })
 })
 
 describe("when a reviewer looks for the editor choice in the palette", () => {
