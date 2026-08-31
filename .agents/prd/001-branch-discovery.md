@@ -105,8 +105,9 @@ Each branch reports:
 - **The base can be set where the diff is read.** A reviewer who can see that the base is wrong —
   the row says so — had to leave the terminal, remember a command and come back. `b` opens the refs
   this repository has, newest first, narrowed by typing; return records the one under the cursor and
-  reads the branch again against it, and one key returns the branch to detection. A ref that is typed
-  and not listed is still tried, because a tag or a commit is a base a reviewer sometimes means.
+  reads the branch again against it, one key returns the branch to detection, and escape closes the
+  picker with the base as it was. A ref that is typed and not listed is still tried, because a tag
+  or a commit is a base a reviewer sometimes means.
 - **The newest commits are offered as bases, named by what they are.** Reading only what the agent
   just did is the commonest narrowing there is, and it was reachable only by knowing that `HEAD~1`
   could be typed into the picker. The picker opens with the last five commits above the refs — "the

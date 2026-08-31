@@ -495,6 +495,8 @@ const BACK_FROM: Partial<Record<Screen, (state: TuiState) => TuiState>> = {
   settings: (state) => ({ ...state, screen: state.returnTo }),
   thread: (state) => ({ ...state, screen: state.returnTo }),
   compose: (state) => ({ ...state, screen: "review", replyTo: undefined }),
+  base: (state) => ({ ...state, screen: state.returnTo, query: "" }),
+  editor: (state) => ({ ...state, screen: state.returnTo, query: "" }),
 }
 
 const goBack = (state: TuiState): TuiState =>

@@ -97,4 +97,23 @@ describe("when a reviewer sets the base from the terminal", () => {
     // ASSERT
     expect(await driver.screen.untilShown("no-such-ref names nothing here")).toBe(true)
   })
+
+  test("then escape closes the base picker and leaves the base alone", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ name: "one-file-changed", files: [file("one")] })
+    await driver.screen.open({ width: 170, height: 30 })
+    await driver.screen.pressKeys(["RETURN"])
+    expect(await driver.screen.getFrame()).toContain("file 1 of 1")
+    await driver.screen.pressKeys(["b"])
+    expect(await driver.screen.getFrame()).toContain("Base for")
+
+    // ACT
+    await driver.screen.pressEscape()
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).not.toContain("Base for")
+    expect(frame).toContain("file 1 of 1")
+  })
 })
