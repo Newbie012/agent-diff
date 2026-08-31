@@ -358,6 +358,10 @@
   dir: ""
   intents:
     - offer-the-newest-commits-as-bases
+"@eliya-oss/agent-diff@0.1.0-alpha.169":
+  dir: ""
+  intents:
+    - escape-closes-the-base-and-editor-pickers
 "@eliya-oss/agent-diff@0.1.0-alpha.17":
   dir: ""
   intents:
