@@ -34,11 +34,12 @@ if (!(await exists(repo))) {
 const setup = await createTestRenderer({ width: WIDTH, height: HEIGHT })
 const scope = Scope.makeUnsafe()
 const context = await Effect.runPromise(
-  Layer.buildWithScope(Layer.mergeAll(GitLive, ForgeLive, storeAt(join(HOME, "store"))), scope),
+  Layer.buildWithScope(Layer.mergeAll(ForgeLive, storeAt(join(HOME, "store"))).pipe(Layer.provideMerge(GitLive)), scope),
 )
 const app = await Effect.runPromise(
   launch(repo, setup.renderer, { sessionPath: join(HOME, "session.json") }).pipe(
     Effect.provideContext(context),
+    Scope.provide(scope),
   ),
 )
 

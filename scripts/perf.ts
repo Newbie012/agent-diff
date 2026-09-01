@@ -9,7 +9,7 @@ import { createWorkspace } from "./simulation/workspace.ts"
 const space = await createWorkspace({ branches: 7 })
 const scope = Scope.makeUnsafe()
 const context = await Effect.runPromise(
-  Layer.buildWithScope(Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot)), scope),
+  Layer.buildWithScope(Layer.mergeAll(ForgeLive, storeAt(space.storeRoot)).pipe(Layer.provideMerge(GitLive)), scope),
 )
 
 const repeat = (times: number, run: () => Promise<unknown>): Promise<void> =>
@@ -21,7 +21,7 @@ const repeat = (times: number, run: () => Promise<unknown>): Promise<void> =>
 const scenario = async (label: string, branchIndex: number): Promise<void> => {
   const setup = await createTestRenderer({ width: 120, height: 34 })
   const app = await Effect.runPromise(
-    launch(space.repo, setup.renderer).pipe(Effect.provideContext(context)),
+    launch(space.repo, setup.renderer).pipe(Effect.provideContext(context), Scope.provide(scope)),
   )
   const keys = (name: string, times: number): Promise<void> =>
     setup.mockInput.pressKeys(Array.from({ length: times }, () => name))

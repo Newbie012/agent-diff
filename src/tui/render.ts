@@ -1171,6 +1171,8 @@ const staleBanner = (room: number): string =>
 
 type Screened = TuiState["screen"]
 
+const ASKING: ReadonlyArray<Screened> = ["palette", "keys", "search", "base", "editor"]
+
 type LayerLook = {
   readonly lead: number
   readonly mark: string
@@ -1869,11 +1871,7 @@ export class Screen {
     return this.view.tallestRows()
   }
 
-  writing(): TextareaRenderable {
-    return this.composeBody
-  }
-
-  asking(screen: Screened): TextareaRenderable | undefined {
+  private asking(screen: Screened): TextareaRenderable | undefined {
     switch (screen) {
       case "palette":
         return this.paletteQuery
@@ -1887,6 +1885,48 @@ export class Screen {
       default:
         return undefined
     }
+  }
+
+  private askBoxes(): ReadonlyArray<TextareaRenderable> {
+    return ASKING.flatMap((name) => {
+      const box = this.asking(name)
+      return box === undefined ? [] : [box]
+    })
+  }
+
+  written(): string {
+    return this.composeBody.plainText
+  }
+
+  write(text: string): void {
+    this.composeBody.setText(text)
+  }
+
+  writeOn(on: boolean): void {
+    if (on) this.composeBody.focus()
+    else this.composeBody.blur()
+  }
+
+  onWritten(told: (text: string) => void): void {
+    this.composeBody.onContentChange = () => told(this.composeBody.plainText)
+  }
+
+  askOn(which: Screened | undefined): void {
+    const wanted = which === undefined ? undefined : this.asking(which)
+    for (const box of this.askBoxes()) {
+      if (box !== wanted) box.blur()
+    }
+    if (wanted === undefined) return
+    wanted.setText("")
+    wanted.focus()
+  }
+
+  askWith(text: string): void {
+    for (const box of this.askBoxes()) box.setText(text)
+  }
+
+  onAsked(told: (text: string) => void): void {
+    for (const box of this.askBoxes()) box.onContentChange = () => told(box.plainText)
   }
 
   railRows(): number {

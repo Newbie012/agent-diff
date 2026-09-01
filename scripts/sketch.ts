@@ -23,10 +23,10 @@ const shot = async (name: string): Promise<void> => {
   const setup = await createTestRenderer({ width: WIDTH, height: HEIGHT })
   const scope = Scope.makeUnsafe()
   const context = await Effect.runPromise(
-    Layer.buildWithScope(Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot)), scope),
+    Layer.buildWithScope(Layer.mergeAll(ForgeLive, storeAt(space.storeRoot)).pipe(Layer.provideMerge(GitLive)), scope),
   )
   const app = await Effect.runPromise(
-    launch(space.repo, setup.renderer).pipe(Effect.provideContext(context)),
+    launch(space.repo, setup.renderer).pipe(Effect.provideContext(context), Scope.provide(scope)),
   )
   await setup.mockInput.pressKeys(["RETURN"])
   await app.settled()

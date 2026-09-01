@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { Effect } from "effect"
+import { Effect, Layer } from "effect"
+import { GitLive } from "../../../service/git/index.ts"
 import {
   branchDir,
   branchKeyOf,
@@ -79,12 +80,12 @@ export class AgentTestDriver {
         at: SEEDED_AT,
       })
     })
-    await Effect.runPromise(write.pipe(Effect.provide(storeAt(this.state.storeRoot))))
+    await Effect.runPromise(write.pipe(Effect.provide(storeAt(this.state.storeRoot).pipe(Layer.provide(GitLive)))))
   }
 
   async setStoreFile(worktree: string, file: string, text: string): Promise<void> {
     this.state.tracer.cannotReplay("a store file written by hand")
-    const key = await Effect.runPromise(branchKeyOf(worktree))
+    const key = await Effect.runPromise(branchKeyOf(worktree).pipe(Effect.provide(GitLive)))
     const directory = branchDir(this.state.storeRoot, key)
     await mkdir(directory, { recursive: true })
     await writeFile(join(directory, file), text, "utf8")
@@ -95,7 +96,7 @@ export class AgentTestDriver {
       const store = yield* Store
       return yield* store.inbox(worktree)
     })
-    return Effect.runPromise(read.pipe(Effect.provide(storeAt(this.state.storeRoot))))
+    return Effect.runPromise(read.pipe(Effect.provide(storeAt(this.state.storeRoot).pipe(Layer.provide(GitLive)))))
   }
 
   async listComments(worktree: string): Promise<ReadonlyArray<DeliveredComment>> {

@@ -157,10 +157,8 @@ export class ScreenTestDriver {
     this.slowedBy(options)
     this.watch()
     this.countKeys(setup)
-    const layer = Layer.mergeAll(
-      this.countingGit(),
-      this.forgeFor(options),
-      storeAt(this.state.storeRoot),
+    const layer = Layer.mergeAll(this.forgeFor(options), storeAt(this.state.storeRoot)).pipe(
+      Layer.provideMerge(this.countingGit()),
     )
     const scope = Scope.makeUnsafe()
     this.scope = scope
@@ -171,9 +169,7 @@ export class ScreenTestDriver {
         sessionPath: this.state.sessionPath,
         branch: options.branch,
         base: options.base,
-      }).pipe(
-        Effect.provideContext(context),
-      ),
+      }).pipe(Effect.provideContext(context), Scope.provide(scope)),
     )
     await this.app.settled()
     await setup.waitForVisualIdle()
