@@ -45,6 +45,7 @@ import {
   removeComment,
   repoOf,
   restoreComment,
+  unsettleThread,
   runUpgrade,
   type UpgradeFound,
   sayDone,
@@ -302,6 +303,15 @@ const commentRestore = Effect.fn("Main.commentRestore")(function* (options: Opti
   yield* answer(options, { restored: report.restored })
 })
 
+const commentReopen = Effect.fn("Main.commentReopen")(function* (options: Options) {
+  const report = yield* unsettleThread(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    yield* required(options, "id"),
+  )
+  yield* answer(options, { reopened: report.unsettled })
+})
+
 const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
   const report = yield* toggleVouch({
     repo: yield* required(options, "repo"),
@@ -429,6 +439,7 @@ const routes = {
   "comment resolve": commentResolve,
   "comment remove": commentRemove,
   "comment restore": commentRestore,
+  "comment reopen": commentReopen,
   "config list": configList,
   "config get": configGet,
   "config set": configSet,

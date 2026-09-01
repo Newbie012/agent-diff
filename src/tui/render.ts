@@ -1255,6 +1255,7 @@ const offeredIn = (state: TuiState): Offered => ({
   hidingRead: state.hideReviewed,
   hidingSettled: state.hideSettled,
   onRemoved: threadHere(state)?.removed === true,
+  onSettled: threadHere(state)?.settled === true,
   onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
 })
 

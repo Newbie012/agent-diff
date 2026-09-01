@@ -198,6 +198,24 @@ export const settleIn = Effect.fn("Cli.settleIn")(function* (
   return { settled: id }
 })
 
+export const unsettleIn = Effect.fn("Cli.unsettleIn")(function* (worktree: Worktree, id: string) {
+  const store = yield* Store
+  if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
+  yield* store.changeState(worktree.path, (was) => ({
+    ...was,
+    settled: without(was.settled, id),
+  }))
+  return { unsettled: id }
+})
+
+export const unsettleThread = Effect.fn("Cli.unsettleThread")(function* (
+  repo: string,
+  branch: string,
+  id: string,
+) {
+  return yield* unsettleIn(yield* findBranch(repo, branch), id)
+})
+
 export const settleThread = Effect.fn("Cli.settleThread")(function* (
   repo: string,
   branch: string,

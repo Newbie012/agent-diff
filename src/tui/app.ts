@@ -55,6 +55,8 @@ import {
   settleIn,
   removeIn,
   settleThread,
+  unsettleIn,
+  unsettleThread,
   settleRead,
   acceptIn,
   answerRemark,
@@ -1369,11 +1371,15 @@ export class App {
         this.commit(withNotice(this.state, "no thread here"))
         return
       }
+      const back = thread?.settled === true
       const was = this.state.panelIndex
-      yield* this.settling(branch.branch, id)
+      yield* back ? this.unsettling(branch.branch, id) : this.settling(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
-      const held = withSent({ ...this.state, opened: this.state.opened.filter((one) => one !== id) }, sent)
-      this.commit(withNotice(this.staying(held, was), "settled"))
+      const opened = back
+        ? [...this.state.opened, id]
+        : this.state.opened.filter((one) => one !== id)
+      const held = withSent({ ...this.state, opened }, sent)
+      this.commit(withNotice(this.staying(held, was), back ? "unsettled" : "settled"))
     })
   }
 
@@ -1805,6 +1811,13 @@ export class App {
     return worktree === undefined
       ? settleThread(this.repo, branch, id, at)
       : settleIn(worktree, id, at)
+  }
+
+  private unsettling(branch: string, id: string): Work<{ readonly unsettled: string }> {
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined
+      ? unsettleThread(this.repo, branch, id)
+      : unsettleIn(worktree, id)
   }
 
   private restoring(branch: string, id: string): Work<{ readonly restored: string }> {

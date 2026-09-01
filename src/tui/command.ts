@@ -126,6 +126,7 @@ export type Offered = {
   readonly hidingRead: boolean
   readonly hidingSettled: boolean
   readonly onRemoved: boolean
+  readonly onSettled: boolean
   readonly onHeld: boolean
   readonly onRemark: boolean
   readonly onDismissed: boolean
@@ -583,9 +584,9 @@ export const commands: ReadonlyArray<Command> = [
   }),
   command({
     action: "thread.settle",
-    also: ["settle", "resolve", "close", "done", "accept"],
+    also: ["settle", "resolve", "close", "done", "accept", "unsettle", "reopen"],
     panes: ["diff", "review"],
-    title: "Settle the thread here",
+    title: "Settle the thread here, or take a settled one back",
     category: "Comments",
     keys: ["d"],
     screens: ["review"],
@@ -966,6 +967,7 @@ const SWAPPED: Readonly<Record<string, (offered: Offered) => string>> = {
   "tree.winnow": (offered) => (offered.hidingRead ? "show read" : "hide read"),
   "panel.winnow": (offered) => (offered.hidingSettled ? "show settled" : "hide settled"),
   "thread.remove": (offered) => heldOrRemoved(offered),
+  "thread.settle": (offered) => (offered.onSettled ? "unsettle" : "settle"),
   "held.send": (offered) => `send ${offered.held}`,
 }
 

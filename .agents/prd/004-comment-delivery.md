@@ -90,6 +90,13 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   and no screen would report. The reviewer saw them as sent forever. Since the inbox is append-only
   and the outbox says exactly which comments were answered, what the agent is owed can be derived
   rather than remembered, and a dropped comment comes back by itself.
+- **Settling is reversible, and `d` is what reverses it.** A thread is settled on the reviewer's
+  judgement that the point is closed, and that judgement can be wrong: the fix was not what they
+  read it to be, or the next file showed the same thing again. Pressing the settle key on a settled
+  thread takes it back — the thread opens where it stands, the agent is owed an answer again if it
+  never gave one, and the footer names the key as the way back rather than as a second way to
+  settle. Nothing else changes: the answers already read stay read, and the words already said stay
+  said.
 - **The reviewer can retire a comment too, by settling or removing it.** Both are the reviewer
   saying they no longer need an answer, so both stop the comment coming back. Without that, a point
   the reviewer had given up on would follow the agent forever.
@@ -294,6 +301,7 @@ Behaviors that must be covered:
 - A comment written after the agent caught up is handed over on the next take.
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
+- A settled thread taken back is owed to the agent again, and reads as open to the reviewer.
 - A removed comment leaves the reviewer's view, still reads as removed to the agent, leaves the
   delivery record untouched, and comes back on restore.
 - A comment on code a layer explains is handed over with that layer's title, a comment on code no
