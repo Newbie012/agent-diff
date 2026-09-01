@@ -12,7 +12,7 @@ const oneFile = {
 }
 
 describe("when a comment is written", () => {
-  test("then the draft names the lines it will land on, under the code it is about", async () => {
+  test("then the draft opens under the last line of the selection", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -21,13 +21,13 @@ describe("when a comment is written", () => {
 
     // ACT
     await driver.screen.pressKeys(["c"])
+    await driver.screen.typeText("both of these read as counts")
 
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
-    const code = rows.findIndex((line) => line.includes("const first = 1"))
-    const title = rows.findIndex((line) => line.includes("Comment on src/api.ts"))
-    expect(code).toBeGreaterThan(0)
-    expect(title).toBeGreaterThan(code)
+    const draft = rows.findIndex((line) => line.includes("both of these read as counts"))
+    expect(rows.findIndex((line) => line.includes("const first = 1"))).toBeGreaterThan(0)
+    expect(draft).toBeGreaterThan(rows.findIndex((line) => line.includes("const second = 2")))
     expect(rows.filter((line) => line.includes("const first = 1"))).toHaveLength(1)
   })
 

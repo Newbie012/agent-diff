@@ -685,12 +685,16 @@ is in: `Staged`, `With the agent`, `Answered`.
 
 #### Writing
 
-- **The draft is written where the code is.** A box in the middle of the screen covered the lines
-  the comment was about, so the reviewer wrote about code they could no longer see and had to trust
-  the quote the box carried instead. The draft opens in the diff itself, under the last line of the
-  selection, and the code below moves down to make room for it — the same way a thread already sits
-  under its line. A reply opens under the thread it answers, and under that thread rather than the
-  next one where a line carries two. The keys are unchanged: `ctrl+s` sends, `escape` cancels.
+- **The draft is written where the code is, and looks like what it will become.** A box in the
+  middle of the screen covered the lines the comment was about, so the reviewer wrote about code
+  they could no longer see and had to trust the quote the box carried instead. The draft opens in
+  the diff itself, under the last line of the selection, and the code below moves down to make room
+  for it — the same way a thread already sits under its line. It is drawn as a thread is drawn: the
+  same rule down its left, the same mark before the reviewer's words, the same colours, and a line
+  above naming where it will land. Nothing about it is a panel, because a panel floating in the
+  diff reads as a box that has landed in the wrong place. A reply opens under the thread it
+  answers, and under that thread rather than the next one where a line carries two. The keys are
+  unchanged: `ctrl+s` sends, `escape` cancels.
 
 - **The draft stays on the screen while it is written.** It is the thing being typed into, so the
   diff scrolls to keep it whole, with the line it hangs under above it, as it grows. Where the pane

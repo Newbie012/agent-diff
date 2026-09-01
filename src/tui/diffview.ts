@@ -201,6 +201,10 @@ export class DiffView {
     return this.numbers.x + this.gutterWidth()
   }
 
+  saidLeft(): number {
+    return this.noteLeft() + SAID_INDENT
+  }
+
   noteWidth(): number {
     return Math.max(NOTE_MIN, this.code.width - this.gutterWidth())
   }
@@ -623,7 +627,7 @@ const keyOf = (
 ): string =>
   [
     room,
-    draft === undefined ? "d-" : `d${draft.row}:${draft.stop ?? 0}:${draft.rows}`,
+    draft === undefined ? "d-" : `d${draft.row}:${draft.stop ?? 0}:${draft.rows}:${draft.head}`,
     ...notes.map(noteKey),
     ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
   ].join("\u0000")
@@ -765,6 +769,8 @@ const wrap = (text: string, room: number): ReadonlyArray<string> => {
   return lines
 }
 
+const SAID_INDENT = 2
+
 const REMARK_MARK = "\u25c7"
 
 const remarkHead = (note: Note, from: string): string =>
@@ -854,6 +860,7 @@ export type Draft = {
   readonly row: number
   readonly rows: number
   readonly stop: number | undefined
+  readonly head: string
 }
 
 type Plan = {
@@ -927,11 +934,17 @@ type Around = { readonly lead: ReadonlyArray<Prose>; readonly own: boolean }
 
 const DRAFT_STOP = -1
 
+const draftText = (draft: Draft, at: number): string => {
+  if (at === 0) return `${marks().rule} ${draft.head}`
+  if (at === 1) return `${marks().rule} ${REPLY_MARK} `
+  return marks().rule
+}
+
 const draftRows = (plan: Plan, row: Row): ReadonlyArray<Display> =>
   plan.draft === undefined || plan.draft.row !== row.index
     ? []
-    : Array.from({ length: plan.draft.rows }, () => ({
-        text: "",
+    : Array.from({ length: plan.draft.rows }, (_, at) => ({
+        text: draftText(plan.draft as Draft, at),
         row: row.index,
         stop: DRAFT_STOP,
         draft: true,

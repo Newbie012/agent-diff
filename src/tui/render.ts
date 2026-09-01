@@ -111,10 +111,10 @@ const GUTTER_X = 2
 const CHIP_GAP = 4
 const MODAL_ROOM = 8
 const COMPOSE_CHROME = 3
-const DRAFT_LEAD = 1
 const DRAFT_PAD = 2
 const NOTE_ROOM_MIN = 24
-const DRAFT_ROOM = 8
+const DRAFT_ROOM = 6
+const DRAFT_HEAD = 1
 const COMPOSE_ACTION_ROWS = 2
 
 const reportActions = (full: boolean): StyledText =>
@@ -2431,6 +2431,7 @@ export class Screen {
   private paintReport(state: TuiState): void {
     this.compose.visible = state.screen === "compose" || state.screen === "report"
     if (state.screen !== "report") return
+    this.asBox()
     const room = composeRoom(this.renderer.width)
     const asked = state.reportFull
       ? "What went wrong? Everything on screen is attached for you."
@@ -2503,7 +2504,8 @@ export class Screen {
     return {
       row: place.row,
       stop: place.stop,
-      rows: DRAFT_LEAD + body + COMPOSE_ACTION_ROWS + COMPOSE_CHROME,
+      rows: DRAFT_HEAD + body + COMPOSE_ACTION_ROWS,
+      head: clip(composeTarget(state), this.draftRoom()),
     }
   }
 
@@ -2512,25 +2514,51 @@ export class Screen {
   }
 
   private draftBody(state: TuiState): number {
-    const most = Math.max(1, this.diffRows() - DRAFT_LEAD - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - 1)
+    const most = Math.max(1, this.diffRows() - DRAFT_HEAD - COMPOSE_ACTION_ROWS - 1)
     return Math.max(1, Math.min(most, laidDraft(state.draft, this.draftRoom()).length))
   }
 
   private paintInline(state: TuiState, draft: Draft): void {
     const at = this.view.draftTop()
     if (at === undefined) return
-    const room = this.draftRoom()
-    this.composeTitle.content = clip(composeTarget(state), room)
+    this.asNote()
+    this.composeTitle.content = ""
+    this.composeTitle.height = 0
     this.composeQuoted.content = ""
     this.composeQuoted.height = 0
-    this.fitBody(state, room, draft.rows - DRAFT_LEAD - COMPOSE_ACTION_ROWS - COMPOSE_CHROME)
+    this.fitBody(state, this.draftRoom(), draft.rows - DRAFT_HEAD - COMPOSE_ACTION_ROWS)
     this.composeActions.content = actionsText(state.answerTo === undefined ? SENDS : REPLIES)
-    this.compose.height = draft.rows
-    this.compose.width = this.view.noteWidth()
-    this.compose.left = this.view.noteLeft()
+    this.compose.height = draft.rows - DRAFT_HEAD
+    this.compose.width = this.draftRoom()
+    this.compose.left = this.view.saidLeft()
     const top = this.view.screenTop()
-    const lowest = top + Math.max(0, this.view.rows() - draft.rows)
-    this.compose.top = Math.max(top, Math.min(lowest, top + at - this.lastTop))
+    const lowest = top + Math.max(0, this.view.rows() - draft.rows + DRAFT_HEAD)
+    this.compose.top = Math.max(top, Math.min(lowest, top + at + DRAFT_HEAD - this.lastTop))
+  }
+
+  private asNote(): void {
+    if (this.compose.border !== false) {
+      this.compose.border = false
+      this.compose.paddingLeft = 0
+      this.compose.paddingRight = 0
+      this.compose.paddingTop = 0
+      this.compose.backgroundColor = palette.overlay
+      this.composeBody.backgroundColor = palette.overlay
+      this.composeBody.focusedBackgroundColor = palette.overlay
+    }
+  }
+
+  private asBox(): void {
+    if (this.compose.border === false) {
+      this.compose.border = ["left"]
+      this.compose.paddingLeft = GUTTER_X
+      this.compose.paddingRight = GUTTER_X
+      this.compose.paddingTop = 1
+      this.compose.backgroundColor = palette.panel
+      this.composeBody.backgroundColor = palette.panel
+      this.composeBody.focusedBackgroundColor = palette.panel
+      this.composeTitle.height = 1
+    }
   }
 
   private fitBody(state: TuiState, room: number, most: number): number {
@@ -2549,6 +2577,7 @@ export class Screen {
       this.paintInline(state, inline)
       return
     }
+    this.asBox()
     const room = composeRoom(this.renderer.width)
     const shownLines = Math.max(1, Math.min(SNIPPET_LINES, Math.floor(this.renderer.height / 6)))
     const quoted = quotedFor(state, shownLines, room.text)
