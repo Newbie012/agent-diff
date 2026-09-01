@@ -304,7 +304,6 @@ const takingOn = Effect.fn("Cli.takingOnRemark")(function* (request: {
   readonly body?: string | undefined
   readonly at: string
   readonly commentId: string
-  readonly layer?: string | undefined
 }) {
   const store = yield* Store
   const worktree = request.reading.worktree
@@ -322,7 +321,6 @@ const takingOn = Effect.fn("Cli.takingOnRemark")(function* (request: {
         anchor: anchorFrom(request.reading, held),
         body: (request.body ?? "").trim().length === 0 ? quoted(held) : request.body ?? "",
         remark: held.id,
-        ...(request.layer === undefined ? {} : { layer: request.layer }),
       },
     ],
   })
@@ -339,7 +337,6 @@ export const acceptIn = Effect.fn("Cli.acceptRemarkAlone")(function* (request: {
   readonly body?: string | undefined
   readonly at: string
   readonly commentId: string
-  readonly layer?: string | undefined
 }) {
   const store = yield* Store
   return yield* store.whileHoldingRemarks(request.reading.worktree.path, takingOn(request))

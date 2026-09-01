@@ -8,7 +8,7 @@ feat(comment delivery): a comment on code a layer explains tells the agent which
 
 The work a comment asks for moves the code its layer describes, so the layers go stale as soon as
 the agent acts. `comment take` now carries `layer`, the title of the layer whose spans cover the
-comment's lines, and the skill tells the agent to write a new revision with `layers set` before it
-answers. A comment on code no layer claims carries no layer.
+comment's lines, read from the reading order as it stands when the comment is handed over. Where two
+layers claim the line the tighter span wins, and code no layer claims carries none.
 
 </details>

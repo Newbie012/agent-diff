@@ -61,7 +61,8 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   reported as covering the whole diff, and one that does not says so.
 - **A comment on code a layer explains names that layer in the hand-over.** A layers goes stale as
   soon as the code moves, and such a comment asks for exactly that code to move, so the agent is
-  told which layer it will have to rewrite — see [PRD 004](004-comment-delivery.md).
+  told which layer it will have to rewrite. The layers are read when the comment is taken, so the
+  title handed over is the one they carry then — see [PRD 004](004-comment-delivery.md).
 - **A layers is optional and additive.** Every behavior in PRDs 001–005 works identically with no
   layers present.
 - **An agent writes a layers for its own worktree.** `adiff layers set --worktree . --json <file|->`

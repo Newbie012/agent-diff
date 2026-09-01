@@ -78,7 +78,6 @@ import { gapAtRow, shownOf, GAP_CHUNK } from "./gaps.ts"
 import {
   initialState,
   isReviewed,
-  layerOver,
   layersHolding,
   partHere,
   readIn,
@@ -1458,7 +1457,6 @@ export class App {
           end: remark.end,
           body: quoted(remark),
           remark: remark.id,
-          ...this.layerOn(remark.file, remark.start, remark.end),
         })
         return
       }
@@ -1468,7 +1466,6 @@ export class App {
           id: remark.id,
           at: new Date().toISOString(),
           commentId: randomUUID(),
-          ...this.layerOn(remark.file, remark.start, remark.end),
         }),
         true,
       ).pipe(Effect.catchTag("RemarkTaken", () => Effect.succeed(false)))
@@ -2044,16 +2041,10 @@ export class App {
         body: yield* this.display.written,
         id: randomUUID(),
         at: new Date().toISOString(),
-        ...this.layerUnder(to),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
     })
-  }
-
-  private layerUnder(id: string): { readonly layer?: string } {
-    const thread = this.state.sent.find((entry) => entry.id === id)
-    return thread === undefined ? {} : this.layerOn(thread.file, thread.start, thread.end)
   }
 
   private askForLayers(): Work {
@@ -2075,16 +2066,6 @@ export class App {
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(withSent(this.state, sent), askedFor(this.state)))
     })
-  }
-
-  private layerOn(
-    file: string | undefined,
-    start: number,
-    end: number,
-  ): { readonly layer?: string } {
-    if (file === undefined) return {}
-    const title = layerOver(this.state, file, start, end)
-    return title === undefined ? {} : { layer: title }
   }
 
   private sendComment(): Work {
@@ -2110,7 +2091,6 @@ export class App {
           start: anchor.value.start,
           end: anchor.value.end,
           body,
-          ...this.layerOn(patch.path, anchor.value.start, anchor.value.end),
         })
         return
       }
@@ -2124,7 +2104,6 @@ export class App {
         body,
         id: randomUUID(),
         at: new Date().toISOString(),
-        ...this.layerOn(patch.path, anchor.value.start, anchor.value.end),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
@@ -2166,7 +2145,6 @@ export class App {
         id: randomUUID(),
         at,
         ...(comment.remark === undefined ? {} : { remark: comment.remark }),
-        ...(comment.layer === undefined ? {} : { layer: comment.layer }),
       })
       const many = this.state.held.length
       yield* this.sending(branch.branch, [asked(first), ...rest.map(asked)])
