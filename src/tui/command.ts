@@ -46,6 +46,9 @@ export type Action =
   | "base.prev"
   | "line.open"
   | "editor.open"
+  | "ask.take"
+  | "ask.next"
+  | "ask.prev"
   | "thread.settle"
   | "thread.settleRead"
   | "thread.remove"
@@ -466,6 +469,39 @@ export const commands: ReadonlyArray<Command> = [
     screens: ["branches", "review"],
     hint: "base",
     rank: 5,
+  }),
+  command({
+    action: "ask.take",
+    title: "Take the answer under the cursor",
+    category: "Files",
+    keys: ["return"],
+    screens: ["settling"],
+    listed: false,
+  }),
+  command({
+    action: "ask.next",
+    title: "Next answer",
+    category: "Files",
+    keys: ["down", "j"],
+    screens: ["settling"],
+    listed: false,
+  }),
+  command({
+    action: "ask.prev",
+    title: "Previous answer",
+    category: "Files",
+    keys: ["up", "k"],
+    screens: ["settling"],
+    listed: false,
+  }),
+  command({
+    action: "back",
+    title: "Mark nothing",
+    category: "Files",
+    keys: ["escape", "q"],
+    screens: ["settling"],
+    hint: "back",
+    listed: false,
   }),
   command({
     action: "base.set",

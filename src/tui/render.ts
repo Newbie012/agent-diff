@@ -42,6 +42,8 @@ import {
   type LayerRoom,
   type RailWindow,
   preferenceRows,
+  askedRows,
+  asksAbout,
   type LayerRow,
   type PreferenceRow,
   wrapped,
@@ -580,6 +582,16 @@ const sheetText = (
   return new StyledText(drawn)
 }
 
+const askText = (state: TuiState, room: number): StyledText => {
+  const drawn = askedRows(state).map((row) => {
+    const head = `${row.here ? marks().cursor : " "} ${row.title}`
+    return row.here
+      ? bg(palette.selection)(fg(palette.ink)(`${head.padEnd(room)}\n`))
+      : fg(palette.muted)(`${head.padEnd(room)}\n`)
+  })
+  return new StyledText(drawn)
+}
+
 const SETTING_LEAD = 4
 
 const settingsText = (rows: ReadonlyArray<PreferenceRow>, room: number): StyledText => {
@@ -625,6 +637,7 @@ const makeModals = (renderer: CliRenderer) => ({
   settings: makeSettingsParts(renderer),
   reader: makeReaderParts(renderer),
   bases: makeBaseParts(renderer),
+  ask: makeAskParts(renderer),
 })
 
 type BaseParts = {
@@ -644,6 +657,16 @@ const makeBaseParts = (renderer: CliRenderer): BaseParts => {
   box.add(query)
   box.add(choices)
   return { box, title, query, choices }
+}
+
+const makeAskParts = (renderer: CliRenderer) => {
+  const box = makePalette(renderer)
+  const title = bar(renderer, "ask-title", palette.faint)
+  const choices = makeChoices(renderer)
+  box.id = "ask"
+  box.add(title)
+  box.add(choices)
+  return { box, title, choices }
 }
 
 const makeReaderParts = (renderer: CliRenderer) => {
@@ -1675,6 +1698,11 @@ export class Screen {
   private readonly keysQuery: TextareaRenderable
   private readonly keysChoices: TextRenderable
   private readonly keysLegend: TextRenderable
+  private readonly ask: {
+    readonly box: BoxRenderable
+    readonly title: TextRenderable
+    readonly choices: TextRenderable
+  }
   private readonly reader: {
     readonly box: BoxRenderable
     readonly title: TextRenderable
@@ -1734,6 +1762,7 @@ export class Screen {
     this.keysLegend = modals.keys.legend
     this.baseBox = modals.bases
     this.reader = modals.reader
+    this.ask = modals.ask
     this.foundBox = modals.found
     this.assemble(renderer)
   }
@@ -1892,6 +1921,7 @@ export class Screen {
     this.paintSettings(state)
     this.paintBases(state)
     this.paintReader(state)
+    this.paintAsk(state)
     this.paintFound(state)
     this.paintReport(state)
     this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
@@ -1983,6 +2013,25 @@ export class Screen {
     this.settings.width = room
     this.settings.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.settings.top = panelTop(this.renderer.height, PANEL_QUARTER)
+  }
+
+  private paintAsk(state: TuiState): void {
+    this.ask.box.visible = state.screen === "settling"
+    if (state.screen !== "settling") {
+      this.ask.title.content = ""
+      this.ask.choices.content = ""
+      return
+    }
+    const room = panelWidth(this.renderer.width)
+    const asked = asksAbout(state)
+    const forName = Math.max(8, room - MODAL_ROOM - asked.tail.length)
+    const name = asked.path ? clipPath(asked.name, forName) : clipMiddle(asked.name, forName)
+    this.ask.title.content = `${name}${asked.tail}`
+    this.ask.choices.content = askText(state, room - MODAL_ROOM)
+    this.ask.box.height = askedRows(state).length + PALETTE_CHROME
+    this.ask.box.width = room
+    this.ask.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
+    this.ask.box.top = panelTop(this.renderer.height, PANEL_QUARTER)
   }
 
   private paintReader(state: TuiState): void {
@@ -2209,6 +2258,7 @@ export class Screen {
       this.keys,
       this.settings,
       this.reader.box,
+      this.ask.box,
       this.baseBox.box,
     ])
   }

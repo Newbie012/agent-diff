@@ -5,6 +5,7 @@ import { gapNumbered, gapRowSet, shownOf } from "./gaps.ts"
 import { searchCommands, searchGlossary } from "./match.ts"
 import { preferences } from "../domain/preferences/index.ts"
 import {
+  askedRows,
   crowdedOf,
   carriesLine,
   foldersOfFile,
@@ -497,6 +498,7 @@ const BACK_FROM: Partial<Record<Screen, (state: TuiState) => TuiState>> = {
   compose: (state) => ({ ...state, screen: "review", replyTo: undefined }),
   base: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   editor: (state) => ({ ...state, screen: state.returnTo, query: "" }),
+  settling: (state) => ({ ...state, screen: state.returnTo, asking: undefined }),
 }
 
 const goBack = (state: TuiState): TuiState =>
@@ -541,6 +543,11 @@ const flipSetting = (state: TuiState): TuiState => {
   const held = chosenNow(state)
   return withChosen(state, wanted.name, !(held[wanted.name] ?? wanted.byDefault))
 }
+
+const moveAsk = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  askIndex: clamp(state.askIndex + delta, 0, askedRows(state).length - 1),
+})
 
 const moveRef = (state: TuiState, delta: number): TuiState => ({
   ...state,
@@ -671,6 +678,9 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "match.next": (state) => walkMatches(state, 1),
   "match.prev": (state) => walkMatches(state, -1),
   "selection.copy": (state) => state,
+  "ask.take": (state) => state,
+  "ask.next": (state) => moveAsk(state, 1),
+  "ask.prev": (state) => moveAsk(state, -1),
   back: goBack,
   quit: (state) => state,
 }
