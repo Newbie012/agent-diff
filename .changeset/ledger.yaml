@@ -366,6 +366,10 @@
   dir: ""
   intents:
     - brave-hairs-sleep
+"@eliya-oss/agent-diff@0.1.0-alpha.170":
+  dir: ""
+  intents:
+    - a-file-marked-with-threads-still-open
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
