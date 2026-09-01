@@ -31,7 +31,7 @@ import { gapRowSet, shownOf } from "./gaps.ts"
 import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
   composeTarget,
-  draftRow,
+  draftPlace,
   filePlace,
   hiddenLines,
   isReviewed,
@@ -114,6 +114,7 @@ const COMPOSE_CHROME = 3
 const DRAFT_LEAD = 1
 const DRAFT_PAD = 2
 const NOTE_ROOM_MIN = 24
+const DRAFT_ROOM = 8
 const COMPOSE_ACTION_ROWS = 2
 
 const reportActions = (full: boolean): StyledText =>
@@ -838,6 +839,7 @@ const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyA
   }
   const said = threadQuote(state, room)
   if (said.length > 0) return said.slice(0, shownLines * 2).map((line) => clip(line, room))
+  if (state.replyTo !== undefined) return []
   const snippet = snippetOf(state, shownLines)
   const more = selectedLineCount(state) - snippet.length
   const tail = more > 0 ? [`     … ${more} more lines`] : []
@@ -1728,6 +1730,8 @@ export class Screen {
   private panelPicks: ReadonlyArray<Clicked> = []
   private dragFrom: Spot | undefined
   private lastTop = 0
+  private drafted: Draft | undefined
+  private drafting: number | undefined
 
   constructor(renderer: CliRenderer, repo = "") {
     this.renderer = renderer
@@ -2233,6 +2237,7 @@ export class Screen {
     this.view.setWrap(state.wrap, this.diffRoom())
     this.view.setPan(state.pan)
     const draft = this.draftFor(state)
+    this.drafted = draft
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), {
       prose: proseFor(state, patch.path),
       draft,
@@ -2244,10 +2249,12 @@ export class Screen {
       if (state.sticky) this.paintSticky(state, this.view.rowAt(this.lastTop))
       else this.view.pin([])
     } else if (draft !== undefined) {
-      this.view.pin([])
       this.view.fit(this.diffRows())
-      this.lastTop = this.view.showDraft(this.lastTop, draft.rows)
+      const held = state.scroll >= 0 && this.drafting === draft.row ? state.scroll : this.lastTop
+      this.lastTop = this.view.showDraft(held, draft.rows)
+      this.drafting = draft.row
     }
+    if (draft === undefined) this.drafting = undefined
     const top = this.lastTop
     this.view.paint(this.linePaint(state), top, this.view.rows())
     this.paintGutter(state, top, this.view.rows())
@@ -2489,32 +2496,41 @@ export class Screen {
 
   private draftFor(state: TuiState): Draft | undefined {
     if (state.screen !== "compose") return undefined
-    const row = draftRow(state)
-    if (row === undefined || this.view.screenRowOf(row) === undefined) return undefined
+    if (this.diffRows() < DRAFT_ROOM) return undefined
+    const place = draftPlace(state)
+    if (place === undefined || this.view.screenRowOf(place.row) === undefined) return undefined
     const body = this.draftBody(state)
-    return { row, rows: DRAFT_LEAD + body + COMPOSE_ACTION_ROWS + COMPOSE_CHROME }
+    return {
+      row: place.row,
+      stop: place.stop,
+      rows: DRAFT_LEAD + body + COMPOSE_ACTION_ROWS + COMPOSE_CHROME,
+    }
+  }
+
+  private draftRoom(): number {
+    return Math.max(NOTE_ROOM_MIN, this.view.noteWidth() - DRAFT_PAD)
   }
 
   private draftBody(state: TuiState): number {
-    const room = Math.max(NOTE_ROOM_MIN, this.view.room() - DRAFT_PAD)
     const most = Math.max(1, this.diffRows() - DRAFT_LEAD - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - 1)
-    return Math.max(1, Math.min(most, laidDraft(state.draft, room).length))
+    return Math.max(1, Math.min(most, laidDraft(state.draft, this.draftRoom()).length))
   }
 
   private paintInline(state: TuiState, draft: Draft): void {
-    const room = Math.max(NOTE_ROOM_MIN, this.view.room() - DRAFT_PAD)
     const at = this.view.draftTop()
     if (at === undefined) return
+    const room = this.draftRoom()
     this.composeTitle.content = clip(composeTarget(state), room)
     this.composeQuoted.content = ""
     this.composeQuoted.height = 0
-    const written = this.fitBody(state, room, this.draftBody(state))
+    this.fitBody(state, room, draft.rows - DRAFT_LEAD - COMPOSE_ACTION_ROWS - COMPOSE_CHROME)
     this.composeActions.content = actionsText(state.answerTo === undefined ? SENDS : REPLIES)
-    this.compose.height = DRAFT_LEAD + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
-    this.compose.width = Math.max(NOTE_ROOM_MIN, this.view.paneWidth())
-    this.compose.left = this.view.screenLeft()
-    this.compose.top = this.view.screenTop() + at - this.lastTop
-    void draft
+    this.compose.height = draft.rows
+    this.compose.width = this.view.noteWidth()
+    this.compose.left = this.view.noteLeft()
+    const top = this.view.screenTop()
+    const lowest = top + Math.max(0, this.view.rows() - draft.rows)
+    this.compose.top = Math.max(top, Math.min(lowest, top + at - this.lastTop))
   }
 
   private fitBody(state: TuiState, room: number, most: number): number {
@@ -2528,7 +2544,7 @@ export class Screen {
   private paintCompose(state: TuiState): void {
     this.compose.visible = state.screen === "compose"
     if (state.screen !== "compose") return
-    const inline = this.draftFor(state)
+    const inline = this.drafted
     if (inline !== undefined) {
       this.paintInline(state, inline)
       return

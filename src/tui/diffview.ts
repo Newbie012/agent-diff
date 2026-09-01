@@ -136,7 +136,7 @@ export class DiffView {
   private wrapped = false
   private held = 0
   private picked: Picked | undefined
-  private drafted: Draft | undefined
+  private draftLine: number | undefined
 
   constructor(renderer: CliRenderer) {
     this.code = new CodeRenderable(renderer, {
@@ -195,6 +195,14 @@ export class DiffView {
 
   room(): number {
     return this.noteRoom()
+  }
+
+  noteLeft(): number {
+    return this.numbers.x + this.gutterWidth()
+  }
+
+  noteWidth(): number {
+    return Math.max(NOTE_MIN, this.code.width - this.gutterWidth())
   }
 
   paneWidth(): number {
@@ -263,8 +271,9 @@ export class DiffView {
     const at = this.draftTop()
     if (at === undefined) return top
     const highest = Math.max(0, this.tallest() - this.rows())
-    const below = at + rows - this.rows() + 1
-    const wanted = at < top ? at : below > top ? below : top
+    const below = at + rows - this.rows()
+    const above = Math.max(0, at - 1)
+    const wanted = above < top ? above : below > top ? below : top
     const settled = Math.max(0, Math.min(highest, wanted))
     if (this.code.scrollY !== settled) this.code.scrollY = settled
     return settled
@@ -301,8 +310,9 @@ export class DiffView {
     this.unpin()
     this.shown = patch
     this.noted = key
-    this.drafted = draft
     this.display = layout({ patch, notes, room, gaps, prose, fresh: freshLines(patch), draft })
+    const at = this.display.findIndex((entry) => entry.draft === true)
+    this.draftLine = at === -1 ? undefined : at
     this.starts = startsOf(this.display)
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
     this.feed()
@@ -480,7 +490,7 @@ export class DiffView {
   carries(visual: number): boolean {
     const entry = this.display[this.lineAt(visual)]
     if (entry === undefined) return false
-    if (entry.prose) return false
+    if (entry.prose || entry.draft === true) return false
     return true
   }
 
@@ -518,10 +528,7 @@ export class DiffView {
   }
 
   draftTop(): number | undefined {
-    const draft = this.drafted
-    if (draft === undefined) return undefined
-    const at = this.display.findIndex((entry) => entry.draft === true)
-    return at === -1 ? undefined : at
+    return this.draftLine === undefined ? undefined : this.visualOf(this.draftLine)
   }
 
   pick(picked: Picked | undefined): void {
@@ -616,7 +623,7 @@ const keyOf = (
 ): string =>
   [
     room,
-    draft === undefined ? "d-" : `d${draft.row}:${draft.rows}`,
+    draft === undefined ? "d-" : `d${draft.row}:${draft.stop ?? 0}:${draft.rows}`,
     ...notes.map(noteKey),
     ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
   ].join("\u0000")
@@ -843,7 +850,11 @@ const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<Displ
     prose: true,
   }))
 
-export type Draft = { readonly row: number; readonly rows: number }
+export type Draft = {
+  readonly row: number
+  readonly rows: number
+  readonly stop: number | undefined
+}
 
 type Plan = {
   readonly patch: Patch
@@ -883,11 +894,13 @@ const apart = (row: number, stop: number): Display => ({
 const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>
   plan.notes
     .filter((note) => sideLineOf(row, note.side) === note.line)
-    .flatMap((note, at) =>
-      at === 0
-        ? noteRows(note, row.index, plan.room, at + 1)
-        : [apart(row.index, at + 1)].concat(noteRows(note, row.index, plan.room, at + 1)),
-    )
+    .flatMap((note, at) => {
+      const drawn =
+        at === 0
+          ? noteRows(note, row.index, plan.room, at + 1)
+          : [apart(row.index, at + 1)].concat(noteRows(note, row.index, plan.room, at + 1))
+      return plan.draft?.stop === at + 1 ? drawn.concat(draftRows(plan, row)) : drawn
+    })
 
 const TRAILING = /[ \t]+$/
 
@@ -912,13 +925,15 @@ const codeRow = (plan: Plan, row: Row): Display => ({
 
 type Around = { readonly lead: ReadonlyArray<Prose>; readonly own: boolean }
 
+const DRAFT_STOP = -1
+
 const draftRows = (plan: Plan, row: Row): ReadonlyArray<Display> =>
   plan.draft === undefined || plan.draft.row !== row.index
     ? []
     : Array.from({ length: plan.draft.rows }, () => ({
         text: "",
         row: row.index,
-        stop: 0,
+        stop: DRAFT_STOP,
         draft: true,
         comment: true,
         sent: false,
@@ -934,7 +949,7 @@ const rowsFor = (plan: Plan, row: Row, around: Around): ReadonlyArray<Display> =
   ),
   codeRow(plan, row),
   ...notesAt(plan, row),
-  ...draftRows(plan, row),
+  ...(plan.draft?.stop === undefined ? draftRows(plan, row) : []),
   ...proseAt(plan, row, true).flatMap((entry) => proseRows(entry, row.index, plan.room)),
 ]
 

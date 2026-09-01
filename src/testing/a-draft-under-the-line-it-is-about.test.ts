@@ -99,3 +99,52 @@ describe("when the reviewer replies to a thread in the diff", () => {
     expect(rowOf(frame, "const second = 2")).toBeGreaterThan(rowOf(frame, "call it the tally"))
   })
 })
+
+const wide = [
+  {
+    path: "src/wide.ts",
+    before: ["const a = 0"],
+    after: ["const a = 0", `const wide = "${"x".repeat(200)}"`, "const b = 1", "const c = 2"],
+  },
+]
+
+describe("when the line the draft hangs under is wrapped", () => {
+  test("then the draft opens below every row of that line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files: wide })
+    await driver.screen.open({ width: 90, height: 26, review: true })
+    await driver.screen.pressKeys(["w", "j", "j"])
+
+    // ACT
+    await driver.screen.pressKeys(["c"])
+    await driver.screen.typeText("this line is doing too much")
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    const draft = rowOf(frame, "this line is doing too much")
+    expect(rowOf(frame, "xxx")).toBeGreaterThan(0)
+    expect(draft).toBeGreaterThan(rowOf(frame, "const b = 1"))
+    expect(rowOf(frame, "const c = 2")).toBeGreaterThan(draft)
+  })
+})
+
+describe("when the diff pane is too short to hold a draft", () => {
+  test("then the draft opens over the diff and stays inside the frame", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files })
+    await driver.screen.open({ width: 100, height: 12, review: true })
+    await driver.screen.pressKeys(["j"])
+
+    // ACT
+    await driver.screen.pressKeys(["c"])
+    await driver.screen.typeText("this reads as a count")
+
+    // ASSERT
+    const rows = (await driver.screen.getFrame()).split("\n")
+    expect(rows.findIndex((row) => row.includes("this reads as a count"))).toBeGreaterThan(0)
+    expect(rows[0]).toContain("src/api.ts")
+    expect(rows.at(-2) ?? "").toContain("send")
+  })
+})
