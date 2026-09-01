@@ -55,6 +55,8 @@ import {
   settleIn,
   removeIn,
   settleThread,
+  unsettleIn,
+  unsettleThread,
   settleRead,
   acceptIn,
   answerRemark,
@@ -110,6 +112,7 @@ import {
   panelEntries,
   threadAtStop,
   threadHere,
+  standingOnThread,
   WHOLE_FILE,
   type StagedComment,
   type TuiState,
@@ -1368,19 +1371,31 @@ export class App {
   }
 
   private settleHere(): Work {
+    const thread = threadHere(this.state)
+    const id = thread?.id
+    if (selectedBranch(this.state) === undefined || id === undefined) {
+      return Effect.sync(() => this.commit(withNotice(this.state, "no thread here")))
+    }
+    if (thread?.settled !== true) return this.settleThread(id, false)
+    if (!standingOnThread(this.state)) {
+      return Effect.sync(() =>
+        this.commit(withNotice(this.state, "stand on the thread to take it back")),
+      )
+    }
+    return this.settleThread(id, true)
+  }
+
+  private settleThread(id: string, back: boolean): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
-      const thread = threadHere(this.state)
-      const id = thread?.id
-      if (branch === undefined || id === undefined) {
-        this.commit(withNotice(this.state, "no thread here"))
-        return
-      }
+      if (branch === undefined) return
       const was = this.state.panelIndex
-      yield* this.settling(branch.branch, id)
+      yield* back ? this.unsettling(branch.branch, id) : this.settling(branch.branch, id)
       const sent = yield* this.loadSent(branch.branch)
-      const held = withSent({ ...this.state, opened: this.state.opened.filter((one) => one !== id) }, sent)
-      this.commit(withNotice(this.staying(held, was), "settled"))
+      const opened = this.state.opened.filter((one) => one !== id)
+      const held = withSent({ ...this.state, opened }, sent)
+      const where = back ? this.following(held, id, was) : this.staying(held, was)
+      this.commit(withNotice(where, back ? "unsettled" : "settled"))
     })
   }
 
@@ -1438,6 +1453,14 @@ export class App {
   private staying(state: TuiState, was: number): TuiState {
     const last = Math.max(0, panelEntries(state).length - 1)
     return { ...state, panelIndex: Math.min(was, last) }
+  }
+
+  private following(state: TuiState, id: string, was: number): TuiState {
+    if (state.focus !== "review") return this.staying(state, was)
+    const at = panelEntries(state).findIndex(
+      (entry) => entry.kind === "comment" && entry.comment.id === id,
+    )
+    return at === -1 ? this.staying(state, was) : { ...state, panelIndex: at }
   }
 
   private heldUnderCursor(): number {
@@ -1812,6 +1835,13 @@ export class App {
     return worktree === undefined
       ? settleThread(this.repo, branch, id, at)
       : settleIn(worktree, id, at)
+  }
+
+  private unsettling(branch: string, id: string): Work<{ readonly unsettled: string }> {
+    const worktree = this.worktreeFor(branch)
+    return worktree === undefined
+      ? unsettleThread(this.repo, branch, id)
+      : unsettleIn(worktree, id)
   }
 
   private restoring(branch: string, id: string): Work<{ readonly restored: string }> {

@@ -466,6 +466,19 @@ const commands: ReadonlyArray<CommandSpec> = [
     example: "adiff comment restore --repo . --branch add-invitations --id c1",
   },
   {
+    name: "comment reopen",
+    about: "Take a settled comment back into the review, so the agent is owed an answer again",
+    group: FOLLOW_UP,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      { name: "id", required: true, value: "id", about: "The comment to reopen" },
+    ],
+    dataKey: "reopened",
+    example: "adiff comment reopen --repo . --branch add-invitations --id c1",
+  },
+  {
     name: "config list",
     about: "Every preference adiff keeps, with its value and what it does",
     group: SET_UP,

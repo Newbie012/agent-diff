@@ -8,6 +8,7 @@ import type {
   UnknownComment,
   UnknownRemark,
   RemarkTaken,
+  ThreadOpen,
   NothingSaid,
   UnknownFile,
   UnknownWorktree,
@@ -29,6 +30,7 @@ export type Fault =
   | UnknownFile
   | UnknownRemark
   | RemarkTaken
+  | ThreadOpen
   | NothingSaid
   | UnknownWorktree
   | UnselectableRange

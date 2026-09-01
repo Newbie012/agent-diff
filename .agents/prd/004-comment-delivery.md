@@ -90,6 +90,19 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   and no screen would report. The reviewer saw them as sent forever. Since the inbox is append-only
   and the outbox says exactly which comments were answered, what the agent is owed can be derived
   rather than remembered, and a dropped comment comes back by itself.
+- **Settling is reversible, and `d` is what reverses it.** A thread is settled on the reviewer's
+  judgement that the point is closed, and that judgement can be wrong: the fix was not what they
+  read it to be, or the next file showed the same thing again. Pressing the settle key on a settled
+  thread takes it back — the thread opens where it stands, the agent is owed an answer again if it
+  never gave one, and the footer names the key as the way back rather than as a second way to
+  settle. Settling marks every answer on the thread read, so taking it back marks them unread
+  again: a thread the reviewer has reopened is one they have not finished reading. Only a thread
+  the cursor is standing on can be taken back, because the key also reaches a thread from the code
+  line above it, where the reviewer can see no thread to be reversing. Settling from the panel still
+  brings the next thread to the cursor, so a pass through a review is one key per thread; taking one
+  back keeps the cursor on the thread it reopened, since the reviewer is looking at that thread
+  rather than sweeping. Two presses in a row therefore settle two threads, and the footer says which
+  the key will do before it is pressed.
 - **The reviewer can retire a comment too, by settling or removing it.** Both are the reviewer
   saying they no longer need an answer, so both stop the comment coming back. Without that, a point
   the reviewer had given up on would follow the agent forever.
@@ -294,6 +307,9 @@ Behaviors that must be covered:
 - A comment written after the agent caught up is handed over on the next take.
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
+- A settled thread taken back is owed to the agent again, and reads as open to the reviewer.
+- Taking a thread back from the panel leaves the cursor on the thread that came back.
+- Reopening a thread that is not settled is refused.
 - A removed comment leaves the reviewer's view, still reads as removed to the agent, leaves the
   delivery record untouched, and comes back on restore.
 - A comment on code a layer explains is handed over with that layer's title, a comment on code no

@@ -1268,6 +1268,9 @@ export const remarkToTakeOn = (state: TuiState): Remark | undefined =>
 
 export const remarkHere = (state: TuiState): Remark | undefined => remarkToTakeOn(state)
 
+export const standingOnThread = (state: TuiState): boolean =>
+  (state.stop > 0 && threadAtStop(state) !== undefined) || threadChosen(state) !== undefined
+
 export const threadHere = (state: TuiState): StagedComment | undefined => {
   if (state.focus === "review") {
     const entry = panelEntry(state)

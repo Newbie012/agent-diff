@@ -50,6 +50,7 @@ import {
   type LayerRoom,
   type RailWindow,
   preferenceRows,
+  standingOnThread,
   askedRows,
   asksAbout,
   type LayerRow,
@@ -86,8 +87,6 @@ import {
   remarkShown,
   remarkToTakeOn,
   remarkUnderCursor,
-  threadAtStop,
-  threadChosen,
   panelShown,
   shownMatches,
   reviewWidth,
@@ -1244,9 +1243,6 @@ const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
         room.title + TITLE_LEAD,
       )
 
-const standingOnThread = (state: TuiState): boolean =>
-  (state.stop > 0 && threadAtStop(state) !== undefined) || threadChosen(state) !== undefined
-
 const standingOnRemark = (state: TuiState): boolean => remarkToTakeOn(state) !== undefined
 
 const standingOnDismissed = (state: TuiState): boolean =>
@@ -1268,6 +1264,7 @@ const offeredIn = (state: TuiState): Offered => ({
   hidingRead: state.hideReviewed,
   hidingSettled: state.hideSettled,
   onRemoved: threadHere(state)?.removed === true,
+  onSettled: threadHere(state)?.settled === true,
   onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
 })
 

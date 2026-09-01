@@ -74,6 +74,8 @@ export {
   settleIn,
   removeIn,
   settleThread,
+  unsettleIn,
+  unsettleThread,
 } from "./threads.ts"
 export type { Thread, ThreadAnswer } from "./threads.ts"
 export { numeric, oneOf, onlyKnown, optionsFrom, required, seconds } from "./parse.ts"
@@ -100,6 +102,7 @@ export {
   PartlySent,
   PullMoved,
   RemarkTaken,
+  ThreadOpen,
   UnknownBase,
   UnknownBranch,
   UnknownComment,
