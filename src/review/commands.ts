@@ -84,7 +84,7 @@ const askedFor = (asked: string | undefined, held: string): { ref: string; basis
   return held.length === 0 ? { ref: "", basis: "stacked" } : { ref: held, basis: "set" }
 }
 
-export const basedOn = Effect.fn("Cli.basedOn")(function* (
+export const basedOn = Effect.fn("Review.basedOn")(function* (
   repo: string,
   worktree: Worktree,
   asked?: string,
@@ -114,7 +114,7 @@ export const basedOn = Effect.fn("Cli.basedOn")(function* (
   } satisfies Based
 })
 
-const worktreeNamed = Effect.fn("Cli.worktreeNamed")(function* (repo: string, branch: string) {
+const worktreeNamed = Effect.fn("Review.worktreeNamed")(function* (repo: string, branch: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const found = worktrees.find((worktree) => worktree.branch === branch)
@@ -123,7 +123,7 @@ const worktreeNamed = Effect.fn("Cli.worktreeNamed")(function* (repo: string, br
     : Effect.succeed(found)
 })
 
-export const findBranch = Effect.fn("Cli.findBranch")(function* (
+export const findBranch = Effect.fn("Review.findBranch")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -131,7 +131,7 @@ export const findBranch = Effect.fn("Cli.findBranch")(function* (
   return (yield* basedOn(repo, yield* worktreeNamed(repo, branch), base)).worktree
 })
 
-export const baseFor = Effect.fn("Cli.baseFor")(function* (
+export const baseFor = Effect.fn("Review.baseFor")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -139,7 +139,7 @@ export const baseFor = Effect.fn("Cli.baseFor")(function* (
   return yield* basedOn(repo, yield* worktreeNamed(repo, branch), base)
 })
 
-export const patchesOf = Effect.fn("Cli.patchesOf")(function* (
+export const patchesOf = Effect.fn("Review.patchesOf")(function* (
   worktree: Worktree,
   context = CONTEXT,
   only?: string,
@@ -152,7 +152,7 @@ export const patchesOf = Effect.fn("Cli.patchesOf")(function* (
 const findPatch = (patches: ReadonlyArray<Patch>, file: string): Option.Option<Patch> =>
   Option.fromNullishOr(patches.find((patch) => patch.path === file))
 
-const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
+const waitingOn = Effect.fn("Review.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
   const owed = yield* store.owed(worktree.path)
   const told = yield* store.layers(worktree.path)
@@ -163,7 +163,7 @@ const waitingOn = Effect.fn("Cli.waitingOn")(function* (worktree: Worktree) {
   }
 })
 
-const summaryOf = Effect.fn("Cli.summaryOf")(function* (
+const summaryOf = Effect.fn("Review.summaryOf")(function* (
   repo: string,
   found: Worktree,
   base?: string,
@@ -189,7 +189,7 @@ const summaryOf = Effect.fn("Cli.summaryOf")(function* (
   } satisfies BranchSummary
 })
 
-export const summaryFor = Effect.fn("Cli.summaryFor")(function* (
+export const summaryFor = Effect.fn("Review.summaryFor")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -198,7 +198,7 @@ export const summaryFor = Effect.fn("Cli.summaryFor")(function* (
   return yield* summaryOf(repo, worktree, base)
 })
 
-export const listBranches = Effect.fn("Cli.listBranches")(function* (repo: string, base?: string) {
+export const listBranches = Effect.fn("Review.listBranches")(function* (repo: string, base?: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const summaries = yield* Effect.forEach(worktrees, (found) => summaryOf(repo, found, base), {
@@ -234,7 +234,7 @@ export const readParts = (
 const blobOf = (patches: ReadonlyArray<Patch>, file: string): Option.Option<string> =>
   Option.map(findPatch(patches, file), (patch) => patch.blob)
 
-export const vouchIn = Effect.fn("Cli.vouchIn")(function* (reading: BranchReading, file: string) {
+export const vouchIn = Effect.fn("Review.vouchIn")(function* (reading: BranchReading, file: string) {
   const store = yield* Store
   const patches = reading.patches
 
@@ -258,7 +258,7 @@ export const vouchIn = Effect.fn("Cli.vouchIn")(function* (reading: BranchReadin
   } satisfies VouchReport
 })
 
-export const toggleVouch = Effect.fn("Cli.toggleVouch")(function* (request: VouchRequest) {
+export const toggleVouch = Effect.fn("Review.toggleVouch")(function* (request: VouchRequest) {
   return yield* vouchIn(yield* readingOf(request.repo, request.branch), request.file)
 })
 
@@ -267,7 +267,7 @@ export type BranchReading = {
   readonly patches: ReadonlyArray<Patch>
 }
 
-export const readingOf = Effect.fn("Cli.readingOf")(function* (
+export const readingOf = Effect.fn("Review.readingOf")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -276,12 +276,12 @@ export const readingOf = Effect.fn("Cli.readingOf")(function* (
   return { worktree, patches: yield* patchesOf(worktree) } satisfies BranchReading
 })
 
-export const markOpened = Effect.fn("Cli.markOpened")(function* (worktreePath: string, at: string) {
+export const markOpened = Effect.fn("Review.markOpened")(function* (worktreePath: string, at: string) {
   const store = yield* Store
   yield* store.changeState(worktreePath, (was) => ({ ...was, openedAt: at }))
 })
 
-export const lastOpenedIn = Effect.fn("Cli.lastOpenedIn")(function* (repo: string) {
+export const lastOpenedIn = Effect.fn("Review.lastOpenedIn")(function* (repo: string) {
   const store = yield* Store
   const git = yield* Git
   const trees = yield* git.worktrees(repo)
@@ -292,7 +292,7 @@ export const lastOpenedIn = Effect.fn("Cli.lastOpenedIn")(function* (repo: strin
   return opened.toSorted((left, right) => right.at.localeCompare(left.at))[0]
 })
 
-export const progressIn = Effect.fn("Cli.progressIn")(function* (reading: BranchReading) {
+export const progressIn = Effect.fn("Review.progressIn")(function* (reading: BranchReading) {
   const store = yield* Store
   const current = yield* store.state(reading.worktree.path)
   const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
@@ -303,7 +303,7 @@ export const progressIn = Effect.fn("Cli.progressIn")(function* (reading: Branch
   }
 })
 
-export const reviewProgress = Effect.fn("Cli.reviewProgress")(function* (
+export const reviewProgress = Effect.fn("Review.reviewProgress")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -447,7 +447,7 @@ const stillInFile = (
   return { ...comment, start: line - span, end: line, placed: true }
 }
 
-const foundOutsideTheHunks = Effect.fn("Cli.foundOutsideTheHunks")(function* (
+const foundOutsideTheHunks = Effect.fn("Review.foundOutsideTheHunks")(function* (
   worktree: Worktree,
   held: ReadonlyArray<PendingComment>,
   shown: ReadonlySet<string>,
@@ -472,7 +472,7 @@ const foundOutsideTheHunks = Effect.fn("Cli.foundOutsideTheHunks")(function* (
   )
 })
 
-export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading) {
+export const sentIn = Effect.fn("Review.sentIn")(function* (reading: BranchReading) {
   const store = yield* Store
   const worktree = reading.worktree
   const spoken = yield* store.answers(worktree.path)
@@ -499,7 +499,7 @@ export const sentIn = Effect.fn("Cli.sentIn")(function* (reading: BranchReading)
     .map((comment) => sentOf(comment, under(comment), conversation))
 })
 
-export const listSent = Effect.fn("Cli.listSent")(function* (
+export const listSent = Effect.fn("Review.listSent")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -514,7 +514,7 @@ export type Ranged = {
   readonly side: Side
 }
 
-export const anchorIn = Effect.fn("Cli.anchorIn")(function* (
+export const anchorIn = Effect.fn("Review.anchorIn")(function* (
   worktree: Worktree,
   request: Ranged,
 ) {
@@ -540,12 +540,12 @@ export const anchorIn = Effect.fn("Cli.anchorIn")(function* (
 
 export type Written = readonly [CommentRequest, ...ReadonlyArray<CommentRequest>]
 
-export const commentsIn = Effect.fn("Cli.commentsIn")(function* (
+export const commentsIn = Effect.fn("Review.commentsIn")(function* (
   worktree: Worktree,
   requests: Written,
 ) {
   const store = yield* Store
-  const anchoring = Effect.fn("Cli.anchoring")(function* (request: CommentRequest) {
+  const anchoring = Effect.fn("Review.anchoring")(function* (request: CommentRequest) {
     const anchor = yield* anchorIn(worktree, request)
     return {
       id: request.id,
@@ -565,18 +565,18 @@ export const commentsIn = Effect.fn("Cli.commentsIn")(function* (
   return batch
 })
 
-export const commentIn = Effect.fn("Cli.commentIn")(function* (
+export const commentIn = Effect.fn("Review.commentIn")(function* (
   worktree: Worktree,
   request: CommentRequest,
 ) {
   return yield* commentsIn(worktree, [request])
 })
 
-export const submitComment = Effect.fn("Cli.submitComment")(function* (request: CommentRequest) {
+export const submitComment = Effect.fn("Review.submitComment")(function* (request: CommentRequest) {
   return yield* commentIn(yield* findBranch(request.repo, request.branch), request)
 })
 
-export const submitComments = Effect.fn("Cli.submitComments")(function* (requests: Written) {
+export const submitComments = Effect.fn("Review.submitComments")(function* (requests: Written) {
   const worktree = yield* findBranch(requests[0].repo, requests[0].branch)
   return yield* commentsIn(worktree, requests)
 })
@@ -596,7 +596,7 @@ const without = (
 ): Readonly<Record<string, string>> =>
   Object.fromEntries(Object.entries(held).filter(([held_]) => held_ !== key))
 
-export const submitReply = Effect.fn("Cli.submitReply")(function* (request: ReplyRequest) {
+export const submitReply = Effect.fn("Review.submitReply")(function* (request: ReplyRequest) {
   const store = yield* Store
   const worktree = yield* findBranch(request.repo, request.branch)
   const batches = yield* store.inbox(worktree.path)
@@ -620,7 +620,7 @@ export const submitReply = Effect.fn("Cli.submitReply")(function* (request: Repl
   return batch
 })
 
-export const listPatches = Effect.fn("Cli.listPatches")(function* (
+export const listPatches = Effect.fn("Review.listPatches")(function* (
   repo: string,
   branch: string,
   context = CONTEXT,
@@ -631,7 +631,7 @@ export const listPatches = Effect.fn("Cli.listPatches")(function* (
   return parsePatches(yield* git.diff(worktree, context, only))
 })
 
-export const patchIn = Effect.fn("Cli.patchIn")(function* (
+export const patchIn = Effect.fn("Review.patchIn")(function* (
   worktree: Worktree,
   context: number,
   only?: string,
@@ -707,7 +707,7 @@ const layerOver = (
   )?.title
 }
 
-const layersOn = Effect.fn("Cli.layersOn")(function* (worktree: string) {
+const layersOn = Effect.fn("Review.layersOn")(function* (worktree: string) {
   const store = yield* Store
   const found = yield* store.layers(worktree)
   return Option.match(found, {
@@ -716,7 +716,7 @@ const layersOn = Effect.fn("Cli.layersOn")(function* (worktree: string) {
   })
 })
 
-export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
+export const takeComments = Effect.fn("Review.takeComments")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* realOf(worktree)
   const at = new Date().toISOString()
@@ -736,17 +736,17 @@ export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: s
   return owed.map(carried).map(under)
 })
 
-export const repoOf = Effect.fn("Cli.repoOf")(function* (worktree: string) {
+export const repoOf = Effect.fn("Review.repoOf")(function* (worktree: string) {
   const git = yield* Git
   return yield* git.repoOf(worktree)
 })
 
-export const worktreeOf = Effect.fn("Cli.worktreeOf")(function* (repo: string, branch: string) {
+export const worktreeOf = Effect.fn("Review.worktreeOf")(function* (repo: string, branch: string) {
   const found = yield* findBranch(repo, branch)
   return found.path
 })
 
-export const branchAt = Effect.fn("Cli.branchAt")(function* (worktree: string) {
+export const branchAt = Effect.fn("Review.branchAt")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* realOf(worktree)
   return yield* store.branchAt(resolved)
@@ -768,12 +768,12 @@ export const awaitComments = (
     ),
   )
 
-export const saveReport = Effect.fn("Cli.saveReport")(function* (stamp: string, text: string) {
+export const saveReport = Effect.fn("Review.saveReport")(function* (stamp: string, text: string) {
   const store = yield* Store
   return yield* store.saveReport(stamp, text)
 })
 
-export const fileSource = Effect.fn("Cli.fileSource")(function* (
+export const fileSource = Effect.fn("Review.fileSource")(function* (
   repo: string,
   branch: string,
   file: string,
@@ -784,7 +784,7 @@ export const fileSource = Effect.fn("Cli.fileSource")(function* (
   return Option.getOrElse(found, (): ReadonlyArray<string> => [])
 })
 
-export const fileBefore = Effect.fn("Cli.fileBefore")(function* (
+export const fileBefore = Effect.fn("Review.fileBefore")(function* (
   repo: string,
   branch: string,
   file: string,
@@ -795,7 +795,7 @@ export const fileBefore = Effect.fn("Cli.fileBefore")(function* (
   return Option.getOrElse(found, (): ReadonlyArray<string> => [])
 })
 
-export const readPreferences = Effect.fn("Cli.readPreferences")(function* () {
+export const readPreferences = Effect.fn("Review.readPreferences")(function* () {
   const store = yield* Store
   const kept = yield* store.settings
   return preferences.map((one) => ({
@@ -806,7 +806,7 @@ export const readPreferences = Effect.fn("Cli.readPreferences")(function* () {
   }))
 })
 
-export const readPreference = Effect.fn("Cli.readPreference")(function* (name: string) {
+export const readPreference = Effect.fn("Review.readPreference")(function* (name: string) {
   const known = preferenceNamed(name)
   if (known === undefined) return yield* new UnknownPreference({ name, known: preferenceNames })
   const store = yield* Store
@@ -817,7 +817,7 @@ export const readPreference = Effect.fn("Cli.readPreference")(function* (name: s
 const ON = "on"
 const OFF = "off"
 
-export const preferenceValue = Effect.fn("Cli.preferenceValue")(function* (
+export const preferenceValue = Effect.fn("Review.preferenceValue")(function* (
   name: string,
   said: string,
 ) {
@@ -827,7 +827,7 @@ export const preferenceValue = Effect.fn("Cli.preferenceValue")(function* (
   return yield* new UnknownPreferenceValue({ name, value: said, known: [ON, OFF] })
 })
 
-export const savePreference = Effect.fn("Cli.savePreference")(function* (
+export const savePreference = Effect.fn("Review.savePreference")(function* (
   name: string,
   value: boolean,
 ) {
@@ -839,7 +839,7 @@ export const savePreference = Effect.fn("Cli.savePreference")(function* (
   return { name, about: known.about, value, byDefault: known.byDefault }
 })
 
-export const listRefs = Effect.fn("Cli.listRefs")(function* (repo: string) {
+export const listRefs = Effect.fn("Review.listRefs")(function* (repo: string) {
   const git = yield* Git
   return yield* git.refs(repo)
 })
@@ -849,7 +849,7 @@ const MOST_RECENT = 5
 const forOne = (count: number): string =>
   count === 1 ? "the last commit" : `the last ${count} commits`
 
-export const recentBases = Effect.fn("Cli.recentBases")(function* (
+export const recentBases = Effect.fn("Review.recentBases")(function* (
   repo: string,
   branch: string,
 ) {
@@ -863,7 +863,7 @@ export const recentBases = Effect.fn("Cli.recentBases")(function* (
   })
 })
 
-export const setBase = Effect.fn("Cli.setBase")(function* (
+export const setBase = Effect.fn("Review.setBase")(function* (
   repo: string,
   branch: string,
   base: string,
@@ -874,7 +874,7 @@ export const setBase = Effect.fn("Cli.setBase")(function* (
   return { branch, base: based.base, basis: based.basis }
 })
 
-export const clearBase = Effect.fn("Cli.clearBase")(function* (repo: string, branch: string) {
+export const clearBase = Effect.fn("Review.clearBase")(function* (repo: string, branch: string) {
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
   yield* store.changeState(worktree.path, (was) => ({ ...was, base: "" }))
@@ -882,7 +882,7 @@ export const clearBase = Effect.fn("Cli.clearBase")(function* (repo: string, bra
   return { branch, base: based.base, basis: based.basis }
 })
 
-export const markRead = Effect.fn("Cli.markRead")(function* (
+export const markRead = Effect.fn("Review.markRead")(function* (
   repo: string,
   branch: string,
   id: string,

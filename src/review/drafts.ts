@@ -47,13 +47,13 @@ const reported = (draft: StoredDraft): ReportedDraft => ({
   wroteBy: draft.wroteBy,
 })
 
-export const listDrafts = Effect.fn("Cli.listDrafts")(function* (repo: string, branch: string) {
+export const listDrafts = Effect.fn("Review.listDrafts")(function* (repo: string, branch: string) {
   const store = yield* Store
   const worktree = yield* findBranch(repo, branch)
   return (yield* store.drafts(worktree.path)).map(reported)
 })
 
-export const addDraft = Effect.fn("Cli.addDraft")(function* (request: DraftRequest) {
+export const addDraft = Effect.fn("Review.addDraft")(function* (request: DraftRequest) {
   const store = yield* Store
   const worktree = yield* findBranch(request.repo, request.branch)
   const anchor = yield* anchorIn(worktree, request)
@@ -69,7 +69,7 @@ export const addDraft = Effect.fn("Cli.addDraft")(function* (request: DraftReque
   return reported(one)
 })
 
-export const editDraft = Effect.fn("Cli.editDraft")(function* (
+export const editDraft = Effect.fn("Review.editDraft")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -86,7 +86,7 @@ export const editDraft = Effect.fn("Cli.editDraft")(function* (
   return reported(said)
 })
 
-export const dropDraft = Effect.fn("Cli.dropDraft")(function* (
+export const dropDraft = Effect.fn("Review.dropDraft")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -116,7 +116,7 @@ const commentOf = (draft: StoredDraft): ForgeComment => ({
   body: draft.body,
 })
 
-const sending = Effect.fn("Cli.sending")(function* (
+const sending = Effect.fn("Review.sending")(function* (
   repo: string,
   branch: string,
   worktree: Worktree,
@@ -149,7 +149,7 @@ const sending = Effect.fn("Cli.sending")(function* (
   return { sent: held.length, url: sent.url, held: since.length } satisfies Dispatched
 })
 
-export const dispatchDrafts = Effect.fn("Cli.dispatchDrafts")(function* (
+export const dispatchDrafts = Effect.fn("Review.dispatchDrafts")(function* (
   repo: string,
   branch: string,
 ) {

@@ -24,7 +24,8 @@ uses, `.agents/prd/CONTEXT.md`; for durable technical choices, `.agents/adr/`.
 ```
 
 `Patch` knows nothing about comments. `Review` knows nothing about git or the store. `Delivery`
-knows nothing about rendering. The terminal depends on all of them and is depended on by none.
+knows nothing about rendering. `review/` is the use-case layer: every verb a reviewer or an agent can ask for,
+as an Effect over the services. The CLI and the terminal both call it and neither calls the other.
 
 ## Modules
 
@@ -37,7 +38,8 @@ src/
   service/         Effect services, one directory each
     git/           worktree discovery, diffs, file reads  PRD 001
     store/         review state, inbox, what is owed      PRD 004
-  cli/             commands and their errors              PRD 007
+  review/          use cases over the services, shared by the CLI and the terminal
+  cli/             parsing, help, the exit report          PRD 007
   tui/             the review terminal                    PRD 003
   testing/         the TestDriver                         PRD 008
   main.ts          the only place an Effect is run

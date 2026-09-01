@@ -1,5 +1,7 @@
 import { describe, expect, test } from "@effect/vitest"
-import { failure } from "../cli/index.ts"
+import {
+  failure,
+} from "../cli/index.ts"
 
 describe("when a failure nobody expected is reported", () => {
   test("then the report carries what went wrong", () => {

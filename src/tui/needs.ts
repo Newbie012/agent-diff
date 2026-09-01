@@ -1,7 +1,6 @@
 import type { Effect } from "effect"
 import type {
   MalformedLayers,
-  MissingOption,
   NoLayers,
   UnknownBase,
   UnknownBranch,
@@ -13,6 +12,9 @@ import type {
   UnknownFile,
   UnknownWorktree,
   UnselectableRange,
+} from "../review/index.ts"
+import type {
+  MissingOption,
 } from "../cli/index.ts"
 import type { Forge, ForgeUnavailable } from "../service/forge/index.ts"
 import type { FileUnreadable, Git, GitCommandFailed, NotARepository } from "../service/git/index.ts"

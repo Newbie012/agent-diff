@@ -69,7 +69,7 @@ import {
   type Remark,
   markOpened,
   recentBases,
-} from "../cli/index.ts"
+} from "../review/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"

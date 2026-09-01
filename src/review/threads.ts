@@ -132,12 +132,12 @@ const threadsIn = (batches: ReadonlyArray<Batch>, reading: Reading): ReadonlyArr
 const idsIn = (batches: ReadonlyArray<Batch>): ReadonlyArray<string> =>
   batches.flatMap((batch) => batch.comments.map((comment) => comment.id))
 
-const isKnown = Effect.fn("Cli.isKnown")(function* (worktreePath: string, id: string) {
+const isKnown = Effect.fn("Review.isKnown")(function* (worktreePath: string, id: string) {
   const store = yield* Store
   return idsIn(yield* store.inbox(worktreePath)).includes(id)
 })
 
-export const listThreads = Effect.fn("Cli.listThreads")(function* (
+export const listThreads = Effect.fn("Review.listThreads")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -158,7 +158,7 @@ export const listThreads = Effect.fn("Cli.listThreads")(function* (
   return sent
 })
 
-export const answerComment = Effect.fn("Cli.answerComment")(function* (request: {
+export const answerComment = Effect.fn("Review.answerComment")(function* (request: {
   readonly worktree: string
   readonly id: string
   readonly body: string
@@ -182,7 +182,7 @@ export const answerComment = Effect.fn("Cli.answerComment")(function* (request: 
   return { answered: answers.filter((entry) => entry.comment === request.id).length }
 })
 
-export const settleIn = Effect.fn("Cli.settleIn")(function* (
+export const settleIn = Effect.fn("Review.settleIn")(function* (
   worktree: Worktree,
   id: string,
   at: string,
@@ -198,7 +198,7 @@ export const settleIn = Effect.fn("Cli.settleIn")(function* (
   return { settled: id }
 })
 
-export const unsettleIn = Effect.fn("Cli.unsettleIn")(function* (worktree: Worktree, id: string) {
+export const unsettleIn = Effect.fn("Review.unsettleIn")(function* (worktree: Worktree, id: string) {
   const store = yield* Store
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   const held = yield* store.state(worktree.path)
@@ -211,7 +211,7 @@ export const unsettleIn = Effect.fn("Cli.unsettleIn")(function* (worktree: Workt
   return { unsettled: id }
 })
 
-export const unsettleThread = Effect.fn("Cli.unsettleThread")(function* (
+export const unsettleThread = Effect.fn("Review.unsettleThread")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -219,7 +219,7 @@ export const unsettleThread = Effect.fn("Cli.unsettleThread")(function* (
   return yield* unsettleIn(yield* findBranch(repo, branch), id)
 })
 
-export const settleThread = Effect.fn("Cli.settleThread")(function* (
+export const settleThread = Effect.fn("Review.settleThread")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -228,7 +228,7 @@ export const settleThread = Effect.fn("Cli.settleThread")(function* (
   return yield* settleIn(yield* findBranch(repo, branch), id, at)
 })
 
-export const removeIn = Effect.fn("Cli.removeIn")(function* (
+export const removeIn = Effect.fn("Review.removeIn")(function* (
   worktree: Worktree,
   id: string,
   at: string,
@@ -244,7 +244,7 @@ export const removeIn = Effect.fn("Cli.removeIn")(function* (
   return { removed: id }
 })
 
-export const removeComment = Effect.fn("Cli.removeComment")(function* (
+export const removeComment = Effect.fn("Review.removeComment")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -259,7 +259,7 @@ const without = <held extends string | number>(
 ): Readonly<Record<string, held>> =>
   Object.fromEntries(Object.entries(entries).filter(([key]) => key !== id))
 
-export const restoreIn = Effect.fn("Cli.restoreIn")(function* (worktree: Worktree, id: string) {
+export const restoreIn = Effect.fn("Review.restoreIn")(function* (worktree: Worktree, id: string) {
   const store = yield* Store
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
   yield* store.changeState(worktree.path, (was) => ({
@@ -269,7 +269,7 @@ export const restoreIn = Effect.fn("Cli.restoreIn")(function* (worktree: Worktre
   return { restored: id }
 })
 
-export const restoreComment = Effect.fn("Cli.restoreComment")(function* (
+export const restoreComment = Effect.fn("Review.restoreComment")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -284,7 +284,7 @@ export const restoreComment = Effect.fn("Cli.restoreComment")(function* (
   return { restored: id }
 })
 
-export const settleRead = Effect.fn("Cli.settleRead")(function* (
+export const settleRead = Effect.fn("Review.settleRead")(function* (
   repo: string,
   branch: string,
   at: string,

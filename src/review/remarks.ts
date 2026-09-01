@@ -112,7 +112,7 @@ const heldPair = (
     ? []
     : [[comment.remark, comment.id]]
 
-export const acceptedIn = Effect.fn("Cli.acceptedRemarks")(function* (worktreePath: string) {
+export const acceptedIn = Effect.fn("Review.acceptedRemarks")(function* (worktreePath: string) {
   const store = yield* Store
   const batches = yield* store.inbox(worktreePath)
   const current = yield* store.state(worktreePath)
@@ -146,7 +146,7 @@ const shownOf = (
   }
 }
 
-export const remarksIn = Effect.fn("Cli.remarksIn")(function* (
+export const remarksIn = Effect.fn("Review.remarksIn")(function* (
   repo: string,
   reading: BranchReading,
 ) {
@@ -171,7 +171,7 @@ export const remarksIn = Effect.fn("Cli.remarksIn")(function* (
   return held.map((one) => shownOf(one, reading.patches, current.dismissed, accepted))
 })
 
-export const listRemarks = Effect.fn("Cli.listRemarks")(function* (
+export const listRemarks = Effect.fn("Review.listRemarks")(function* (
   repo: string,
   branch: string,
   base?: string,
@@ -179,7 +179,7 @@ export const listRemarks = Effect.fn("Cli.listRemarks")(function* (
   return yield* remarksIn(repo, yield* readingOf(repo, branch, base))
 })
 
-export const heldRemarks = Effect.fn("Cli.heldRemarks")(function* (worktreePath: string) {
+export const heldRemarks = Effect.fn("Review.heldRemarks")(function* (worktreePath: string) {
   const store = yield* Store
   const found = yield* store.remarks(worktreePath)
   return Option.match(found, {
@@ -188,7 +188,7 @@ export const heldRemarks = Effect.fn("Cli.heldRemarks")(function* (worktreePath:
   })
 })
 
-export const remarksAgainst = Effect.fn("Cli.remarksAgainst")(function* (
+export const remarksAgainst = Effect.fn("Review.remarksAgainst")(function* (
   worktreePath: string,
   patches: ReadonlyArray<Patch>,
 ) {
@@ -199,11 +199,11 @@ export const remarksAgainst = Effect.fn("Cli.remarksAgainst")(function* (
   return held.map((one) => shownOf(one, patches, current.dismissed, accepted))
 })
 
-export const remarksHeldIn = Effect.fn("Cli.remarksHeldIn")(function* (reading: BranchReading) {
+export const remarksHeldIn = Effect.fn("Review.remarksHeldIn")(function* (reading: BranchReading) {
   return yield* remarksAgainst(reading.worktree.path, reading.patches)
 })
 
-const remarkNamed = Effect.fn("Cli.remarkNamed")(function* (worktreePath: string, id: string) {
+const remarkNamed = Effect.fn("Review.remarkNamed")(function* (worktreePath: string, id: string) {
   const held = yield* heldRemarks(worktreePath)
   const found = held.find((one) => one.id === id)
   return yield* found === undefined
@@ -217,7 +217,7 @@ const without = (
 ): Readonly<Record<string, string>> =>
   Object.fromEntries(Object.entries(entries).filter(([key]) => key !== id))
 
-const notTaken = Effect.fn("Cli.remarkNotTaken")(function* (worktreePath: string, id: string) {
+const notTaken = Effect.fn("Review.remarkNotTaken")(function* (worktreePath: string, id: string) {
   const accepted = yield* acceptedIn(worktreePath)
   const already = accepted[id]
   return yield* already === undefined
@@ -225,7 +225,7 @@ const notTaken = Effect.fn("Cli.remarkNotTaken")(function* (worktreePath: string
     : new RemarkTaken({ id, comment: already })
 })
 
-export const dismissIn = Effect.fn("Cli.dismissIn")(function* (
+export const dismissIn = Effect.fn("Review.dismissIn")(function* (
   worktreePath: string,
   id: string,
   at: string,
@@ -240,7 +240,7 @@ export const dismissIn = Effect.fn("Cli.dismissIn")(function* (
   return { dismissed: found.id }
 })
 
-export const undismissIn = Effect.fn("Cli.undismissIn")(function* (
+export const undismissIn = Effect.fn("Review.undismissIn")(function* (
   worktreePath: string,
   id: string,
 ) {
@@ -254,7 +254,7 @@ export const undismissIn = Effect.fn("Cli.undismissIn")(function* (
   return { restored: found.id }
 })
 
-export const dismissRemark = Effect.fn("Cli.dismissRemark")(function* (
+export const dismissRemark = Effect.fn("Review.dismissRemark")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -263,7 +263,7 @@ export const dismissRemark = Effect.fn("Cli.dismissRemark")(function* (
   return yield* dismissIn((yield* findBranch(repo, branch)).path, id, at)
 })
 
-export const restoreRemark = Effect.fn("Cli.restoreRemark")(function* (
+export const restoreRemark = Effect.fn("Review.restoreRemark")(function* (
   repo: string,
   branch: string,
   id: string,
@@ -298,7 +298,7 @@ const anchorFrom = (reading: BranchReading, held: StoredRemark) => {
   }))
 }
 
-const takingOn = Effect.fn("Cli.takingOnRemark")(function* (request: {
+const takingOn = Effect.fn("Review.takingOnRemark")(function* (request: {
   readonly reading: BranchReading
   readonly id: string
   readonly body?: string | undefined
@@ -331,7 +331,7 @@ const takingOn = Effect.fn("Cli.takingOnRemark")(function* (request: {
   return { accepted: held.id, comment: request.commentId }
 })
 
-export const acceptIn = Effect.fn("Cli.acceptRemarkAlone")(function* (request: {
+export const acceptIn = Effect.fn("Review.acceptRemarkAlone")(function* (request: {
   readonly reading: BranchReading
   readonly id: string
   readonly body?: string | undefined
@@ -342,7 +342,7 @@ export const acceptIn = Effect.fn("Cli.acceptRemarkAlone")(function* (request: {
   return yield* store.whileHoldingRemarks(request.reading.worktree.path, takingOn(request))
 })
 
-export const acceptRemark = Effect.fn("Cli.acceptRemark")(function* (request: {
+export const acceptRemark = Effect.fn("Review.acceptRemark")(function* (request: {
   readonly repo: string
   readonly branch: string
   readonly id: string
@@ -360,7 +360,7 @@ export const acceptRemark = Effect.fn("Cli.acceptRemark")(function* (request: {
   })
 })
 
-export const answerRemark = Effect.fn("Cli.answerRemark")(function* (request: {
+export const answerRemark = Effect.fn("Review.answerRemark")(function* (request: {
   readonly repo: string
   readonly branch: string
   readonly id: string
@@ -376,7 +376,7 @@ export const answerRemark = Effect.fn("Cli.answerRemark")(function* (request: {
   return { answered: held.id }
 })
 
-export const waitingRemarks = Effect.fn("Cli.waitingRemarks")(function* (worktreePath: string) {
+export const waitingRemarks = Effect.fn("Review.waitingRemarks")(function* (worktreePath: string) {
   const store = yield* Store
   const held = yield* heldRemarks(worktreePath)
   const current = yield* store.state(worktreePath)

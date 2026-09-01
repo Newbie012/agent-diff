@@ -152,7 +152,7 @@ const parsed = (text: string): Option.Option<Record<string, unknown>> => {
   }
 }
 
-const readLayers = Effect.fn("Cli.readLayers")(function* (text: string) {
+const readLayers = Effect.fn("Review.readLayers")(function* (text: string) {
   const document = yield* Option.match(parsed(text), {
     onNone: () => new MalformedLayers({ reason: "the layers is not a JSON object" }),
     onSome: Effect.succeed,
@@ -233,7 +233,7 @@ const resolve = (path: string): Promise<string> => realpath(path).catch(() => pa
 const resolveAll = (paths: ReadonlyArray<string>): Promise<ReadonlyArray<string>> =>
   Promise.all(paths.map(resolve))
 
-export const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (
+export const worktreeAt = Effect.fn("Review.worktreeAt")(function* (
   worktreePath: string,
   base?: string,
 ) {
@@ -251,12 +251,12 @@ export const worktreeAt = Effect.fn("Cli.worktreeAt")(function* (
   return (yield* basedOn(repo, found, base)).worktree
 })
 
-const storedLayers = Effect.fn("Cli.storedLayers")(function* (worktree: Worktree) {
+const storedLayers = Effect.fn("Review.storedLayers")(function* (worktree: Worktree) {
   const store = yield* Store
   return Option.map(yield* store.layers(worktree.path), fromStored)
 })
 
-export const setLayers = Effect.fn("Cli.setLayers")(function* (
+export const setLayers = Effect.fn("Review.setLayers")(function* (
   worktreePath: string,
   text: string,
   written: string,
@@ -279,7 +279,7 @@ export const setLayers = Effect.fn("Cli.setLayers")(function* (
   return reportOf(patches, layers, worktree.head)
 })
 
-export const showLayers = Effect.fn("Cli.showLayers")(function* (worktreePath: string) {
+export const showLayers = Effect.fn("Review.showLayers")(function* (worktreePath: string) {
   const worktree = yield* worktreeAt(worktreePath)
   const patches = yield* patchesOf(worktree)
   const found = yield* storedLayers(worktree)
@@ -290,7 +290,7 @@ export const showLayers = Effect.fn("Cli.showLayers")(function* (worktreePath: s
   return reportOf(patches, layers, worktree.head)
 })
 
-export const layersIn = Effect.fn("Cli.layersIn")(function* (reading: BranchReading) {
+export const layersIn = Effect.fn("Review.layersIn")(function* (reading: BranchReading) {
   const worktree = reading.worktree
   const found = yield* storedLayers(worktree)
   if (Option.isNone(found)) {
@@ -313,7 +313,7 @@ const partsOfFile = (
     .filter((spans) => spans.length > 0)
     .map((spans) => partOf(file, spans))
 
-export const vouchPartIn = Effect.fn("Cli.vouchPartIn")(function* (
+export const vouchPartIn = Effect.fn("Review.vouchPartIn")(function* (
   reading: BranchReading,
   file: string,
   part: string,

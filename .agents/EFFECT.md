@@ -67,7 +67,7 @@ Handle by tag. `Effect.catchAll` and cause-level recovery need a reason in the P
 transformation of an effect you already have, as in the `catchTag` above.
 
 Public service methods and anything non-trivial use `Effect.fn` with a span named
-`Area.operation`, where `Area` is the module: `Forge.pulls`, `Store.stage`, `Cli.listBranches`,
+`Area.operation`, where `Area` is the module: `Forge.pulls`, `Store.stage`, `Review.listBranches`,
 `Main.branchList`. **Rule:** `adiff/span-name`.
 
 `src/domain` and `src/service` contain no promises: no `async`, no `await`, no `new Promise`. Wrap a

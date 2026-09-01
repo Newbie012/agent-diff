@@ -61,7 +61,7 @@ const matchOf = (place: Place): Match => ({
   around: [],
 })
 
-export const searchIn = Effect.fn("Cli.searchIn")(function* (
+export const searchIn = Effect.fn("Review.searchIn")(function* (
   reading: BranchReading,
   term: string,
   here = "",
@@ -84,7 +84,7 @@ export const searchIn = Effect.fn("Cli.searchIn")(function* (
   } satisfies Searched
 })
 
-export const aroundIn = Effect.fn("Cli.aroundIn")(function* (
+export const aroundIn = Effect.fn("Review.aroundIn")(function* (
   reading: BranchReading,
   path: string,
   line: number,
@@ -101,7 +101,7 @@ export const aroundIn = Effect.fn("Cli.aroundIn")(function* (
     .map((text, at) => `${String(from + at + 1).padStart(5)} ${text}`)
 })
 
-export const searchBranch = Effect.fn("Cli.searchBranch")(function* (
+export const searchBranch = Effect.fn("Review.searchBranch")(function* (
   repo: string,
   branch: string,
   term: string,

@@ -100,7 +100,10 @@ import {
   refSaidOf,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
-import type { Match, Remark } from "../cli/index.ts"
+import type {
+  Match,
+  Remark,
+} from "../review/index.ts"
 import { marks, standMark, type MarkSet } from "./marks.ts"
 import { palette } from "./theme.ts"
 
