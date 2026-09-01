@@ -2,6 +2,7 @@ import { Option } from "effect"
 import { WHOLE_FILE } from "../domain/patch/index.ts"
 import { preferences } from "../domain/preferences/index.ts"
 import { partOf } from "../domain/review/index.ts"
+import { REMAINDER_TITLE } from "../domain/layers/index.ts"
 
 export type Focus = "tree" | "diff" | "review"
 
@@ -680,6 +681,21 @@ export const partHere = (
   if (path === undefined || layer === undefined) return undefined
   const spans = layer.spans.filter((span) => span.path === path)
   return spans.length === 0 ? undefined : partOf(path, spans)
+}
+
+export const layerOver = (
+  state: TuiState,
+  path: string,
+  start: number,
+  end: number,
+): string | undefined => {
+  if (state.layers.length === 0) return undefined
+  const found = state.layers.find(
+    (layer) =>
+      layer.title !== REMAINDER_TITLE &&
+      layer.spans.some((span) => span.path === path && span.start <= end && span.end >= start),
+  )
+  return found?.title
 }
 
 export const layersHolding = (state: TuiState, fileIndex: number): number =>

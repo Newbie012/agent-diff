@@ -25,42 +25,52 @@ const files = [
   },
 ]
 
+const FIRST = "The record every later layer leans on"
+const SECOND = "The code that reads the record"
+
 const twoLayers = {
   summary: "One file, two layers",
   layers: [
-    { title: "The record every later layer leans on", spans: [{ path: "src/run.ts", start: 5, end: 5 }] },
-    { title: "The code that reads the record", spans: [{ path: "src/run.ts", start: 15, end: 15 }] },
+    { title: FIRST, spans: [{ path: "src/run.ts", start: 5, end: 5 }] },
+    { title: SECOND, spans: [{ path: "src/run.ts", start: 15, end: 15 }] },
   ],
 }
 
-describe("when the reviewer writes a comment while reading a layer", () => {
-  test("then the comment the agent takes names the layer it was written in", async () => {
+const oneLayer = {
+  summary: "One file, one layer, half the diff",
+  layers: [{ title: FIRST, spans: [{ path: "src/run.ts", start: 5, end: 5 }] }],
+}
+
+describe("when the reviewer comments on code a layer explains", () => {
+  test("then the comment the agent takes names the layer the code sits in", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
     await driver.app.runLayersSet(branch.worktree, twoLayers)
     await driver.screen.open({ width: 150, height: 30, review: true })
+    await driver.screen.pressKeys(["]"])
 
     // ACT
-    await driver.screen.writeComment("this record needs a name")
+    await driver.screen.clickOnLine("const two = 'second layer'")
+    await driver.screen.writeComment("this reader wants a name")
 
     // ASSERT
     const taken = await driver.app.runTake(branch.worktree)
     const [handed] = handedOf(taken.envelope)
-    expect(handed?.body).toBe("this record needs a name")
-    expect(handed?.layer).toBe("The record every later layer leans on")
+    expect(handed?.body).toBe("this reader wants a name")
+    expect(handed?.layer).toBe(SECOND)
   })
 
-  test("then a reply to the thread names the layer the reviewer replied from", async () => {
+  test("then a reply names the layer the thread sits in, not the layer on screen", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create({ files })
     await driver.app.runComment({
       branch: branch.name,
       file: "src/run.ts",
-      start: 5,
-      end: 5,
-      body: "this record needs a name",
+      start: 15,
+      end: 15,
+      body: "this reader wants a name",
     })
     await driver.app.runLayersSet(branch.worktree, twoLayers)
     await driver.screen.open({ width: 150, height: 30, review: true })
@@ -76,7 +86,28 @@ describe("when the reviewer writes a comment while reading a layer", () => {
     const taken = await driver.app.runTake(branch.worktree)
     const reply = handedOf(taken.envelope).find((one) => one.body === "call it the ledger")
     expect(reply).toBeDefined()
-    expect(reply?.layer).toBe("The record every later layer leans on")
+    expect(reply?.layer).toBe(SECOND)
+  })
+})
+
+describe("when the reviewer comments on code no layer explains", () => {
+  test("then the comment the agent takes names no layer", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ files })
+    await driver.app.runLayersSet(branch.worktree, oneLayer)
+    await driver.screen.open({ width: 150, height: 30, review: true })
+    await driver.screen.pressKeys(["]"])
+
+    // ACT
+    await driver.screen.clickOnLine("const two = 'second layer'")
+    await driver.screen.writeComment("this reader wants a name")
+
+    // ASSERT
+    const taken = await driver.app.runTake(branch.worktree)
+    const [handed] = handedOf(taken.envelope)
+    expect(handed?.body).toBe("this reader wants a name")
+    expect(handed?.layer).toBeUndefined()
   })
 })
 
@@ -88,7 +119,7 @@ describe("when the branch has no reading order", () => {
     await driver.screen.open({ width: 150, height: 30, review: true })
 
     // ACT
-    await driver.screen.writeComment("this record needs a name")
+    await driver.screen.writeComment("this reader wants a name")
 
     // ASSERT
     const taken = await driver.app.runTake(branch.worktree)

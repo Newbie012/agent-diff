@@ -78,6 +78,7 @@ import { gapAtRow, shownOf, GAP_CHUNK } from "./gaps.ts"
 import {
   initialState,
   isReviewed,
+  layerOver,
   layersHolding,
   partHere,
   readIn,
@@ -1457,6 +1458,7 @@ export class App {
           end: remark.end,
           body: quoted(remark),
           remark: remark.id,
+          ...this.layerOn(remark.file, remark.start, remark.end),
         })
         return
       }
@@ -1466,6 +1468,7 @@ export class App {
           id: remark.id,
           at: new Date().toISOString(),
           commentId: randomUUID(),
+          ...this.layerOn(remark.file, remark.start, remark.end),
         }),
         true,
       ).pipe(Effect.catchTag("RemarkTaken", () => Effect.succeed(false)))
@@ -2041,11 +2044,16 @@ export class App {
         body: yield* this.display.written,
         id: randomUUID(),
         at: new Date().toISOString(),
-        ...this.layerRead(),
+        ...this.layerUnder(to),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
     })
+  }
+
+  private layerUnder(id: string): { readonly layer?: string } {
+    const thread = this.state.sent.find((entry) => entry.id === id)
+    return thread === undefined ? {} : this.layerOn(thread.file, thread.start, thread.end)
   }
 
   private askForLayers(): Work {
@@ -2069,9 +2077,13 @@ export class App {
     })
   }
 
-  private layerRead(): { readonly layer?: string } {
-    if (!onLayers(this.state)) return {}
-    const title = this.state.layers[this.state.layerIndex]?.title
+  private layerOn(
+    file: string | undefined,
+    start: number,
+    end: number,
+  ): { readonly layer?: string } {
+    if (file === undefined) return {}
+    const title = layerOver(this.state, file, start, end)
     return title === undefined ? {} : { layer: title }
   }
 
@@ -2098,7 +2110,7 @@ export class App {
           start: anchor.value.start,
           end: anchor.value.end,
           body,
-          ...this.layerRead(),
+          ...this.layerOn(patch.path, anchor.value.start, anchor.value.end),
         })
         return
       }
@@ -2112,7 +2124,7 @@ export class App {
         body,
         id: randomUUID(),
         at: new Date().toISOString(),
-        ...this.layerRead(),
+        ...this.layerOn(patch.path, anchor.value.start, anchor.value.end),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
