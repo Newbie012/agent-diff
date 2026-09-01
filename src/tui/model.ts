@@ -1148,6 +1148,40 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
   return rows.map((row) => row.index).toSorted((left, right) => left - right)
 }
 
+export type DraftPlace = { readonly row: number; readonly stop: number | undefined }
+
+export const draftPlace = (state: TuiState): DraftPlace | undefined => {
+  const patch = selectedPatch(state)
+  if (patch === undefined) return undefined
+  const to = state.replyTo ?? state.answerTo
+  if (to === undefined) return { row: selectionRange(state)[1], stop: undefined }
+  const drawn = notesShown(state, patch.path)
+  const at = drawn.findIndex((note) => note.id === to)
+  const note = drawn[at]
+  if (note === undefined) return undefined
+  const row = patch.rows.find((one) => lineOnSide(one, note.side) === note.end)?.index
+  if (row === undefined) return undefined
+  const above = drawn.filter(
+    (one) => one.side === note.side && one.end === note.end && drawn.indexOf(one) <= at,
+  ).length
+  return { row, stop: above }
+}
+
+type Shown = {
+  readonly id: string | undefined
+  readonly side: "old" | "new"
+  readonly end: number
+}
+
+const notesShown = (state: TuiState, path: string): ReadonlyArray<Shown> => [
+  ...state.sent
+    .filter((one) => one.file === path && one.removed !== true && one.outside !== true)
+    .map((one) => ({ id: one.id, side: one.side, end: one.end })),
+  ...state.remarks
+    .filter((one) => one.file === path && remarkShown(one))
+    .map((one) => ({ id: one.id, side: one.side, end: one.end })),
+]
+
 export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<StagedComment> => {
   const patch = selectedPatch(state)
   const here = patch?.rows[row]

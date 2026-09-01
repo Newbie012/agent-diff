@@ -3,29 +3,24 @@ import { TestDriver } from "./index.ts"
 
 const body = Array.from({ length: 80 }, (_, at) => `  private step${at}() { return ${at}; }`)
 
-const diffRows = (frame: string): ReadonlyArray<string> =>
-  frame
-    .split("\n")
-    .map((line) => line.slice(33, 90))
-    .filter((line) => /step\d+/.test(line))
-
 describe("when a comment is being typed", () => {
-  test("then the diff behind the box stays where it was", async () => {
+  test("then the line the draft hangs under stays on screen above it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [{ path: "src/mapper.ts", before: [], after: body }] })
     await driver.screen.open({ width: 120, height: 24, review: true })
     await driver.screen.scroll("down", 20)
-    await driver.screen.pressKeys(["c"])
-    const before = diffRows(await driver.screen.getFrame())
+    await driver.screen.pressKeys(["j", "c"])
 
     // ACT
     await driver.screen.typeText("a first line of a comment that is long enough to wrap")
     await driver.screen.typeText(" and a second line to push the box taller still")
 
     // ASSERT
-    const after = diffRows(await driver.screen.getFrame())
-    expect(before[0]).toBeDefined()
-    expect(after[0]).toBe(before[0])
+    const rows = (await driver.screen.getFrame()).split("\n")
+    const draft = rows.findIndex((row) => row.includes("a first line of a comment"))
+    expect(draft).toBeGreaterThan(0)
+    expect(rows[draft - 1] ?? "").toContain("Comment on src/mapper.ts")
+    expect(rows[draft - 2] ?? "").toMatch(/private step\d+\(\)/)
   })
 })

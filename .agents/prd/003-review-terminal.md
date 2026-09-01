@@ -685,6 +685,25 @@ is in: `Staged`, `With the agent`, `Answered`.
 
 #### Writing
 
+- **The draft is written where the code is, and looks like what it will become.** A box in the
+  middle of the screen covered the lines the comment was about, so the reviewer wrote about code
+  they could no longer see and had to trust the quote the box carried instead. The draft opens in
+  the diff itself, under the last line of the selection, and the code below moves down to make room
+  for it — the same way a thread already sits under its line. It is drawn as a thread is drawn: the
+  same rule down its left, the same mark before the reviewer's words, the same colours, and a line
+  above naming where it will land. Nothing about it is a panel, because a panel floating in the
+  diff reads as a box that has landed in the wrong place. A reply opens under the thread it
+  answers, and under that thread rather than the next one where a line carries two. The keys are
+  unchanged: `ctrl+s` sends, `escape` cancels.
+
+- **The draft stays on the screen while it is written.** It is the thing being typed into, so the
+  diff scrolls to keep it whole, with the line it hangs under above it, as it grows. Where the pane
+  is too short to hold the draft and that line, or the diff cannot show the line at all — a comment
+  on a file the branch no longer changes, or a reply to a thread on another file — the draft opens
+  over the diff as it did before, because a draft half off the screen is worse than one in the
+  middle of it. That box no longer quotes code when it is answering a thread: it quotes what was
+  said, and where it has nothing to quote it quotes nothing.
+
 - **The caret is somewhere, not always at the end.** `left` and `right` move it a character,
   `alt` with either moves it a word, `home` and `end` reach the ends of the line it is on, and
   typing, `backspace` and `delete` all act where it stands. A draft that can only be appended to
