@@ -70,6 +70,7 @@ export type Screen =
   | "base"
   | "editor"
   | "thread"
+  | "settling"
 
 const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   wrap: "wrap",
@@ -112,6 +113,13 @@ export const preferenceRows = (state: TuiState): ReadonlyArray<PreferenceRow> =>
 }
 
 export type ForgeAnswer = "asking" | "answered" | "silent"
+
+export type Asking = {
+  readonly path: string
+  readonly layer: string | undefined
+  readonly threads: ReadonlyArray<string>
+  readonly advance: boolean
+}
 
 export type TuiState = {
   readonly screen: Screen
@@ -187,6 +195,8 @@ export type TuiState = {
   readonly railRows: number
   readonly railScroll: number
   readonly settingsIndex: number
+  readonly asking: Asking | undefined
+  readonly askIndex: number
   readonly now: number
   readonly focusWas: Focus
 }
@@ -210,6 +220,8 @@ const nothingReviewed = {
   railRows: 12,
   railScroll: -1,
   settingsIndex: 0,
+  asking: undefined,
+  askIndex: 0,
   now: 0,
   focusWas: "diff" as Focus,
 }
@@ -758,6 +770,89 @@ export const threadsOn = (state: TuiState, fileIndex: number): OpenThreads => {
           )
           .map((entry) => threadStand(entry))
   return { open: stands.length, stand: stands.reduce(louder, "gone") }
+}
+
+const coveredBy = (
+  layer: ReportedLayer,
+  path: string,
+  entry: StagedComment,
+): boolean =>
+  entry.side === "new" &&
+  layer.spans.some(
+    (span) => span.path === path && entry.start <= span.end && entry.end >= span.start,
+  )
+
+const lastLayerOf = (state: TuiState, fileIndex: number, layerIndex: number): boolean =>
+  state.layers.every(
+    (layer, at) =>
+      at === layerIndex ||
+      !layer.spans.some((span) => span.path === state.patches[fileIndex]?.path) ||
+      readIn(state, at, fileIndex),
+  )
+
+export const threadsInLayer = (
+  state: TuiState,
+  fileIndex: number,
+  layerIndex: number,
+): ReadonlyArray<StagedComment> => {
+  const patch = state.patches[fileIndex]
+  const layer = state.layers[layerIndex]
+  if (patch === undefined || layer === undefined) return []
+  return threadsOpenOn(state, fileIndex).filter((entry) => coveredBy(layer, patch.path, entry))
+}
+
+export const threadsOpenOn = (
+  state: TuiState,
+  fileIndex: number,
+  layerIndex?: number,
+): ReadonlyArray<StagedComment> => {
+  const patch = state.patches[fileIndex]
+  if (patch === undefined) return []
+  const open = state.sent.filter(
+    (entry) => entry.file === patch.path && entry.removed !== true && entry.settled !== true,
+  )
+  const layer = layerIndex === undefined ? undefined : state.layers[layerIndex]
+  if (layer === undefined || layerIndex === undefined) return open
+  const last = lastLayerOf(state, fileIndex, layerIndex)
+  const claimed = (entry: StagedComment): boolean =>
+    state.layers.some((one) => coveredBy(one, patch.path, entry))
+  return open.filter(
+    (entry) => coveredBy(layer, patch.path, entry) || (last && !claimed(entry)),
+  )
+}
+
+export const askedRows = (state: TuiState): ReadonlyArray<{
+  readonly title: string
+  readonly here: boolean
+}> => {
+  const asking = state.asking
+  const what = asking?.layer === undefined ? "file" : "layer"
+  const many = (asking?.threads.length ?? 0) === 1 ? "it" : "them"
+  return [
+    `Settle ${many} and mark the ${what} read`,
+    `Mark the ${what} read and leave ${many} open`,
+  ].map((title, at) => ({ title, here: at === state.askIndex }))
+}
+
+export const withAsking = (state: TuiState, asking: Asking): TuiState => ({
+  ...state,
+  screen: "settling",
+  returnTo: state.screen,
+  asking,
+  askIndex: 0,
+})
+
+export const asksAbout = (
+  state: TuiState,
+): { readonly name: string; readonly path: boolean; readonly tail: string } => {
+  const asking = state.asking
+  if (asking === undefined) return { name: "", path: false, tail: "" }
+  const many = asking.threads.length
+  return {
+    name: asking.layer ?? asking.path,
+    path: asking.layer === undefined,
+    tail: ` still holds ${many} open thread${many === 1 ? "" : "s"}`,
+  }
 }
 
 export const hiddenLines = (state: TuiState): number =>

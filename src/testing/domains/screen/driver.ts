@@ -547,6 +547,7 @@ export class ScreenTestDriver {
   }
 
   async pressCtrl(letter: string): Promise<void> {
+    this.state.tracer.sawKeys([`ctrl+${letter}`], this.app?.shown()?.screen)
     const setup = this.active()
     setup.mockInput.pressKey(letter, { ctrl: true })
     await this.app?.settled()

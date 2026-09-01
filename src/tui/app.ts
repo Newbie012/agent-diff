@@ -79,6 +79,9 @@ import {
   initialState,
   isReviewed,
   layersHolding,
+  threadsInLayer,
+  threadsOpenOn,
+  withAsking,
   partHere,
   readIn,
   nextUnreviewed,
@@ -324,6 +327,11 @@ const openedPull = (state: string, opened: boolean): string => {
   return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
 }
 
+const markedIs = (path: string, settled: number): string =>
+  settled === 0
+    ? `marked ${path}`
+    : `marked ${path} and settled ${settled} thread${settled === 1 ? "" : "s"}`
+
 const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search", "base", "editor"])
 
 const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
@@ -338,6 +346,7 @@ const OVER: ReadonlySet<string> = new Set([
   "base",
   "editor",
   "thread",
+  "settling",
 ])
 
 export const overReview = (screen: TuiState["screen"]): boolean => OVER.has(screen)
@@ -839,6 +848,9 @@ export class App {
       "layers.ask": () => this.askForLayers(),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
+      "ask.take": () => this.tookTheAnswer(),
+      "ask.next": () => Effect.sync(() => this.commit(reduce(this.measured(), "ask.next"))),
+      "ask.prev": () => Effect.sync(() => this.commit(reduce(this.measured(), "ask.prev"))),
       "thread.settle": () => this.settleHere(),
       "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
@@ -1666,37 +1678,88 @@ export class App {
     return this.commitSynced(delta > 0 ? "file.next" : "file.prev")
   }
 
-  private vouch(advance: boolean): Work {    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
+  private vouch(advance: boolean): Work {
+    return Effect.gen({ self: this }, function* () {
       const patch = selectedPatch(this.state)
-      if (branch === undefined || patch === undefined) return
+      const branch = selectedBranch(this.state)
+      if (patch === undefined || branch === undefined) return
       if (advance && this.readHere()) {
         this.commit(alongFrom(this.state))
         return
       }
-      const report = yield* this.vouching(branch.branch, patch.path)
-      const next = withVouched(this.state, report.vouched, report.parts)
-      if (!advance) {
-        this.commit(withNotice(next, this.markedSaid(report, patch.path)))
+      const open = this.readHere() ? [] : this.threadsToAsk()
+      const threads = open.flatMap((entry) => (entry.id === undefined ? [] : [entry.id]))
+      if (threads.length === 0) {
+        yield* this.marking(patch.path, advance, 0)
         return
       }
-      this.movedOn(next, patch.path)
+      const layer = this.layerAsked(threads.length)
+      this.commit(withAsking(this.measured(), { path: patch.path, layer, threads, advance }))
     })
   }
 
-  private markedSaid(report: VouchReport, path: string): string {
-    const part = this.partHereNow()
-    const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
-    return marked ? `marked ${path}` : `unmarked ${path}`
+  private layerAsked(asked: number): string | undefined {
+    if (this.partHereNow() === undefined) return undefined
+    const inside = threadsInLayer(this.state, this.state.patchIndex, this.state.layerIndex).length
+    if (inside !== asked) return undefined
+    return this.state.layers[this.state.layerIndex]?.title
   }
 
-  private movedOn(next: TuiState, path: string): void {
+  private threadsToAsk(): ReadonlyArray<StagedComment> {
+    const layered = this.partHereNow() === undefined ? undefined : this.state.layerIndex
+    return threadsOpenOn(this.state, this.state.patchIndex, layered)
+  }
+
+  private tookTheAnswer(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const asking = this.state.asking
+      const branch = selectedBranch(this.state)
+      if (asking === undefined || branch === undefined) return
+      const settling = this.state.askIndex === 0
+      const named = asking.layer ?? asking.path
+      if (settling) yield* this.settleThese(branch.branch, asking.threads)
+      this.commit(reduce(this.measured(), "back"))
+      yield* this.marking(asking.path, asking.advance, settling ? asking.threads.length : 0, named)
+    })
+  }
+
+  private settleThese(branch: string, ids: ReadonlyArray<string>): Work {
+    return Effect.gen({ self: this }, function* () {
+      for (const id of ids) yield* this.settling(branch, id)
+      const sent = yield* this.loadSent(branch)
+      this.commit(withSent(this.state, sent))
+    })
+  }
+
+  private marking(path: string, advance: boolean, settled: number, named = path): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      if (branch === undefined) return
+      const report = yield* this.vouching(branch.branch, path)
+      const next = withVouched(this.state, report.vouched, report.parts)
+      if (!advance) {
+        this.commit(withNotice(next, this.markedSaid(report, path, settled, named)))
+        return
+      }
+      this.movedOn(next, named, settled)
+    })
+  }
+
+  private markedSaid(report: VouchReport, path: string, settled: number, named: string): string {
+    const part = this.partHereNow()
+    const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
+    return marked ? markedIs(named, settled) : `unmarked ${named}`
+  }
+
+  private movedOn(next: TuiState, path: string, settled: number): void {
+    const said = markedIs(path, settled)
     const target = nextUnreviewed(next, next.patchIndex)
     if (target === undefined) {
-      this.commit(withNotice(next, "every file reviewed"))
+      const done = settled === 0 ? "every file reviewed" : `${said}, and every file reviewed`
+      this.commit(withNotice(next, done))
       return
     }
-    this.commit(withNotice(atFile(next, target), `marked ${path}`))
+    this.commit(withNotice(atFile(next, target), said))
   }
 
   private forgetLeaving(): void {

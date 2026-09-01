@@ -503,6 +503,18 @@ Three screens, and the keys each answers to:
   branch whose files all sit in one folder, is none of them. It follows every file the branch
   changed, and opens the folder the file it lands on sits in.
 
+- **Marking a file read asks about the threads it still holds.** A reviewer who marks a file read
+  has finished with it, and the threads still open on it are threads they have finished with too —
+  leaving them open hands the agent work the reviewer no longer wants. `m` and `M` open a box naming
+  what is being marked, the file or the layer, and counting its open threads, then offer to settle
+  them with the mark or to mark and leave them. `escape` marks nothing. On a reading order the box
+  counts the threads inside the layer being marked, and the last layer of a file sweeps up the
+  threads no layer explains as well, so a file cannot become read with a thread nobody was asked
+  about. Remarks are never counted, because a remark is triaged rather than settled. A file with
+  nothing open is marked without a question. The box names what it is marking whatever the terminal
+  is wide enough for — a long path loses its middle rather than the count at its end — and the
+  notice afterwards names the same thing the box did.
+
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
   file being read is never hidden, whatever its state: marking the file you are standing on should
@@ -799,6 +811,8 @@ Behaviors that must be covered:
   still draws each of them inside its width.
 - Two branches whose names begin with the same words are two different rows on a terminal too
   narrow to hold either name whole.
+- Marking a file that still holds open threads asks first, and settling from that box retires every
+  thread the box counted.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.
