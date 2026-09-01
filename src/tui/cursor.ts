@@ -63,19 +63,19 @@ export const shownMatches = (state: TuiState): ReadonlyArray<Match> => {
   )
 }
 
-export const refSaidOf = (state: TuiState, ref: string): string => state.refSaid[ref] ?? ""
+export const refNoteOf = (state: TuiState, ref: string): string => state.refSaid[ref] ?? ""
 
 export const refsShown = (state: TuiState): ReadonlyArray<string> => {
   const wanted = state.query.trim().toLowerCase()
   const held = state.refs.filter((ref) =>
-    `${ref} ${refSaidOf(state, ref)}`.toLowerCase().includes(wanted),
+    `${ref} ${refNoteOf(state, ref)}`.toLowerCase().includes(wanted),
   )
   return wanted.length === 0 || held.some((ref) => ref.toLowerCase() === wanted)
     ? held
     : held.concat([state.query.trim()])
 }
 
-export const picking = (state: TuiState): boolean =>
+export const isPicking = (state: TuiState): boolean =>
   state.screen === "base" || state.screen === "editor"
 
 export const refHere = (state: TuiState): string | undefined =>

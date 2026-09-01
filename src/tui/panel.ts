@@ -56,7 +56,7 @@ const newerOf = (state: TuiState, comment: StagedComment): StagedComment => {
   return answersIn(later) > answersIn(comment) ? later : comment
 }
 
-export const spokeLast = (comment: StagedComment): "reviewer" | "agent" | undefined =>
+export const lastVoice = (comment: StagedComment): "reviewer" | "agent" | undefined =>
   comment.turns?.at(-1)?.voice
 
 const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
@@ -68,11 +68,11 @@ const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
   waiting: "with",
 }
 
-export const movedPast = (comment: StagedComment): boolean =>
+export const outsideOpen = (comment: StagedComment): boolean =>
   comment.outside === true && comment.settled !== true && comment.removed !== true
 
 const sectionOf = (comment: StagedComment): PanelSection =>
-  movedPast(comment) ? "movedOn" : SECTION_OF[threadStand(comment)]
+  outsideOpen(comment) ? "movedOn" : SECTION_OF[threadStand(comment)]
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)
@@ -148,7 +148,7 @@ export const HOUR = 60 * MINUTE
 
 export const DAY = 24 * HOUR
 
-export const sinceThen = (at: string, now = Date.now()): string => {
+export const agoText = (at: string, now = Date.now()): string => {
   const gap = now - Date.parse(at)
   if (!Number.isFinite(gap) || gap < MINUTE) return "just now"
   if (gap < HOUR) return `${Math.floor(gap / MINUTE)}m ago`
@@ -160,7 +160,7 @@ export const threadStand = (thread: StagedComment): ThreadStand => {
   if (thread.removed === true) return "gone"
   if (thread.settled === true) return "settled"
   if (thread.asks === true) return "asked"
-  if (spokeLast(thread) === "agent" && answersIn(thread) > 0) return "answered"
+  if (lastVoice(thread) === "agent" && answersIn(thread) > 0) return "answered"
   return thread.takenAt === undefined ? "filed" : "waiting"
 }
 
@@ -173,5 +173,5 @@ export const STAND_WEIGHT: Readonly<Record<ThreadStand, number>> = {
   asked: 4,
 }
 
-export const louder = (one: ThreadStand, other: ThreadStand): ThreadStand =>
+export const louderOf = (one: ThreadStand, other: ThreadStand): ThreadStand =>
   STAND_WEIGHT[one] > STAND_WEIGHT[other] ? one : other

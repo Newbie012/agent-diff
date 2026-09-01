@@ -289,7 +289,7 @@ export const selectedPatch = (state: TuiState): Patch | undefined => shownOf(sta
 export const pullHere = (state: TuiState): string =>
   state.pulls[selectedBranch(state)?.branch ?? ""] ?? ""
 
-export const knownToHaveNoPull = (state: TuiState): boolean =>
+export const hasNoPull = (state: TuiState): boolean =>
   state.forge === "answered" && pullHere(state).length === 0
 
 export const onLayers = (state: TuiState): boolean =>

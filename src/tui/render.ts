@@ -18,7 +18,7 @@ import {
 } from "@opentui/core"
 import { stickyChain } from "../domain/patch/index.ts"
 import { hintsFor, takesText } from "./command.ts"
-import { newLineAt, picking, refSaidOf, refsShown, selectionRange, shownMatches } from "./cursor.ts"
+import { newLineAt, isPicking, refNoteOf, refsShown, selectionRange, shownMatches } from "./cursor.ts"
 import { DiffView, type Draft, type LinePaint } from "./diffview.ts"
 import { treeWindow } from "./files.ts"
 import { CHIP_GAP, keptWithin } from "./footer.ts"
@@ -53,9 +53,9 @@ import {
   railWindow,
   type RailWindow,
 } from "./layerview.ts"
-import { FRAME_PAD, laidDraft, panelShown, reviewWidth, selectionReadout, tooSmall, treeWidth } from "./layout.ts"
+import { FRAME_PAD, wrappedDraft, panelShown, reviewWidth, selectionReadout, tooSmall, treeWidth } from "./layout.ts"
 import { marks, standMark } from "./marks.ts"
-import { askedRows, asksAbout, composeTarget, draftPlace, markedStands } from "./notes.ts"
+import { askedRows, askingWords, composeTarget, draftPlace, markedStands } from "./notes.ts"
 import {
   COMPOSE_ACTION_ROWS,
   COMPOSE_CHROME,
@@ -500,8 +500,8 @@ export class Screen {
   }
 
   private paintBases(state: TuiState): void {
-    this.baseBox.box.visible = picking(state)
-    if (!picking(state)) {
+    this.baseBox.box.visible = isPicking(state)
+    if (!isPicking(state)) {
       this.baseBox.title.content = ""
       this.baseBox.choices.content = ""
       return
@@ -518,7 +518,7 @@ export class Screen {
     this.baseBox.choices.content = listText(
       shown.map((ref) =>
         clip(
-          ` ${ref}${refSaidOf(state, ref).length === 0 ? "" : `  ${refSaidOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
+          ` ${ref}${refNoteOf(state, ref).length === 0 ? "" : `  ${refNoteOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
           room - MODAL_ROOM,
         ),
       ),
@@ -560,7 +560,7 @@ export class Screen {
       return
     }
     const room = panelWidth(this.renderer.width)
-    const asked = asksAbout(state)
+    const asked = askingWords(state)
     const forName = Math.max(8, room - MODAL_ROOM - asked.tail.length)
     const name = asked.path ? clipPath(asked.name, forName) : clipMiddle(asked.name, forName)
     this.ask.title.content = `${name}${asked.tail}`
@@ -1037,7 +1037,7 @@ export class Screen {
 
   private draftBody(state: TuiState): number {
     const most = Math.max(1, this.diffRows() - DRAFT_HEAD - COMPOSE_ACTION_ROWS - 1)
-    return Math.max(1, Math.min(most, laidDraft(state.draft, this.draftRoom()).length))
+    return Math.max(1, Math.min(most, wrappedDraft(state.draft, this.draftRoom()).length))
   }
 
   private paintInline(state: TuiState, draft: Draft): void {
@@ -1085,7 +1085,7 @@ export class Screen {
 
   private fitBody(state: TuiState, room: number, most: number): number {
     if (this.composeBody.width !== room) this.composeBody.width = room
-    const wanted = Math.max(1, laidDraft(state.draft, room).length)
+    const wanted = Math.max(1, wrappedDraft(state.draft, room).length)
     const rows = Math.max(1, Math.min(most, wanted))
     if (this.composeBody.height !== rows) this.composeBody.height = rows
     return rows

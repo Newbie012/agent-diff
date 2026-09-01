@@ -5,7 +5,7 @@ import { carriesLine } from "./cursor.ts"
 import { onLayers, selectedPatch, type TuiState } from "./state.ts"
 
 export const treeOf = (state: TuiState): Tree =>
-  buildTree(state.patches.map((patch, at) => (kept(state, at) ? patch.path : "")))
+  buildTree(state.patches.map((patch, at) => (fileShown(state, at) ? patch.path : "")))
 
 export const reviewedCountIn = (state: TuiState): number =>
   state.patches.filter((_, at) => isReviewed(state, at)).length
@@ -108,7 +108,7 @@ export const nextUnreviewed = (state: TuiState, from: number): number | undefine
 export const reviewedCount = (state: TuiState): string =>
   `${state.vouched.length} reviewed`
 
-export const kept = (state: TuiState, at: number): boolean =>
+export const fileShown = (state: TuiState, at: number): boolean =>
   !state.hideReviewed || at === state.patchIndex || !isReviewed(state, at)
 
 export const fileOrder = (state: TuiState): ReadonlyArray<number> =>
@@ -159,7 +159,7 @@ export const layerAfter = (state: TuiState, delta: number): number => {
 }
 
 export const layerFiles = (state: TuiState, layerIndex: number): ReadonlyArray<number> =>
-  layerHolds(state, layerIndex).filter((at) => kept(state, at))
+  layerHolds(state, layerIndex).filter((at) => fileShown(state, at))
 
 export const readIn = (state: TuiState, layerIndex: number, fileIndex: number): boolean => {
   if (isReviewed(state, fileIndex)) return true

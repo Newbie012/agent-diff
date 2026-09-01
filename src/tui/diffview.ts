@@ -14,7 +14,7 @@ import { Data, Option } from "effect"
 import { lineOn, type Patch, type Row, type RowKind } from "../domain/patch/index.ts"
 import { marks } from "./marks.ts"
 import { palette, syntaxTheme } from "./theme.ts"
-import { sinceThen } from "./panel.ts"
+import { agoText } from "./panel.ts"
 import type { Picked } from "./state.ts"
 
 export type LinePaint = { readonly gutter: RGBA; readonly content: RGBA }
@@ -793,7 +793,7 @@ const commentHead = (note: Note): string => {
   if (note.turns.at(-1)?.voice === "reviewer") return `${marks().waiting} replied${moved}`
   if (note.answers.length > 0) return `${marks().answered} answered${moved}`
   if (note.takenAt === undefined) return `${marks().sent} sent${moved}`
-  return `${marks().waiting} picked up ${sinceThen(note.takenAt, note.now)}${moved}`
+  return `${marks().waiting} picked up ${agoText(note.takenAt, note.now)}${moved}`
 }
 
 const headOf = (note: Note): string =>

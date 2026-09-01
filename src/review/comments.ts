@@ -105,7 +105,7 @@ const sentOf = (
   }
 }
 
-const whereItSitsNow = (
+const placedNow = (
   patches: ReadonlyArray<Patch>,
   comment: PendingComment,
 ): PendingComment => {
@@ -195,7 +195,7 @@ export const sentIn = Effect.fn("Review.sentIn")(function* (reading: BranchReadi
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
   const placed = flatten(yield* store.inbox(worktree.path)).map((comment) =>
-    whereItSitsNow(reading.patches, comment),
+    placedNow(reading.patches, comment),
   )
   const held = yield* foundOutsideTheHunks(worktree, placed, shown)
   const replies = held.filter((comment) => comment.replyTo !== undefined)

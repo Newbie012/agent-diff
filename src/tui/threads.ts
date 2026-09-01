@@ -15,7 +15,7 @@ import {
 import { withNotice, withRemarks, withSent } from "./reduce.ts"
 import { dismissRemarkHere } from "./remarks.ts"
 import type { Terminal } from "./terminal.ts"
-import { remarkUnderCursor, standingOnThread, threadHere } from "./notes.ts"
+import { remarkUnderCursor, cursorOnThread, threadHere } from "./notes.ts"
 import { panelEntry } from "./panel.ts"
 import { selectedBranch } from "./state.ts"
 import { counted } from "./words.ts"
@@ -42,7 +42,7 @@ export const settleHere = (app: Terminal): Work => {
     return Effect.sync(() => app.commit(withNotice(app.state, "no thread here")))
   }
   if (thread?.settled !== true) return changeSettled(app, id, false)
-  if (!standingOnThread(app.state)) {
+  if (!cursorOnThread(app.state)) {
     return Effect.sync(() =>
       app.commit(withNotice(app.state, "stand on the thread to take it back")),
     )

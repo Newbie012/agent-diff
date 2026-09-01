@@ -10,7 +10,7 @@ import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { holding, NOTHING_WRITTEN, sentAway } from "./drafts.ts"
 import { rowShowing, selectionRange } from "./cursor.ts"
-import { remarkToTakeOn, threadHere } from "./notes.ts"
+import { remarkHere, threadHere } from "./notes.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { selectedBranch, selectedPatch, type StagedComment, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
@@ -237,7 +237,7 @@ export const replyHere = (app: Terminal): Work => {
       app.commit({ ...app.state, screen: "compose", draft: "", replyTo: thread.id })
       return
     }
-    const remark = remarkToTakeOn(app.state)
+    const remark = remarkHere(app.state)
     if (remark === undefined) {
       app.commit(withNotice(app.state, "no thread here"))
       return

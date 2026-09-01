@@ -39,9 +39,9 @@ import type { Session } from "./session.ts"
 import { loadSource } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { refHere, sourceLineAt } from "./cursor.ts"
-import { spokenSince } from "./notes.ts"
+import { answersSince } from "./notes.ts"
 import {
-  knownToHaveNoPull,
+  hasNoPull,
   pullHere,
   selectedBranch,
   selectedPatch,
@@ -176,7 +176,7 @@ export const showPull = (app: Terminal): Work => {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
     if (pullHere(app.state).length === 0) yield* loadPulls(app)
-    if (knownToHaveNoPull(app.state)) {
+    if (hasNoPull(app.state)) {
       app.commit(withNoticeHere(app.state, "no pull request for this branch"))
       return
     }
@@ -255,7 +255,7 @@ export const noticeAnswers = (app: Terminal): Work => {
       return
     }
     const sent = yield* loadSent(app, branch.branch)
-    const said = spokenSince(app.state.sent, sent)
+    const said = answersSince(app.state.sent, sent)
     if (said === 0) return
     app.commit(withWaiting(withArrived(app.state, sent), `${said} answered · press r`))
   })

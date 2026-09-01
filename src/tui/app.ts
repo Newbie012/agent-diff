@@ -130,7 +130,7 @@ const turnedOver = (state: TuiState): TuiState => ({
   anchorRow: state.cursor,
 })
 
-const restsWhereItLanded = (from: Spot, to: Spot): boolean =>
+const unmoved = (from: Spot, to: Spot): boolean =>
   from.row === to.row && from.column === to.column
 
 const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
@@ -594,7 +594,7 @@ export class App implements Terminal {
 
   private dragged(from: Spot, to: Spot, done: boolean): void {
     const held = { ...this.measured(), focus: "diff" as const }
-    if (restsWhereItLanded(from, to) && !this.selectingNow) {
+    if (unmoved(from, to) && !this.selectingNow) {
       this.commit(restingOn(held, from.row))
       return
     }

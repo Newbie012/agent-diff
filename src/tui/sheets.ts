@@ -3,7 +3,7 @@ import { type Command, displayKey, type Offered } from "./command.ts"
 import { ANSWER_MARK, REPLY_MARK } from "./diffview.ts"
 import { reviewedCountIn } from "./files.ts"
 import { marks, type MarkSet } from "./marks.ts"
-import { askedRows, standingOnThread, threadHere } from "./notes.ts"
+import { askedRows, cursorOnThread, threadHere } from "./notes.ts"
 import { standingOnDismissed, standingOnRemark } from "./notespane.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { lostCode, panelFile, REMARK_MARK, wherePart } from "./panelpane.ts"
@@ -201,7 +201,7 @@ export const offeredIn = (state: TuiState): Offered => ({
   comments: state.sent.length,
   held: state.held.length,
   layers: state.layers.length,
-  onThread: standingOnThread(state),
+  onThread: cursorOnThread(state),
   onRemark: standingOnRemark(state),
   onDismissed: standingOnDismissed(state),
   selecting: state.selecting,

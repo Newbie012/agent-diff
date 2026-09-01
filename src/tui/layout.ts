@@ -47,15 +47,15 @@ export const panelFits = (state: TuiState): boolean =>
 export const panelShown = (state: TuiState): boolean =>
   state.screen !== "branches" && state.panelOpen && panelFits(state)
 
-export type LaidRow = { readonly text: string; readonly from: number }
+export type WrappedRow = { readonly text: string; readonly from: number }
 
 const brokenAt = (text: string, room: number): number => {
   const space = text.lastIndexOf(" ", room)
   return space > 0 ? space + 1 : room
 }
 
-const laidLine = (line: string, from: number, room: number): ReadonlyArray<LaidRow> => {
-  const rows: Array<LaidRow> = []
+const wrappedLine = (line: string, from: number, room: number): ReadonlyArray<WrappedRow> => {
+  const rows: Array<WrappedRow> = []
   let at = 0
   while (line.length - at > room) {
     const width = brokenAt(line.slice(at), room)
@@ -66,27 +66,27 @@ const laidLine = (line: string, from: number, room: number): ReadonlyArray<LaidR
   return rows
 }
 
-export const laidDraft = (draft: string, room: number): ReadonlyArray<LaidRow> => {
+export const wrappedDraft = (draft: string, room: number): ReadonlyArray<WrappedRow> => {
   const width = Math.max(1, room)
-  const rows: Array<LaidRow> = []
+  const rows: Array<WrappedRow> = []
   let from = 0
   for (const line of draft.split("\n")) {
-    rows.push(...laidLine(line, from, width))
+    rows.push(...wrappedLine(line, from, width))
     from += line.length + 1
   }
   return rows
 }
 
-export const caretRow = (rows: ReadonlyArray<LaidRow>, caret: number): number => {
+export const caretRow = (rows: ReadonlyArray<WrappedRow>, caret: number): number => {
   const at = rows.findIndex((row) => caret >= row.from && caret <= row.from + row.text.length)
   return at === -1 ? Math.max(0, rows.length - 1) : at
 }
 
-export const caretColumn = (rows: ReadonlyArray<LaidRow>, caret: number): number =>
+export const caretColumn = (rows: ReadonlyArray<WrappedRow>, caret: number): number =>
   caret - (rows[caretRow(rows, caret)]?.from ?? 0)
 
 export const caretOn = (
-  rows: ReadonlyArray<LaidRow>,
+  rows: ReadonlyArray<WrappedRow>,
   row: number,
   column: number,
 ): number => {

@@ -5,7 +5,7 @@ import type { ReportedLayer } from "../review/index.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import { lineOf, lineOnSide, rowsUnder, selectedRows, selectionRange } from "./cursor.ts"
 import { readIn } from "./files.ts"
-import { louder, panelEntry, threadChosen, threadStand } from "./panel.ts"
+import { louderOf, panelEntry, threadChosen, threadStand } from "./panel.ts"
 import { type Asking, selectedPatch, type StagedComment, type TuiState } from "./state.ts"
 import { counted, wrapped } from "./words.ts"
 
@@ -22,7 +22,7 @@ export const threadsOn = (state: TuiState, fileIndex: number): OpenThreads => {
               entry.file === patch.path && entry.removed !== true && entry.settled !== true,
           )
           .map((entry) => threadStand(entry))
-  return { open: stands.length, stand: stands.reduce(louder, "gone") }
+  return { open: stands.length, stand: stands.reduce(louderOf, "gone") }
 }
 
 export const threadsOpenOn = (
@@ -66,7 +66,7 @@ export const withAsking = (state: TuiState, asking: Asking): TuiState => ({
   askIndex: 0,
 })
 
-export const asksAbout = (
+export const askingWords = (
   state: TuiState,
 ): { readonly name: string; readonly path: boolean; readonly tail: string } => {
   const asking = state.asking
@@ -88,7 +88,7 @@ export const markedStands = (state: TuiState): ReadonlyMap<number, ThreadStand> 
   )
   for (const entry of here) {
     const stand = threadStand(entry)
-    for (const row of rowsUnder(patch, entry)) found.set(row, louder(stand, found.get(row) ?? "gone"))
+    for (const row of rowsUnder(patch, entry)) found.set(row, louderOf(stand, found.get(row) ?? "gone"))
   }
   return found
 }
@@ -281,12 +281,10 @@ export const remarkUnderCursor = (state: TuiState): RemarkHere | undefined => {
   return here === undefined ? undefined : { remark: here, dismissed: false }
 }
 
-export const remarkToTakeOn = (state: TuiState): Remark | undefined =>
+export const remarkHere = (state: TuiState): Remark | undefined =>
   remarkInPanel(state)?.remark ?? remarkInDiff(state, false)
 
-export const remarkHere = (state: TuiState): Remark | undefined => remarkToTakeOn(state)
-
-export const standingOnThread = (state: TuiState): boolean =>
+export const cursorOnThread = (state: TuiState): boolean =>
   (state.stop > 0 && threadAtStop(state) !== undefined) || threadChosen(state) !== undefined
 
 export const threadHere = (state: TuiState): StagedComment | undefined => {
@@ -349,7 +347,7 @@ export const filesWithComments = (state: TuiState): ReadonlyArray<number> =>
 const answerCount = (comments: ReadonlyArray<StagedComment>): number =>
   comments.reduce((total, entry) => total + (entry.answers?.length ?? 0), 0)
 
-export const spokenSince = (
+export const answersSince = (
   seen: ReadonlyArray<StagedComment>,
   now: ReadonlyArray<StagedComment>,
 ): number => Math.max(0, answerCount(now) - answerCount(seen))

@@ -7,7 +7,7 @@ import { composeBox } from "./layout.ts"
 import {
   remarkQuote,
   remarkShown,
-  remarkToTakeOn,
+  remarkHere,
   remarkUnderCursor,
   snippetOf,
   threadQuote,
@@ -147,7 +147,7 @@ export const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => 
   ...remarksOf(state, path),
 ]
 
-export const standingOnRemark = (state: TuiState): boolean => remarkToTakeOn(state) !== undefined
+export const standingOnRemark = (state: TuiState): boolean => remarkHere(state) !== undefined
 
 export const standingOnDismissed = (state: TuiState): boolean =>
   remarkUnderCursor(state)?.dismissed === true
