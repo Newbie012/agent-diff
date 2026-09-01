@@ -2542,9 +2542,9 @@ export class Screen {
       this.compose.paddingLeft = 0
       this.compose.paddingRight = 0
       this.compose.paddingTop = 0
-      this.compose.backgroundColor = palette.overlay
-      this.composeBody.backgroundColor = palette.overlay
-      this.composeBody.focusedBackgroundColor = palette.overlay
+      this.compose.backgroundColor = "transparent"
+      this.composeBody.backgroundColor = "transparent"
+      this.composeBody.focusedBackgroundColor = "transparent"
     }
   }
 
