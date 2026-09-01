@@ -685,6 +685,15 @@ is in: `Staged`, `With the agent`, `Answered`.
 
 #### Writing
 
+- **The draft is written where the code is.** A box in the middle of the screen covered the lines
+  the comment was about, so the reviewer wrote about code they could no longer see and had to trust
+  the quote the box carried instead. The draft opens in the diff itself, under the last line of the
+  selection, and the code below moves down to make room for it — the same way a thread already sits
+  under its line. A reply opens under the thread it answers. The keys are unchanged: `ctrl+s` sends,
+  `escape` cancels. Where the diff cannot show the line — a comment on a file the branch no longer
+  changes, or a reply reached from the panel — the draft opens over the diff as it did before,
+  because a draft anchored to nothing on screen is worse than one in the middle of it.
+
 - **The caret is somewhere, not always at the end.** `left` and `right` move it a character,
   `alt` with either moves it a word, `home` and `end` reach the ends of the line it is on, and
   typing, `backspace` and `delete` all act where it stands. A draft that can only be appended to

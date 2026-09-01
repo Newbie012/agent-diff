@@ -19,11 +19,19 @@ import { absurd } from "effect"
 import { displayKey, hintsFor, takesText, type Command, type Offered } from "./command.ts"
 import { REMAINDER_TITLE } from "../domain/layers/index.ts"
 import { stickyChain, type RowKind } from "../domain/patch/index.ts"
-import { ANSWER_MARK, DiffView, REPLY_MARK, type LinePaint, type Note } from "./diffview.ts"
+import {
+  ANSWER_MARK,
+  DiffView,
+  REPLY_MARK,
+  type Draft,
+  type LinePaint,
+  type Note,
+} from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
 import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
   composeTarget,
+  draftRow,
   filePlace,
   hiddenLines,
   isReviewed,
@@ -103,6 +111,9 @@ const GUTTER_X = 2
 const CHIP_GAP = 4
 const MODAL_ROOM = 8
 const COMPOSE_CHROME = 3
+const DRAFT_LEAD = 1
+const DRAFT_PAD = 2
+const NOTE_ROOM_MIN = 24
 const COMPOSE_ACTION_ROWS = 2
 
 const reportActions = (full: boolean): StyledText =>
@@ -2221,13 +2232,21 @@ export class Screen {
     const patch = shown.patch
     this.view.setWrap(state.wrap, this.diffRoom())
     this.view.setPan(state.pan)
-    this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), proseFor(state, patch.path))
+    const draft = this.draftFor(state)
+    this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), {
+      prose: proseFor(state, patch.path),
+      draft,
+    })
     this.view.pick(state.picked)
     if (!takesText(state.screen)) {
       this.view.fit(this.diffRows())
       this.lastTop = this.view.scrollTo(state.top, state.cursor, state.scroll)
       if (state.sticky) this.paintSticky(state, this.view.rowAt(this.lastTop))
       else this.view.pin([])
+    } else if (draft !== undefined) {
+      this.view.pin([])
+      this.view.fit(this.diffRows())
+      this.lastTop = this.view.showDraft(this.lastTop, draft.rows)
     }
     const top = this.lastTop
     this.view.paint(this.linePaint(state), top, this.view.rows())
@@ -2468,6 +2487,36 @@ export class Screen {
     }
   }
 
+  private draftFor(state: TuiState): Draft | undefined {
+    if (state.screen !== "compose") return undefined
+    const row = draftRow(state)
+    if (row === undefined || this.view.screenRowOf(row) === undefined) return undefined
+    const body = this.draftBody(state)
+    return { row, rows: DRAFT_LEAD + body + COMPOSE_ACTION_ROWS + COMPOSE_CHROME }
+  }
+
+  private draftBody(state: TuiState): number {
+    const room = Math.max(NOTE_ROOM_MIN, this.view.room() - DRAFT_PAD)
+    const most = Math.max(1, this.diffRows() - DRAFT_LEAD - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - 1)
+    return Math.max(1, Math.min(most, laidDraft(state.draft, room).length))
+  }
+
+  private paintInline(state: TuiState, draft: Draft): void {
+    const room = Math.max(NOTE_ROOM_MIN, this.view.room() - DRAFT_PAD)
+    const at = this.view.draftTop()
+    if (at === undefined) return
+    this.composeTitle.content = clip(composeTarget(state), room)
+    this.composeQuoted.content = ""
+    this.composeQuoted.height = 0
+    const written = this.fitBody(state, room, this.draftBody(state))
+    this.composeActions.content = actionsText(state.answerTo === undefined ? SENDS : REPLIES)
+    this.compose.height = DRAFT_LEAD + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
+    this.compose.width = Math.max(NOTE_ROOM_MIN, this.view.paneWidth())
+    this.compose.left = this.view.screenLeft()
+    this.compose.top = this.view.screenTop() + at - this.lastTop
+    void draft
+  }
+
   private fitBody(state: TuiState, room: number, most: number): number {
     if (this.composeBody.width !== room) this.composeBody.width = room
     const wanted = Math.max(1, laidDraft(state.draft, room).length)
@@ -2479,6 +2528,11 @@ export class Screen {
   private paintCompose(state: TuiState): void {
     this.compose.visible = state.screen === "compose"
     if (state.screen !== "compose") return
+    const inline = this.draftFor(state)
+    if (inline !== undefined) {
+      this.paintInline(state, inline)
+      return
+    }
     const room = composeRoom(this.renderer.width)
     const shownLines = Math.max(1, Math.min(SNIPPET_LINES, Math.floor(this.renderer.height / 6)))
     const quoted = quotedFor(state, shownLines, room.text)

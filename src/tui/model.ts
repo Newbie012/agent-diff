@@ -1148,6 +1148,18 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
   return rows.map((row) => row.index).toSorted((left, right) => left - right)
 }
 
+export const draftRow = (state: TuiState): number | undefined => {
+  const patch = selectedPatch(state)
+  if (patch === undefined) return undefined
+  const to = state.replyTo ?? state.answerTo
+  if (to === undefined) return selectionRange(state)[1]
+  const thread = state.sent.find((entry) => entry.id === to)
+  const remark = state.remarks.find((one) => one.id === to)
+  const on = thread ?? remark
+  if (on === undefined || on.file !== patch.path) return undefined
+  return patch.rows.find((row) => lineOnSide(row, on.side) === on.end)?.index
+}
+
 export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<StagedComment> => {
   const patch = selectedPatch(state)
   const here = patch?.rows[row]

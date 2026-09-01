@@ -30,23 +30,21 @@ describe("when a selection reaches over a row of hidden lines", () => {
     expect(await driver.screen.getFrame()).toContain("Comment on src/invitations.ts:22-24")
   })
 
-  test("then the quote carries code rather than the hidden-lines row", async () => {
+  test("then the comment carries code rather than the hidden-lines row", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    await driver.branch.create(branch)
+    const made = await driver.branch.create(branch)
     await driver.screen.open({ width: 100, height: 32, review: true })
     await driver.screen.pressKeys(["k"])
     await driver.screen.pressKeys(["v", "j", "j", "j"])
 
     // ACT
-    await driver.screen.pressKeys(["c"])
+    await driver.screen.writeComment("this rename needs a look")
 
     // ASSERT
-    const panel = (await driver.screen.getFrame())
-      .split("\n")
-      .filter((line) => line.includes("┃"))
-    expect(panel.some((line) => line.includes("lines hidden"))).toBe(false)
-    expect(panel.some((line) => line.includes("const kept21"))).toBe(true)
+    const [filed] = await driver.agent.listComments(made.worktree)
+    expect(filed?.snippet).toContain("const kept21")
+    expect(filed?.snippet).not.toContain("lines hidden")
   })
 
   test("then the count is of lines held, not rows covered", async () => {

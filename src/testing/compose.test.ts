@@ -12,7 +12,7 @@ const oneFile = {
 }
 
 describe("when a comment is written", () => {
-  test("then the compose box shows the code the comment attaches to", async () => {
+  test("then the draft names the lines it will land on, under the code it is about", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -23,10 +23,12 @@ describe("when a comment is written", () => {
     await driver.screen.pressKeys(["c"])
 
     // ASSERT
-    const frame = await driver.screen.getFrame()
-    expect(frame).toContain("Comment on src/api.ts")
-    const echoed = frame.split("\n").filter((line) => line.includes("const first = 1"))
-    expect(echoed).toHaveLength(2)
+    const rows = (await driver.screen.getFrame()).split("\n")
+    const code = rows.findIndex((line) => line.includes("const first = 1"))
+    const title = rows.findIndex((line) => line.includes("Comment on src/api.ts"))
+    expect(code).toBeGreaterThan(0)
+    expect(title).toBeGreaterThan(code)
+    expect(rows.filter((line) => line.includes("const first = 1"))).toHaveLength(1)
   })
 
   test("then the compose box takes more than one line of prose", async () => {

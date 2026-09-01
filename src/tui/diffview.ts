@@ -47,6 +47,7 @@ type Display = {
   readonly text: string
   readonly row: number
   readonly stop: number
+  readonly draft?: boolean
   readonly comment: boolean
   readonly sent: boolean
   readonly label: boolean
@@ -135,6 +136,7 @@ export class DiffView {
   private wrapped = false
   private held = 0
   private picked: Picked | undefined
+  private drafted: Draft | undefined
 
   constructor(renderer: CliRenderer) {
     this.code = new CodeRenderable(renderer, {
@@ -253,6 +255,21 @@ export class DiffView {
     return this.code.y
   }
 
+  screenLeft(): number {
+    return this.numbers.x
+  }
+
+  showDraft(top: number, rows: number): number {
+    const at = this.draftTop()
+    if (at === undefined) return top
+    const highest = Math.max(0, this.tallest() - this.rows())
+    const below = at + rows - this.rows() + 1
+    const wanted = at < top ? at : below > top ? below : top
+    const settled = Math.max(0, Math.min(highest, wanted))
+    if (this.code.scrollY !== settled) this.code.scrollY = settled
+    return settled
+  }
+
   fit(height: number): void {
     const rows = Math.max(1, height)
     if (rows !== this.fitted) {
@@ -272,15 +289,20 @@ export class DiffView {
     patch: Patch,
     notes: ReadonlyArray<Note>,
     gaps: ReadonlySet<number>,
-    prose: ReadonlyArray<Prose> = [],
+    under: { readonly prose: ReadonlyArray<Prose>; readonly draft: Draft | undefined } = {
+      prose: [],
+      draft: undefined,
+    },
   ): void {
+    const { prose, draft } = under
     const room = notes.length === 0 && prose.length === 0 ? NOTE_MIN : this.noteRoom()
-    const key = keyOf(room, notes, prose)
+    const key = keyOf(room, notes, prose, draft)
     if (patch === this.shown && key === this.noted) return
     this.unpin()
     this.shown = patch
     this.noted = key
-    this.display = layout({ patch, notes, room, gaps, prose, fresh: freshLines(patch) })
+    this.drafted = draft
+    this.display = layout({ patch, notes, room, gaps, prose, fresh: freshLines(patch), draft })
     this.starts = startsOf(this.display)
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
     this.feed()
@@ -495,6 +517,13 @@ export class DiffView {
     return this.visualOfRow(row)
   }
 
+  draftTop(): number | undefined {
+    const draft = this.drafted
+    if (draft === undefined) return undefined
+    const at = this.display.findIndex((entry) => entry.draft === true)
+    return at === -1 ? undefined : at
+  }
+
   pick(picked: Picked | undefined): void {
     if (alike(this.picked, picked)) return
     this.picked = picked
@@ -583,9 +612,11 @@ const keyOf = (
   room: number,
   notes: ReadonlyArray<Note>,
   prose: ReadonlyArray<Prose>,
+  draft: Draft | undefined,
 ): string =>
   [
     room,
+    draft === undefined ? "d-" : `d${draft.row}:${draft.rows}`,
     ...notes.map(noteKey),
     ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
   ].join("\u0000")
@@ -812,6 +843,8 @@ const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<Displ
     prose: true,
   }))
 
+export type Draft = { readonly row: number; readonly rows: number }
+
 type Plan = {
   readonly patch: Patch
   readonly notes: ReadonlyArray<Note>
@@ -819,6 +852,7 @@ type Plan = {
   readonly gaps: ReadonlySet<number>
   readonly prose: ReadonlyArray<Prose>
   readonly fresh: ReadonlySet<number>
+  readonly draft: Draft | undefined
 }
 
 const freshLines = (patch: Patch): ReadonlySet<number> =>
@@ -878,6 +912,21 @@ const codeRow = (plan: Plan, row: Row): Display => ({
 
 type Around = { readonly lead: ReadonlyArray<Prose>; readonly own: boolean }
 
+const draftRows = (plan: Plan, row: Row): ReadonlyArray<Display> =>
+  plan.draft === undefined || plan.draft.row !== row.index
+    ? []
+    : Array.from({ length: plan.draft.rows }, () => ({
+        text: "",
+        row: row.index,
+        stop: 0,
+        draft: true,
+        comment: true,
+        sent: false,
+        label: false,
+        gap: false,
+        prose: false,
+      }))
+
 const rowsFor = (plan: Plan, row: Row, around: Around): ReadonlyArray<Display> => [
   ...around.lead.flatMap((entry) => proseRows(entry, row.index, plan.room)),
   ...(around.own ? proseAt(plan, row, false) : []).flatMap((entry) =>
@@ -885,6 +934,7 @@ const rowsFor = (plan: Plan, row: Row, around: Around): ReadonlyArray<Display> =
   ),
   codeRow(plan, row),
   ...notesAt(plan, row),
+  ...draftRows(plan, row),
   ...proseAt(plan, row, true).flatMap((entry) => proseRows(entry, row.index, plan.room)),
 ]
 
