@@ -85,11 +85,21 @@ watch it. A plain mutable field is for values that never cross a fibre boundary.
 ## Where Effect meets opentui
 
 opentui renderables are mutable objects and keypresses arrive as callbacks, so `src/tui` is the one
-place that holds a runner rather than composing effects. The boundary is a single captured
-`Effect.runPromiseWith`, and everything the terminal needs from the rest of the program goes through
-it. The terminal builds no effects of its own beyond calling one.
+place where a callback has to hand work to Effect. Every callback does the same thing: it offers an
+intent to one queue, and one scoped fibre consumes that queue in order. That is what keeps keystroke
+N finished before N+1 starts, and it is what the test driver's `settled()` rests on.
 
-That is the current shape, not the intended one. See ADR-005.
+Work that may outlive a keystroke, such as reading a file's source, fetching remarks or a search,
+runs in a `FiberHandle`: running the next one interrupts the last, and the handle dies with the
+scope. The notice fade and the search debounce are `Effect.sleep` in a handle. The age tick is
+`Effect.repeat` on `Schedule.spaced`. `launch` forks all of it with `Effect.forkScoped`, so the scope
+that `runOn` opens, or that the driver holds, is the only lifetime anything in the terminal has.
+
+The `Screen` is used directly. It is the opentui side of the boundary and its methods are
+synchronous, so wrapping each in `Effect.sync` to run it back with `runSync` would add ceremony and
+remove nothing. Two escapes remain and both are honest: `App.write` sets the `SubscriptionRef` with
+`runSync` because `commit` is reached from renderer callbacks, and `settled()` returns a promise
+because the harness keeps its promises (ADR-006).
 
 ## Spacing, imports, layout
 

@@ -42,6 +42,10 @@ src/
   review/          use cases over the services, shared by the CLI and the terminal
   cli/             parsing, help, the exit report          PRD 007
   tui/             the review terminal                    PRD 003
+    app.ts         the App: one intent queue, one scope, the action table
+    state.ts …     the model by what it describes: state, layout, files, layerview, notes, panel, cursor
+    branches.ts …  handlers named for what they do, functions over the Terminal interface
+    render.ts      the Screen; each pane it paints is a file of its own, diffview.ts the diff
   testing/         the TestDriver                         PRD 008
   main.ts          the only place an Effect is run
 ```

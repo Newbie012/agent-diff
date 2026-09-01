@@ -1,6 +1,6 @@
 # ADR-007 - Model with Effect, not only run on it
 
-- **Status:** `accepted`
+- **Status:** `done`
 - **Date:** 2026-08-06
 - **ADRs:** extends [ADR-006](ADR-006-the-terminal-runs-on-effect.md), follows
   [ADR-002](ADR-002-effect-v4-and-module-boundaries.md)
@@ -47,6 +47,29 @@ and treat ADR-006's rule as the floor rather than the goal.
 
 Items 5 and 6 in the audit, `Config` for four environment reads and the unused branded types, are
 recorded there and deliberately not scheduled.
+
+## What the steps did
+
+Items 1 and 2 shipped as planned. Item 3 is done: the display row in `diffview.ts` is a
+`Data.TaggedEnum` of Code, Gap, Comment, Label, Draft and Prose, and its readers match on it.
+
+Item 4 took a different shape from the one written above. `App` did not become a `Context.Service`,
+because nothing asks for it through the context: the driver and the scripts hold the value `launch`
+returns. What the item was for is done all the same. `launch` requires a `Scope`, forks the painter,
+the consumer, the watcher and the tick with `Effect.forkScoped`, and holds the file load, the remark
+fetch, the search, the highlight, the notice fade and the search debounce in `FiberHandle`s, so
+closing the scope is the whole shutdown and `letGoOfEverything` is gone. The `Display` service was
+removed rather than kept: every method but one wrapped a synchronous `Screen` call and was run back
+with `runSync` at the call site, which is the ceremony ADR-006 rejected. The `strict-effect-provide`
+exemption in `launch` went with it.
+
+Two things ADR-006 recorded still hold: the harness keeps its promises, and cancellation was not
+taken as a feature. A `FiberHandle` interrupts the previous load when a new one starts, which is the
+one place cancellation now exists, and it sits behind the queue rather than inside a handler.
+
+The class that remained was then split along its seams. `app.ts` holds the queue, the scope's
+fibres, the geometry sync and the action table; the handlers live in files named for what they do,
+as functions over a `Terminal` interface. The model and the screen were split the same way.
 
 ## Rationale
 
