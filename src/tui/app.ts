@@ -761,7 +761,8 @@ export class App {
   }
 
   private commit(given: TuiState): void {
-    const next = given.patchIndex === this.state.patchIndex ? given : turnedOver(given)
+    const kept = this.keptScroll(given)
+    const next = kept.patchIndex === this.state.patchIndex ? kept : turnedOver(kept)
     this.turnWriting(next)
     const appeared = next.notice.length > 0 && next.notice !== this.state.notice
     if (appeared) this.recordNotice(next.notice)
@@ -769,6 +770,12 @@ export class App {
     this.rememberChosen(next)
     this.write(next)
     if (appeared) this.fade()
+  }
+
+  private keptScroll(given: TuiState): TuiState {
+    if (this.state.screen !== "compose" || given.screen === "compose") return given
+    if (given.patchIndex !== this.state.patchIndex) return given
+    return { ...given, scroll: Effect.runSync(this.display.at) }
   }
 
   private recordNotice(notice: string): void {

@@ -23,7 +23,7 @@ const LONG =
   "a line long enough that it has to wrap inside the panel instead of running off the edge"
 
 describe("when the compose box is drawn", () => {
-  test("then the compose box is a panel with a bar down its edge", async () => {
+  test("then the draft is drawn as the thread it will become", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -31,14 +31,13 @@ describe("when the compose box is drawn", () => {
 
     // ACT
     await driver.screen.pressKeys(["c"])
+    await driver.screen.typeText("this reads as a count")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    const panel = rowsOf(frame).filter((row) => row.includes("┃")).join("")
-    expect(frame).toContain("Comment on src/api.ts")
-    expect(panel).not.toContain("╭")
-    expect(panel).not.toContain("╰")
-    expect(rowWith(frame, "Comment on src/api.ts")).toContain("┃")
+    expect(rowWith(frame, "Comment on src/api.ts")).toContain("│")
+    expect(rowWith(frame, "this reads as a count")).toContain("»")
+    expect(rowWith(frame, "this reads as a count")).not.toContain("╭")
   })
 
   test("then the compose box ends just below what was written", async () => {
