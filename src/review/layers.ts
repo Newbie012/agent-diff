@@ -1,4 +1,3 @@
-import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
 import {
   codeBlocks,
@@ -228,17 +227,14 @@ const reportOf = (
   }
 }
 
-const resolved = (path: string): Effect.Effect<string> =>
-  Effect.tryPromise(() => realpath(path)).pipe(Effect.orElseSucceed(() => path))
-
 export const worktreeAt = Effect.fn("Review.worktreeAt")(function* (
   worktreePath: string,
   base?: string,
 ) {
   const git = yield* Git
-  const asked = yield* resolved(worktreePath)
+  const asked = yield* git.realPathOf(worktreePath)
   const worktrees = yield* git.worktrees(asked)
-  const paths = yield* Effect.forEach(worktrees, (entry) => resolved(entry.path))
+  const paths = yield* Effect.forEach(worktrees, (entry) => git.realPathOf(entry.path))
   const at = paths.indexOf(asked)
   const found = worktrees[at]
   if (found === undefined) {

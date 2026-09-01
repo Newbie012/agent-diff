@@ -23,6 +23,7 @@ type Shape = {
   readonly repoOf: (worktree: string) => Effect.Effect<string>
   readonly commonDirOf: (worktree: string) => Effect.Effect<string>
   readonly headOf: (worktree: string) => Effect.Effect<string>
+  readonly realPathOf: (path: string) => Effect.Effect<string>
   readonly diff: (worktree: Worktree, context: number, only?: string) => Effect.Effect<string>
   readonly stat: (worktree: Worktree) => Effect.Effect<DiffStat>
   readonly source: (
@@ -333,6 +334,7 @@ const shapeWith = (caches: Caches): Shape => ({
   worktrees: (repo: string) => listWorktrees(caches, repo),
   repoOf: findRepo,
   commonDirOf: findCommonDir,
+  realPathOf: settled,
   headOf: readHead,
   diff: readDiff,
   stat: readStat,

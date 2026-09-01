@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, type Scope } from "effect"
 import manifest from "../../package.json" with { type: "json" }
 import {
   askLatest,
@@ -37,10 +37,10 @@ const worded = Effect.gen(function* () {
   if (due && latest !== undefined) {
     yield* store.saveUpgradeCheck({ ...held, note: NOTE, told: latest })
   }
-  if (stale(held)) yield* Effect.forkDetach(Effect.ignore(refresh))
+  if (stale(held)) yield* Effect.forkScoped(Effect.ignore(refresh))
   return due ? `adiff ${latest} is out · adiff upgrade` : ""
 }).pipe(Effect.withSpan("Tui.upgradeHint"))
 
-export const upgradeHint: Effect.Effect<string, never, Store> = worded.pipe(
-  Effect.orElseSucceed(() => ""),
+export const upgradeHint: Effect.Effect<string, never, Store | Scope.Scope> = worded.pipe(
+  Effect.catchTag(["StoreUnreadable", "StoreUnwritable"], () => Effect.succeed("")),
 )

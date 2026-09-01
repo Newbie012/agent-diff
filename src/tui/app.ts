@@ -1,5 +1,3 @@
-import { realpath } from "node:fs/promises"
-import { resolve } from "node:path"
 import {
   createCliRenderer,
   getTreeSitterClient,
@@ -27,6 +25,7 @@ import {
   type BranchSummary,
 } from "../review/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
+import { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
@@ -676,9 +675,6 @@ export class App implements Terminal {
   }
 }
 
-const settledPath = (path: string): Effect.Effect<string> =>
-  Effect.promise(() => realpath(path).catch(() => resolve(path)))
-
 const settingsHeld = Effect.gen(function* () {
   const store = yield* Store
   const kept = heldValues(yield* store.settings)
@@ -764,7 +760,8 @@ export const launch = Effect.fn("Tui.launch")(function* (
   renderer: CliRenderer,
   options: LaunchOptions = {},
 ) {
-  const repo = yield* settledPath(asked)
+  const git = yield* Git
+  const repo = yield* git.realPathOf(asked)
   const branches = yield* firstBranches(repo, options.branch, options.base)
   const opensOn = openingOn(branches, options.branch)
   const session = yield* sessionToResume(opensOn, options.sessionPath)

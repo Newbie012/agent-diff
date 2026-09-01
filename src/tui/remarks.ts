@@ -48,7 +48,7 @@ export const readRemarks = (app: Terminal, reading: BranchReading): Work => {
       app.commit(hasPull ? withNoticeHere(rested, FORGE_QUIET) : rested)
       return
     }
-    app.commit(withRemarks(rested, Result.getOrElse(found, () => app.state.remarks)))
+    app.commit(withRemarks(rested, found.success))
   })
 }
 
