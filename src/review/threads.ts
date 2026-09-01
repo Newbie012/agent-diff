@@ -2,9 +2,9 @@ import { Effect, Option } from "effect"
 import { foundAgain, type Patch } from "../domain/patch/index.ts"
 import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
 import type { Worktree } from "../service/git/index.ts"
-import { findBranch, patchesOf } from "./commands.ts"
 import { worktreeAt } from "./layers.ts"
 import { ThreadOpen, UnknownComment } from "./error.ts"
+import { findBranch, patchesOf } from "./branches.ts"
 
 export type ThreadAnswer = {
   readonly body: string

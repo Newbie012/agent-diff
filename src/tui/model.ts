@@ -2,6 +2,7 @@ import { Option } from "effect"
 import { WHOLE_FILE } from "../domain/patch/index.ts"
 import { preferences } from "../domain/preferences/index.ts"
 import { partOf } from "../domain/review/index.ts"
+import { counted } from "./words.ts"
 
 export type Focus = "tree" | "diff" | "review"
 
@@ -29,12 +30,7 @@ import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"
 import type { ThreadStand } from "./marks.ts"
 import { buildTree, crowdedDirectories, flattenTree, type Tree, type TreeRow } from "./tree.ts"
-import type {
-  BranchSummary,
-  Match,
-  Remark,
-  ReportedLayer,
-} from "../review/index.ts"
+import type { BranchSummary, Match, Remark, ReportedLayer } from "../review/index.ts"
 import type { Counted } from "../domain/search/index.ts"
 import type { ProseAnchor } from "../domain/layers/index.ts"
 
@@ -856,7 +852,7 @@ export const asksAbout = (
   return {
     name: asking.layer ?? asking.path,
     path: asking.layer === undefined,
-    tail: ` still holds ${many} open thread${many === 1 ? "" : "s"}`,
+    tail: ` still holds ${counted(many, "open thread")}`,
   }
 }
 

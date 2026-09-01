@@ -30,7 +30,7 @@ import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
-import { contextToggled, initialState, onLayers, selectedPatch, type Spot, type TuiState } from "./model.ts"
+import { contextToggled, onLayers, selectedPatch, type Spot, type TuiState } from "./model.ts"
 import {
   draggedTo,
   paletteChoice,
@@ -73,12 +73,20 @@ import { chooseEditor, editorChosen, forgetEditor, openInEditor } from "./editor
 import { clicked, commitSynced, moveFile, rolled, stepped, walkComments } from "./moving.ts"
 import { acceptRemarkHere } from "./remarks.ts"
 import { sendReport } from "./reporting.ts"
-import { LEAST_TERM, findSelection, forgetMatches, lookFor, runFinder, walkMatches } from "./search.ts"
+import {
+  LEAST_TERM,
+  findSelection,
+  forgetMatches,
+  lookFor,
+  runFinder,
+  walkMatches,
+} from "./search.ts"
 import { copyDragged, copySelection } from "./selection.ts"
 import { expand, unfold, widen } from "./source.ts"
 import { removeHere, settleHere, settleWhatIsRead } from "./threads.ts"
 import { tookTheAnswer, vouch } from "./vouching.ts"
-import { countOf } from "./drafts.ts"
+import { initialState } from "./model.ts"
+import { counted } from "./words.ts"
 
 const LEAVING_MS = 3000
 const LOOK_MS = 260
@@ -96,7 +104,7 @@ const LEAVING_SAID = "press ctrl+c again to leave"
 const leavingSaid = (state: TuiState): string =>
   state.held.length === 0
     ? LEAVING_SAID
-    : `${countOf(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
+    : `${counted(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
 
 const clockOf = (elapsed: number): string => {
   const seconds = Math.floor(elapsed / 1000)

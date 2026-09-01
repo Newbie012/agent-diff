@@ -16,15 +16,11 @@ import {
 import type { Patch } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import {
-  basedOn,
-  patchesOf,
-  readParts,
-  type BranchReading,
-  type VouchReport,
-} from "./commands.ts"
 import { isPartVouched, isVouched, partOf, vouch, vouchPart } from "../domain/review/index.ts"
 import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
+import { basedOn, type BranchReading } from "./branches.ts"
+import { readParts, type VouchReport } from "./vouching.ts"
+import { patchesOf } from "./branches.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."

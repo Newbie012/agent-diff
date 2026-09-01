@@ -9,8 +9,8 @@ import {
 } from "../domain/patch/index.ts"
 import { Forge, type ForgeRemark } from "../service/forge/index.ts"
 import { Store, type StoredRemark } from "../service/store/index.ts"
-import { findBranch, readingOf, type BranchReading } from "./commands.ts"
 import { NothingSaid, RemarkTaken, UnknownRemark } from "./error.ts"
+import { type BranchReading, findBranch, readingOf } from "./branches.ts"
 
 const VERSION = 1
 

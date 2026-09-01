@@ -7,8 +7,10 @@ import {
   getTreeSitterClient,
   pathToFiletype,
   type CliRenderer,
+  type MouseEvent,
+  type ScrollInfo,
 } from "@opentui/core"
-import { Option } from "effect"
+import { Data, Option } from "effect"
 import { lineOn, type Patch, type Row, type RowKind } from "../domain/patch/index.ts"
 import { marks } from "./marks.ts"
 import { sinceThen, type Picked } from "./model.ts"
@@ -43,17 +45,39 @@ export type Note = {
   readonly now?: number
 }
 
-type Display = {
-  readonly text: string
-  readonly row: number
-  readonly stop: number
-  readonly draft?: boolean
-  readonly comment: boolean
-  readonly sent: boolean
-  readonly label: boolean
-  readonly gap: boolean
-  readonly prose: boolean
-}
+type Placed = { readonly text: string; readonly row: number; readonly stop: number }
+
+type PaneLine = Data.TaggedEnum<{
+  Code: Placed
+  Gap: Placed
+  Comment: Placed & { readonly sent: boolean }
+  Label: Placed
+  Draft: Placed
+  Prose: Placed
+}>
+
+const {
+  Code,
+  Gap,
+  Comment,
+  Label,
+  Draft: DraftLine,
+  Prose: ProseLine,
+  $is,
+  $match,
+} = Data.taggedEnum<PaneLine>()
+
+const isCode = $is("Code")
+
+const isDraft = $is("Draft")
+
+const isProse = $is("Prose")
+
+const isSaid = (line: PaneLine): boolean => $is("Comment")(line) || $is("Label")(line) || isDraft(line)
+
+const isNote = (line: PaneLine): boolean => isSaid(line) || isProse(line)
+
+const isChrome = (line: PaneLine): boolean => !isCode(line)
 
 const WASH: Partial<Record<RowKind, LinePaint>> = {
   added: { gutter: RGBA.fromHex(palette.addedGutter), content: RGBA.fromHex(palette.addedBg) },
@@ -71,38 +95,25 @@ const SIGN_WIDTH = 2
 const SCROLL_ROWS = 1
 const PAN_COLUMNS = 8
 
-type Wheel = {
-  readonly scroll?: { readonly direction?: string; readonly delta?: number }
-  readonly modifiers?: { readonly shift?: boolean }
-  readonly preventDefault?: () => void
-  readonly stopPropagation?: () => void
-}
-
 type Wheeled = {
   readonly scroll: (delta: number) => void
   readonly pan: (delta: number) => void
 }
 
-const WAYS: Readonly<Record<string, { readonly step: number; readonly across: boolean }>> = {
+const WAYS: Readonly<Record<ScrollInfo["direction"], { readonly step: number; readonly across: boolean }>> = {
   up: { step: -1, across: false },
   down: { step: 1, across: false },
   left: { step: -1, across: true },
   right: { step: 1, across: true },
 }
 
-const notchesIn = (event: Wheel): number => Math.max(1, event.scroll?.delta ?? 1)
-
-const takenOver = (event: Wheel): void => {
-  event.preventDefault?.()
-  event.stopPropagation?.()
-}
-
-const wheelTo = (event: Wheel, handlers: Wheeled): void => {
-  const way = WAYS[event.scroll?.direction ?? ""]
-  if (way === undefined) return
-  takenOver(event)
-  const step = way.step * notchesIn(event)
-  if (way.across || event.modifiers?.shift === true) handlers.pan(step * PAN_COLUMNS)
+const wheelTo = (event: MouseEvent, handlers: Wheeled): void => {
+  if (event.scroll === undefined) return
+  const way = WAYS[event.scroll.direction]
+  event.preventDefault()
+  event.stopPropagation()
+  const step = way.step * Math.max(1, event.scroll.delta)
+  if (way.across || event.modifiers.shift) handlers.pan(step * PAN_COLUMNS)
   else handlers.scroll(step * SCROLL_ROWS)
 }
 
@@ -130,7 +141,7 @@ export class DiffView {
   private oldText: ReadonlyArray<string> = []
   private shown: Patch | undefined
   private noted = ""
-  private display: ReadonlyArray<Display> = []
+  private display: ReadonlyArray<PaneLine> = []
   private starts = new Map<number, number>()
   private fitted = 1
   private wrapped = false
@@ -139,10 +150,11 @@ export class DiffView {
   private draftLine: number | undefined
 
   constructor(renderer: CliRenderer) {
+    const syntaxStyle = SyntaxStyle.fromStyles(syntaxTheme)
     this.code = new CodeRenderable(renderer, {
       id: "diff-code",
       content: "",
-      syntaxStyle: SyntaxStyle.fromStyles(syntaxTheme),
+      syntaxStyle,
       treeSitterClient: getTreeSitterClient(),
       drawUnstyledText: true,
       conceal: false,
@@ -163,7 +175,7 @@ export class DiffView {
     this.pinned = new CodeRenderable(renderer, {
       id: "diff-pin",
       content: "",
-      syntaxStyle: SyntaxStyle.fromStyles(syntaxTheme),
+      syntaxStyle,
       treeSitterClient: getTreeSitterClient(),
       drawUnstyledText: true,
       conceal: false,
@@ -248,12 +260,11 @@ export class DiffView {
     readonly dragEnd: (y: number, x: number) => void
   }): void {
     for (const target of [this.numbers, this.code]) {
-      target.onMouseScroll = (event: Wheel) => wheelTo(event, handlers)
-      target.onMouseDown = (event: { y: number; x: number }) => handlers.down(event.y, event.x)
-      target.onMouseDrag = (event: { y: number; x: number }) => handlers.drag(event.y, event.x)
-      target.onMouseDragEnd = (event: { y: number; x: number }) =>
-        handlers.dragEnd(event.y, event.x)
-      target.onMouseUp = (event: { y: number; x: number }) => handlers.dragEnd(event.y, event.x)
+      target.onMouseScroll = (event) => wheelTo(event, handlers)
+      target.onMouseDown = (event) => handlers.down(event.y, event.x)
+      target.onMouseDrag = (event) => handlers.drag(event.y, event.x)
+      target.onMouseDragEnd = (event) => handlers.dragEnd(event.y, event.x)
+      target.onMouseUp = (event) => handlers.dragEnd(event.y, event.x)
     }
   }
 
@@ -315,7 +326,7 @@ export class DiffView {
     this.shown = patch
     this.noted = key
     this.display = layout({ patch, notes, room, gaps, prose, fresh: freshLines(patch), draft })
-    const at = this.display.findIndex((entry) => entry.draft === true)
+    const at = this.display.findIndex(isDraft)
     this.draftLine = at === -1 ? undefined : at
     this.starts = startsOf(this.display)
     this.code.filetype = pathToFiletype(patch.path) ?? "text"
@@ -346,7 +357,7 @@ export class DiffView {
     this.code.requestRender()
   }
 
-  private litRow(entry: Display): ReadonlyArray<Span> {
+  private litRow(entry: PaneLine): ReadonlyArray<Span> {
     const row = this.shown?.rows[entry.row]
     if (row === undefined) return NO_SPANS
     const fresh = Option.getOrUndefined(row.newLine)
@@ -494,13 +505,12 @@ export class DiffView {
   carries(visual: number): boolean {
     const entry = this.display[this.lineAt(visual)]
     if (entry === undefined) return false
-    if (entry.prose || entry.draft === true) return false
-    return true
+    return !isProse(entry) && !isDraft(entry)
   }
 
   isComment(visual: number): boolean {
     const entry = this.display[this.lineAt(visual)]
-    return entry?.comment === true || entry?.prose === true
+    return entry !== undefined && isNote(entry)
   }
 
   isRunOn(visual: number): boolean {
@@ -577,7 +587,7 @@ export class DiffView {
     for (let index = first; index < last; index++) {
       const entry = this.display[index]
       if (entry === undefined) continue
-      const paint = entry.comment || entry.prose ? NOTE_PAINT : paintOf(entry.row)
+      const paint = isNote(entry) ? NOTE_PAINT : paintOf(entry.row)
       if (paint !== undefined) colors.set(index, paint)
     }
     this.numbers.setLineColors(colors)
@@ -588,24 +598,24 @@ export class DiffView {
   }
 }
 
-const startsOf = (display: ReadonlyArray<Display>): Map<number, number> => {
+const startsOf = (display: ReadonlyArray<PaneLine>): Map<number, number> => {
   const starts = new Map<number, number>()
   for (const [index, entry] of display.entries()) {
-    if (!entry.comment && !starts.has(entry.row)) starts.set(entry.row, index)
+    if (!isSaid(entry) && !starts.has(entry.row)) starts.set(entry.row, index)
   }
   return starts
 }
 
-const numbered = (rows: ReadonlyMap<number, Row>, entry: Display): boolean => {
+const numbered = (rows: ReadonlyMap<number, Row>, entry: PaneLine): boolean => {
   const row = rows.get(entry.row)
   return row !== undefined && numberFor(row) !== undefined
 }
 
-const bareOf = (patch: Patch, display: ReadonlyArray<Display>): Set<number> => {
+const bareOf = (patch: Patch, display: ReadonlyArray<PaneLine>): Set<number> => {
   const rows = new Map(patch.rows.map((row) => [row.index, row]))
   return new Set(
     display.flatMap((entry, index) =>
-      entry.comment || entry.gap || entry.prose || !numbered(rows, entry) ? [index] : [],
+      isChrome(entry) || !numbered(rows, entry) ? [index] : [],
     ),
   )
 }
@@ -632,15 +642,14 @@ const keyOf = (
     ...prose.map((entry) => `p${entry.line}${entry.after ? ">" : "<"}:${entry.markdown}`),
   ].join("\u0000")
 
-const groupOf = (entry: Display): string | undefined => {
-  if (entry.prose) return "prose"
-  if (entry.gap) return "gap"
-  if (!entry.comment) return undefined
-  if (entry.label) return "note.label"
-  return entry.sent ? "note.sent" : "note"
-}
-
-const isChrome = (entry: Display): boolean => entry.comment || entry.gap || entry.prose
+const groupOf = $match({
+  Code: () => undefined,
+  Gap: () => "gap",
+  Comment: (line) => (line.sent ? "note.sent" : "note"),
+  Label: () => "note.label",
+  Draft: () => "note",
+  Prose: () => "prose",
+})
 
 const alike = (left: Picked | undefined, right: Picked | undefined): boolean =>
   left === right ||
@@ -650,7 +659,7 @@ const alike = (left: Picked | undefined, right: Picked | undefined): boolean =>
     left.from === right.from &&
     left.to === right.to)
 
-const heldAt = (entry: Display, pan: number): string =>
+const heldAt = (entry: PaneLine, pan: number): string =>
   isChrome(entry) && pan > 0 ? `${" ".repeat(pan)}${entry.text}` : entry.text
 
 const sameLine = (source: string | undefined, row: string): boolean =>
@@ -729,7 +738,7 @@ const spansByLine = (
   return held
 }
 
-const textAt = (display: ReadonlyArray<Display>, pan: number, covered = 0): string => {
+const textAt = (display: ReadonlyArray<PaneLine>, pan: number, covered = 0): string => {
   const lines = display.map((entry) => heldAt(entry, pan))
   if (covered === 0) return lines.join("\n")
   const widest = lines.reduce((most, line) => Math.max(most, line.length), 0)
@@ -738,7 +747,7 @@ const textAt = (display: ReadonlyArray<Display>, pan: number, covered = 0): stri
 }
 
 const noteSpans = (
-  display: ReadonlyArray<Display>,
+  display: ReadonlyArray<PaneLine>,
   pan: number,
 ): ReadonlyArray<[number, number, string]> => {
   const spans: Array<[number, number, string]> = []
@@ -832,29 +841,16 @@ const noteLines = (note: Note, room: number): ReadonlyArray<string> =>
 
 const REMARK_RULE = "\u250a"
 
-const noteRows = (note: Note, row: number, room: number, stop: number): ReadonlyArray<Display> =>
-  noteLines(note, room).map((line, index) => ({
-    text: `${note.from === undefined ? marks().rule : REMARK_RULE} ${line}`,
-    row,
-    stop,
-    comment: true,
-    sent: note.sent,
-    label: index === 0,
-    gap: false,
-    prose: false,
-  }))
+const noteRows = (note: Note, row: number, room: number, stop: number): ReadonlyArray<PaneLine> =>
+  noteLines(note, room).map((line, index) => {
+    const placed = { text: `${note.from === undefined ? marks().rule : REMARK_RULE} ${line}`, row, stop }
+    return index === 0 ? Label(placed) : Comment({ ...placed, sent: note.sent })
+  })
 
-const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<Display> =>
-  [...entry.markdown.split("\n").flatMap((line) => wrap(line, room - 2)), ""].map((line) => ({
-    text: line.length === 0 ? marks().rule : `${marks().rule} ${line}`,
-    row,
-    stop: 0,
-    comment: false,
-    sent: false,
-    label: false,
-    gap: false,
-    prose: true,
-  }))
+const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<PaneLine> =>
+  [...entry.markdown.split("\n").flatMap((line) => wrap(line, room - 2)), ""].map((line) =>
+    ProseLine({ text: line.length === 0 ? marks().rule : `${marks().rule} ${line}`, row, stop: 0 }),
+  )
 
 export type Draft = {
   readonly row: number
@@ -887,18 +883,10 @@ const proseAt = (plan: Plan, row: Row, after: boolean): ReadonlyArray<Prose> => 
   return fresh !== undefined ? wanted : wanted.filter(() => !plan.fresh.has(line))
 }
 
-const apart = (row: number, stop: number): Display => ({
-  text: marks().rule,
-  row,
-  stop,
-  comment: true,
-  sent: false,
-  label: false,
-  gap: false,
-  prose: false,
-})
+const apart = (row: number, stop: number): PaneLine =>
+  Comment({ text: marks().rule, row, stop, sent: false })
 
-const notesAt = (plan: Plan, row: Row): ReadonlyArray<Display> =>
+const notesAt = (plan: Plan, row: Row): ReadonlyArray<PaneLine> =>
   plan.notes
     .filter((note) => sideLineOf(row, note.side) === note.line)
     .flatMap((note, at) => {
@@ -919,16 +907,10 @@ const shownText = (row: Row): string => {
   return `${row.text.slice(0, tail.index)}${marked}`
 }
 
-const codeRow = (plan: Plan, row: Row): Display => ({
-  text: shownText(row),
-  row: row.index,
-  stop: 0,
-  comment: false,
-  sent: false,
-  label: false,
-  gap: plan.gaps.has(row.index),
-  prose: false,
-})
+const codeRow = (plan: Plan, row: Row): PaneLine => {
+  const placed = { text: shownText(row), row: row.index, stop: 0 }
+  return plan.gaps.has(row.index) ? Gap(placed) : Code(placed)
+}
 
 type Around = { readonly lead: ReadonlyArray<Prose>; readonly own: boolean }
 
@@ -940,22 +922,14 @@ const draftText = (draft: Draft, at: number): string => {
   return marks().rule
 }
 
-const draftRows = (plan: Plan, row: Row): ReadonlyArray<Display> =>
+const draftRows = (plan: Plan, row: Row): ReadonlyArray<PaneLine> =>
   plan.draft === undefined || plan.draft.row !== row.index
     ? []
-    : Array.from({ length: plan.draft.rows }, (_, at) => ({
-        text: draftText(plan.draft as Draft, at),
-        row: row.index,
-        stop: DRAFT_STOP,
-        draft: true,
-        comment: true,
-        sent: false,
-        label: false,
-        gap: false,
-        prose: false,
-      }))
+    : Array.from({ length: plan.draft.rows }, (_, at) =>
+        DraftLine({ text: draftText(plan.draft as Draft, at), row: row.index, stop: DRAFT_STOP }),
+      )
 
-const rowsFor = (plan: Plan, row: Row, around: Around): ReadonlyArray<Display> => [
+const rowsFor = (plan: Plan, row: Row, around: Around): ReadonlyArray<PaneLine> => [
   ...around.lead.flatMap((entry) => proseRows(entry, row.index, plan.room)),
   ...(around.own ? proseAt(plan, row, false) : []).flatMap((entry) =>
     proseRows(entry, row.index, plan.room),
@@ -972,7 +946,7 @@ const replacedBy = (rows: ReadonlyArray<Row>, at: number): Row | undefined => {
   return here?.kind === "removed" && next?.kind === "added" ? next : undefined
 }
 
-const layout = (plan: Plan): ReadonlyArray<Display> => {
+const layout = (plan: Plan): ReadonlyArray<PaneLine> => {
   const rows = plan.patch.rows
   return rows.flatMap((row, at) => {
     const ahead = replacedBy(rows, at)
@@ -982,11 +956,11 @@ const layout = (plan: Plan): ReadonlyArray<Display> => {
   })
 }
 
-const lineNumbers = (patch: Patch, display: ReadonlyArray<Display>): Map<number, number> => {
+const lineNumbers = (patch: Patch, display: ReadonlyArray<PaneLine>): Map<number, number> => {
   const numbers = new Map<number, number>()
   const rows = new Map(patch.rows.map((row) => [row.index, row]))
   for (const [index, entry] of display.entries()) {
-    const row = entry.comment || entry.prose ? undefined : rows.get(entry.row)
+    const row = isNote(entry) ? undefined : rows.get(entry.row)
     const line = row === undefined ? undefined : numberFor(row)
     if (line !== undefined) numbers.set(index, line)
   }
@@ -997,14 +971,14 @@ type Sign = { after: string; afterColor: string }
 
 const BARE_SIGN: Sign = { after: "  ", afterColor: palette.accent }
 
-const signFor = (entry: Display, rows: ReadonlyMap<number, Row>): Sign => {
-  if (entry.comment || entry.prose) return BARE_SIGN
+const signFor = (entry: PaneLine, rows: ReadonlyMap<number, Row>): Sign => {
+  if (isNote(entry)) return BARE_SIGN
   const row = rows.get(entry.row)
   const sign = row === undefined ? undefined : SIGNS[row.kind]
   return sign === undefined ? BARE_SIGN : { after: sign.text, afterColor: sign.color }
 }
 
-const lineSigns = (patch: Patch, display: ReadonlyArray<Display>): Map<number, Sign> => {
+const lineSigns = (patch: Patch, display: ReadonlyArray<PaneLine>): Map<number, Sign> => {
   const rows = new Map(patch.rows.map((row) => [row.index, row]))
   return new Map(display.map((entry, index) => [index, signFor(entry, rows)]))
 }

@@ -9,7 +9,7 @@ import {
   type Place,
 } from "../domain/search/index.ts"
 import { Git } from "../service/git/index.ts"
-import { readingOf, type BranchReading } from "./commands.ts"
+import { type BranchReading, readingOf } from "./branches.ts"
 
 export type Match = {
   readonly path: string

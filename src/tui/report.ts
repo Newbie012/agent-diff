@@ -2,8 +2,16 @@ import { hostname, platform } from "node:os"
 import { absurd } from "effect"
 import manifest from "../../package.json" with { type: "json" }
 import type { RowKind } from "../domain/patch/index.ts"
-import { chosenNow, selectedBranch, selectedPatch, treeWindow, WHOLE_FILE, type TuiState } from "./model.ts"
+import {
+  chosenNow,
+  selectedBranch,
+  selectedPatch,
+  treeWindow,
+  WHOLE_FILE,
+  type TuiState,
+} from "./model.ts"
 import { preferences } from "../domain/preferences/index.ts"
+import { counted } from "./words.ts"
 
 export type Surroundings = {
   readonly repo: string
@@ -55,8 +63,6 @@ const whereabouts = (state: TuiState, around: Surroundings): ReadonlyArray<strin
   `- file \`${selectedPatch(state)?.path ?? "none"}\`, row ${state.cursor}`,
 ]
 
-const said = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
-
 const chosenAway = (state: TuiState): string => {
   const held = chosenNow(state)
   const away = preferences.filter((one) => (held[one.name] ?? one.byDefault) !== one.byDefault)
@@ -71,20 +77,20 @@ const standingOn = (state: TuiState): string => {
 const layersLine = (state: TuiState): string => {
   if (state.layers.length === 0) return "- no reading order on this branch"
   const spans = state.layers.reduce((sum, layer) => sum + layer.spans.length, 0)
-  return `- reading order: ${said(state.layers.length, "layer")} over ${said(spans, "span")}, rail on ${state.rail}, ${state.layersStale ? "stale" : "current"}, ${standingOn(state)}`
+  return `- reading order: ${counted(state.layers.length, "layer")} over ${counted(spans, "span")}, rail on ${state.rail}, ${state.layersStale ? "stale" : "current"}, ${standingOn(state)}`
 }
 
 const remarksLine = (state: TuiState): string => {
   if (!state.remarksOn) return "- the pull request's remarks are off"
   const waiting = state.remarks.filter((one) => one.state === "waiting").length
-  return `- remarks on: ${said(state.remarks.length, "remark")}, ${waiting} waiting`
+  return `- remarks on: ${counted(state.remarks.length, "remark")}, ${waiting} waiting`
 }
 
 const shapeLine = (state: TuiState): string => {
   const patch = selectedPatch(state)
   const hunks = patch?.hunks.length ?? 0
   const whole = state.context >= WHOLE_FILE ? "the whole file" : `${state.context} lines of context`
-  return `- this file: ${said(hunks, "hunk")} shown, ${whole}, ${state.wrap ? "wrapped" : "not wrapped"}`
+  return `- this file: ${counted(hunks, "hunk")} shown, ${whole}, ${state.wrap ? "wrapped" : "not wrapped"}`
 }
 
 const tookLine = (around: Surroundings): ReadonlyArray<string> => {

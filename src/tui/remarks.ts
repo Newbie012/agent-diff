@@ -24,7 +24,8 @@ import {
 } from "./reduce.ts"
 import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
-import { holding, NOTHING_WRITTEN, sentAway } from "./drafts.ts"
+import { holding, NOTHING_WRITTEN } from "./drafts.ts"
+import { sentAway } from "./drafts.ts"
 
 const READING_PULL = "reading the pull request"
 const FORGE_QUIET = "the forge did not answer, so no remarks are shown"

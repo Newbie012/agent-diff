@@ -1,4 +1,4 @@
-import type { KeyEvent } from "@opentui/core"
+import { KeyEvent } from "@opentui/core"
 import type { Screen } from "./model.ts"
 
 const LISTENS: ReadonlySet<Screen> = new Set<Screen>(["keys", "palette", "search", "base", "editor"])
@@ -52,7 +52,19 @@ export const keyName = (key: KeyEvent): string => {
   return key.ctrl ? `ctrl+${base}` : base
 }
 
-export const keyNamed = (name: string): KeyEvent =>
-  (name.startsWith("ctrl+")
-    ? { name: name.slice(5), sequence: name.slice(5), ctrl: true, shift: false }
-    : { name, sequence: name, ctrl: false, shift: false }) as KeyEvent
+export const keyNamed = (name: string): KeyEvent => {
+  const ctrl = name.startsWith("ctrl+")
+  const bare = ctrl ? name.slice(5) : name
+  return new KeyEvent({
+    name: bare,
+    sequence: bare,
+    ctrl,
+    meta: false,
+    shift: false,
+    option: false,
+    number: false,
+    raw: bare,
+    eventType: "press",
+    source: "raw",
+  })
+}

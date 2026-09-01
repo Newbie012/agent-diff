@@ -1,8 +1,11 @@
 import {
   BoxRenderable,
+  type CliRenderer,
+  defaultTextareaKeyBindings,
+  type MouseEvent,
+  type Renderable,
   RGBA,
   TextRenderable,
-  type CliRenderer,
 } from "@opentui/core"
 import {
   ASCIIFontRenderable,
@@ -11,7 +14,8 @@ import {
   StyledText,
   t,
   TextareaRenderable,
-  defaultTextareaKeyBindings,
+  fonts,
+  type ASCIIFontName,
   type KeyBinding,
   type TextChunk,
 } from "@opentui/core"
@@ -100,10 +104,7 @@ import {
   refSaidOf,
 } from "./model.ts"
 import type { TreeRow } from "./tree.ts"
-import type {
-  Match,
-  Remark,
-} from "../review/index.ts"
+import type { Match, Remark } from "../review/index.ts"
 import { marks, standMark, type MarkSet } from "./marks.ts"
 import { palette } from "./theme.ts"
 
@@ -624,8 +625,14 @@ const settingsText = (rows: ReadonlyArray<PreferenceRow>, room: number): StyledT
   return new StyledText(drawn)
 }
 
-const stack = (parent: { add: (child: never) => void }, children: ReadonlyArray<unknown>): void => {
-  for (const child of children) parent.add(child as never)
+const notchOf = (event: MouseEvent): number | undefined => {
+  const way = event.scroll?.direction
+  if (way !== "up" && way !== "down") return undefined
+  return way === "down" ? 1 : -1
+}
+
+const stack = (parent: Renderable, children: ReadonlyArray<Renderable>): void => {
+  for (const child of children) parent.add(child)
 }
 
 const makeBody = (renderer: CliRenderer): BoxRenderable =>
@@ -725,11 +732,11 @@ const makeFoundParts = (renderer: CliRenderer): FoundParts => {
   return { box, title, query, peek, choices }
 }
 
-const FONTS = ["tiny", "block", "shade", "slick", "huge", "grid", "pallet"] as const
+const isFont = (name: string): name is ASCIIFontName => name in fonts
 
-const logoFont = (): (typeof FONTS)[number] => {
+const logoFont = (): ASCIIFontName => {
   const wanted = process.env["ADIFF_FONT"] ?? ""
-  return FONTS.find((name) => name === wanted) ?? "tiny"
+  return isFont(wanted) ? wanted : "tiny"
 }
 
 const makeLanding = (
@@ -1785,18 +1792,16 @@ export class Screen {
   }
 
   private wheelOnRail(box: BoxRenderable | TextRenderable): void {
-    box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
-      const way = event.scroll?.direction
-      if (way !== "up" && way !== "down") return
-      this.mouse?.onRail(way === "down" ? 1 : -1)
+    box.onMouseScroll = (event) => {
+      const notch = notchOf(event)
+      if (notch !== undefined) this.mouse?.onRail(notch)
     }
   }
 
   private wheelOnSheet(box: BoxRenderable): void {
-    box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
-      const way = event.scroll?.direction
-      if (way !== "up" && way !== "down") return
-      this.mouse?.onScroll(way === "down" ? 1 : -1)
+    box.onMouseScroll = (event) => {
+      const notch = notchOf(event)
+      if (notch !== undefined) this.mouse?.onScroll(notch)
     }
   }
 
@@ -1804,7 +1809,7 @@ export class Screen {
     box: TextRenderable,
     picks: () => ReadonlyArray<Clicked>,
     pane: "tree" | "review",
-  ): (event: { y: number }) => void {
+  ): (event: MouseEvent) => void {
     return (event) => {
       const found = picks()[Math.max(0, event.y - box.y)]
       this.mouse?.onClick(found ?? { pane })
@@ -1989,7 +1994,7 @@ export class Screen {
     this.body.visible = !cramped
     this.header.visible = !cramped
     this.footer.visible = !cramped
-    if (cramped) this.cramped.content = wrapped(CRAMPED, this.renderer.width - 1).join("\n")
+    if (cramped) this.cramped.content = CRAMPED
   }
 
   private paintPalette(state: TuiState): void {
@@ -2331,17 +2336,17 @@ export class Screen {
 
   private watchChips(): void {
     const strip = this.footer
-    strip.onMouseMove = (event: { x: number }) => this.hover(event.x - strip.x - this.lead)
+    strip.onMouseMove = (event) => this.hover(event.x - strip.x - this.lead)
     strip.onMouseOut = () => this.hover(-1)
-    strip.onMouseDown = (event: { x: number }) => {
+    strip.onMouseDown = (event) => {
       this.hover(event.x - strip.x - this.lead)
       const chip = this.chips[this.hovered]
       if (chip !== undefined) this.mouse?.onChip(chip.press)
     }
     const row = this.landingKeys
-    row.onMouseMove = (event: { x: number }) => this.hover(event.x - row.x)
+    row.onMouseMove = (event) => this.hover(event.x - row.x)
     row.onMouseOut = () => this.hover(-1)
-    row.onMouseDown = (event: { x: number }) => {
+    row.onMouseDown = (event) => {
       this.hover(event.x - row.x)
       const chip = this.chips[this.hovered]
       if (chip !== undefined) this.mouse?.onChip(chip.press)

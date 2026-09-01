@@ -20,7 +20,8 @@ import { allRevealed, openedAt, reduce, withNotice, withNoticeHere, withSent } f
 import { openRemark, sendRemarkAnswer } from "./remarks.ts"
 import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
-import { countOf, holding, NOTHING_WRITTEN, sentAway } from "./drafts.ts"
+import { holding, NOTHING_WRITTEN, sentAway } from "./drafts.ts"
+import { counted } from "./words.ts"
 
 const LAYERS_ASK_LEAD = "About this branch, not about this line."
 
@@ -210,7 +211,7 @@ export const sendHeld = (app: Terminal): Work => {
     app.commit(
       withNotice(
         withSent({ ...app.state, held: [] }, sent),
-        `sent ${countOf(many, "comment")} to the agent`,
+        `sent ${counted(many, "comment")} to the agent`,
       ),
     )
   })

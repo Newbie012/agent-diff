@@ -22,6 +22,7 @@ import {
 import { withNotice, withRemarks, withSent } from "./reduce.ts"
 import { dismissRemarkHere } from "./remarks.ts"
 import type { Terminal } from "./terminal.ts"
+import { counted } from "./words.ts"
 
 export const settleWhatIsRead = (app: Terminal): Work => {
   return Effect.gen(function* () {
@@ -33,7 +34,7 @@ export const settleWhatIsRead = (app: Terminal): Work => {
       return
     }
     const sent = yield* loadSent(app, branch.branch)
-    const said = `settled ${done.settled} read comment${done.settled === 1 ? "" : "s"}`
+    const said = `settled ${counted(done.settled, "read comment")}`
     app.commit(withNotice(withSent(app.state, sent), said))
   })
 }

@@ -1,9 +1,6 @@
 import { Effect, type Scope } from "effect"
 import manifest from "../../package.json" with { type: "json" }
-import {
-  askLatest,
-  newer,
-} from "../cli/index.ts"
+import { askLatest, newer } from "../cli/index.ts"
 import { Store, type UpgradeCheck } from "../service/store/index.ts"
 
 const DAY_MS = 86_400_000

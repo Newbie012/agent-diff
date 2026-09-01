@@ -1,10 +1,9 @@
 import type { StagedComment, TuiState } from "./model.ts"
 import { withNotice } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
+import { counted } from "./words.ts"
 
 export const NOTHING_WRITTEN = "nothing written yet"
-
-export const countOf = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
 
 export const sentAway = (state: TuiState): TuiState => ({
   ...state,
@@ -19,7 +18,7 @@ export const holding = (app: Terminal, comment: StagedComment): void => {
   app.commit(
     withNotice(
       sentAway({ ...app.state, held }),
-      `held — ${countOf(held.length, "comment")} waiting, press C to send`,
+      `held — ${counted(held.length, "comment")} waiting, press C to send`,
     ),
   )
 }

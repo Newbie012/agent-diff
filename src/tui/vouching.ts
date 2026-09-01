@@ -20,6 +20,7 @@ import { loadSent, settling } from "./reading.ts"
 import { atFile, reduce, withNotice, withSent, withVouched } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
 import { toggleVouch, vouchIn, vouchPartIn } from "../review/index.ts"
+import { counted } from "./words.ts"
 
 const alongFrom = (state: TuiState): TuiState => {
   const along = nextUnreviewed(state, state.patchIndex)
@@ -29,7 +30,7 @@ const alongFrom = (state: TuiState): TuiState => {
 const markedIs = (path: string, settled: number): string =>
   settled === 0
     ? `marked ${path}`
-    : `marked ${path} and settled ${settled} thread${settled === 1 ? "" : "s"}`
+    : `marked ${path} and settled ${counted(settled, "thread")}`
 
 export const vouch = (app: Terminal, advance: boolean): Work => {
   return Effect.gen(function* () {
