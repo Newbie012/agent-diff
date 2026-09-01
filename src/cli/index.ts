@@ -102,6 +102,7 @@ export {
   PartlySent,
   PullMoved,
   RemarkTaken,
+  ThreadOpen,
   UnknownBase,
   UnknownBranch,
   UnknownComment,

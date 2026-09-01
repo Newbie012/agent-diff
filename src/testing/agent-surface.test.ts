@@ -40,6 +40,7 @@ describe("when an agent uses adiff without reading the documentation", () => {
       "comment resolve",
       "comment remove",
       "comment restore",
+      "comment reopen",
       "config list",
       "config get",
       "config set",

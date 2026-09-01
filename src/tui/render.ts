@@ -42,6 +42,7 @@ import {
   type LayerRoom,
   type RailWindow,
   preferenceRows,
+  standingOnThread,
   askedRows,
   asksAbout,
   type LayerRow,
@@ -78,8 +79,6 @@ import {
   remarkShown,
   remarkToTakeOn,
   remarkUnderCursor,
-  threadAtStop,
-  threadChosen,
   panelShown,
   shownMatches,
   reviewWidth,
@@ -1230,9 +1229,6 @@ const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
     : `${layerGutter(row, look)}${" ".repeat(look.lead - GUTTER)}${row.text}`.padEnd(
         room.title + TITLE_LEAD,
       )
-
-const standingOnThread = (state: TuiState): boolean =>
-  (state.stop > 0 && threadAtStop(state) !== undefined) || threadChosen(state) !== undefined
 
 const standingOnRemark = (state: TuiState): boolean => remarkToTakeOn(state) !== undefined
 

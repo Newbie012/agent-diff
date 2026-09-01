@@ -4,7 +4,7 @@ import { Store, type Batch, type StoredAnswer } from "../service/store/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { findBranch, patchesOf } from "./commands.ts"
 import { worktreeAt } from "./layers.ts"
-import { UnknownComment } from "./error.ts"
+import { ThreadOpen, UnknownComment } from "./error.ts"
 
 export type ThreadAnswer = {
   readonly body: string
@@ -201,9 +201,12 @@ export const settleIn = Effect.fn("Cli.settleIn")(function* (
 export const unsettleIn = Effect.fn("Cli.unsettleIn")(function* (worktree: Worktree, id: string) {
   const store = yield* Store
   if (!(yield* isKnown(worktree.path, id))) return yield* new UnknownComment({ id })
+  const held = yield* store.state(worktree.path)
+  if (!Object.hasOwn(held.settled, id)) return yield* new ThreadOpen({ id })
   yield* store.changeState(worktree.path, (was) => ({
     ...was,
     settled: without(was.settled, id),
+    read: without(was.read, id),
   }))
   return { unsettled: id }
 })
@@ -250,10 +253,10 @@ export const removeComment = Effect.fn("Cli.removeComment")(function* (
   return yield* removeIn(yield* findBranch(repo, branch), id, at)
 })
 
-const without = (
-  entries: Readonly<Record<string, string>>,
+const without = <held extends string | number>(
+  entries: Readonly<Record<string, held>>,
   id: string,
-): Readonly<Record<string, string>> =>
+): Readonly<Record<string, held>> =>
   Object.fromEntries(Object.entries(entries).filter(([key]) => key !== id))
 
 export const restoreIn = Effect.fn("Cli.restoreIn")(function* (worktree: Worktree, id: string) {

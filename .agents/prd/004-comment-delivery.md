@@ -95,8 +95,14 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   read it to be, or the next file showed the same thing again. Pressing the settle key on a settled
   thread takes it back — the thread opens where it stands, the agent is owed an answer again if it
   never gave one, and the footer names the key as the way back rather than as a second way to
-  settle. Nothing else changes: the answers already read stay read, and the words already said stay
-  said.
+  settle. Settling marks every answer on the thread read, so taking it back marks them unread
+  again: a thread the reviewer has reopened is one they have not finished reading. Only a thread
+  the cursor is standing on can be taken back, because the key also reaches a thread from the code
+  line above it, where the reviewer can see no thread to be reversing. Settling from the panel still
+  brings the next thread to the cursor, so a pass through a review is one key per thread; taking one
+  back keeps the cursor on the thread it reopened, since the reviewer is looking at that thread
+  rather than sweeping. Two presses in a row therefore settle two threads, and the footer says which
+  the key will do before it is pressed.
 - **The reviewer can retire a comment too, by settling or removing it.** Both are the reviewer
   saying they no longer need an answer, so both stop the comment coming back. Without that, a point
   the reviewer had given up on would follow the agent forever.
@@ -302,6 +308,8 @@ Behaviors that must be covered:
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
 - A settled thread taken back is owed to the agent again, and reads as open to the reviewer.
+- Taking a thread back from the panel leaves the cursor on the thread that came back.
+- Reopening a thread that is not settled is refused.
 - A removed comment leaves the reviewer's view, still reads as removed to the agent, leaves the
   delivery record untouched, and comes back on restore.
 - A comment on code a layer explains is handed over with that layer's title, a comment on code no

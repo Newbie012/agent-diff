@@ -30,6 +30,10 @@ export class NothingSaid extends Data.TaggedError("NothingSaid")<{
   readonly what: string
 }> {}
 
+export class ThreadOpen extends Data.TaggedError("ThreadOpen")<{
+  readonly id: string
+}> {}
+
 export class RemarkTaken extends Data.TaggedError("RemarkTaken")<{
   readonly id: string
   readonly comment: string

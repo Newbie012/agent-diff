@@ -78,6 +78,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "Nothing was written. Pass `--body` with what you mean to say.",
     retriable: false,
   },
+  ThreadOpen: {
+    exit: NOT_FOUND,
+    suggestion:
+      "That thread is not settled, so there is nothing to reopen. `adiff comment list` reports which threads are.",
+    retriable: false,
+  },
   RemarkTaken: {
     exit: NOT_FOUND,
     suggestion:
