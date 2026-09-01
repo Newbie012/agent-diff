@@ -24,6 +24,7 @@ export type StagedComment = {
   readonly unread?: number
   readonly takenAt?: string
   readonly remark?: string
+  readonly layer?: string
 }
 import { anchorFor, type Patch } from "../domain/patch/index.ts"
 import { gapRowSet, shownOf, type Reveal } from "./gaps.ts"

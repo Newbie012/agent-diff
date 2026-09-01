@@ -17,6 +17,7 @@ export const StoredComment = Schema.Struct({
   body: Schema.String,
   replyTo: Schema.optionalKey(Schema.String),
   remark: Schema.optionalKey(Schema.String),
+  layer: Schema.optionalKey(Schema.String),
 })
 
 export const StoredDraft = Schema.Struct({

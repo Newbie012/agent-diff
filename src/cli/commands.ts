@@ -69,6 +69,7 @@ export type CommentRequest = {
   readonly id: string
   readonly at: string
   readonly remark?: string | undefined
+  readonly layer?: string | undefined
 }
 
 export type Basis = "default" | "stacked" | "set"
@@ -551,6 +552,7 @@ export const commentsIn = Effect.fn("Cli.commentsIn")(function* (
       anchor,
       body: request.body,
       ...(request.remark === undefined ? {} : { remark: request.remark }),
+      ...(request.layer === undefined ? {} : { layer: request.layer }),
     }
   })
   const anchored = yield* Effect.forEach(requests, anchoring)
@@ -587,6 +589,7 @@ export type ReplyRequest = {
   readonly body: string
   readonly id: string
   readonly at: string
+  readonly layer?: string | undefined
 }
 
 const without = (
@@ -606,7 +609,15 @@ export const submitReply = Effect.fn("Cli.submitReply")(function* (request: Repl
     id: request.id,
     at: request.at,
     head: worktree.head,
-    comments: [{ id: request.id, anchor: found.anchor, body: request.body, replyTo: root }],
+    comments: [
+      {
+        id: request.id,
+        anchor: found.anchor,
+        body: request.body,
+        replyTo: root,
+        ...(request.layer === undefined ? {} : { layer: request.layer }),
+      },
+    ],
   }
   yield* store.submit(worktree.path, batch)
   const current = yield* store.state(worktree.path)
@@ -651,6 +662,7 @@ export type PendingComment = {
   readonly body: string
   readonly placed?: boolean | undefined
   readonly replyTo?: string | undefined
+  readonly layer?: string | undefined
   readonly thread?: ReadonlyArray<Turn> | undefined
 }
 
@@ -667,6 +679,7 @@ const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =
       snippet: comment.anchor.snippet,
       body: comment.body,
       replyTo: comment.replyTo,
+      layer: comment.layer,
     })),
   )
 

@@ -2041,6 +2041,7 @@ export class App {
         body: yield* this.display.written,
         id: randomUUID(),
         at: new Date().toISOString(),
+        ...this.layerRead(),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
@@ -2068,6 +2069,12 @@ export class App {
     })
   }
 
+  private layerRead(): { readonly layer?: string } {
+    if (!onLayers(this.state)) return {}
+    const title = this.state.layers[this.state.layerIndex]?.title
+    return title === undefined ? {} : { layer: title }
+  }
+
   private sendComment(): Work {
     return Effect.gen({ self: this }, function* () {
       const patch = selectedPatch(this.state)
@@ -2091,6 +2098,7 @@ export class App {
           start: anchor.value.start,
           end: anchor.value.end,
           body,
+          ...this.layerRead(),
         })
         return
       }
@@ -2104,6 +2112,7 @@ export class App {
         body,
         id: randomUUID(),
         at: new Date().toISOString(),
+        ...this.layerRead(),
       })
       const sent = yield* this.loadSent(branch.branch)
       this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
@@ -2145,6 +2154,7 @@ export class App {
         id: randomUUID(),
         at,
         ...(comment.remark === undefined ? {} : { remark: comment.remark }),
+        ...(comment.layer === undefined ? {} : { layer: comment.layer }),
       })
       const many = this.state.held.length
       yield* this.sending(branch.branch, [asked(first), ...rest.map(asked)])
