@@ -370,6 +370,10 @@
   dir: ""
   intents:
     - a-file-marked-with-threads-still-open
+"@eliya-oss/agent-diff@0.1.0-alpha.171":
+  dir: ""
+  intents:
+    - a-comment-written-in-a-layer
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
