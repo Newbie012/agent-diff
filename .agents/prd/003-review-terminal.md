@@ -506,10 +506,12 @@ Three screens, and the keys each answers to:
 - **Marking a file read asks about the threads it still holds.** A reviewer who marks a file read
   has finished with it, and the threads still open on it are threads they have finished with too —
   leaving them open hands the agent work the reviewer no longer wants. `m` and `M` open a box naming
-  the file and the number of its open threads, and offering to settle them with the mark or to mark
-  the file and leave them. `escape` marks nothing. On a reading order the box counts only the
-  threads inside the layer being marked, and remarks are never counted, because a remark is triaged
-  rather than settled. A file with nothing open is marked without a question.
+  what is being marked, the file or the layer, and counting its open threads, then offer to settle
+  them with the mark or to mark and leave them. `escape` marks nothing. On a reading order the box
+  counts the threads inside the layer being marked, and the last layer of a file sweeps up the
+  threads no layer explains as well, so a file cannot become read with a thread nobody was asked
+  about. Remarks are never counted, because a remark is triaged rather than settled. A file with
+  nothing open is marked without a question.
 
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The
@@ -808,7 +810,7 @@ Behaviors that must be covered:
 - Two branches whose names begin with the same words are two different rows on a terminal too
   narrow to hold either name whole.
 - Marking a file that still holds open threads asks first, and settling from that box retires every
-  thread on the file.
+  thread the box counted.
 
 A frame assertion must name something construction guarantees. "The widest span is the diff" is a
 test that fails when an unrelated pane grows, which is a false report, not a caught bug.

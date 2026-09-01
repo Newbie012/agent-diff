@@ -116,6 +116,7 @@ export type ForgeAnswer = "asking" | "answered" | "silent"
 
 export type Asking = {
   readonly path: string
+  readonly layer: string | undefined
   readonly threads: ReadonlyArray<string>
   readonly advance: boolean
 }
@@ -771,6 +772,35 @@ export const threadsOn = (state: TuiState, fileIndex: number): OpenThreads => {
   return { open: stands.length, stand: stands.reduce(louder, "gone") }
 }
 
+const coveredBy = (
+  layer: ReportedLayer,
+  path: string,
+  entry: StagedComment,
+): boolean =>
+  entry.side === "new" &&
+  layer.spans.some(
+    (span) => span.path === path && entry.start <= span.end && entry.end >= span.start,
+  )
+
+const lastLayerOf = (state: TuiState, fileIndex: number, layerIndex: number): boolean =>
+  state.layers.every(
+    (layer, at) =>
+      at === layerIndex ||
+      !layer.spans.some((span) => span.path === state.patches[fileIndex]?.path) ||
+      readIn(state, at, fileIndex),
+  )
+
+export const threadsInLayer = (
+  state: TuiState,
+  fileIndex: number,
+  layerIndex: number,
+): ReadonlyArray<StagedComment> => {
+  const patch = state.patches[fileIndex]
+  const layer = state.layers[layerIndex]
+  if (patch === undefined || layer === undefined) return []
+  return threadsOpenOn(state, fileIndex).filter((entry) => coveredBy(layer, patch.path, entry))
+}
+
 export const threadsOpenOn = (
   state: TuiState,
   fileIndex: number,
@@ -782,20 +812,27 @@ export const threadsOpenOn = (
     (entry) => entry.file === patch.path && entry.removed !== true && entry.settled !== true,
   )
   const layer = layerIndex === undefined ? undefined : state.layers[layerIndex]
-  if (layer === undefined) return open
-  const spans = layer.spans.filter((span) => span.path === patch.path)
-  return open.filter((entry) =>
-    spans.some((span) => entry.start <= span.end && entry.end >= span.start),
+  if (layer === undefined || layerIndex === undefined) return open
+  const last = lastLayerOf(state, fileIndex, layerIndex)
+  const claimed = (entry: StagedComment): boolean =>
+    state.layers.some((one) => coveredBy(one, patch.path, entry))
+  return open.filter(
+    (entry) => coveredBy(layer, patch.path, entry) || (last && !claimed(entry)),
   )
 }
 
 export const askedRows = (state: TuiState): ReadonlyArray<{
   readonly title: string
   readonly here: boolean
-}> =>
-  ["Settle them and mark the file read", "Mark the file read and leave them open"].map(
-    (title, at) => ({ title, here: at === state.askIndex }),
-  )
+}> => {
+  const asking = state.asking
+  const what = asking?.layer === undefined ? "file" : "layer"
+  const many = (asking?.threads.length ?? 0) === 1 ? "it" : "them"
+  return [
+    `Settle ${many} and mark the ${what} read`,
+    `Mark the ${what} read and leave ${many} open`,
+  ].map((title, at) => ({ title, here: at === state.askIndex }))
+}
 
 export const withAsking = (state: TuiState, asking: Asking): TuiState => ({
   ...state,
@@ -809,7 +846,8 @@ export const asksAbout = (state: TuiState): string => {
   const asking = state.asking
   if (asking === undefined) return ""
   const many = asking.threads.length
-  return `${asking.path} still holds ${many} open thread${many === 1 ? "" : "s"}`
+  const whose = asking.layer ?? asking.path
+  return `${whose} still holds ${many} open thread${many === 1 ? "" : "s"}`
 }
 
 export const hiddenLines = (state: TuiState): number =>
