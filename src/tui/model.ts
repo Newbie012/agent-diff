@@ -70,6 +70,7 @@ export type Screen =
   | "base"
   | "editor"
   | "thread"
+  | "settling"
 
 const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   wrap: "wrap",
@@ -112,6 +113,12 @@ export const preferenceRows = (state: TuiState): ReadonlyArray<PreferenceRow> =>
 }
 
 export type ForgeAnswer = "asking" | "answered" | "silent"
+
+export type Asking = {
+  readonly path: string
+  readonly threads: ReadonlyArray<string>
+  readonly advance: boolean
+}
 
 export type TuiState = {
   readonly screen: Screen
@@ -187,6 +194,8 @@ export type TuiState = {
   readonly railRows: number
   readonly railScroll: number
   readonly settingsIndex: number
+  readonly asking: Asking | undefined
+  readonly askIndex: number
   readonly now: number
   readonly focusWas: Focus
 }
@@ -210,6 +219,8 @@ const nothingReviewed = {
   railRows: 12,
   railScroll: -1,
   settingsIndex: 0,
+  asking: undefined,
+  askIndex: 0,
   now: 0,
   focusWas: "diff" as Focus,
 }
@@ -758,6 +769,47 @@ export const threadsOn = (state: TuiState, fileIndex: number): OpenThreads => {
           )
           .map((entry) => threadStand(entry))
   return { open: stands.length, stand: stands.reduce(louder, "gone") }
+}
+
+export const threadsOpenOn = (
+  state: TuiState,
+  fileIndex: number,
+  layerIndex?: number,
+): ReadonlyArray<StagedComment> => {
+  const patch = state.patches[fileIndex]
+  if (patch === undefined) return []
+  const open = state.sent.filter(
+    (entry) => entry.file === patch.path && entry.removed !== true && entry.settled !== true,
+  )
+  const layer = layerIndex === undefined ? undefined : state.layers[layerIndex]
+  if (layer === undefined) return open
+  const spans = layer.spans.filter((span) => span.path === patch.path)
+  return open.filter((entry) =>
+    spans.some((span) => entry.start <= span.end && entry.end >= span.start),
+  )
+}
+
+export const askedRows = (state: TuiState): ReadonlyArray<{
+  readonly title: string
+  readonly here: boolean
+}> =>
+  ["Settle them and mark the file read", "Mark the file read and leave them open"].map(
+    (title, at) => ({ title, here: at === state.askIndex }),
+  )
+
+export const withAsking = (state: TuiState, asking: Asking): TuiState => ({
+  ...state,
+  screen: "settling",
+  returnTo: state.screen,
+  asking,
+  askIndex: 0,
+})
+
+export const asksAbout = (state: TuiState): string => {
+  const asking = state.asking
+  if (asking === undefined) return ""
+  const many = asking.threads.length
+  return `${asking.path} still holds ${many} open thread${many === 1 ? "" : "s"}`
 }
 
 export const hiddenLines = (state: TuiState): number =>

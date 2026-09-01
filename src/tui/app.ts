@@ -79,6 +79,8 @@ import {
   initialState,
   isReviewed,
   layersHolding,
+  threadsOpenOn,
+  withAsking,
   partHere,
   readIn,
   nextUnreviewed,
@@ -839,6 +841,9 @@ export class App {
       "layers.ask": () => this.askForLayers(),
       "file.vouch": () => this.vouch(false),
       "file.vouch.next": () => this.vouch(true),
+      "ask.take": () => this.tookTheAnswer(),
+      "ask.next": () => Effect.sync(() => this.commit(reduce(this.measured(), "ask.next"))),
+      "ask.prev": () => Effect.sync(() => this.commit(reduce(this.measured(), "ask.prev"))),
       "thread.settle": () => this.settleHere(),
       "thread.settleRead": () => this.settleWhatIsRead(),
       "thread.remove": () => this.removeHere(),
@@ -1666,37 +1671,87 @@ export class App {
     return this.commitSynced(delta > 0 ? "file.next" : "file.prev")
   }
 
-  private vouch(advance: boolean): Work {    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
+  private vouch(advance: boolean): Work {
+    return Effect.gen({ self: this }, function* () {
       const patch = selectedPatch(this.state)
-      if (branch === undefined || patch === undefined) return
+      if (patch === undefined) return
       if (advance && this.readHere()) {
         this.commit(alongFrom(this.state))
         return
       }
-      const report = yield* this.vouching(branch.branch, patch.path)
-      const next = withVouched(this.state, report.vouched, report.parts)
-      if (!advance) {
-        this.commit(withNotice(next, this.markedSaid(report, patch.path)))
+      const open = this.readHere() ? [] : this.threadsToAsk()
+      if (open.length === 0) {
+        yield* this.marking(advance, 0)
         return
       }
-      this.movedOn(next, patch.path)
+      const threads = open.flatMap((entry) => (entry.id === undefined ? [] : [entry.id]))
+      this.commit(withAsking(this.measured(), { path: patch.path, threads, advance }))
     })
   }
 
-  private markedSaid(report: VouchReport, path: string): string {
-    const part = this.partHereNow()
-    const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
-    return marked ? `marked ${path}` : `unmarked ${path}`
+  private threadsToAsk(): ReadonlyArray<StagedComment> {
+    const layered =
+      onLayers(this.state) && layersHolding(this.state, this.state.patchIndex) >= 2
+        ? this.state.layerIndex
+        : undefined
+    return threadsOpenOn(this.state, this.state.patchIndex, layered)
   }
 
-  private movedOn(next: TuiState, path: string): void {
+  private tookTheAnswer(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const asking = this.state.asking
+      const branch = selectedBranch(this.state)
+      if (asking === undefined || branch === undefined) return
+      const settling = this.state.askIndex === 0
+      this.commit(reduce(this.measured(), "back"))
+      if (settling) yield* this.settleThese(branch.branch, asking.threads)
+      yield* this.marking(asking.advance, settling ? asking.threads.length : 0)
+    })
+  }
+
+  private settleThese(branch: string, ids: ReadonlyArray<string>): Work {
+    return Effect.gen({ self: this }, function* () {
+      for (const id of ids) yield* this.settling(branch, id)
+      const sent = yield* this.loadSent(branch)
+      this.commit(withSent(this.state, sent))
+    })
+  }
+
+  private marking(advance: boolean, settled: number): Work {
+    return Effect.gen({ self: this }, function* () {
+      const branch = selectedBranch(this.state)
+      const patch = selectedPatch(this.state)
+      if (branch === undefined || patch === undefined) return
+      const report = yield* this.vouching(branch.branch, patch.path)
+      const next = withVouched(this.state, report.vouched, report.parts)
+      if (!advance) {
+        this.commit(withNotice(next, this.markedSaid(report, patch.path, settled)))
+        return
+      }
+      this.movedOn(next, patch.path, settled)
+    })
+  }
+
+  private markedSaid(report: VouchReport, path: string, settled: number): string {
+    const part = this.partHereNow()
+    const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
+    if (!marked) return `unmarked ${path}`
+    return settled === 0
+      ? `marked ${path}`
+      : `marked ${path} and settled ${settled} thread${settled === 1 ? "" : "s"}`
+  }
+
+  private movedOn(next: TuiState, path: string, settled: number): void {
+    const said =
+      settled === 0
+        ? `marked ${path}`
+        : `marked ${path} and settled ${settled} thread${settled === 1 ? "" : "s"}`
     const target = nextUnreviewed(next, next.patchIndex)
     if (target === undefined) {
       this.commit(withNotice(next, "every file reviewed"))
       return
     }
-    this.commit(withNotice(atFile(next, target), `marked ${path}`))
+    this.commit(withNotice(atFile(next, target), said))
   }
 
   private forgetLeaving(): void {
