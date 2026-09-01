@@ -374,6 +374,10 @@
   dir: ""
   intents:
     - a-comment-written-in-a-layer
+"@eliya-oss/agent-diff@0.1.0-alpha.172":
+  dir: ""
+  intents:
+    - a-draft-under-the-line-it-is-about
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
