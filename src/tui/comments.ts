@@ -2,18 +2,6 @@ import { randomUUID } from "node:crypto"
 import { Effect, Option } from "effect"
 import { anchorFor } from "../domain/patch/index.ts"
 import { type CommentRequest, markRead, submitReply } from "../review/index.ts"
-import {
-  panelEntry,
-  type PanelEntry,
-  remarkToTakeOn,
-  rowShowing,
-  selectedBranch,
-  selectedPatch,
-  selectionRange,
-  type StagedComment,
-  threadHere,
-  type TuiState,
-} from "./model.ts"
 import type { Work } from "./needs.ts"
 import { commenting, loadSent, sending, staying } from "./reading.ts"
 import { allRevealed, openedAt, reduce, withNotice, withNoticeHere, withSent } from "./reduce.ts"
@@ -21,6 +9,10 @@ import { openRemark, sendRemarkAnswer } from "./remarks.ts"
 import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { holding, NOTHING_WRITTEN, sentAway } from "./drafts.ts"
+import { rowShowing, selectionRange } from "./cursor.ts"
+import { remarkToTakeOn, threadHere } from "./notes.ts"
+import { panelEntry, type PanelEntry } from "./panel.ts"
+import { selectedBranch, selectedPatch, type StagedComment, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
 
 const LAYERS_ASK_LEAD = "About this branch, not about this line."

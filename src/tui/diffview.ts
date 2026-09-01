@@ -13,8 +13,9 @@ import {
 import { Data, Option } from "effect"
 import { lineOn, type Patch, type Row, type RowKind } from "../domain/patch/index.ts"
 import { marks } from "./marks.ts"
-import { sinceThen, type Picked } from "./model.ts"
 import { palette, syntaxTheme } from "./theme.ts"
+import { sinceThen } from "./panel.ts"
+import type { Picked } from "./state.ts"
 
 export type LinePaint = { readonly gutter: RGBA; readonly content: RGBA }
 

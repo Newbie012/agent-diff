@@ -1,7 +1,7 @@
 import { Option } from "effect"
 import { REMAINDER_TITLE, type Span as Span2 } from "../domain/layers/index.ts"
 import type { Hunk, Patch, Row } from "../domain/patch/index.ts"
-import type { TuiState } from "./model.ts"
+import type { TuiState } from "./state.ts"
 
 export const GAP_CHUNK = 10
 

@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises"
 import { Effect, Option, Schema } from "effect"
 import { SessionUnreadable, SessionUnwritable } from "./error.ts"
-import type { TuiState } from "./model.ts"
+import type { TuiState } from "./state.ts"
 
 const zero = Schema.withDecodingDefaultKey<typeof Schema.Number>(Effect.succeed(0))
 

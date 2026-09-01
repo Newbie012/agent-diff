@@ -4,11 +4,12 @@ import { join, resolve } from "node:path"
 import { Effect } from "effect"
 import { editorsAround, openingOf, templateFor } from "../domain/editor/index.ts"
 import { Store } from "../service/store/index.ts"
-import { refHere, selectedBranch, selectedPatch, sourceLineAt } from "./model.ts"
 import type { Work } from "./needs.ts"
 import { worktreeFor } from "./reading.ts"
 import { withChoices, withNotice, withNoticeHere } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
+import { refHere, sourceLineAt } from "./cursor.ts"
+import { selectedBranch, selectedPatch } from "./state.ts"
 
 const ranAside = (command: string, args: ReadonlyArray<string>, from: string): boolean => {
   try {

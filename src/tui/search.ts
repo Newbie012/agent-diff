@@ -1,13 +1,5 @@
 import { Effect, FiberHandle } from "effect"
 import { aroundIn, searchBranch, searchIn } from "../review/index.ts"
-import {
-  matchHere,
-  pickedText,
-  rowAtSourceLine,
-  rowShowing,
-  selectedBranch,
-  selectedPatch,
-} from "./model.ts"
 import type { Work } from "./needs.ts"
 import {
   allRevealed,
@@ -20,6 +12,8 @@ import {
 } from "./reduce.ts"
 import { loadSource } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
+import { matchHere, pickedText, rowAtSourceLine, rowShowing } from "./cursor.ts"
+import { selectedBranch, selectedPatch } from "./state.ts"
 
 export const LEAST_TERM = 2
 

@@ -1,15 +1,15 @@
 import { KeyEvent } from "@opentui/core"
-import type { Screen } from "./model.ts"
+import type { ScreenName } from "./state.ts"
 
-const LISTENS: ReadonlySet<Screen> = new Set<Screen>(["keys", "palette", "search", "base", "editor"])
+const LISTENS: ReadonlySet<ScreenName> = new Set<ScreenName>(["keys", "palette", "search", "base", "editor"])
 
-const WRITES: ReadonlySet<Screen> = new Set<Screen>(["compose", "report"])
+const WRITES: ReadonlySet<ScreenName> = new Set<ScreenName>(["compose", "report"])
 
-export const overReview = (screen: Screen): boolean => screen !== "branches" && screen !== "review"
+export const overReview = (screen: ScreenName): boolean => screen !== "branches" && screen !== "review"
 
-export const writesInto = (screen: Screen): boolean => WRITES.has(screen)
+export const writesInto = (screen: ScreenName): boolean => WRITES.has(screen)
 
-export const listens = (screen: Screen): boolean => LISTENS.has(screen)
+export const listens = (screen: ScreenName): boolean => LISTENS.has(screen)
 
 const LETTER = /^[a-z]$/i
 

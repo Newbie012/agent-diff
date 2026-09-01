@@ -1,13 +1,6 @@
 import { Effect } from "effect"
 import { settleRead } from "../review/index.ts"
 import { dropHeld } from "./comments.ts"
-import {
-  panelEntry,
-  remarkUnderCursor,
-  selectedBranch,
-  standingOnThread,
-  threadHere,
-} from "./model.ts"
 import type { Work } from "./needs.ts"
 import {
   following,
@@ -22,6 +15,9 @@ import {
 import { withNotice, withRemarks, withSent } from "./reduce.ts"
 import { dismissRemarkHere } from "./remarks.ts"
 import type { Terminal } from "./terminal.ts"
+import { remarkUnderCursor, standingOnThread, threadHere } from "./notes.ts"
+import { panelEntry } from "./panel.ts"
+import { selectedBranch } from "./state.ts"
 import { counted } from "./words.ts"
 
 export const settleWhatIsRead = (app: Terminal): Work => {

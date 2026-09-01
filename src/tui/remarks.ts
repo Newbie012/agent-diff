@@ -11,7 +11,6 @@ import {
   sentIn,
   undismissIn,
 } from "../review/index.ts"
-import { remarkHere, selectedBranch } from "./model.ts"
 import type { Work } from "./needs.ts"
 import { remarksHeld, staying } from "./reading.ts"
 import {
@@ -26,6 +25,8 @@ import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { holding, NOTHING_WRITTEN } from "./drafts.ts"
 import { sentAway } from "./drafts.ts"
+import { remarkHere } from "./notes.ts"
+import { selectedBranch } from "./state.ts"
 
 const READING_PULL = "reading the pull request"
 const FORGE_QUIET = "the forge did not answer, so no remarks are shown"

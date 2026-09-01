@@ -2,15 +2,10 @@ import { hostname, platform } from "node:os"
 import { absurd } from "effect"
 import manifest from "../../package.json" with { type: "json" }
 import type { RowKind } from "../domain/patch/index.ts"
-import {
-  chosenNow,
-  selectedBranch,
-  selectedPatch,
-  treeWindow,
-  WHOLE_FILE,
-  type TuiState,
-} from "./model.ts"
 import { preferences } from "../domain/preferences/index.ts"
+import { treeWindow } from "./files.ts"
+import { WHOLE_FILE } from "./layout.ts"
+import { chosenNow, selectedBranch, selectedPatch, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
 
 export type Surroundings = {

@@ -20,10 +20,11 @@ import {
   type Written,
 } from "../review/index.ts"
 import type { Worktree } from "../service/git/index.ts"
-import { panelEntries, type TuiState } from "./model.ts"
 import type { Work } from "./needs.ts"
 import type { Terminal } from "./terminal.ts"
 import { settleThread } from "../review/index.ts"
+import { panelEntries } from "./panel.ts"
+import type { TuiState } from "./state.ts"
 
 export const worktreeFor = (app: Terminal, branch: string): Worktree | undefined => {
   const reading = app.reading

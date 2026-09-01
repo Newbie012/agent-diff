@@ -14,16 +14,6 @@ import {
   setBase,
 } from "../review/index.ts"
 import { Forge } from "../service/forge/index.ts"
-import {
-  knownToHaveNoPull,
-  pullHere,
-  refHere,
-  selectedBranch,
-  selectedPatch,
-  sourceLineAt,
-  spokenSince,
-  type TuiState,
-} from "./model.ts"
 import type { Work } from "./needs.ts"
 import { loadSent } from "./reading.ts"
 import {
@@ -48,6 +38,15 @@ import { fetchRemarks } from "./remarks.ts"
 import type { Session } from "./session.ts"
 import { loadSource } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
+import { refHere, sourceLineAt } from "./cursor.ts"
+import { spokenSince } from "./notes.ts"
+import {
+  knownToHaveNoPull,
+  pullHere,
+  selectedBranch,
+  selectedPatch,
+  type TuiState,
+} from "./state.ts"
 
 const openedPull = (state: string, opened: boolean): string => {
   if (!opened) return "could not reach the pull request"

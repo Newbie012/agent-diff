@@ -33,80 +33,85 @@ import {
 } from "./diffview.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
 import { keyMatches, paletteMatches } from "./reduce.ts"
+import type { TreeRow } from "./tree.ts"
+import type { Match, Remark } from "../review/index.ts"
+import { marks, standMark, type MarkSet } from "./marks.ts"
+import { composeRoom as composeText } from "./layout.ts"
+import { palette } from "./theme.ts"
 import {
-  composeTarget,
-  draftPlace,
-  filePlace,
   hiddenLines,
-  isReviewed,
-  markedStands,
   newLineAt,
-  onLayers,
-  railWindow,
-  selectionReadout,
+  picking,
+  refSaidOf,
+  refsShown,
+  selectedLineCount,
+  selectionRange,
+  shownMatches,
+} from "./cursor.ts"
+import { filePlace, isReviewed, reviewedCount, reviewedCountIn, treeWindow } from "./files.ts"
+import {
   layerDone,
   layerFitted,
+  type LayerRoom,
   layerRoomIn,
+  proseFor,
   RAIL_DIR_LEAD,
   RAIL_FILE_LEAD,
   RAIL_GUTTER,
   RAIL_TITLE_LEAD,
-  type LayerRoom,
+  railWindow,
   type RailWindow,
-  preferenceRows,
-  standingOnThread,
-  askedRows,
-  asksAbout,
-  type LayerRow,
-  type PreferenceRow,
-  wrapped,
-  selectedLineCount,
-  snippetOf,
-  threadQuote,
-  reviewedCount,
-  reviewedCountIn,
-  pullHere,
-  selectedBranch,
-  selectedPatch,
-  selectionRange,
-  threadHere,
-  threadStand,
-  threadsOn,
-  treeWindow,
+} from "./layerview.ts"
+import {
+  composeBox,
+  FRAME_PAD,
+  laidDraft,
+  panelShown,
+  reviewWidth,
+  selectionReadout,
   tooSmall,
   treeWidth,
-  type TuiState,
   WHOLE_FILE,
-  clip,
-  FRAME_PAD,
-  type StagedComment,
-  proseFor,
-  composeBox,
-  composeRoom as composeText,
-  panelEntries,
-  panelEntry,
-  picking,
-  refsShown,
+} from "./layout.ts"
+import {
+  askedRows,
+  asksAbout,
+  composeTarget,
+  draftPlace,
+  markedStands,
   remarkQuote,
   remarkShown,
   remarkToTakeOn,
   remarkUnderCursor,
-  panelShown,
-  shownMatches,
-  reviewWidth,
-  type PanelEntry,
+  snippetOf,
+  standingOnThread,
+  threadHere,
+  threadQuote,
+  threadsOn,
+} from "./notes.ts"
+import {
   PANEL_SECTIONS,
-  type PanelSection,
-  type Spot,
-  laidDraft,
+  panelEntries,
+  panelEntry,
+  type PanelEntry,
   panelHolds,
+  type PanelSection,
+  threadStand,
+} from "./panel.ts"
+import {
   type Clicked,
-  refSaidOf,
-} from "./model.ts"
-import type { TreeRow } from "./tree.ts"
-import type { Match, Remark } from "../review/index.ts"
-import { marks, standMark, type MarkSet } from "./marks.ts"
-import { palette } from "./theme.ts"
+  type LayerRow,
+  onLayers,
+  type PreferenceRow,
+  preferenceRows,
+  pullHere,
+  selectedBranch,
+  selectedPatch,
+  type Spot,
+  type StagedComment,
+  type TuiState,
+} from "./state.ts"
+import { clip, wrapped } from "./words.ts"
 
 const ROW_HEIGHT = 1
 const COMPOSE_WIDTH = 72

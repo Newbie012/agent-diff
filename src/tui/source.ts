@@ -4,15 +4,6 @@ import type { Side } from "../domain/patch/index.ts"
 import { fileBefore, fileSource, listPatches, patchIn, remarksAgainst } from "../review/index.ts"
 import type { Action } from "./command.ts"
 import { GAP_CHUNK, gapAtRow, shownOf } from "./gaps.ts"
-import {
-  layerContext,
-  rowAtSourceLine,
-  selectedBranch,
-  selectedPatch,
-  sourceLineAt,
-  type TuiState,
-  WHOLE_FILE,
-} from "./model.ts"
 import type { Work } from "./needs.ts"
 import { worktreeFor } from "./reading.ts"
 import {
@@ -26,6 +17,10 @@ import {
 } from "./reduce.ts"
 import type { Screen } from "./render.ts"
 import type { Terminal } from "./terminal.ts"
+import { rowAtSourceLine, sourceLineAt } from "./cursor.ts"
+import { layerContext } from "./layerview.ts"
+import { WHOLE_FILE } from "./layout.ts"
+import { selectedBranch, selectedPatch, type TuiState } from "./state.ts"
 
 const lonelyGaps = (state: TuiState): ReadonlyArray<{ index: number; hidden: number }> =>
   (shownOf(state)?.gaps ?? []).filter((gap) => gap.hidden === 1)

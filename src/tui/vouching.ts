@@ -1,25 +1,19 @@
 import { Effect } from "effect"
 import type { VouchReport } from "../review/index.ts"
-import {
-  isReviewed,
-  layersHolding,
-  nextUnreviewed,
-  onLayers,
-  partHere,
-  readIn,
-  selectedBranch,
-  selectedPatch,
-  type StagedComment,
-  threadsInLayer,
-  threadsOpenOn,
-  type TuiState,
-  withAsking,
-} from "./model.ts"
 import type { Work } from "./needs.ts"
 import { loadSent, settling } from "./reading.ts"
 import { atFile, reduce, withNotice, withSent, withVouched } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
 import { toggleVouch, vouchIn, vouchPartIn } from "../review/index.ts"
+import { isReviewed, layersHolding, nextUnreviewed, partHere, readIn } from "./files.ts"
+import { threadsInLayer, threadsOpenOn, withAsking } from "./notes.ts"
+import {
+  onLayers,
+  selectedBranch,
+  selectedPatch,
+  type StagedComment,
+  type TuiState,
+} from "./state.ts"
 import { counted } from "./words.ts"
 
 const alongFrom = (state: TuiState): TuiState => {

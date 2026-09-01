@@ -1,10 +1,10 @@
 import { Effect } from "effect"
 import type { Action } from "./command.ts"
-import { type Clicked, onLayers } from "./model.ts"
 import type { Work } from "./needs.ts"
 import { atFile, atLayer, railScrolled, reduce, scrolled } from "./reduce.ts"
 import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
+import { type Clicked, onLayers } from "./state.ts"
 
 export const clicked = (app: Terminal, what: Clicked): Work => {
   return Effect.gen(function* () {

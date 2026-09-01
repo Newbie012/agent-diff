@@ -1,6 +1,6 @@
-import type { StagedComment, TuiState } from "./model.ts"
 import { withNotice } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
+import type { StagedComment, TuiState } from "./state.ts"
 import { counted } from "./words.ts"
 
 export const NOTHING_WRITTEN = "nothing written yet"

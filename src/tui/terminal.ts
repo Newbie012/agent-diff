@@ -1,9 +1,9 @@
 import type { CliRenderer } from "@opentui/core"
 import type { Effect, FiberHandle } from "effect"
 import type { BranchReading } from "../review/index.ts"
-import type { TuiState } from "./model.ts"
 import type { Needs, Work } from "./needs.ts"
 import type { Screen } from "./render.ts"
+import type { TuiState } from "./state.ts"
 
 export type Timing = { readonly action: string; readonly ms: number }
 

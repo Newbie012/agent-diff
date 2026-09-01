@@ -1,7 +1,9 @@
 import { copyToClipboard } from "./clipboard.ts"
-import { pickedText, selectedLines, selectedPatch, threadAtStop, type TuiState } from "./model.ts"
 import { withNotice, withNoticeHere } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
+import { pickedText, selectedLines } from "./cursor.ts"
+import { threadAtStop } from "./notes.ts"
+import { selectedPatch, type TuiState } from "./state.ts"
 
 const lineUnder = (state: TuiState): ReadonlyArray<string> => {
   const row = selectedPatch(state)?.rows[state.cursor]

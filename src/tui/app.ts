@@ -30,7 +30,6 @@ import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
-import { contextToggled, onLayers, selectedPatch, type Spot, type TuiState } from "./model.ts"
 import {
   draggedTo,
   paletteChoice,
@@ -85,7 +84,8 @@ import { copyDragged, copySelection } from "./selection.ts"
 import { expand, unfold, widen } from "./source.ts"
 import { removeHere, settleHere, settleWhatIsRead } from "./threads.ts"
 import { tookTheAnswer, vouch } from "./vouching.ts"
-import { initialState } from "./model.ts"
+import { contextToggled } from "./files.ts"
+import { initialState, onLayers, selectedPatch, type Spot, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
 
 const LEAVING_MS = 3000
