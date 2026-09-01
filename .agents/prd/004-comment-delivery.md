@@ -100,6 +100,15 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   batching to read a comment.
 - **A comment carries its id to the agent.** The id is what an answer refers to, so a hand-over
   without it cannot be replied to.
+- **A comment on code a layer explains carries that layer's title to the agent.** The work the
+  comment asks for moves the code the layer describes, so the agent that acts on it owes a new
+  revision of the layers as well as an answer. The title is worked out when the comment is handed
+  over, against the reading order as it stands, and nothing about a layer is written on the comment:
+  a title recorded when the comment was filed would name a layer a later revision had renamed, and
+  a comment filed before the reading order existed would never name one at all. Where two layers
+  claim the line, the tighter span wins, because it is the layer written about that code rather than
+  around it. A comment on code no layer claims carries no layer, and neither does any comment on a
+  branch with no reading order.
 - **An answer is one line of JSON** in the outbox: the comment it answers, its body, the HEAD it
   was written against, whether it asks the reviewer something, and when. Appending never rewrites.
 - **Answers are read on demand, not handed over.** The reviewer is sitting in front of a screen and
@@ -287,6 +296,9 @@ Behaviors that must be covered:
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
 - A removed comment leaves the reviewer's view, still reads as removed to the agent, leaves the
   delivery record untouched, and comes back on restore.
+- A comment on code a layer explains is handed over with that layer's title, a comment on code no
+  layer claims with none, a reply carries the layer its thread sits in, and a layers rewritten after
+  the comment was filed hands over the title it carries now.
 - A vouch recorded before a take survives it. This is the regression guard for the merge rule
   above, and it is the one that would have gone unnoticed.
 

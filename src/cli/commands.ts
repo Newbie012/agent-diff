@@ -11,6 +11,7 @@ import {
 } from "../domain/patch/index.ts"
 import { AT_ONCE, Git, type Worktree } from "../service/git/index.ts"
 import { isVouched, vouch } from "../domain/review/index.ts"
+import { codeBlocks, type Layer } from "../domain/layers/index.ts"
 import {
   Store,
   type Batch,
@@ -651,6 +652,7 @@ export type PendingComment = {
   readonly body: string
   readonly placed?: boolean | undefined
   readonly replyTo?: string | undefined
+  readonly layer?: string | undefined
   readonly thread?: ReadonlyArray<Turn> | undefined
 }
 
@@ -685,18 +687,53 @@ const threadBefore = (
   ).map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn)
 }
 
+const layerOver = (
+  layers: ReadonlyArray<Layer>,
+  comment: PendingComment,
+): string | undefined => {
+  const over = layers.flatMap((layer) =>
+    codeBlocks(layer)
+      .filter(
+        (block) =>
+          block.path === comment.file &&
+          comment.start <= block.end &&
+          comment.end >= block.start,
+      )
+      .map((block) => ({ title: layer.title, room: block.end - block.start })),
+  )
+  return over.reduce<{ title: string; room: number } | undefined>(
+    (tightest, one) => (tightest === undefined || one.room < tightest.room ? one : tightest),
+    undefined,
+  )?.title
+}
+
+const layersOn = Effect.fn("Cli.layersOn")(function* (worktree: string) {
+  const store = yield* Store
+  const found = yield* store.layers(worktree)
+  return Option.match(found, {
+    onNone: () => [] as ReadonlyArray<Layer>,
+    onSome: (held) => held.layers,
+  })
+})
+
 export const takeComments = Effect.fn("Cli.takeComments")(function* (worktree: string) {
   const store = yield* Store
   const resolved = yield* realOf(worktree)
   const at = new Date().toISOString()
   yield* Effect.ignore(store.noteWatching(resolved, at))
   const owed = flatten(yield* store.take(resolved, at))
-  if (owed.every((one) => one.replyTo === undefined)) return owed
+  if (owed.length === 0) return owed
+  const layers = yield* layersOn(resolved)
+  const under = (one: PendingComment): PendingComment => {
+    const title = layerOver(layers, one)
+    return title === undefined ? one : Object.assign({}, one, { layer: title })
+  }
+  if (owed.every((one) => one.replyTo === undefined)) return owed.map(under)
   const held = flatten(yield* store.inbox(resolved))
   const spoken = yield* store.answers(resolved)
   const carried = (one: PendingComment): PendingComment =>
     one.replyTo === undefined ? one : Object.assign({}, one, { thread: threadBefore(one, held, spoken) })
-  return owed.map(carried)
+  return owed.map(carried).map(under)
 })
 
 export const repoOf = Effect.fn("Cli.repoOf")(function* (worktree: string) {

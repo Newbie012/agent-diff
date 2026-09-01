@@ -24,6 +24,11 @@ Each comment carries the code it is about. `snippet` is the exact text the revie
 `side` says whether the line numbers are in the new file (`new`) or the version being replaced
 (`old`), and `head` is the commit the diff was read at.
 
+A comment on code one of your layers explains carries `layer`, that layer's title as your latest
+revision has it. The code the layer describes is about to change under your hands, so the layers go
+stale the moment you act on the comment: write a new revision with `adiff layers set` before you
+answer, and say in the answer that you did.
+
 A comment keeps coming back until it is answered. A second `take` returns it again, so answer what
 you take. Settling or removing it also retires it: those are the reviewer saying they no longer
 need one.
