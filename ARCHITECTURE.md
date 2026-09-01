@@ -24,7 +24,8 @@ uses, `.agents/prd/CONTEXT.md`; for durable technical choices, `.agents/adr/`.
 ```
 
 `Patch` knows nothing about comments. `Review` knows nothing about git or the store. `Delivery`
-knows nothing about rendering. `review/` is the use-case layer: every verb a reviewer or an agent can ask for,
+asks `Git` which repository and branch a worktree is, and nothing else; it knows nothing about
+rendering. `review/` is the use-case layer: every verb a reviewer or an agent can ask for,
 as an Effect over the services. The CLI and the terminal both call it and neither calls the other.
 
 ## Modules

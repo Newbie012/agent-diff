@@ -19,7 +19,6 @@ const stale = (held: UpgradeCheck): boolean =>
 const refresh = Effect.gen(function* () {
   const store = yield* Store
   const latest = yield* askLatest
-  if (latest === undefined) return
   const held = yield* store.upgradeCheck
   yield* store.saveUpgradeCheck({
     ...held,

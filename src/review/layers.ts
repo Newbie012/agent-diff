@@ -228,21 +228,18 @@ const reportOf = (
   }
 }
 
-const resolve = (path: string): Promise<string> => realpath(path).catch(() => path)
-
-const resolveAll = (paths: ReadonlyArray<string>): Promise<ReadonlyArray<string>> =>
-  Promise.all(paths.map(resolve))
+const resolved = (path: string): Effect.Effect<string> =>
+  Effect.tryPromise(() => realpath(path)).pipe(Effect.orElseSucceed(() => path))
 
 export const worktreeAt = Effect.fn("Review.worktreeAt")(function* (
   worktreePath: string,
   base?: string,
 ) {
   const git = yield* Git
-  const asked = yield* Effect.promise(() => resolve(worktreePath))
+  const asked = yield* resolved(worktreePath)
   const worktrees = yield* git.worktrees(asked)
-  const paths = worktrees.map((entry) => entry.path)
-  const resolved = yield* Effect.promise(() => resolveAll(paths))
-  const at = resolved.indexOf(asked)
+  const paths = yield* Effect.forEach(worktrees, (entry) => resolved(entry.path))
+  const at = paths.indexOf(asked)
   const found = worktrees[at]
   if (found === undefined) {
     return yield* new UnknownWorktree({ worktree: asked, known: worktrees.map((entry) => entry.path) })

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { text as readStream } from "node:stream/consumers"
-import { Cause, Effect, Layer } from "effect"
+import { Cause, Effect, Layer, Option } from "effect"
 import {
   addDraft,
   dispatchDrafts,
@@ -49,6 +49,7 @@ import {
   fieldsOf,
   findCommand,
   findUpgrade,
+  sessionPath,
   openPane,
   MissingOption,
   narrow,
@@ -504,7 +505,7 @@ const resume = Effect.fn("Main.resume")(function* (options: Options) {
   }
   const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
   return yield* runTui(repo, {
-    sessionPath: process.env["ADIFF_SESSION"],
+    sessionPath: Option.getOrUndefined(yield* sessionPath),
     branch: found.branch,
     base: options["base"],
   })
@@ -519,7 +520,7 @@ const dispatch = Effect.fn("Main.dispatch")(function* (name: string, given: Opti
   if (name === "review open") {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
     return yield* runTui(yield* required(options, "repo"), {
-      sessionPath: process.env["ADIFF_SESSION"],
+      sessionPath: Option.getOrUndefined(yield* sessionPath),
       branch: options["branch"],
       base: options["base"],
     })
@@ -589,7 +590,9 @@ if (said !== undefined) {
   process.exit(0)
 }
 
-const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot()))
+const layer = Layer.mergeAll(ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot())).pipe(
+  Layer.provideMerge(GitLive),
+)
 
 const reportFailure = (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
   Effect.sync(() => {

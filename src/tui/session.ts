@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises"
 import { Effect, Option, Schema } from "effect"
+import { SessionUnreadable, SessionUnwritable } from "./error.ts"
 import type { TuiState } from "./model.ts"
 
 const zero = Schema.withDecodingDefaultKey<typeof Schema.Number>(Effect.succeed(0))
@@ -19,16 +20,16 @@ const jsonOf = Option.liftThrowable((raw: string): unknown => JSON.parse(raw))
 
 const parse = (raw: string): Option.Option<Session> => Option.flatMap(jsonOf(raw), decode)
 
-const saved = (path: string, session: Session): Promise<void> =>
-  writeFile(path, JSON.stringify(session), "utf8").catch(() => undefined)
+const missing = Effect.succeed(Option.none<string>())
 
-const held = (path: string): Promise<Option.Option<string>> =>
-  readFile(path, "utf8")
-    .then((raw) => Option.some(raw))
-    .catch(() => Option.none<string>())
+const held = (path: string): Effect.Effect<Option.Option<string>> =>
+  Effect.tryPromise({
+    try: () => readFile(path, "utf8"),
+    catch: (cause) => new SessionUnreadable({ path, reason: String(cause) }),
+  }).pipe(Effect.map(Option.some), Effect.catchTag("SessionUnreadable", () => missing))
 
 export const readSession = Effect.fn("Tui.readSession")(function* (path: string) {
-  const raw = yield* Effect.promise(() => held(path))
+  const raw = yield* held(path)
   return Option.flatMap(raw, parse)
 })
 
@@ -43,5 +44,8 @@ export const writeSession = Effect.fn("Tui.writeSession")(function* (
   path: string,
   session: Session,
 ) {
-  yield* Effect.promise(() => saved(path, session))
+  yield* Effect.tryPromise({
+    try: () => writeFile(path, JSON.stringify(session), "utf8"),
+    catch: (cause) => new SessionUnwritable({ path, reason: String(cause) }),
+  }).pipe(Effect.catchTag("SessionUnwritable", () => Effect.void))
 })

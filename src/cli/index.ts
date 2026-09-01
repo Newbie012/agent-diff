@@ -1,4 +1,5 @@
 export { openPane } from "./pane.ts"
+export { sessionPath } from "./config.ts"
 export {
   askLatest,
   SAY_SKILL_TOO,
@@ -27,6 +28,7 @@ export type { CommandSpec, OptionSpec } from "./catalog.ts"
 export {
   BadOption,
   MissingOption,
+  RegistryUnanswered,
   UnknownCommand,
   UnknownField,
   UnknownOption,

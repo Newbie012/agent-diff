@@ -27,3 +27,8 @@ export class BadOption extends Data.TaggedError("BadOption")<{
   readonly given: string
   readonly allowed: ReadonlyArray<string>
 }> {}
+
+export class RegistryUnanswered extends Data.TaggedError("RegistryUnanswered")<{
+  readonly url: string
+  readonly reason: string
+}> {}
