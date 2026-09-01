@@ -220,7 +220,7 @@ describe("when the reviewer marks one layer of a file", () => {
     await driver.screen.pressKeys(["return"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("and settled 1 thread")
+    expect(await driver.screen.getFrame()).toContain("marked The first change and settled 1 thread")
     const hidden = await panelAfterHiding(driver)
     expect(hidden).not.toContain("the point in the first layer")
     expect(hidden).toContain("the point in the second layer")
@@ -248,5 +248,31 @@ describe("when a thread sits on code no layer explains", () => {
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("src/run.ts still holds 1 open thread")
+  })
+})
+
+const deep = {
+  files: [
+    {
+      path: "src/api/very/deeply/nested/invitations-and-their-errors.ts",
+      before: [],
+      after: ["const first = 1"],
+    },
+  ],
+}
+
+describe("when the file's name fills the box", () => {
+  test("then the box still says how many threads are open", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create(deep)
+    await driver.screen.open({ width: 80, height: 24, review: true })
+    await driver.screen.writeComment("the only point")
+
+    // ACT
+    await driver.screen.pressKeys(["m"])
+
+    // ASSERT
+    expect(await driver.screen.getFrame()).toContain("still holds 1 open thread")
   })
 })

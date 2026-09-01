@@ -1693,7 +1693,7 @@ export class App {
         yield* this.marking(patch.path, advance, 0)
         return
       }
-      const layer = this.layerAsked(open.length)
+      const layer = this.layerAsked(threads.length)
       this.commit(withAsking(this.measured(), { path: patch.path, layer, threads, advance }))
     })
   }
@@ -1716,9 +1716,10 @@ export class App {
       const branch = selectedBranch(this.state)
       if (asking === undefined || branch === undefined) return
       const settling = this.state.askIndex === 0
+      const named = asking.layer ?? asking.path
       if (settling) yield* this.settleThese(branch.branch, asking.threads)
       this.commit(reduce(this.measured(), "back"))
-      yield* this.marking(asking.path, asking.advance, settling ? asking.threads.length : 0)
+      yield* this.marking(asking.path, asking.advance, settling ? asking.threads.length : 0, named)
     })
   }
 
@@ -1730,24 +1731,24 @@ export class App {
     })
   }
 
-  private marking(path: string, advance: boolean, settled: number): Work {
+  private marking(path: string, advance: boolean, settled: number, named = path): Work {
     return Effect.gen({ self: this }, function* () {
       const branch = selectedBranch(this.state)
       if (branch === undefined) return
       const report = yield* this.vouching(branch.branch, path)
       const next = withVouched(this.state, report.vouched, report.parts)
       if (!advance) {
-        this.commit(withNotice(next, this.markedSaid(report, path, settled)))
+        this.commit(withNotice(next, this.markedSaid(report, path, settled, named)))
         return
       }
-      this.movedOn(next, path, settled)
+      this.movedOn(next, named, settled)
     })
   }
 
-  private markedSaid(report: VouchReport, path: string, settled: number): string {
+  private markedSaid(report: VouchReport, path: string, settled: number, named: string): string {
     const part = this.partHereNow()
     const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
-    return marked ? markedIs(path, settled) : `unmarked ${path}`
+    return marked ? markedIs(named, settled) : `unmarked ${named}`
   }
 
   private movedOn(next: TuiState, path: string, settled: number): void {

@@ -511,7 +511,9 @@ Three screens, and the keys each answers to:
   counts the threads inside the layer being marked, and the last layer of a file sweeps up the
   threads no layer explains as well, so a file cannot become read with a thread nobody was asked
   about. Remarks are never counted, because a remark is triaged rather than settled. A file with
-  nothing open is marked without a question.
+  nothing open is marked without a question. The box names what it is marking whatever the terminal
+  is wide enough for — a long path loses its middle rather than the count at its end — and the
+  notice afterwards names the same thing the box did.
 
 - **`f` hides the files already read, and the one under the cursor stays.** A branch of forty files
   is mostly done files by the end of a pass, and the rows they hold are the rows the diff wants. The

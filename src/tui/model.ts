@@ -842,12 +842,17 @@ export const withAsking = (state: TuiState, asking: Asking): TuiState => ({
   askIndex: 0,
 })
 
-export const asksAbout = (state: TuiState): string => {
+export const asksAbout = (
+  state: TuiState,
+): { readonly name: string; readonly path: boolean; readonly tail: string } => {
   const asking = state.asking
-  if (asking === undefined) return ""
+  if (asking === undefined) return { name: "", path: false, tail: "" }
   const many = asking.threads.length
-  const whose = asking.layer ?? asking.path
-  return `${whose} still holds ${many} open thread${many === 1 ? "" : "s"}`
+  return {
+    name: asking.layer ?? asking.path,
+    path: asking.layer === undefined,
+    tail: ` still holds ${many} open thread${many === 1 ? "" : "s"}`,
+  }
 }
 
 export const hiddenLines = (state: TuiState): number =>

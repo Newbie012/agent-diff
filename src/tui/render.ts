@@ -2023,7 +2023,10 @@ export class Screen {
       return
     }
     const room = panelWidth(this.renderer.width)
-    this.ask.title.content = clip(asksAbout(state), room - MODAL_ROOM)
+    const asked = asksAbout(state)
+    const forName = Math.max(8, room - MODAL_ROOM - asked.tail.length)
+    const name = asked.path ? clipPath(asked.name, forName) : clipMiddle(asked.name, forName)
+    this.ask.title.content = `${name}${asked.tail}`
     this.ask.choices.content = askText(state, room - MODAL_ROOM)
     this.ask.box.height = askedRows(state).length + PALETTE_CHROME
     this.ask.box.width = room
