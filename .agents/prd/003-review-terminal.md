@@ -511,7 +511,10 @@ Three screens, and the keys each answers to:
   counts the threads inside the layer being marked, and the last layer of a file sweeps up the
   threads no layer explains as well, so a file cannot become read with a thread nobody was asked
   about. Remarks are never counted, because a remark is triaged rather than settled. A file with
-  nothing open is marked without a question. The box names what it is marking whatever the terminal
+  nothing open is marked without a question. The box lists the threads it counts, one row each with
+  the thread's first words and the line it sits on, and a thread the branch moved past says "not in
+  the diff" in place of a line, so a reviewer who sees one comment in the diff and a count of two
+  knows where the other one is before choosing. The box names what it is marking whatever the terminal
   is wide enough for — a long path loses its middle rather than the count at its end — and the
   notice afterwards names the same thing the box did.
 

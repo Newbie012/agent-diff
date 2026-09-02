@@ -156,6 +156,7 @@ import {
 import { unaskedForge } from "./home.ts"
 import { keysTitle, listText } from "./sheets.ts"
 import { palette } from "./theme.ts"
+import { askedThreads } from "./notes.ts"
 
 const stack = (parent: Renderable, children: ReadonlyArray<Renderable>): void => {
   for (const child of children) parent.add(child)
@@ -570,7 +571,7 @@ export class Screen {
     const name = asked.path ? clipPath(asked.name, forName) : clipMiddle(asked.name, forName)
     this.ask.title.content = `${name}${asked.tail}`
     this.ask.choices.content = askText(state, room - MODAL_ROOM)
-    this.ask.box.height = askedRows(state).length + PALETTE_CHROME
+    this.ask.box.height = askedThreads(state).length + askedRows(state).length + PALETTE_CHROME
     this.ask.box.width = room
     this.ask.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.ask.box.top = panelTop(this.renderer.height, PANEL_QUARTER)

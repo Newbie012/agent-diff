@@ -63,6 +63,10 @@ export const openPanelEntry = (app: Terminal): Work => {
       app.commit(withNoticeHere(app.state, `${entry.comment.file} is not on this branch`))
       return
     }
+    if (entry.comment.outside === true) {
+      yield* openThreadInFull(app, entry)
+      return
+    }
     const opened = { ...app.measured(), patchIndex: at }
     const shown = selectedPatch(opened)
     if (shown !== undefined && rowShowing(shown, entry.comment.end) === undefined) {
@@ -75,6 +79,13 @@ export const openPanelEntry = (app: Terminal): Work => {
   })
 }
 
+const openThreadInFull = (app: Terminal, entry: Extract<PanelEntry, { kind: "comment" }>): Work =>
+  Effect.gen(function* () {
+    yield* readAnswers(app, entry.comment.id)
+    const said = withNoticeHere(app.state, "the diff no longer has that line")
+    app.commit({ ...said, screen: "thread", returnTo: said.screen })
+  })
+
 export const jumpingPastGaps = (app: Terminal, opened: TuiState,
   at: number,
   entry: Extract<PanelEntry, { kind: "comment" }>,): Work => {
@@ -82,9 +93,7 @@ export const jumpingPastGaps = (app: Terminal, opened: TuiState,
     const wide = { ...opened, revealed: allRevealed(opened) }
     const shown = selectedPatch(wide)
     if (shown === undefined || rowShowing(shown, entry.comment.end) === undefined) {
-      yield* readAnswers(app, entry.comment.id)
-      const said = withNoticeHere(app.state, "the diff no longer has that line")
-      app.commit({ ...said, screen: "thread", returnTo: said.screen })
+      yield* openThreadInFull(app, entry)
       return
     }
     app.commit(openedAt({ ...app.measured(), revealed: wide.revealed }, at, entry.comment.end))

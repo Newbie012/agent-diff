@@ -10,6 +10,7 @@ import { lostCode, panelFile, REMARK_MARK, wherePart } from "./panelpane.ts"
 import { onLayers, type PreferenceRow, pullHere, selectedBranch, type TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip, wrapped } from "./words.ts"
+import { askedThreads } from "./notes.ts"
 
 const PALETTE_KEY = 11
 
@@ -170,13 +171,16 @@ export const sheetText = (
 }
 
 export const askText = (state: TuiState, room: number): StyledText => {
+  const listed = askedThreads(state).map((line) =>
+    fg(palette.faint)(`${clip(`  ${line}`, room).padEnd(room)}\n`),
+  )
   const drawn = askedRows(state).map((row) => {
     const head = `${row.here ? marks().cursor : " "} ${row.title}`
     return row.here
       ? bg(palette.selection)(fg(palette.ink)(`${head.padEnd(room)}\n`))
       : fg(palette.muted)(`${head.padEnd(room)}\n`)
   })
-  return new StyledText(drawn)
+  return new StyledText([...listed, ...drawn])
 }
 
 const SETTING_LEAD = 4

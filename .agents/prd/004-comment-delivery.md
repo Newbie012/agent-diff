@@ -165,7 +165,10 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   diff, which left the reviewer holding a sentence about code they could no longer read, on the one
   occasion they most wanted to compare it with the fix. The panel now quotes, under the comment it
   is standing on, the lines that were stored with it when it was written, oldest state and all, and
-  going to it says the diff no longer has that line rather than only refusing.
+  going to it opens the thread in full, reviewer and agent turns with the quoted code beneath, and
+  says the diff no longer has that line. It does so whenever the comment is not placed, even when
+  another line now carries the number the comment was written at; jumping to that line showed code
+  the comment was never about, with no comment drawn against it.
 
 - **Settling a thread leaves the cursor where the reviewer was.** Reading the review again after a
   settle rebuilds the list from the top, and the panel went with it, so settling the second of
