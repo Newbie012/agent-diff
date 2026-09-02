@@ -382,6 +382,10 @@
   dir: ""
   intents:
     - d-takes-a-settled-thread-back
+"@eliya-oss/agent-diff@0.1.0-alpha.174":
+  dir: ""
+  intents:
+    - a-moved-past-thread-opens-in-full
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
