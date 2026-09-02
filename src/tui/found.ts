@@ -1,10 +1,10 @@
 import { bg, fg, type TextChunk } from "@opentui/core"
-import type { Match } from "../review/index.ts"
 import { marks } from "./marks.ts"
 import { clipHead } from "./notespane.ts"
 import type { TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip } from "./words.ts"
+import type { Match } from "../review/index.ts"
 
 export const FOUND_LEAST = 6
 

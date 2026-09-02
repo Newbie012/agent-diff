@@ -1,24 +1,21 @@
 import type {
   BoxRenderable,
   TextRenderable} from "@opentui/core";
-import {
-  type CliRenderer,
-  type MouseEvent,
-  type Renderable
-} from "@opentui/core"
+import { type CliRenderer, type MouseEvent, type Renderable } from "@opentui/core"
 import type {
   ASCIIFontRenderable,
   TextareaRenderable} from "@opentui/core";
-import {
-  bg,
-  fg,
-  StyledText,
-  t,
-  type TextChunk,
-} from "@opentui/core"
+import { bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
 import { stickyChain } from "../domain/patch/index.ts"
 import { hintsFor, takesText } from "./command.ts"
-import { newLineAt, isPicking, refNoteOf, refsShown, selectionRange, shownMatches } from "./cursor.ts"
+import {
+  newLineAt,
+  isPicking,
+  refNoteOf,
+  refsShown,
+  selectionRange,
+  shownMatches,
+} from "./cursor.ts"
 import { DiffView, type Draft, type LinePaint } from "./diffview.ts"
 import { treeWindow } from "./files.ts"
 import { CHIP_GAP, keptWithin } from "./footer.ts"
@@ -53,7 +50,15 @@ import {
   railWindow,
   type RailWindow,
 } from "./layerview.ts"
-import { FRAME_PAD, wrappedDraft, panelShown, reviewWidth, selectionReadout, tooSmall, treeWidth } from "./layout.ts"
+import {
+  FRAME_PAD,
+  wrappedDraft,
+  panelShown,
+  reviewWidth,
+  selectionReadout,
+  tooSmall,
+  treeWidth,
+} from "./layout.ts"
 import { marks, standMark } from "./marks.ts"
 import { askedRows, askingWords, composeTarget, draftPlace, markedStands } from "./notes.ts"
 import {

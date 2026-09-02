@@ -1,21 +1,6 @@
 import { Effect, Option, Result } from "effect"
-import {
-  clearBase,
-  layersIn,
-  listBranches,
-  listRefs,
-  markOpened,
-  progressIn,
-  readingOf,
-  recentBases,
-  type Remark,
-  remarksHeldIn,
-  sentIn,
-  setBase,
-} from "../review/index.ts"
 import { Forge } from "../service/forge/index.ts"
 import type { Work } from "./needs.ts"
-import { loadSent } from "./reading.ts"
 import {
   reduce,
   restoredTo,
@@ -40,13 +25,10 @@ import { loadSource } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { refHere, sourceLineAt } from "./cursor.ts"
 import { answersSince } from "./notes.ts"
-import {
-  hasNoPull,
-  pullHere,
-  selectedBranch,
-  selectedPatch,
-  type TuiState,
-} from "./state.ts"
+import { hasNoPull, pullHere, selectedBranch, selectedPatch, type TuiState } from "./state.ts"
+import { Branch, Comment, Layers, Remark, type ReportedRemark, Vouch } from "../review/index.ts"
+import { worktreeOf } from "./reading.ts"
+import { loadSent } from "./reading.ts"
 
 const openedPull = (state: string, opened: boolean): string => {
   if (!opened) return "could not reach the pull request"
@@ -86,17 +68,17 @@ export const openBranch = (app: Terminal): Work => {
 
 export const readBranch = (app: Terminal, name: string): Work<TuiState> => {
   return Effect.gen(function* () {
-    const reading = yield* readingOf(app.repo, name, app.base)
+    const reading = yield* Branch.reading(app.repo, name, app.base)
     app.reading = reading
-    yield* markOpened(reading.worktree.path, new Date().toISOString())
+    yield* Branch.markOpened(reading.worktree, new Date().toISOString())
     const [progress, layers, sent, remarks] = yield* Effect.all(
       [
-        progressIn(reading),
-        layersIn(reading),
-        sentIn(reading),
+        Vouch.progress(reading),
+        Layers.read(reading),
+        Comment.listSent(reading),
         app.state.remarksOn
-          ? remarksHeldIn(reading)
-          : Effect.succeed([] as ReadonlyArray<Remark>),
+          ? Remark.list(reading)
+          : Effect.succeed([] as ReadonlyArray<ReportedRemark>),
       ],
       { concurrency: "unbounded" },
     )
@@ -108,7 +90,7 @@ export const readBranch = (app: Terminal, name: string): Work<TuiState> => {
 export const fillBranches = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const here = selectedBranch(app.state)?.branch
-    const branches = yield* listBranches(app.repo, app.base)
+    const branches = yield* Branch.list(app.repo, app.base)
     const read = withBranches(app.state, branches)
     const at = branches.findIndex((candidate) => candidate.branch === here)
     app.commit(at === -1 ? read : { ...read, branchIndex: at })
@@ -119,7 +101,7 @@ export const fillBranches = (app: Terminal): Work => {
 export const reloadList = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const here = selectedBranch(app.state)?.branch
-    const branches = yield* listBranches(app.repo, app.base)
+    const branches = yield* Branch.list(app.repo, app.base)
     const read = withBranches(app.state, branches)
     const at = branches.findIndex((candidate) => candidate.branch === here)
     const kept = at === -1 ? read : { ...read, branchIndex: at }
@@ -148,7 +130,7 @@ export const goBack = (app: Terminal): Work => {
     const next = reduce(app.measured(), "back")
     app.commit(next)
     if (next.screen !== "branches") return
-    app.commit(withBranches(app.state, yield* (listBranches(app.repo, app.base))))
+    app.commit(withBranches(app.state, yield* (Branch.list(app.repo, app.base))))
   })
 }
 
@@ -197,8 +179,8 @@ export const openBases = (app: Terminal): Work => {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
     const [refs, recent] = yield* Effect.all([
-      listRefs(app.repo),
-      recentBases(app.repo, branch.branch),
+      Branch.refs(app.repo),
+      Branch.recentBases(app.repo, branch.branch),
     ])
     const said = Object.fromEntries(recent.map((one) => [one.ref, one.said]))
     const kept = refs.filter((ref) => ref !== branch.branch)
@@ -210,7 +192,8 @@ export const basedOnRef = (app: Terminal, ref: string): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
-    const held = yield* Effect.result(setBase(app.repo, branch.branch, ref))
+    const worktree = yield* worktreeOf(app, branch.branch)
+    const held = yield* Effect.result(Branch.setBase(app.repo, worktree, ref))
     if (Result.isFailure(held)) {
       app.commit(withNotice(app.state, `${ref} names nothing here`))
       return
@@ -223,14 +206,14 @@ export const clearBaseHere = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
-    yield* clearBase(app.repo, branch.branch)
+    yield* Branch.clearBase(app.repo, yield* worktreeOf(app, branch.branch))
     yield* afterBase(app, branch.branch, "the base is adiff's guess again")
   })
 }
 
 export const afterBase = (app: Terminal, branch: string, said: string): Work => {
   return Effect.gen(function* () {
-    const listed = yield* listBranches(app.repo, app.base)
+    const listed = yield* Branch.list(app.repo, app.base)
     const back = { ...app.state, screen: app.state.returnTo, query: "" }
     const held = withBranches(back, listed)
     const at = listed.findIndex((one) => one.branch === branch)

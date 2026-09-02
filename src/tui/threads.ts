@@ -1,17 +1,6 @@
 import { Effect } from "effect"
-import { settleRead } from "../review/index.ts"
 import { dropHeld } from "./comments.ts"
 import type { Work } from "./needs.ts"
-import {
-  following,
-  loadSent,
-  remarksHeld,
-  removing,
-  restoring,
-  settling,
-  staying,
-  unsettling,
-} from "./reading.ts"
 import { withNotice, withRemarks, withSent } from "./reduce.ts"
 import { dismissRemarkHere } from "./remarks.ts"
 import type { Terminal } from "./terminal.ts"
@@ -19,12 +8,15 @@ import { remarkUnderCursor, cursorOnThread, threadHere } from "./notes.ts"
 import { panelEntry } from "./panel.ts"
 import { selectedBranch } from "./state.ts"
 import { counted } from "./words.ts"
+import { Thread } from "../review/index.ts"
+import { following, remarksHeld, staying, worktreeOf } from "./reading.ts"
+import { loadSent } from "./reading.ts"
 
 export const settleWhatIsRead = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
-    const done = yield* settleRead(app.repo, branch.branch, new Date().toISOString())
+    const done = yield* Thread.settleRead(yield* worktreeOf(app, branch.branch), new Date().toISOString())
     if (done.settled === 0) {
       app.commit(withNotice(app.state, "nothing read is waiting to be settled"))
       return
@@ -55,7 +47,8 @@ export const changeSettled = (app: Terminal, id: string, back: boolean): Work =>
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
     const was = app.state.panelIndex
-    yield* back ? unsettling(app, branch.branch, id) : settling(app, branch.branch, id)
+    const worktree = yield* worktreeOf(app, branch.branch)
+    yield* back ? Thread.unsettle(worktree, id) : Thread.settle(worktree, id, new Date().toISOString())
     const sent = yield* loadSent(app, branch.branch)
     const opened = app.state.opened.filter((one) => one !== id)
     const held = withSent({ ...app.state, opened }, sent)
@@ -91,7 +84,8 @@ export const removeHere = (app: Terminal): Work => {
 export const turningOver = (app: Terminal, branch: string, id: string, back: boolean): Work => {
   return Effect.gen(function* () {
     const was = app.state.panelIndex
-    yield* back ? restoring(app, branch, id) : removing(app, branch, id)
+    const worktree = yield* worktreeOf(app, branch)
+    yield* back ? Thread.restore(worktree, id) : Thread.remove(worktree, id, new Date().toISOString())
     const sent = yield* loadSent(app, branch)
     const kept = { ...app.state, opened: app.state.opened.filter((one) => one !== id) }
     const said = back ? "restored" : "removed, it is under Removed in the review"

@@ -1,5 +1,4 @@
 import { Effect, FiberHandle } from "effect"
-import { aroundIn, searchBranch, searchIn } from "../review/index.ts"
 import type { Work } from "./needs.ts"
 import {
   allRevealed,
@@ -14,6 +13,8 @@ import { loadSource } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { matchHere, pickedText, rowAtSourceLine, rowShowing } from "./cursor.ts"
 import { selectedBranch, selectedPatch } from "./state.ts"
+import { Search } from "../review/index.ts"
+import { readingOf } from "./reading.ts"
 
 export const LEAST_TERM = 2
 
@@ -60,12 +61,8 @@ export const lookFor = (app: Terminal, wanted: string): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
-    const reading = app.reading
     const here = selectedPatch(app.state)?.path ?? ""
-    const found =
-      reading === undefined || reading.worktree.branch !== branch.branch
-        ? yield* searchBranch(app.repo, branch.branch, wanted, here)
-        : yield* searchIn(reading, wanted, here)
+    const found = yield* Search.files(yield* readingOf(app, branch.branch), wanted, here)
     if (app.state.screen !== "search" || app.state.query.trim() !== wanted) return
     app.commit(withMatches(app.state, found, wanted))
     yield* readAround(app)
@@ -74,10 +71,10 @@ export const lookFor = (app: Terminal, wanted: string): Work => {
 
 export const readAround = (app: Terminal): Work => {
   return Effect.gen(function* () {
-    const reading = app.reading
     const match = matchHere(app.state)
+    const reading = app.reading
     if (reading === undefined || match === undefined) return
-    const lines = yield* aroundIn(reading, match.path, match.line)
+    const lines = yield* Search.around(reading, match.path, match.line)
     const still = matchHere(app.state)
     if (still?.path !== match.path || still.line !== match.line) return
     app.commit(withAround(app.state, lines))

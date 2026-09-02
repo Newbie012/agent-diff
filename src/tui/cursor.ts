@@ -1,8 +1,8 @@
 import { Option } from "effect"
 import type { Patch } from "../domain/patch/index.ts"
-import type { Match } from "../review/index.ts"
 import { gapRowSet, shownOf } from "./gaps.ts"
 import { selectedPatch, type StagedComment, type TuiState } from "./state.ts"
+import type { Match } from "../review/index.ts"
 
 export const hiddenLines = (state: TuiState): number =>
   shownOf(state)?.gaps.reduce((total, gap) => total + gap.hidden, 0) ?? 0

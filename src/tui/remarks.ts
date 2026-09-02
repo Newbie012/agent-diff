@@ -1,18 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { Effect, Result } from "effect"
-import {
-  acceptIn,
-  answerRemark,
-  type BranchReading,
-  dismissIn,
-  quoted,
-  type Remark,
-  remarksIn,
-  sentIn,
-  undismissIn,
-} from "../review/index.ts"
 import type { Work } from "./needs.ts"
-import { remarksHeld, staying } from "./reading.ts"
 import {
   openedAt,
   withNotice,
@@ -27,6 +15,8 @@ import { holding, NOTHING_WRITTEN } from "./drafts.ts"
 import { sentAway } from "./drafts.ts"
 import { remarkHere } from "./notes.ts"
 import { selectedBranch } from "./state.ts"
+import { type BranchReading, Comment, Remark, type ReportedRemark } from "../review/index.ts"
+import { remarksHeld, staying, worktreeOf } from "./reading.ts"
 
 const READING_PULL = "reading the pull request"
 const FORGE_QUIET = "the forge did not answer, so no remarks are shown"
@@ -42,7 +32,7 @@ export const readRemarks = (app: Terminal, reading: BranchReading): Work => {
   return Effect.gen(function* () {
     const said = app.state.waiting
     app.commit(withWaiting(app.state, READING_PULL))
-    const found = yield* Effect.result(remarksIn(app.repo, reading))
+    const found = yield* Effect.result(Remark.fetch(app.repo, reading))
     if (app.reading !== reading) return
     const rested = withWaiting(app.state, said)
     const hasPull = (app.state.pulls[reading.worktree.branch] ?? "").length > 0
@@ -54,7 +44,7 @@ export const readRemarks = (app: Terminal, reading: BranchReading): Work => {
   })
 }
 
-export const openRemark = (app: Terminal, remark: Remark): Work => {
+export const openRemark = (app: Terminal, remark: ReportedRemark): Work => {
   return Effect.gen(function* () {
     const at = app.state.patches.findIndex((patch) => patch.path === remark.file)
     const patch = app.state.patches[at]
@@ -81,14 +71,13 @@ export const acceptRemarkHere = (app: Terminal): Work => {
         side: remark.side,
         start: remark.start,
         end: remark.end,
-        body: quoted(remark),
+        body: Remark.quoted(remark),
         remark: remark.id,
       })
       return
     }
     const done = yield* Effect.as(
-      acceptIn({
-        reading,
+      Remark.accept(reading, {
         id: remark.id,
         at: new Date().toISOString(),
         commentId: randomUUID(),
@@ -103,14 +92,14 @@ export const acceptRemarkHere = (app: Terminal): Work => {
   })
 }
 
-export const dismissRemarkHere = (app: Terminal, remark: Remark, back: boolean): Work => {
+export const dismissRemarkHere = (app: Terminal, remark: ReportedRemark, back: boolean): Work => {
   return Effect.gen(function* () {
     const reading = app.reading
     if (reading === undefined) return
     const at = new Date().toISOString()
     yield* back
-      ? undismissIn(reading.worktree.path, remark.id)
-      : dismissIn(reading.worktree.path, remark.id, at)
+      ? Remark.restore(reading.worktree, remark.id)
+      : Remark.dismiss(reading.worktree, remark.id, at)
     yield* reloadRemarks(app, back ? "restored" : "dismissed, it is under Dismissed")
   })
 }
@@ -119,7 +108,7 @@ export const reloadRemarks = (app: Terminal, said: string): Work => {
   return Effect.gen(function* () {
     const reading = app.reading
     if (reading === undefined) return
-    const [remarks, sent] = yield* Effect.all([remarksHeld(app, reading), sentIn(reading)], {
+    const [remarks, sent] = yield* Effect.all([remarksHeld(app, reading), Comment.listSent(reading)], {
       concurrency: "unbounded",
     })
     const held = staying(withRemarks(withSent(app.state, sent), remarks), app.state.panelIndex)
@@ -132,7 +121,7 @@ export const reloadFromForge = (app: Terminal, said: string): Work => {
     const reading = app.reading
     if (reading === undefined) return
     const remarks = yield* Effect.orElseSucceed(
-      remarksIn(app.repo, reading),
+      Remark.fetch(app.repo, reading),
       () => app.state.remarks,
     )
     app.commit(withNoticeHere(withRemarks(app.state, remarks), said))
@@ -149,7 +138,7 @@ export const sendRemarkAnswer = (app: Terminal, to: string): Work => {
     }
     const said = app.screen.written()
     const done = yield* Effect.as(
-      answerRemark({ repo: app.repo, branch: branch.branch, id: to, body: said }),
+      Remark.answer(app.repo, yield* worktreeOf(app, branch.branch), to, said),
       true,
     ).pipe(Effect.catchTag("ForgeUnavailable", () => Effect.succeed(false)))
     const clear = { ...sentAway(app.state), answerTo: undefined }

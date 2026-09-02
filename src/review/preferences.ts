@@ -8,7 +8,7 @@ import {
 } from "../domain/preferences/index.ts"
 import { UnknownPreference, UnknownPreferenceValue } from "./error.ts"
 
-export const readPreferences = Effect.fn("Review.readPreferences")(function* () {
+export const list = Effect.fn("Review.Preference.list")(function* () {
   const store = yield* Store
   const kept = yield* store.settings
   return preferences.map((one) => ({
@@ -19,7 +19,7 @@ export const readPreferences = Effect.fn("Review.readPreferences")(function* () 
   }))
 })
 
-export const readPreference = Effect.fn("Review.readPreference")(function* (name: string) {
+export const read = Effect.fn("Review.Preference.read")(function* (name: string) {
   const known = preferenceNamed(name)
   if (known === undefined) return yield* new UnknownPreference({ name, known: preferenceNames })
   const store = yield* Store
@@ -31,7 +31,7 @@ const ON = "on"
 
 const OFF = "off"
 
-export const preferenceValue = Effect.fn("Review.preferenceValue")(function* (
+export const parse = Effect.fn("Review.Preference.parse")(function* (
   name: string,
   said: string,
 ) {
@@ -41,7 +41,7 @@ export const preferenceValue = Effect.fn("Review.preferenceValue")(function* (
   return yield* new UnknownPreferenceValue({ name, value: said, known: [ON, OFF] })
 })
 
-export const savePreference = Effect.fn("Review.savePreference")(function* (
+export const save = Effect.fn("Review.Preference.save")(function* (
   name: string,
   value: boolean,
 ) {

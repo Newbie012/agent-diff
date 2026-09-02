@@ -17,13 +17,6 @@ import {
   SubscriptionRef,
   type Fiber,
 } from "effect"
-import {
-  listBranches,
-  summaryFor,
-  savePreference,
-  type BranchReading,
-  type BranchSummary,
-} from "../review/index.ts"
 import { heldValues } from "../domain/preferences/index.ts"
 import { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
@@ -87,6 +80,7 @@ import { tookTheAnswer, vouch } from "./vouching.ts"
 import { contextToggled } from "./files.ts"
 import { initialState, onLayers, selectedPatch, type Spot, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
+import { Branch, type BranchReading, type BranchSummary, Preference } from "../review/index.ts"
 
 const LEAVING_MS = 3000
 const LOOK_MS = 260
@@ -434,7 +428,7 @@ export class App implements Terminal {
     for (const [name, value] of Object.entries(chosenIn(next))) {
       if (this.chosen[name] === value) continue
       this.chosen[name] = value
-      this.dispatch(Effect.ignore(savePreference(name, value)))
+      this.dispatch(Effect.ignore(Preference.save(name, value)))
     }
   }
 
@@ -704,9 +698,9 @@ const firstBranches = Effect.fn("Tui.firstBranches")(function* (
   branch: string | undefined,
   base: string | undefined,
 ) {
-  if (branch === undefined) return yield* listBranches(repo, base)
-  const only = yield* Effect.option(summaryFor(repo, branch, base))
-  return Option.isNone(only) ? yield* listBranches(repo, base) : [only.value]
+  if (branch === undefined) return yield* Branch.list(repo, base)
+  const only = yield* Effect.option(Branch.summary(repo, branch, base))
+  return Option.isNone(only) ? yield* Branch.list(repo, base) : [only.value]
 })
 
 const missing = (branch: string | undefined, found: Option.Option<number>): string =>

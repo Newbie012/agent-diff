@@ -9,7 +9,7 @@ import {
   type Place,
 } from "../domain/search/index.ts"
 import { Git } from "../service/git/index.ts"
-import { type BranchReading, readingOf } from "./branches.ts"
+import type { BranchReading } from "./branches.ts"
 
 export type Match = {
   readonly path: string
@@ -61,7 +61,7 @@ const matchOf = (place: Place): Match => ({
   around: [],
 })
 
-export const searchIn = Effect.fn("Review.searchIn")(function* (
+export const files = Effect.fn("Review.Search.files")(function* (
   reading: BranchReading,
   term: string,
   here = "",
@@ -84,7 +84,7 @@ export const searchIn = Effect.fn("Review.searchIn")(function* (
   } satisfies Searched
 })
 
-export const aroundIn = Effect.fn("Review.aroundIn")(function* (
+export const around = Effect.fn("Review.Search.around")(function* (
   reading: BranchReading,
   path: string,
   line: number,
@@ -99,13 +99,4 @@ export const aroundIn = Effect.fn("Review.aroundIn")(function* (
   return source
     .slice(from, to)
     .map((text, at) => `${String(from + at + 1).padStart(5)} ${text}`)
-})
-
-export const searchBranch = Effect.fn("Review.searchBranch")(function* (
-  repo: string,
-  branch: string,
-  term: string,
-  here = "",
-) {
-  return yield* searchIn(yield* readingOf(repo, branch), term, here)
 })

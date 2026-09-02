@@ -1,10 +1,9 @@
 import { realpath } from "node:fs/promises"
 import { Effect, Option } from "effect"
-import { type Patch } from "../domain/patch/index.ts"
+import { parsePatches, type Patch } from "../domain/patch/index.ts"
 import { AT_ONCE, Git, type Worktree } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { UnknownBase, UnknownBranch, UnknownWorktree } from "./error.ts"
-import { parsePatches } from "../domain/patch/index.ts"
 
 export const realOf = (worktree: string): Effect.Effect<string, UnknownWorktree> =>
   Effect.tryPromise({
@@ -31,6 +30,11 @@ export type Basis = "default" | "stacked" | "set"
 
 export type Based = { readonly worktree: Worktree; readonly base: string; readonly basis: Basis }
 
+export type BranchReading = {
+  readonly worktree: Worktree
+  readonly patches: ReadonlyArray<Patch>
+}
+
 const AUTO = "auto"
 
 const askedFor = (asked: string | undefined, held: string): { ref: string; basis: Basis } => {
@@ -39,7 +43,7 @@ const askedFor = (asked: string | undefined, held: string): { ref: string; basis
   return held.length === 0 ? { ref: "", basis: "stacked" } : { ref: held, basis: "set" }
 }
 
-export const basedOn = Effect.fn("Review.basedOn")(function* (
+export const basedOn = Effect.fn("Review.Branch.basedOn")(function* (
   repo: string,
   worktree: Worktree,
   asked?: string,
@@ -69,7 +73,7 @@ export const basedOn = Effect.fn("Review.basedOn")(function* (
   } satisfies Based
 })
 
-const worktreeNamed = Effect.fn("Review.worktreeNamed")(function* (repo: string, branch: string) {
+const named = Effect.fn("Review.Branch.named")(function* (repo: string, branch: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const found = worktrees.find((worktree) => worktree.branch === branch)
@@ -78,23 +82,53 @@ const worktreeNamed = Effect.fn("Review.worktreeNamed")(function* (repo: string,
     : Effect.succeed(found)
 })
 
-export const findBranch = Effect.fn("Review.findBranch")(function* (
+export const find = Effect.fn("Review.Branch.find")(function* (
   repo: string,
   branch: string,
   base?: string,
 ) {
-  return (yield* basedOn(repo, yield* worktreeNamed(repo, branch), base)).worktree
+  return (yield* basedOn(repo, yield* named(repo, branch), base)).worktree
 })
 
-export const baseFor = Effect.fn("Review.baseFor")(function* (
+export const worktreeAt = Effect.fn("Review.Branch.worktreeAt")(function* (
+  worktreePath: string,
+  base?: string,
+) {
+  const git = yield* Git
+  const asked = yield* git.realPathOf(worktreePath)
+  const worktrees = yield* git.worktrees(asked)
+  const paths = yield* Effect.forEach(worktrees, (entry) => git.realPathOf(entry.path))
+  const at = paths.indexOf(asked)
+  const found = worktrees[at]
+  if (found === undefined) {
+    return yield* new UnknownWorktree({ worktree: asked, known: worktrees.map((entry) => entry.path) })
+  }
+  const repo = yield* git.repoOf(found.path)
+  return (yield* basedOn(repo, found, base)).worktree
+})
+
+export const CONTEXT = 3
+
+export const patches = Effect.fn("Review.Branch.patches")(function* (
+  worktree: Worktree,
+  context = CONTEXT,
+  only?: string,
+) {
+  const git = yield* Git
+  const raw = yield* git.diff(worktree, context, only)
+  return parsePatches(raw)
+})
+
+export const reading = Effect.fn("Review.Branch.reading")(function* (
   repo: string,
   branch: string,
   base?: string,
 ) {
-  return yield* basedOn(repo, yield* worktreeNamed(repo, branch), base)
+  const worktree = yield* find(repo, branch, base)
+  return { worktree, patches: yield* patches(worktree) } satisfies BranchReading
 })
 
-const waitingOn = Effect.fn("Review.waitingOn")(function* (worktree: Worktree) {
+const waitingOn = Effect.fn("Review.Branch.waitingOn")(function* (worktree: Worktree) {
   const store = yield* Store
   const owed = yield* store.owed(worktree.path)
   const told = yield* store.layers(worktree.path)
@@ -105,7 +139,7 @@ const waitingOn = Effect.fn("Review.waitingOn")(function* (worktree: Worktree) {
   }
 })
 
-const summaryOf = Effect.fn("Review.summaryOf")(function* (
+const summaryOf = Effect.fn("Review.Branch.summaryOf")(function* (
   repo: string,
   found: Worktree,
   base?: string,
@@ -131,44 +165,30 @@ const summaryOf = Effect.fn("Review.summaryOf")(function* (
   } satisfies BranchSummary
 })
 
-export const summaryFor = Effect.fn("Review.summaryFor")(function* (
+export const summary = Effect.fn("Review.Branch.summary")(function* (
   repo: string,
   branch: string,
   base?: string,
 ) {
-  const worktree = yield* findBranch(repo, branch, base)
+  const worktree = yield* find(repo, branch, base)
   return yield* summaryOf(repo, worktree, base)
 })
 
-export const listBranches = Effect.fn("Review.listBranches")(function* (repo: string, base?: string) {
+export const list = Effect.fn("Review.Branch.list")(function* (repo: string, base?: string) {
   const git = yield* Git
   const worktrees = yield* git.worktrees(repo)
   const summaries = yield* Effect.forEach(worktrees, (found) => summaryOf(repo, found, base), {
     concurrency: AT_ONCE,
   })
-  return summaries.filter((summary) => summary.files > 0)
+  return summaries.filter((one) => one.files > 0)
 })
 
-export type BranchReading = {
-  readonly worktree: Worktree
-  readonly patches: ReadonlyArray<Patch>
-}
-
-export const readingOf = Effect.fn("Review.readingOf")(function* (
-  repo: string,
-  branch: string,
-  base?: string,
-) {
-  const worktree = yield* findBranch(repo, branch, base)
-  return { worktree, patches: yield* patchesOf(worktree) } satisfies BranchReading
-})
-
-export const markOpened = Effect.fn("Review.markOpened")(function* (worktreePath: string, at: string) {
+export const markOpened = Effect.fn("Review.Branch.markOpened")(function* (worktree: Worktree, at: string) {
   const store = yield* Store
-  yield* store.changeState(worktreePath, (was) => ({ ...was, openedAt: at }))
+  yield* store.changeState(worktree.path, (was) => ({ ...was, openedAt: at }))
 })
 
-export const lastOpenedIn = Effect.fn("Review.lastOpenedIn")(function* (repo: string) {
+export const lastOpened = Effect.fn("Review.Branch.lastOpened")(function* (repo: string) {
   const store = yield* Store
   const git = yield* Git
   const trees = yield* git.worktrees(repo)
@@ -179,28 +199,23 @@ export const lastOpenedIn = Effect.fn("Review.lastOpenedIn")(function* (repo: st
   return opened.toSorted((left, right) => right.at.localeCompare(left.at))[0]
 })
 
-export const repoOf = Effect.fn("Review.repoOf")(function* (worktree: string) {
+export const repoOf = Effect.fn("Review.Branch.repoOf")(function* (worktreePath: string) {
   const git = yield* Git
-  return yield* git.repoOf(worktree)
+  return yield* git.repoOf(worktreePath)
 })
 
-export const worktreeOf = Effect.fn("Review.worktreeOf")(function* (repo: string, branch: string) {
-  const found = yield* findBranch(repo, branch)
-  return found.path
-})
-
-export const branchAt = Effect.fn("Review.branchAt")(function* (worktree: string) {
+export const nameAt = Effect.fn("Review.Branch.nameAt")(function* (worktreePath: string) {
   const store = yield* Store
-  const resolved = yield* realOf(worktree)
+  const resolved = yield* realOf(worktreePath)
   return yield* store.branchAt(resolved)
 })
 
-export const saveReport = Effect.fn("Review.saveReport")(function* (stamp: string, text: string) {
+export const saveReport = Effect.fn("Review.Branch.saveReport")(function* (stamp: string, text: string) {
   const store = yield* Store
   return yield* store.saveReport(stamp, text)
 })
 
-export const listRefs = Effect.fn("Review.listRefs")(function* (repo: string) {
+export const refs = Effect.fn("Review.Branch.refs")(function* (repo: string) {
   const git = yield* Git
   return yield* git.refs(repo)
 })
@@ -210,7 +225,7 @@ const MOST_RECENT = 5
 const forOne = (count: number): string =>
   count === 1 ? "the last commit" : `the last ${count} commits`
 
-export const recentBases = Effect.fn("Review.recentBases")(function* (
+export const recentBases = Effect.fn("Review.Branch.recentBases")(function* (
   repo: string,
   branch: string,
 ) {
@@ -224,33 +239,23 @@ export const recentBases = Effect.fn("Review.recentBases")(function* (
   })
 })
 
-export const setBase = Effect.fn("Review.setBase")(function* (
+export const setBase = Effect.fn("Review.Branch.setBase")(function* (
   repo: string,
-  branch: string,
+  worktree: Worktree,
   base: string,
 ) {
   const store = yield* Store
-  const based = yield* baseFor(repo, branch, base)
-  yield* store.changeState(based.worktree.path, (was) => ({ ...was, base }))
-  return { branch, base: based.base, basis: based.basis }
+  const based = yield* basedOn(repo, worktree, base)
+  yield* store.changeState(worktree.path, (was) => ({ ...was, base }))
+  return { branch: worktree.branch, base: based.base, basis: based.basis }
 })
 
-export const clearBase = Effect.fn("Review.clearBase")(function* (repo: string, branch: string) {
-  const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
-  yield* store.changeState(worktree.path, (was) => ({ ...was, base: "" }))
-  const based = yield* baseFor(repo, branch)
-  return { branch, base: based.base, basis: based.basis }
-})
-
-export const CONTEXT = 3
-
-export const patchesOf = Effect.fn("Review.patchesOf")(function* (
+export const clearBase = Effect.fn("Review.Branch.clearBase")(function* (
+  repo: string,
   worktree: Worktree,
-  context = CONTEXT,
-  only?: string,
 ) {
-  const git = yield* Git
-  const raw = yield* git.diff(worktree, context, only)
-  return parsePatches(raw)
+  const store = yield* Store
+  yield* store.changeState(worktree.path, (was) => ({ ...was, base: "" }))
+  const based = yield* basedOn(repo, worktree)
+  return { branch: worktree.branch, base: based.base, basis: based.basis }
 })

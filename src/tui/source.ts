@@ -1,11 +1,9 @@
 import { getTreeSitterClient, pathToFiletype } from "@opentui/core"
 import { Effect } from "effect"
 import type { Side } from "../domain/patch/index.ts"
-import { fileBefore, fileSource, listPatches, patchIn, remarksAgainst } from "../review/index.ts"
 import type { Action } from "./command.ts"
 import { GAP_CHUNK, gapAtRow, shownOf } from "./gaps.ts"
 import type { Work } from "./needs.ts"
-import { worktreeFor } from "./reading.ts"
 import {
   gapOpened,
   gapShown,
@@ -21,6 +19,8 @@ import { rowAtSourceLine, sourceLineAt } from "./cursor.ts"
 import { layerContext } from "./layerview.ts"
 import { WHOLE_FILE } from "./layout.ts"
 import { selectedBranch, selectedPatch, type TuiState } from "./state.ts"
+import { Diff, Remark } from "../review/index.ts"
+import { worktreeOf } from "./reading.ts"
 
 const lonelyGaps = (state: TuiState): ReadonlyArray<{ index: number; hidden: number }> =>
   (shownOf(state)?.gaps ?? []).filter((gap) => gap.hidden === 1)
@@ -31,10 +31,10 @@ export const loadSource = (app: Terminal): Work => {
     const patch = selectedPatch(app.state)
     if (branch === undefined || patch === undefined) return
     const asked = patch.path
-    const source = yield* fileSource(app.repo, branch.branch, asked)
+    const source = yield* Diff.source(yield* worktreeOf(app, branch.branch), asked)
     if (selectedPatch(app.state)?.path !== asked) return
     app.commit(withSource(app.state, source))
-    const before = yield* fileBefore(app.repo, branch.branch, asked)
+    const before = yield* Diff.before(yield* worktreeOf(app, branch.branch), asked)
     if (selectedPatch(app.state)?.path !== asked) return
     yield* app.aside(app.lighting, lightUp(app.screen, asked, source, before))
     yield* openTinyGaps(app)
@@ -90,11 +90,7 @@ export const loadFull = (app: Terminal): Work => {
     const patch = selectedPatch(app.state)
     if (branch === undefined || patch === undefined) return
     if (app.state.full.some((one) => one.path === patch.path)) return
-    const worktree = worktreeFor(app, branch.branch)
-    const full =
-      worktree === undefined
-        ? yield* listPatches(app.repo, branch.branch, WHOLE_FILE, patch.path)
-        : yield* patchIn(worktree, WHOLE_FILE, patch.path)
+    const full = yield* Diff.list(yield* worktreeOf(app, branch.branch), WHOLE_FILE, patch.path)
     app.commit(withFull(app.state, [...app.state.full, ...full]))
   })
 }
@@ -108,11 +104,7 @@ export const widen = (app: Terminal, next: number): Work => {
     const branch = selectedBranch(app.state)
     if (branch === undefined || next === app.state.context) return
     const line = sourceLineAt(app.state, app.state.cursor)
-    const worktree = worktreeFor(app, branch.branch)
-    const patches =
-      worktree === undefined
-        ? yield* listPatches(app.repo, branch.branch, next)
-        : yield* patchIn(worktree, next)
+    const patches = yield* Diff.list(yield* worktreeOf(app, branch.branch), next)
     const widened = withContext(app.state, next, patches, 0)
     const patch = selectedPatch(widened)
     const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)
@@ -120,7 +112,7 @@ export const widen = (app: Terminal, next: number): Work => {
     const remarks =
       held === undefined
         ? app.state.remarks
-        : yield* remarksAgainst(held.worktree.path, patches)
+        : yield* Remark.against(held.worktree, patches)
     app.commit(withRemarks(withContext(app.state, next, patches, cursor), remarks))
   })
 }

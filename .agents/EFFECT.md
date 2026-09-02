@@ -37,6 +37,17 @@ constructed. Nothing else builds one.
 Dependencies arrive through the context, never through a constructor argument or a module-level
 singleton. One place provides them: `src/main.ts` for the CLI, the driver for tests.
 
+## Use cases
+
+A use case is not a service. Nothing swaps it and nothing acquires it, so a `Context.Service` around
+one would add a layer for the sake of a dot. What a use case wants is a home: one file per noun in
+`src/review`, exported from the index as a namespace, so the caller writes `Thread.settle(worktree,
+id, at)` and the file owns the word. Spans read `Review.Thread.settle`.
+
+A use case takes a `Worktree` or a `BranchReading`, never a repo and a branch name and never a bare
+path. The caller resolves the address once with `Branch.find` or `Branch.reading`. That is what keeps
+one verb from existing twice, once per way of naming the same worktree.
+
 ## Errors
 
 An error is a `Data.TaggedError` in the module's `error.ts`, carrying the facts a caller needs to

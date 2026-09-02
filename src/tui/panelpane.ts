@@ -1,5 +1,4 @@
 import { bg, fg, StyledText } from "@opentui/core"
-import type { Remark } from "../review/index.ts"
 import { marks, standMark } from "./marks.ts"
 import { clipPath } from "./notespane.ts"
 import {
@@ -13,6 +12,7 @@ import {
 import type { Clicked, TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip } from "./words.ts"
+import type { ReportedRemark } from "../review/index.ts"
 
 const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   remarks: "Remarks",
@@ -45,7 +45,7 @@ export const restingOrHere = (focused: boolean): string =>
 
 export const REMARK_MARK = "◇"
 
-const remarkWhere = (remark: Remark, known: boolean): string => {
+const remarkWhere = (remark: ReportedRemark, known: boolean): string => {
   if (remark.placed) return `:${remark.end}`
   if (remark.outdated) return " · outdated"
   return known ? " · outside this diff" : " · not in the diff"

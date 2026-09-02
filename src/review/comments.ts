@@ -9,14 +9,12 @@ import {
   type StoreUnwritable,
 } from "../service/store/index.ts"
 import { UnknownComment, type UnknownWorktree } from "./error.ts"
-import { type BranchReading, findBranch, readingOf, realOf } from "./branches.ts"
-import { anchorIn } from "./patches.ts"
+import { realOf, type BranchReading } from "./branches.ts"
+import { anchor } from "./patches.ts"
 
 const POLL = "500 millis"
 
 export type CommentRequest = {
-  readonly repo: string
-  readonly branch: string
   readonly file: string
   readonly start: number
   readonly end: number
@@ -27,17 +25,42 @@ export type CommentRequest = {
   readonly remark?: string | undefined
 }
 
+export type ReplyRequest = {
+  readonly to: string
+  readonly body: string
+  readonly id: string
+  readonly at: string
+}
+
+export type Turn = {
+  readonly voice: "reviewer" | "agent"
+  readonly body: string
+}
+
+export type PendingComment = {
+  readonly id: string
+  readonly at: string
+  readonly head: string
+  readonly file: string
+  readonly side: Side
+  readonly start: number
+  readonly end: number
+  readonly snippet: string
+  readonly body: string
+  readonly placed?: boolean | undefined
+  readonly replyTo?: string | undefined
+  readonly layer?: string | undefined
+  readonly thread?: ReadonlyArray<Turn> | undefined
+}
+
+export type Written = readonly [CommentRequest, ...ReadonlyArray<CommentRequest>]
+
 const bodyOf = (entry: { readonly body: string }): string => entry.body
 
 const saidTo = (
   spoken: ReadonlyArray<{ readonly comment: string }>,
   id: string,
 ): number => spoken.filter((entry) => entry.comment === id).length
-
-export type Turn = {
-  readonly voice: "reviewer" | "agent"
-  readonly body: string
-}
 
 type Spoken = {
   readonly comment: string
@@ -46,7 +69,7 @@ type Spoken = {
   readonly at: string
 }
 
-type Reading = {
+type Conversation = {
   readonly spoken: ReadonlyArray<Spoken>
   readonly settled: Readonly<Record<string, string>>
   readonly removed: Readonly<Record<string, string>>
@@ -75,9 +98,9 @@ const spunOf = (
 const sentOf = (
   comment: PendingComment,
   replies: ReadonlyArray<PendingComment>,
-  reading: Reading,
+  conversation: Conversation,
 ) => {
-  const { spoken, settled, removed, head, shown, read, taken } = reading
+  const { spoken, settled, removed, head, shown, read, taken } = conversation
   const ids = new Set([comment.id, ...replies.map((reply) => reply.id)])
   const said = spoken.filter((entry) => ids.has(entry.comment))
   const seen = [...ids].reduce((total, id) => total + (read[id] ?? 0), 0)
@@ -163,7 +186,7 @@ const stillInFile = (
   return { ...comment, start: line - span, end: line, placed: true }
 }
 
-const foundOutsideTheHunks = Effect.fn("Review.foundOutsideTheHunks")(function* (
+const foundOutsideTheHunks = Effect.fn("Review.Comment.foundOutsideTheHunks")(function* (
   worktree: Worktree,
   held: ReadonlyArray<PendingComment>,
   shown: ReadonlySet<string>,
@@ -188,7 +211,23 @@ const foundOutsideTheHunks = Effect.fn("Review.foundOutsideTheHunks")(function* 
   )
 })
 
-export const sentIn = Effect.fn("Review.sentIn")(function* (reading: BranchReading) {
+const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =>
+  batches.flatMap((batch) =>
+    batch.comments.map((comment) => ({
+      id: comment.id,
+      at: batch.at,
+      head: batch.head,
+      file: comment.anchor.path,
+      side: comment.anchor.side,
+      start: comment.anchor.start,
+      end: comment.anchor.end,
+      snippet: comment.anchor.snippet,
+      body: comment.body,
+      replyTo: comment.replyTo,
+    })),
+  )
+
+export const listSent = Effect.fn("Review.Comment.listSent")(function* (reading: BranchReading) {
   const store = yield* Store
   const worktree = reading.worktree
   const spoken = yield* store.answers(worktree.path)
@@ -215,26 +254,16 @@ export const sentIn = Effect.fn("Review.sentIn")(function* (reading: BranchReadi
     .map((comment) => sentOf(comment, under(comment), conversation))
 })
 
-export const listSent = Effect.fn("Review.listSent")(function* (
-  repo: string,
-  branch: string,
-  base?: string,
-) {
-  return yield* sentIn(yield* readingOf(repo, branch, base))
-})
-
-export type Written = readonly [CommentRequest, ...ReadonlyArray<CommentRequest>]
-
-export const commentsIn = Effect.fn("Review.commentsIn")(function* (
+export const submitMany = Effect.fn("Review.Comment.submitMany")(function* (
   worktree: Worktree,
   requests: Written,
 ) {
   const store = yield* Store
-  const anchoring = Effect.fn("Review.anchoring")(function* (request: CommentRequest) {
-    const anchor = yield* anchorIn(worktree, request)
+  const anchoring = Effect.fn("Review.Comment.anchoring")(function* (request: CommentRequest) {
+    const anchored = yield* anchor(worktree, request)
     return {
       id: request.id,
-      anchor,
+      anchor: anchored,
       body: request.body,
       ...(request.remark === undefined ? {} : { remark: request.remark }),
     }
@@ -250,30 +279,12 @@ export const commentsIn = Effect.fn("Review.commentsIn")(function* (
   return batch
 })
 
-export const commentIn = Effect.fn("Review.commentIn")(function* (
+export const submit = Effect.fn("Review.Comment.submit")(function* (
   worktree: Worktree,
   request: CommentRequest,
 ) {
-  return yield* commentsIn(worktree, [request])
+  return yield* submitMany(worktree, [request])
 })
-
-export const submitComment = Effect.fn("Review.submitComment")(function* (request: CommentRequest) {
-  return yield* commentIn(yield* findBranch(request.repo, request.branch), request)
-})
-
-export const submitComments = Effect.fn("Review.submitComments")(function* (requests: Written) {
-  const worktree = yield* findBranch(requests[0].repo, requests[0].branch)
-  return yield* commentsIn(worktree, requests)
-})
-
-export type ReplyRequest = {
-  readonly repo: string
-  readonly branch: string
-  readonly to: string
-  readonly body: string
-  readonly id: string
-  readonly at: string
-}
 
 const without = (
   held: Readonly<Record<string, string>>,
@@ -281,9 +292,11 @@ const without = (
 ): Readonly<Record<string, string>> =>
   Object.fromEntries(Object.entries(held).filter(([held_]) => held_ !== key))
 
-export const submitReply = Effect.fn("Review.submitReply")(function* (request: ReplyRequest) {
+export const reply = Effect.fn("Review.Comment.reply")(function* (
+  worktree: Worktree,
+  request: ReplyRequest,
+) {
   const store = yield* Store
-  const worktree = yield* findBranch(request.repo, request.branch)
   const batches = yield* store.inbox(worktree.path)
   const found = batches.flatMap((batch) => batch.comments).find((one) => one.id === request.to)
   if (found === undefined) return yield* new UnknownComment({ id: request.to })
@@ -305,50 +318,18 @@ export const submitReply = Effect.fn("Review.submitReply")(function* (request: R
   return batch
 })
 
-export type PendingComment = {
-  readonly id: string
-  readonly at: string
-  readonly head: string
-  readonly file: string
-  readonly side: Side
-  readonly start: number
-  readonly end: number
-  readonly snippet: string
-  readonly body: string
-  readonly placed?: boolean | undefined
-  readonly replyTo?: string | undefined
-  readonly layer?: string | undefined
-  readonly thread?: ReadonlyArray<Turn> | undefined
-}
-
-const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =>
-  batches.flatMap((batch) =>
-    batch.comments.map((comment) => ({
-      id: comment.id,
-      at: batch.at,
-      head: batch.head,
-      file: comment.anchor.path,
-      side: comment.anchor.side,
-      start: comment.anchor.start,
-      end: comment.anchor.end,
-      snippet: comment.anchor.snippet,
-      body: comment.body,
-      replyTo: comment.replyTo,
-    })),
-  )
-
 const threadBefore = (
-  reply: PendingComment,
+  replied: PendingComment,
   held: ReadonlyArray<PendingComment>,
   spoken: ReadonlyArray<Spoken>,
 ): ReadonlyArray<Turn> => {
-  const root = reply.replyTo
+  const root = replied.replyTo
   const mine = held.filter((one) => one.id === root || one.replyTo === root)
   const ids = new Set(mine.map((one) => one.id))
   const said = spoken.filter((entry) => ids.has(entry.comment))
   return spunOf(
-    mine.filter((one) => one.at < reply.at),
-    said.filter((entry) => entry.at < reply.at),
+    mine.filter((one) => one.at < replied.at),
+    said.filter((entry) => entry.at < replied.at),
   ).map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn)
 }
 
@@ -372,7 +353,7 @@ const layerOver = (
   )?.title
 }
 
-const layersOn = Effect.fn("Review.layersOn")(function* (worktree: string) {
+const layersOn = Effect.fn("Review.Comment.layersOn")(function* (worktree: string) {
   const store = yield* Store
   const found = yield* store.layers(worktree)
   return Option.match(found, {
@@ -381,9 +362,9 @@ const layersOn = Effect.fn("Review.layersOn")(function* (worktree: string) {
   })
 })
 
-export const takeComments = Effect.fn("Review.takeComments")(function* (worktree: string) {
+export const take = Effect.fn("Review.Comment.take")(function* (worktreePath: string) {
   const store = yield* Store
-  const resolved = yield* realOf(worktree)
+  const resolved = yield* realOf(worktreePath)
   const at = new Date().toISOString()
   yield* Effect.ignore(store.noteWatching(resolved, at))
   const owed = flatten(yield* store.take(resolved, at))
@@ -401,29 +382,24 @@ export const takeComments = Effect.fn("Review.takeComments")(function* (worktree
   return owed.map(carried).map(under)
 })
 
-export const awaitComments = (
-  worktree: string,
+export const awaitTaken = (
+  worktreePath: string,
   deadline: number,
 ): Effect.Effect<
   ReadonlyArray<PendingComment>,
   StoreUnreadable | StoreUnwritable | UnknownWorktree,
   Store
 > =>
-  takeComments(worktree).pipe(
+  take(worktreePath).pipe(
     Effect.flatMap((comments) =>
       comments.length > 0 || Date.now() >= deadline
         ? Effect.succeed(comments)
-        : Effect.sleep(POLL).pipe(Effect.flatMap(() => awaitComments(worktree, deadline))),
+        : Effect.sleep(POLL).pipe(Effect.flatMap(() => awaitTaken(worktreePath, deadline))),
     ),
   )
 
-export const markRead = Effect.fn("Review.markRead")(function* (
-  repo: string,
-  branch: string,
-  id: string,
-) {
+export const markRead = Effect.fn("Review.Comment.markRead")(function* (worktree: Worktree, id: string) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
   const spoken = yield* store.answers(worktree.path)
   const held = flatten(yield* store.inbox(worktree.path))
   const ids = [id, ...held.filter((one) => one.replyTo === id).map((one) => one.id)]

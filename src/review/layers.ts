@@ -14,13 +14,12 @@ import {
   type ProseAnchor,
 } from "../domain/layers/index.ts"
 import type { Patch } from "../domain/patch/index.ts"
-import { Git, type Worktree } from "../service/git/index.ts"
+import type { Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import { isPartVouched, isVouched, partOf, vouch, vouchPart } from "../domain/review/index.ts"
-import { MalformedLayers, NoLayers, UnknownWorktree } from "./error.ts"
-import { basedOn, type BranchReading } from "./branches.ts"
+import { isPartVouched, isVouched, partOf, vouch, vouchPart as vouchedPart } from "../domain/review/index.ts"
+import { MalformedLayers, NoLayers } from "./error.ts"
+import { patches as patchesIn, type BranchReading } from "./branches.ts"
 import { readParts, type VouchReport } from "./vouching.ts"
-import { patchesOf } from "./branches.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
@@ -147,7 +146,7 @@ const parsed = (text: string): Option.Option<Record<string, unknown>> => {
   }
 }
 
-const readLayers = Effect.fn("Review.readLayers")(function* (text: string) {
+const readLayers = Effect.fn("Review.Layers.readLayers")(function* (text: string) {
   const document = yield* Option.match(parsed(text), {
     onNone: () => new MalformedLayers({ reason: "the layers is not a JSON object" }),
     onSome: Effect.succeed,
@@ -223,37 +222,19 @@ const reportOf = (
   }
 }
 
-export const worktreeAt = Effect.fn("Review.worktreeAt")(function* (
-  worktreePath: string,
-  base?: string,
-) {
-  const git = yield* Git
-  const asked = yield* git.realPathOf(worktreePath)
-  const worktrees = yield* git.worktrees(asked)
-  const paths = yield* Effect.forEach(worktrees, (entry) => git.realPathOf(entry.path))
-  const at = paths.indexOf(asked)
-  const found = worktrees[at]
-  if (found === undefined) {
-    return yield* new UnknownWorktree({ worktree: asked, known: worktrees.map((entry) => entry.path) })
-  }
-  const repo = yield* git.repoOf(found.path)
-  return (yield* basedOn(repo, found, base)).worktree
-})
-
-const storedLayers = Effect.fn("Review.storedLayers")(function* (worktree: Worktree) {
+const storedLayers = Effect.fn("Review.Layers.storedLayers")(function* (worktree: Worktree) {
   const store = yield* Store
   return Option.map(yield* store.layers(worktree.path), fromStored)
 })
 
-export const setLayers = Effect.fn("Review.setLayers")(function* (
-  worktreePath: string,
+export const set = Effect.fn("Review.Layers.set")(function* (
+  worktree: Worktree,
   text: string,
   written: string,
 ) {
   const store = yield* Store
-  const worktree = yield* worktreeAt(worktreePath)
   const input = yield* readLayers(text)
-  const patches = yield* patchesOf(worktree)
+  const patches = yield* patchesIn(worktree)
   const previous = yield* storedLayers(worktree)
   const layers: Layers = {
     version: Option.match(previous, { onNone: () => 1, onSome: (old) => old.version + 1 }),
@@ -268,9 +249,8 @@ export const setLayers = Effect.fn("Review.setLayers")(function* (
   return reportOf(patches, layers, worktree.head)
 })
 
-export const showLayers = Effect.fn("Review.showLayers")(function* (worktreePath: string) {
-  const worktree = yield* worktreeAt(worktreePath)
-  const patches = yield* patchesOf(worktree)
+export const show = Effect.fn("Review.Layers.show")(function* (worktree: Worktree) {
+  const patches = yield* patchesIn(worktree)
   const found = yield* storedLayers(worktree)
   const layers = yield* Option.match(found, {
     onNone: () => new NoLayers({ worktree: worktree.path }),
@@ -279,7 +259,7 @@ export const showLayers = Effect.fn("Review.showLayers")(function* (worktreePath
   return reportOf(patches, layers, worktree.head)
 })
 
-export const layersIn = Effect.fn("Review.layersIn")(function* (reading: BranchReading) {
+export const read = Effect.fn("Review.Layers.read")(function* (reading: BranchReading) {
   const worktree = reading.worktree
   const found = yield* storedLayers(worktree)
   if (Option.isNone(found)) {
@@ -302,7 +282,7 @@ const partsOfFile = (
     .filter((spans) => spans.length > 0)
     .map((spans) => partOf(file, spans))
 
-export const vouchPartIn = Effect.fn("Review.vouchPartIn")(function* (
+export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
   reading: BranchReading,
   file: string,
   part: string,
@@ -310,10 +290,10 @@ export const vouchPartIn = Effect.fn("Review.vouchPartIn")(function* (
   const store = yield* Store
   const patch = reading.patches.find((one) => one.path === file)
   const blob = patch?.blob ?? ""
-  const held = yield* layersIn(reading)
+  const held = yield* read(reading)
   const wanted = partsOfFile(held.layers, file)
   const current = yield* store.state(reading.worktree.path)
-  const parts = vouchPart(current.parts, part, blob)
+  const parts = vouchedPart(current.parts, part, blob)
   const whole = wanted.length > 0 && wanted.every((one) => isPartVouched(parts, one, blob))
   const vouches =
     whole === isVouched(current.vouches, file, blob) ? current.vouches : vouch(current.vouches, file, blob)

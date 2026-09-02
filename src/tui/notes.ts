@@ -1,13 +1,12 @@
 import { Option } from "effect"
-import type { Remark } from "../review/index.ts"
 import type { ThreadStand } from "./marks.ts"
-import type { ReportedLayer } from "../review/index.ts"
 import { anchorFor } from "../domain/patch/index.ts"
 import { lineOf, lineOnSide, rowsUnder, selectedRows, selectionRange } from "./cursor.ts"
 import { readIn } from "./files.ts"
 import { louderOf, panelEntry, threadChosen, threadStand } from "./panel.ts"
 import { type Asking, selectedPatch, type StagedComment, type TuiState } from "./state.ts"
 import { counted, wrapped } from "./words.ts"
+import type { ReportedLayer, ReportedRemark } from "../review/index.ts"
 
 export type OpenThreads = { readonly open: number; readonly stand: ThreadStand }
 
@@ -98,7 +97,7 @@ export const snippetOf = (state: TuiState, limit: number): ReadonlyArray<string>
     .slice(0, limit)
     .map((row) => `${lineOf(row).padStart(4)} ${row.text}`)
 
-export const remarkAnswering = (state: TuiState): Remark | undefined =>
+export const remarkAnswering = (state: TuiState): ReportedRemark | undefined =>
   state.answerTo === undefined
     ? undefined
     : state.remarks.find((one) => one.id === state.answerTo)
@@ -214,10 +213,10 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
   )
 }
 
-export const remarkShown = (remark: Remark): boolean =>
+export const remarkShown = (remark: ReportedRemark): boolean =>
   remark.state === "waiting" && remark.placed
 
-export const remarksAtRow = (state: TuiState, row: number): ReadonlyArray<Remark> => {
+export const remarksAtRow = (state: TuiState, row: number): ReadonlyArray<ReportedRemark> => {
   const patch = selectedPatch(state)
   const here = patch?.rows[row]
   if (patch === undefined || here === undefined) return []
@@ -237,7 +236,7 @@ export const remarkRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray<
 
 export type Stop =
   | { readonly kind: "comment"; readonly comment: StagedComment }
-  | { readonly kind: "remark"; readonly remark: Remark }
+  | { readonly kind: "remark"; readonly remark: ReportedRemark }
 
 export const stopsIn = (state: TuiState, row: number): ReadonlyArray<Stop> => [
   ...threadsAtRow(state, row).map((comment): Stop => ({ kind: "comment", comment })),
@@ -246,16 +245,16 @@ export const stopsIn = (state: TuiState, row: number): ReadonlyArray<Stop> => [
 
 export const stopsAtRow = (state: TuiState, row: number): number => 1 + stopsIn(state, row).length
 
-export const remarkAtStop = (state: TuiState): Remark | undefined => {
+export const remarkAtStop = (state: TuiState): ReportedRemark | undefined => {
   if (state.stop === 0) return undefined
   const found = stopsIn(state, state.cursor)[state.stop - 1]
   return found?.kind === "remark" ? found.remark : undefined
 }
 
-export const remarkAtRow = (state: TuiState, row: number): Remark | undefined =>
+export const remarkAtRow = (state: TuiState, row: number): ReportedRemark | undefined =>
   remarksAtRow(state, row)[0]
 
-export type RemarkHere = { readonly remark: Remark; readonly dismissed: boolean }
+export type RemarkHere = { readonly remark: ReportedRemark; readonly dismissed: boolean }
 
 const remarkInPanel = (state: TuiState): RemarkHere | undefined => {
   if (state.focus !== "review") return undefined
@@ -265,7 +264,7 @@ const remarkInPanel = (state: TuiState): RemarkHere | undefined => {
     : undefined
 }
 
-const remarkInDiff = (state: TuiState, shy: boolean): Remark | undefined => {
+const remarkInDiff = (state: TuiState, shy: boolean): ReportedRemark | undefined => {
   if (state.focus !== "diff") return undefined
   const standing = remarkAtStop(state)
   if (standing !== undefined) return standing
@@ -281,7 +280,7 @@ export const remarkUnderCursor = (state: TuiState): RemarkHere | undefined => {
   return here === undefined ? undefined : { remark: here, dismissed: false }
 }
 
-export const remarkHere = (state: TuiState): Remark | undefined =>
+export const remarkHere = (state: TuiState): ReportedRemark | undefined =>
   remarkInPanel(state)?.remark ?? remarkInDiff(state, false)
 
 export const cursorOnThread = (state: TuiState): boolean =>

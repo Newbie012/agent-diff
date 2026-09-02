@@ -26,7 +26,10 @@ uses, `.agents/prd/CONTEXT.md`; for durable technical choices, `.agents/adr/`.
 `Patch` knows nothing about comments. `Review` knows nothing about git or the store. `Delivery`
 asks `Git` which repository and branch a worktree is, and nothing else; it knows nothing about
 rendering. `review/` is the use-case layer: every verb a reviewer or an agent can ask for,
-as an Effect over the services. The CLI and the terminal both call it and neither calls the other.
+as an Effect over the services. Each noun is one file exported as a namespace, so a call reads
+`Thread.settle(worktree, id, at)` or `Remark.fetch(repo, reading)`. Every use case is addressed by a
+`Worktree` or a `BranchReading`; the caller resolves a repo and branch name once, with `Branch.find`
+or `Branch.reading`. The CLI and the terminal both call it and neither calls the other.
 
 ## Modules
 

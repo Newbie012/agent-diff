@@ -1,10 +1,7 @@
 import { Effect } from "effect"
-import type { VouchReport } from "../review/index.ts"
 import type { Work } from "./needs.ts"
-import { loadSent, settling } from "./reading.ts"
 import { atFile, reduce, withNotice, withSent, withVouched } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
-import { toggleVouch, vouchIn, vouchPartIn } from "../review/index.ts"
 import { isReviewed, layersHolding, nextUnreviewed, partHere, readIn } from "./files.ts"
 import { threadsInLayer, threadsOpenOn, withAsking } from "./notes.ts"
 import {
@@ -15,6 +12,9 @@ import {
   type TuiState,
 } from "./state.ts"
 import { counted } from "./words.ts"
+import { Layers, Thread, Vouch, type VouchReport } from "../review/index.ts"
+import { readingOf, worktreeOf } from "./reading.ts"
+import { loadSent } from "./reading.ts"
 
 const alongFrom = (state: TuiState): TuiState => {
   const along = nextUnreviewed(state, state.patchIndex)
@@ -73,7 +73,9 @@ export const tookTheAnswer = (app: Terminal): Work => {
 
 export const settleThese = (app: Terminal, branch: string, ids: ReadonlyArray<string>): Work => {
   return Effect.gen(function* () {
-    for (const id of ids) yield* settling(app, branch, id)
+    const worktree = yield* worktreeOf(app, branch)
+    const at = new Date().toISOString()
+    for (const id of ids) yield* Thread.settle(worktree, id, at)
     const sent = yield* loadSent(app, branch)
     app.commit(withSent(app.state, sent))
   })
@@ -130,11 +132,11 @@ export const partHereNow = (app: Terminal): string | undefined => {
   return partHere(app.state, app.state.layerIndex, app.state.patchIndex)
 }
 
-export const vouching = (app: Terminal, branch: string, file: string): Work<VouchReport> => {
-  const held = app.reading
-  if (held === undefined || held.worktree.branch !== branch) {
-    return toggleVouch({ repo: app.repo, branch, file })
-  }
-  const part = partHereNow(app)
-  return part === undefined ? vouchIn(held, file) : vouchPartIn(held, file, part)
-}
+export const vouching = (app: Terminal, branch: string, file: string): Work<VouchReport> =>
+  Effect.gen(function* () {
+    const reading = yield* readingOf(app, branch)
+    const part = partHereNow(app)
+    return part === undefined
+      ? yield* Vouch.toggle(reading, file)
+      : yield* Layers.vouchPart(reading, file, part)
+  })

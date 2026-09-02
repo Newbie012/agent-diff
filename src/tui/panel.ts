@@ -1,6 +1,6 @@
-import type { Remark } from "../review/index.ts"
 import type { ThreadStand } from "./marks.ts"
 import type { StagedComment, TuiState } from "./state.ts"
+import type { ReportedRemark } from "../review/index.ts"
 
 export type PanelSection =
   | "remarks"
@@ -38,7 +38,7 @@ export type PanelEntry =
   | {
       readonly kind: "remark"
       readonly section: PanelSection
-      readonly remark: Remark
+      readonly remark: ReportedRemark
     }
   | {
       readonly kind: "fold"
@@ -136,7 +136,7 @@ export const threadChosen = (state: TuiState): StagedComment | undefined => {
   return entry?.kind === "comment" ? entry.comment : undefined
 }
 
-export const remarkChosen = (state: TuiState): Remark | undefined => {
+export const remarkChosen = (state: TuiState): ReportedRemark | undefined => {
   if (state.focus !== "review") return undefined
   const entry = panelEntry(state)
   return entry?.kind === "remark" ? entry.remark : undefined

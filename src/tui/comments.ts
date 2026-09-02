@@ -1,9 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { Effect, Option } from "effect"
 import { anchorFor } from "../domain/patch/index.ts"
-import { type CommentRequest, markRead, submitReply } from "../review/index.ts"
 import type { Work } from "./needs.ts"
-import { commenting, loadSent, sending, staying } from "./reading.ts"
 import { allRevealed, openedAt, reduce, withNotice, withNoticeHere, withSent } from "./reduce.ts"
 import { openRemark, sendRemarkAnswer } from "./remarks.ts"
 import { turnedTo } from "./source.ts"
@@ -14,6 +12,9 @@ import { remarkHere, threadHere } from "./notes.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { selectedBranch, selectedPatch, type StagedComment, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
+import { Comment, type CommentRequest } from "../review/index.ts"
+import { staying, worktreeOf } from "./reading.ts"
+import { loadSent } from "./reading.ts"
 
 const LAYERS_ASK_LEAD = "About this branch, not about this line."
 
@@ -96,7 +97,7 @@ export const readAnswers = (app: Terminal, id: string | undefined): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (id === undefined || branch === undefined) return
-    yield* markRead(app.repo, branch.branch, id)
+    yield* Comment.markRead(yield* worktreeOf(app, branch.branch), id)
     const held = app.state.panelIndex
     const sent = yield* loadSent(app, branch.branch)
     app.commit({ ...withSent(app.state, sent), panelIndex: held })
@@ -116,9 +117,7 @@ export const sendReply = (app: Terminal, to: string): Work => {
       app.commit(withNotice(app.state, NOTHING_WRITTEN))
       return
     }
-    yield* submitReply({
-      repo: app.repo,
-      branch: branch.branch,
+    yield* Comment.reply(yield* worktreeOf(app, branch.branch), {
       to,
       body: app.screen.written(),
       id: randomUUID(),
@@ -155,9 +154,7 @@ export const sendComment = (app: Terminal): Work => {
       })
       return
     }
-    yield* commenting(app, branch.branch, {
-      repo: app.repo,
-      branch: branch.branch,
+    yield* Comment.submit(yield* worktreeOf(app, branch.branch), {
       file: patch.path,
       side: anchor.value.side,
       start: anchor.value.start,
@@ -186,8 +183,6 @@ export const sendHeld = (app: Terminal): Work => {
     if (branch === undefined || first === undefined) return
     const at = new Date().toISOString()
     const asked = (comment: StagedComment): CommentRequest => ({
-      repo: app.repo,
-      branch: branch.branch,
       file: comment.file,
       side: comment.side,
       start: comment.start,
@@ -198,7 +193,7 @@ export const sendHeld = (app: Terminal): Work => {
       ...(comment.remark === undefined ? {} : { remark: comment.remark }),
     })
     const many = app.state.held.length
-    yield* sending(app, branch.branch, [asked(first), ...rest.map(asked)])
+    yield* Comment.submitMany(yield* worktreeOf(app, branch.branch), [asked(first), ...rest.map(asked)])
     const sent = yield* loadSent(app, branch.branch)
     app.commit(
       withNotice(
@@ -214,9 +209,7 @@ export const askForLayers = (app: Terminal): Work => {
     const patch = app.state.patches[0]
     const branch = selectedBranch(app.state)
     if (patch === undefined || branch === undefined) return
-    yield* commenting(app, branch.branch, {
-      repo: app.repo,
-      branch: branch.branch,
+    yield* Comment.submit(yield* worktreeOf(app, branch.branch), {
       file: patch.path,
       side: "new",
       start: 1,

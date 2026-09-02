@@ -1,4 +1,5 @@
 import { preferences } from "../domain/preferences/index.ts"
+import type { BranchSummary, Match, ReportedLayer, ReportedRemark } from "../review/index.ts"
 
 export type Focus = "tree" | "diff" | "review"
 
@@ -24,7 +25,6 @@ export type StagedComment = {
 }
 import { type Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
-import type { BranchSummary, Match, Remark, ReportedLayer } from "../review/index.ts"
 import type { Counted } from "../domain/search/index.ts"
 
 export type LayerRow = {
@@ -141,7 +141,7 @@ export type TuiState = {
   readonly openMoved: boolean
   readonly refSaid: Readonly<Record<string, string>>
   readonly sent: ReadonlyArray<StagedComment>
-  readonly remarks: ReadonlyArray<Remark>
+  readonly remarks: ReadonlyArray<ReportedRemark>
   readonly held: ReadonlyArray<StagedComment>
   readonly viewport: number
   readonly context: number

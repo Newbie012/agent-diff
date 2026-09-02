@@ -4,12 +4,9 @@ import { Store, type StoredDraft } from "../service/store/index.ts"
 import { NothingDrafted, PartlySent, PullMoved, UnknownDraft } from "./error.ts"
 import type { Side } from "../domain/patch/index.ts"
 import type { Worktree } from "../service/git/index.ts"
-import { findBranch } from "./branches.ts"
-import { anchorIn } from "./patches.ts"
+import { anchor } from "./patches.ts"
 
 export type DraftRequest = {
-  readonly repo: string
-  readonly branch: string
   readonly file: string
   readonly start: number
   readonly end: number
@@ -48,20 +45,18 @@ const reported = (draft: StoredDraft): ReportedDraft => ({
   wroteBy: draft.wroteBy,
 })
 
-export const listDrafts = Effect.fn("Review.listDrafts")(function* (repo: string, branch: string) {
+export const list = Effect.fn("Review.Draft.list")(function* (worktree: Worktree) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
   return (yield* store.drafts(worktree.path)).map(reported)
 })
 
-export const addDraft = Effect.fn("Review.addDraft")(function* (request: DraftRequest) {
+export const add = Effect.fn("Review.Draft.add")(function* (worktree: Worktree, request: DraftRequest) {
   const store = yield* Store
-  const worktree = yield* findBranch(request.repo, request.branch)
-  const anchor = yield* anchorIn(worktree, request)
+  const anchored = yield* anchor(worktree, request)
   const held = yield* store.drafts(worktree.path)
   const one: StoredDraft = {
     id: request.id,
-    anchor,
+    anchor: anchored,
     body: request.body,
     at: request.at,
     wroteBy: request.wroteBy,
@@ -70,14 +65,12 @@ export const addDraft = Effect.fn("Review.addDraft")(function* (request: DraftRe
   return reported(one)
 })
 
-export const editDraft = Effect.fn("Review.editDraft")(function* (
-  repo: string,
-  branch: string,
+export const edit = Effect.fn("Review.Draft.edit")(function* (
+  worktree: Worktree,
   id: string,
   body: string,
 ) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
   const held = yield* store.drafts(worktree.path)
   const found = held.find((one) => one.id === id)
   if (found === undefined) return yield* new UnknownDraft({ id })
@@ -87,13 +80,8 @@ export const editDraft = Effect.fn("Review.editDraft")(function* (
   return reported(said)
 })
 
-export const dropDraft = Effect.fn("Review.dropDraft")(function* (
-  repo: string,
-  branch: string,
-  id: string,
-) {
+export const drop = Effect.fn("Review.Draft.drop")(function* (worktree: Worktree, id: string) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
   const held = yield* store.drafts(worktree.path)
   if (!held.some((one) => one.id === id)) return yield* new UnknownDraft({ id })
   yield* store.saveDrafts(
@@ -117,13 +105,10 @@ const commentOf = (draft: StoredDraft): ForgeComment => ({
   body: draft.body,
 })
 
-const sending = Effect.fn("Review.sending")(function* (
-  repo: string,
-  branch: string,
-  worktree: Worktree,
-) {
+const sending = Effect.fn("Review.Draft.sending")(function* (repo: string, worktree: Worktree) {
   const store = yield* Store
   const forge = yield* Forge
+  const branch = worktree.branch
   const held = yield* store.drafts(worktree.path)
   if (held.length === 0) return yield* new NothingDrafted({ branch })
   const head = yield* forge.head(repo, branch)
@@ -150,11 +135,7 @@ const sending = Effect.fn("Review.sending")(function* (
   return { sent: held.length, url: sent.url, held: since.length } satisfies Dispatched
 })
 
-export const dispatchDrafts = Effect.fn("Review.dispatchDrafts")(function* (
-  repo: string,
-  branch: string,
-) {
+export const dispatch = Effect.fn("Review.Draft.dispatch")(function* (repo: string, worktree: Worktree) {
   const store = yield* Store
-  const worktree = yield* findBranch(repo, branch)
-  return yield* store.whileHoldingDrafts(worktree.path, sending(repo, branch, worktree))
+  return yield* store.whileHoldingDrafts(worktree.path, sending(repo, worktree))
 })
