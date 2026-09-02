@@ -1,9 +1,3 @@
-import { spawn } from "node:child_process"
-import { randomUUID } from "node:crypto"
-import { existsSync } from "node:fs"
-import { realpath } from "node:fs/promises"
-import { platform } from "node:os"
-import { join, resolve } from "node:path"
 import {
   createCliRenderer,
   getTreeSitterClient,
@@ -11,224 +5,100 @@ import {
   type CliRenderer,
   type KeyEvent,
 } from "@opentui/core"
-import { Cause, Deferred, Effect, Fiber, Option, Queue, Result, Stream, SubscriptionRef } from "effect"
-import { buildReport } from "./report.ts"
-import { anchorFor } from "../domain/patch/index.ts"
-import { editorsAround, openingOf, templateFor } from "../domain/editor/index.ts"
 import {
-  listBranches,
-  listRefs,
-  summaryFor,
-  markRead,
-  type BranchSummary,
-  listPatches,
-  patchIn,
-  fileSource,
-  fileBefore,
-  listSent,
-  aroundIn,
-  searchBranch,
-  searchIn,
-  layersIn,
-  progressIn,
-  readingOf,
-  sentIn,
-  setBase,
-  clearBase,
-  saveReport,
-  commentIn,
-  commentsIn,
-  savePreference,
-  submitComment,
-  submitComments,
-  submitReply,
-  toggleVouch,
-  vouchIn,
-  vouchPartIn,
-  type BranchReading,
-  type CommentRequest,
-  type Written,
-  type VouchReport,
-  removeComment,
-  restoreComment,
-  restoreIn,
-  settleIn,
-  removeIn,
-  settleThread,
-  unsettleIn,
-  unsettleThread,
-  settleRead,
-  acceptIn,
-  answerRemark,
-  quoted,
-  dismissIn,
-  undismissIn,
-  remarksIn,
-  remarksHeldIn,
-  remarksAgainst,
-  type Remark,
-  markOpened,
-  recentBases,
-} from "../cli/index.ts"
+  Cause,
+  Deferred,
+  Effect,
+  FiberHandle,
+  Option,
+  Queue,
+  Schedule,
+  Stream,
+  SubscriptionRef,
+  type Fiber,
+} from "effect"
 import { heldValues } from "../domain/preferences/index.ts"
-import type { Worktree } from "../service/git/index.ts"
+import { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
-import { Forge } from "../service/forge/index.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
-import { gapAtRow, shownOf, GAP_CHUNK } from "./gaps.ts"
+import { keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
 import {
-  initialState,
-  isReviewed,
-  layersHolding,
-  threadsInLayer,
-  threadsOpenOn,
-  withAsking,
-  partHere,
-  readIn,
-  nextUnreviewed,
-  onLayers,
-  rowAtSourceLine,
-  rowShowing,
-  sourceLineAt,
-  layerContext,
-  knownToHaveNoPull,
-  pullHere,
-  contextToggled,
-  selectedBranch,
-  selectedPatch,
-  pickedText,
-  selectedLines,
-  type Spot,
-  matchHere,
-  refHere,
-  selectionRange,
-  spokenSince,
-  panelEntry,
-  remarkHere,
-  remarkToTakeOn,
-  remarkUnderCursor,
-  type PanelEntry,
-  panelEntries,
-  threadAtStop,
-  threadHere,
-  standingOnThread,
-  WHOLE_FILE,
-  type StagedComment,
-  type TuiState,
-  type Clicked,
-} from "./model.ts"
-import {
-  atFile,
-  openedAt,
   draggedTo,
-  restingOn,
-  pickedIn,
-  gapOpened,
-  gapShown,
   paletteChoice,
   paletteClosed,
   paletteMoved,
-  reduce,
-  restoredTo,
-  resumedAt,
-  railScrolled,
-  scrolled,
   panBy,
+  pickedIn,
+  reduce,
+  restingOn,
+  scrolled,
   legible,
-  withNotice,
-  withNoticeHere,
-  withWaiting,
-  withArrived,
   withColumns,
   withDraft,
-  withContext,
-  withBranches,
-  withPulls,
-  withSilentForge,
-  withFull,
-  withPatches,
-  withFinder,
-  withAround,
-  withChoices,
-  withMatches,
-  withRefs,
-  allRevealed,
-  withRemarks,
-  withSent,
-  withSource,
-  withLayers,
-  withVouched,
-  atLayer,
+  withNotice,
+  withNoticeHere,
 } from "./reduce.ts"
-import { Display, displayOn, type Shape as DisplayShape } from "./display.ts"
 import type { Needs, Work } from "./needs.ts"
 import { Intent } from "./intent.ts"
+import { Screen } from "./render.ts"
 import { readSession, sessionOf, writeSession, type Session } from "./session.ts"
 import { upgradeHint } from "./upgrade.ts"
+import type { Aside, Diagnostics, Terminal, Timing } from "./terminal.ts"
+import {
+  clearBaseHere,
+  fillBranches,
+  goBack,
+  loadPulls,
+  noticeAnswers,
+  openBases,
+  openBranch,
+  openedOn,
+  reloadBranch,
+  reloadList,
+  resumeAt,
+  setBaseHere,
+  showPull,
+} from "./branches.ts"
+import { askForLayers, compose, replyHere, send, sendHeld } from "./comments.ts"
+import { chooseEditor, editorChosen, forgetEditor, openInEditor } from "./editor.ts"
+import { clicked, commitSynced, moveFile, rolled, stepped, walkComments } from "./moving.ts"
+import { acceptRemarkHere } from "./remarks.ts"
+import { sendReport } from "./reporting.ts"
+import {
+  LEAST_TERM,
+  findSelection,
+  forgetMatches,
+  lookFor,
+  runFinder,
+  walkMatches,
+} from "./search.ts"
+import { copyDragged, copySelection } from "./selection.ts"
+import { expand, unfold, widen } from "./source.ts"
+import { removeHere, settleHere, settleWhatIsRead } from "./threads.ts"
+import { tookTheAnswer, vouch } from "./vouching.ts"
+import { contextToggled } from "./files.ts"
+import { initialState, onLayers, selectedPatch, type Spot, type TuiState } from "./state.ts"
+import { counted } from "./words.ts"
+import { Branch, type BranchReading, type BranchSummary, Preference } from "../review/index.ts"
 
 const LEAVING_MS = 3000
 const LOOK_MS = 260
-const LEAST_TERM = 2
 const AGE_TICK_MS = 30_000
-
-const LEAVING_SAID = "press ctrl+c again to leave"
-const NOTHING_WRITTEN = "nothing written yet"
+const NOTICE_MS = 2200
 const WORTH_TIMING_MS = 250
 const TIMES_KEPT = 40
 const SLOWEST_KEPT = 3
-const NOTHING_COUNTED = { file: 0, branch: 0, worktree: 0 }
-const READING_PULL = "reading the pull request"
-const FORGE_QUIET = "the forge did not answer, so no remarks are shown"
+const KEY_HISTORY = 40
+const TRAIL_HISTORY = 20
+const DRAIN_PASSES = 8
 
-const countOf = (many: number, one: string): string => `${many} ${one}${many === 1 ? "" : "s"}`
+const LEAVING_SAID = "press ctrl+c again to leave"
 
 const leavingSaid = (state: TuiState): string =>
   state.held.length === 0
     ? LEAVING_SAID
-    : `${countOf(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
-
-const LAYERS_ASK_LEAD = "About this branch, not about this line."
-
-const layersAsk = (state: TuiState): string => {
-  if (state.layers.length === 0) {
-    return `${LAYERS_ASK_LEAD} Please write a reading order for it with \`adiff layers set\`, so the diff can be read in the order the change was made rather than by filename.`
-  }
-  if (state.layersStale) {
-    return `${LAYERS_ASK_LEAD} The reading order on it describes an older commit — please read the diff again and write a new one with \`adiff layers set\`.`
-  }
-  return `${LAYERS_ASK_LEAD} Please revise its reading order with \`adiff layers set\`.`
-}
-
-const askedFor = (state: TuiState): string =>
-  state.layers.length === 0 ? "asked for a reading order" : "asked for a new reading order"
-
-const alongFrom = (state: TuiState): TuiState => {
-  const along = nextUnreviewed(state, state.patchIndex)
-  return along === undefined ? withNotice(state, "every file reviewed") : atFile(state, along)
-}
-const NOTICE_MS = 2200
-
-export type AppOptions = {
-  readonly renderer: CliRenderer
-  readonly repo: string
-  readonly base?: string | undefined
-  readonly display: DisplayShape
-  readonly state: SubscriptionRef.SubscriptionRef<TuiState>
-  readonly intents: Queue.Queue<Intent>
-  readonly painting: Fiber.Fiber<void>
-  readonly noticeMs?: number | undefined
-  readonly sessionPath?: string | undefined
-  readonly resume?: Session | undefined
-  readonly opensOn?: number | undefined
-  readonly partial?: boolean | undefined
-  readonly chosen?: Partial<TuiState> | undefined
-}
-
-const KEY_HISTORY = 40
-const DRAIN_PASSES = 8
-
-const TRAIL_HISTORY = 20
+    : `${counted(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
 
 const clockOf = (elapsed: number): string => {
   const seconds = Math.floor(elapsed / 1000)
@@ -245,276 +115,193 @@ const momentOf = (named: string, state: TuiState, elapsed: number): string => {
 const noticeOf = (notice: string, elapsed: number): string =>
   `${clockOf(elapsed)}  ${"said".padEnd(16)} ${notice}`
 
-const COPIERS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  darwin: ["pbcopy"],
-  linux: ["xclip", "-selection", "clipboard"],
-  win32: ["clip"],
-}
-
-const wayland = (): ReadonlyArray<string> | undefined =>
-  process.env["WAYLAND_DISPLAY"] === undefined ? undefined : ["wl-copy"]
-
-const seedFor = (picked: string | undefined): string => picked?.trim() ?? ""
-
-const handOver = (text: string): void => {
-  if (!process.stdout.isTTY) return
-  const named = wayland() ?? COPIERS[platform()]
-  if (named === undefined) return
-  const [command, ...rest] = named
-  if (command === undefined) return
-  const pipe = spawn(command, [...rest], { stdio: ["pipe", "ignore", "ignore"] })
-  pipe.on("error", () => undefined)
-  pipe.stdin.on("error", () => undefined)
-  pipe.stdin.end(text)
-}
-
-const throughMultiplexer = (sequence: string): string => {
-  if (process.env["TMUX"] !== undefined) return `\u001BPtmux;\u001B${sequence}\u001B\\`
-  return process.env["STY"] === undefined ? sequence : `\u001BP${sequence}\u001B\\`
-}
-
-const ranAside = (command: string, args: ReadonlyArray<string>, from: string): boolean => {
-  try {
-    const child = spawn(command, [...args], { detached: true, stdio: "ignore", cwd: from })
-    child.on("error", () => undefined)
-    child.unref()
-    return true
-  } catch {
-    return false
-  }
-}
-
-const onThePath = (name: string): boolean =>
-  (process.env["PATH"] ?? "")
-    .split(":")
-    .some((where) => where.length > 0 && existsSync(join(where, name)))
-
-const saveEditor = Effect.fn("Tui.saveEditor")(function* (command: string) {
-  const store = yield* Store
-  const current = yield* store.settings
-  const held = { ...current }
-  if (command.length === 0) delete (held as Record<string, unknown>)["editor"]
-  yield* store.saveSettings(command.length === 0 ? held : { ...held, editor: command })
+const turnedOver = (state: TuiState): TuiState => ({
+  ...state,
+  picked: undefined,
+  railScroll: -1,
+  scroll: -1,
+  selecting: false,
+  anchorRow: state.cursor,
 })
 
-const editorTold = Effect.gen(function* () {
-  const store = yield* Store
-  const kept = yield* store.settings
-  const held = kept["editor"]
-  return {
-    editor: typeof held === "string" ? held : undefined,
-    visual: process.env["VISUAL"],
-    fallback: process.env["EDITOR"],
-    termProgram: process.env["TERM_PROGRAM"],
-    terminalEmulator: process.env["TERMINAL_EMULATOR"],
-  }
+const unmoved = (from: Spot, to: Spot): boolean =>
+  from.row === to.row && from.column === to.column
+
+const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
+  wrap: state.wrap,
+  sticky: state.sticky,
+  panel: state.panelOpen,
+  hideReviewed: state.hideReviewed,
+  hideSettled: state.hideSettled,
+  newestFirst: state.newestFirst,
+  remarks: state.remarksOn,
+  hold: state.hold,
 })
 
-const copyToClipboard = (text: string): void => {
-  const encoded = Buffer.from(text, "utf8").toString("base64")
-  process.stdout.write(throughMultiplexer(`\u001B]52;c;${encoded}\u0007`))
-  handOver(text)
-}
-const lineUnder = (state: TuiState): ReadonlyArray<string> => {
-  const row = selectedPatch(state)?.rows[state.cursor]
-  return row === undefined ? [] : [row.text]
-}
-
-const asKey = (name: string): KeyEvent =>
-  (name.startsWith("ctrl+")
-    ? { name: name.slice(5), sequence: name.slice(5), ctrl: true, shift: false }
-    : { name, sequence: name, ctrl: false, shift: false }) as KeyEvent
-
-const openedPull = (state: string, opened: boolean): string => {
-  if (!opened) return "could not reach the pull request"
-  return state.length === 0 ? "opened the pull request" : `opened the ${state} pull request`
+type Asides = {
+  readonly sourcing: Aside
+  readonly fetching: Aside
+  readonly searching: Aside
+  readonly lighting: Aside
+  readonly looking: Aside
+  readonly fading: Aside
 }
 
-const markedIs = (path: string, settled: number): string =>
-  settled === 0
-    ? `marked ${path}`
-    : `marked ${path} and settled ${settled} thread${settled === 1 ? "" : "s"}`
+type RunAside = (effect: Effect.Effect<void>) => Fiber.Fiber<void>
 
-const LISTENS: ReadonlySet<string> = new Set(["keys", "palette", "search", "base", "editor"])
-
-const WRITES: ReadonlySet<string> = new Set(["compose", "report"])
-
-const OVER: ReadonlySet<string> = new Set([
-  "compose",
-  "report",
-  "keys",
-  "palette",
-  "search",
-  "settings",
-  "base",
-  "editor",
-  "thread",
-  "settling",
-])
-
-export const overReview = (screen: TuiState["screen"]): boolean => OVER.has(screen)
-
-const writesInto = (screen: TuiState["screen"]): boolean => WRITES.has(screen)
-
-const listens = (screen: TuiState["screen"]): boolean => LISTENS.has(screen)
-
-const LETTER = /^[a-z]$/i
-
-const laidOut = (key: KeyEvent): string => {
-  if (key.baseCode === undefined || key.name.length !== 1) return key.name
-  const laid = String.fromCodePoint(key.baseCode)
-  return LETTER.test(laid) ? laid : key.name
+export type AppOptions = {
+  readonly renderer: CliRenderer
+  readonly screen: Screen
+  readonly repo: string
+  readonly base: string | undefined
+  readonly state: SubscriptionRef.SubscriptionRef<TuiState>
+  readonly intents: Queue.Queue<Intent>
+  readonly asides: Asides
+  readonly runFading: RunAside
+  readonly runLooking: RunAside
+  readonly noticeMs: number
+  readonly sessionPath: string | undefined
+  readonly chosen: Partial<TuiState>
 }
 
-const ARROWS: ReadonlySet<string> = new Set(["up", "down", "left", "right"])
+type Effects = Readonly<Partial<Record<Action, (app: App) => Work>>>
 
-const SHIFTED: Readonly<Record<string, string>> = {
-  "1": "!",
-  "2": "@",
-  "3": "#",
-  "4": "$",
-  "5": "%",
-  "6": "^",
-  "7": "&",
-  "8": "*",
-  "9": "(",
-  "0": ")",
-  "-": "_",
-  "=": "+",
-  "[": "{",
-  "]": "}",
-  "\\": "|",
-  ";": ":",
-  "'": '"',
-  ",": "<",
-  ".": ">",
-  "/": "?",
-  "`": "~",
+const EFFECTS: Effects = {
+  quit: (app) => Effect.sync(() => app.renderer.destroy()),
+  "branch.open": openBranch,
+  "branch.pull": showPull,
+  "compose.open": compose,
+  "compose.submit": send,
+  "held.send": sendHeld,
+  "palette.run": (app) => app.runChoice(),
+  "comment.next": (app) => walkComments(app, 1),
+  "comment.prev": (app) => walkComments(app, -1),
+  "file.next": (app) => moveFile(app, 1),
+  "file.prev": (app) => moveFile(app, -1),
+  "cursor.next": (app) => stepped(app, 1),
+  "cursor.prev": (app) => stepped(app, -1),
+  "rail.toggle": (app) => commitSynced(app, "rail.toggle"),
+  "layers.ask": askForLayers,
+  "file.vouch": (app) => vouch(app, false),
+  "file.vouch.next": (app) => vouch(app, true),
+  "ask.take": tookTheAnswer,
+  "thread.settle": settleHere,
+  "thread.settleRead": settleWhatIsRead,
+  "thread.remove": removeHere,
+  "thread.reply": replyHere,
+  "remark.accept": acceptRemarkHere,
+  "selection.copy": (app) => Effect.sync(() => copySelection(app, false)),
+  "search.open": findSelection,
+  "search.jump": runFinder,
+  "review.reload": (app) => (app.state.screen === "branches" ? reloadList(app) : reloadBranch(app)),
+  "base.open": openBases,
+  "base.set": (app) => (app.state.screen === "editor" ? editorChosen(app) : setBaseHere(app)),
+  "base.clear": (app) => (app.state.screen === "editor" ? forgetEditor(app) : clearBaseHere(app)),
+  "line.open": openInEditor,
+  "editor.open": chooseEditor,
+  back: goBack,
+  "report.send": sendReport,
+  "context.more": (app) => expand(app, 1),
+  "context.less": (app) => expand(app, -1),
+  "context.whole": (app) => widen(app, contextToggled(app.state)),
+  "tree.expand": (app) => unfold(app, 1),
+  "tree.collapse": (app) => unfold(app, -1),
+  "match.next": (app) => walkMatches(app, 1),
+  "match.prev": (app) => walkMatches(app, -1),
 }
 
-const keyName = (key: KeyEvent): string => {
-  if (key.shift && (key.name === "tab" || ARROWS.has(key.name))) return `shift+${key.name}`
-  const named = laidOut(key)
-  const base = key.shift && named.length === 1 ? (SHIFTED[named] ?? named.toUpperCase()) : named
-  return key.ctrl ? `ctrl+${base}` : base
-}
+export class App implements Terminal {
+  readonly renderer: CliRenderer
+  readonly screen: Screen
+  readonly repo: string
+  readonly base: string | undefined
+  readonly sourcing: Aside
+  readonly fetching: Aside
+  readonly searching: Aside
+  readonly lighting: Aside
+  readonly looking: Aside
+  reading: BranchReading | undefined
 
-export class App {
   private readonly held: SubscriptionRef.SubscriptionRef<TuiState>
-  private readonly display: DisplayShape
-  private readonly painting: Fiber.Fiber<void>
   private readonly intents: Queue.Queue<Intent>
-  private consuming: Fiber.Fiber<void> | undefined
+  private readonly runFading: RunAside
+  private readonly runLooking: RunAside
+  private readonly noticeMs: number
+  private readonly sessionPath: string | undefined
+  private readonly chosen: Record<string, boolean> = {}
+  private readonly began = Date.now()
+  private readonly keys: Array<string> = []
+  private readonly trail: Array<string> = []
+  private readonly took: Array<Timing> = []
   private failure = ""
   private failureKind = ""
-  private reading: BranchReading | undefined
-
-  private readonly renderer: CliRenderer
-  private readonly repo: string
-  private readonly base: string | undefined
-  private readonly noticeMs: number
   private roomed = 0
-  private readonly sessionPath: string | undefined
   private remembered = ""
-  private readonly chosen: Record<string, boolean> = {}
   private selectingNow = false
   private leaving: number | undefined
-  private looking: ReturnType<typeof setTimeout> | undefined
   private rolling = false
   private pendingRoll = 0
-  private ticking: ReturnType<typeof setInterval> | undefined
   private grewWithShift = false
-  private readonly keys: Array<string> = []
-  private readonly took: Array<{ readonly action: string; readonly ms: number }> = []
-  private readonly trail: Array<string> = []
-  private readonly began = Date.now()
-  private fading: Fiber.Fiber<void> | undefined
   private wheel = 0
   private sideways = 0
-  private listening: Fiber.Fiber<void> | undefined
-  private lighting: Fiber.Fiber<void, unknown> | undefined
-  private sourcing: Fiber.Fiber<void, unknown> | undefined
-  private fetching: Fiber.Fiber<void, unknown> | undefined
-  private searching: Fiber.Fiber<void, unknown> | undefined
 
   constructor(options: AppOptions) {
     this.renderer = options.renderer
+    this.screen = options.screen
     this.repo = options.repo
     this.base = options.base
-    this.noticeMs = options.noticeMs ?? NOTICE_MS
+    this.held = options.state
+    this.intents = options.intents
+    this.sourcing = options.asides.sourcing
+    this.fetching = options.asides.fetching
+    this.searching = options.asides.searching
+    this.lighting = options.asides.lighting
+    this.looking = options.asides.looking
+    this.runFading = options.runFading
+    this.runLooking = options.runLooking
+    this.noticeMs = options.noticeMs
     this.sessionPath = options.sessionPath
     Object.assign(this.chosen, chosenIn({ ...initialState([]), ...options.chosen }))
-    this.held = options.state
-    this.display = options.display
-    this.painting = options.painting
-    this.intents = options.intents
-    const { renderer } = options
-    Effect.runSync(
-      this.display.listen({
-        onClick: (what) => this.dispatchTask(this.clicked(what)),
-        onScroll: (delta) => this.onWheel(delta),
-        onPan: (delta) => this.onPanWheel(delta),
-        onDrag: (from, to, done) => this.dragged(from, to, done),
-        onChip: (key) => this.dispatchTask(this.onKey(asKey(key))),
-        onRail: (delta) => this.rollFrom(delta),
-      }),
-    )
-    renderer.on("selection", () => this.copyDragged())
-    Effect.runSync(options.display.onWritten((text) => this.readBack(text)))
-    Effect.runSync(options.display.onAsked((text) => this.askedBack(text)))
-    renderer.keyInput.on("keypress", (key) => this.dispatch(key))
-    renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
-    renderer.on("destroy", () => this.letGoOfEverything())
-    this.startTicking()
-
-    renderer.on("frame", () => this.syncGeometry())
-    renderer.on("resize", () => this.resized())
-    renderer.setFrameCallback(() => Effect.runPromise(this.applying()))
-    const resume = options.resume
-    const opensOn = options.opensOn
-    if (opensOn !== undefined) this.dispatchTask(this.openedOn(opensOn))
-    else if (resume !== undefined) this.dispatchTask(this.resume(resume))
-    this.dispatchTask(this.loadPulls())
-    if (options.partial === true) this.dispatchTask(this.fillBranches())
+    this.wire()
   }
 
-  listen(fiber: Fiber.Fiber<void>): void {
-    this.listening = fiber
+  private wire(): void {
+    const { renderer, screen } = this
+    screen.listen({
+      onClick: (what) => this.dispatch(clicked(this, what)),
+      onScroll: (delta) => this.onWheel(delta),
+      onPan: (delta) => this.onPanWheel(delta),
+      onDrag: (from, to, done) => this.dragged(from, to, done),
+      onChip: (key) => this.dispatch(this.onKey(keyNamed(key))),
+      onRail: (delta) => this.rollFrom(delta),
+    })
+    screen.onWritten((text) => this.readBack(text))
+    screen.onAsked((text) => this.askedBack(text))
+    renderer.on("selection", () => copyDragged(this))
+    renderer.keyInput.on("keypress", (key) => this.pressed(key))
+    renderer.keyInput.on("keyrelease", (key) => this.letGo(key))
+    renderer.on("frame", () => this.syncGeometry())
+    renderer.on("resize", () => this.resized())
+    renderer.setFrameCallback(() => Promise.resolve(this.applyWheel()))
+  }
+
+  open(opensOn: Option.Option<number>, session: Option.Option<Session>, partial: boolean): void {
+    this.commit({ ...this.state, now: Date.now() })
+    if (Option.isSome(opensOn)) this.dispatch(openedOn(this, opensOn.value))
+    else if (Option.isSome(session)) this.dispatch(resumeAt(this, session.value))
+    this.dispatch(loadPulls(this))
+    if (partial) this.dispatch(fillBranches(this))
   }
 
   answered(): void {
-    this.dispatchTask(this.noticeAnswers())
+    this.dispatch(noticeAnswers(this))
   }
 
-  private stopWatching(): void {
-    const fiber = this.listening
-    this.listening = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
+  ticked(): void {
+    this.commit({ ...this.state, now: Date.now() })
   }
 
-  private noticeAnswers(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) {
-        yield* this.noticeOnList()
-        return
-      }
-      const sent = yield* this.loadSent(branch.branch)
-      const said = spokenSince(this.state.sent, sent)
-      if (said === 0) return
-      this.commit(withWaiting(withArrived(this.state, sent), `${said} answered · press r`))
-    })
-  }
-
-  private noticeOnList(): Work {
-    return Effect.sync(() => this.commit(withWaiting(this.state, "the agent answered · press r")))
-  }
-
-  private slowest(): ReadonlyArray<{ readonly action: string; readonly ms: number }> {
-    return [...this.took].toSorted((left, right) => right.ms - left.ms).slice(0, SLOWEST_KEPT)
-  }
-
-  private dispatchTask(task: Work): void {
+  dispatch(task: Work): void {
     Queue.offerUnsafe(this.intents, Intent.Task({ run: task }))
   }
 
@@ -530,13 +317,6 @@ export class App {
     )
   }
 
-  private timed(began: number): void {
-    const ms = Date.now() - began
-    if (ms < WORTH_TIMING_MS) return
-    this.took.push({ action: this.trail.at(-1)?.trim().split(/\s+/)[1] ?? "a key", ms })
-    if (this.took.length > TIMES_KEPT) this.took.shift()
-  }
-
   private answer(intent: Intent): Work {
     return Intent.$match(intent, {
       Key: ({ key }) => this.onKey(key),
@@ -545,57 +325,11 @@ export class App {
     })
   }
 
-  private openedOn(branchIndex: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      if (branchIndex >= this.state.branches.length) return
-      this.write({ ...this.state, branchIndex })
-      yield* this.openBranch()
-      yield* this.loadSource()
-    })
-  }
-
-  private resume(session: Session): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branches = this.state.branches
-      if (session.branchIndex >= branches.length) return
-      this.write({ ...this.state, branchIndex: session.branchIndex })
-      yield* this.openBranch()
-      const patchIndex = Math.min(session.patchIndex, Math.max(0, this.state.patches.length - 1))
-      this.commit(resumedAt(this.state, patchIndex, session.cursor, session.top))
-      yield* this.loadSource()
-    })
-  }
-
-  private rememberChosen(next: TuiState): void {
-    for (const [name, value] of Object.entries(chosenIn(next))) {
-      if (this.chosen[name] === value) continue
-      this.chosen[name] = value
-      this.dispatchTask(savePreference(name, value).pipe(Effect.asVoid, Effect.orElseSucceed(() => undefined)))
-    }
-  }
-
-  private rememberPlace(next: TuiState): void {
-    if (this.sessionPath === undefined || next.screen !== "review") return
-    const session = sessionOf(next)
-    const line = JSON.stringify(session)
-    if (line === this.remembered) return
-    this.remembered = line
-    Effect.runFork(writeSession(this.sessionPath, session))
-  }
-
-  private dispatch(key: KeyEvent): void {
-    if (key.eventType === "release") {
-      this.letGo(key)
-      return
-    }
-    if (this.renderer.hasSelection) this.renderer.clearSelection()
-    Queue.offerUnsafe(this.intents, Intent.Key({ key }))
-  }
-
-  private letGo(key: KeyEvent): void {
-    if (!key.name.endsWith("shift") || !this.grewWithShift) return
-    this.grewWithShift = false
-    Queue.offerUnsafe(this.intents, Intent.Key({ key: asKey("c") }))
+  private timed(began: number): void {
+    const ms = Date.now() - began
+    if (ms < WORTH_TIMING_MS) return
+    this.took.push({ action: this.trail.at(-1)?.trim().split(/\s+/)[1] ?? "a key", ms })
+    if (this.took.length > TIMES_KEPT) this.took.shift()
   }
 
   private fail(cause: unknown): void {
@@ -609,6 +343,16 @@ export class App {
 
   shown(): TuiState {
     return this.state
+  }
+
+  diagnostics(): Diagnostics {
+    return {
+      slowest: [...this.took].toSorted((left, right) => right.ms - left.ms).slice(0, SLOWEST_KEPT),
+      keys: this.keys,
+      trail: this.trail,
+      failure: this.failure,
+      failureKind: this.failureKind,
+    }
   }
 
   private pinged(): Effect.Effect<void> {
@@ -627,59 +371,233 @@ export class App {
   }
 
   settled(): Promise<void> {
-    if (this.consuming === undefined) return Promise.resolve()
+    const asides = [this.sourcing, this.fetching, this.searching, this.lighting]
     return Effect.runPromise(
-      Effect.andThen(
-        Effect.andThen(
-          Effect.andThen(this.drained(), Effect.suspend(() => this.stillSourcing())),
-          Effect.suspend(() => this.stillFetching()),
-        ).pipe(Effect.andThen(Effect.suspend(() => this.stillSearching()))),
-        Effect.suspend(() => this.stillLighting()),
-      ),
+      Effect.gen({ self: this }, function* () {
+        yield* this.drained()
+        for (const aside of asides) yield* FiberHandle.awaitEmpty(aside)
+      }),
     )
   }
 
-  private stillFetching(): Effect.Effect<void> {
-    const fiber = this.fetching
-    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
+  get state(): TuiState {
+    return SubscriptionRef.getUnsafe(this.held)
   }
 
-  private stillSearching(): Effect.Effect<void> {
-    const fiber = this.searching
-    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
+  write(next: TuiState): void {
+    Effect.runSync(SubscriptionRef.set(this.held, next))
   }
 
-  private stillSourcing(): Effect.Effect<void> {
-    const fiber = this.sourcing
-    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
+  measured(): TuiState {
+    return { ...this.state, viewport: this.screen.viewportRows() }
   }
 
-  private stillLighting(): Effect.Effect<void> {
-    const fiber = this.lighting
-    return fiber === undefined ? Effect.void : Effect.asVoid(Fiber.await(fiber))
+  standing(): TuiState {
+    const held = this.measured()
+    return held.scroll >= 0 ? held : { ...held, scroll: this.screen.scrolledAt() }
   }
 
-  private clicked(what: Clicked): Work {
-    return Effect.gen({ self: this }, function* () {
-      const held = { ...this.measured(), focus: what.pane }
-      if (what.entry !== undefined) {
-        this.commit({ ...held, panelIndex: what.entry })
-        return
-      }
-      if (what.layer !== undefined && onLayers(held)) {
-        const was = held.patchIndex
-        const moved = atLayer(held, what.layer)
-        this.commit(what.file === undefined ? moved : atFile(moved, what.file))
-        if (this.state.patchIndex !== was) yield* this.turnedTo()
-        return
-      }
-      if (what.file === undefined || what.file === held.patchIndex) {
-        this.commit(held)
-        return
-      }
-      this.commit(atFile(held, what.file))
-      yield* this.turnedTo()
+  commit(given: TuiState): void {
+    const kept = this.keptScroll(given)
+    const next = kept.patchIndex === this.state.patchIndex ? kept : turnedOver(kept)
+    this.turnWriting(next)
+    const appeared = next.notice.length > 0 && next.notice !== this.state.notice
+    if (appeared) this.recordNotice(next.notice)
+    this.rememberPlace(next)
+    this.rememberChosen(next)
+    this.write(next)
+    if (appeared) this.fade()
+  }
+
+  private keptScroll(given: TuiState): TuiState {
+    if (this.state.screen !== "compose" || given.screen === "compose") return given
+    if (given.patchIndex !== this.state.patchIndex) return given
+    return { ...given, scroll: this.screen.scrolledAt() }
+  }
+
+  private recordNotice(notice: string): void {
+    this.trail.push(noticeOf(notice, this.since()))
+    if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
+  }
+
+  private since(): number {
+    return Date.now() - this.began
+  }
+
+  private rememberChosen(next: TuiState): void {
+    for (const [name, value] of Object.entries(chosenIn(next))) {
+      if (this.chosen[name] === value) continue
+      this.chosen[name] = value
+      this.dispatch(Effect.ignore(Preference.save(name, value)))
+    }
+  }
+
+  private rememberPlace(next: TuiState): void {
+    if (this.sessionPath === undefined || next.screen !== "review") return
+    const session = sessionOf(next)
+    const line = JSON.stringify(session)
+    if (line === this.remembered) return
+    this.remembered = line
+    this.dispatch(writeSession(this.sessionPath, session))
+  }
+
+  private fade(): void {
+    const clearing = Effect.gen({ self: this }, function* () {
+      yield* Effect.sleep(this.noticeMs)
+      if (this.state.notice.length > 0) this.commit({ ...this.state, notice: "" })
     })
+    this.runFading(clearing)
+  }
+
+  private turnWriting(next: TuiState): void {
+    if (listens(next.screen) !== listens(this.state.screen) || next.screen !== this.state.screen) {
+      this.screen.askOn(listens(next.screen) ? next.screen : undefined)
+    }
+    const was = writesInto(this.state.screen)
+    const now = writesInto(next.screen)
+    if (was === now) {
+      if (now && next.draftAt !== this.state.draftAt) this.screen.write(next.draft)
+      return
+    }
+    if (now) this.screen.write(next.draft)
+    this.screen.writeOn(now)
+  }
+
+  private askedBack(text: string): void {
+    const clean = legible(text).replaceAll("\n", " ")
+    if (clean !== text) {
+      this.screen.askWith(clean)
+      return
+    }
+    if (!listens(this.state.screen) || clean === this.state.query) return
+    this.commit({ ...this.state, query: clean, paletteIndex: 0, refIndex: 0 })
+    if (this.state.screen === "search") this.lookSoon(clean)
+  }
+
+  private readBack(text: string): void {
+    const clean = legible(stripAnsiSequences(text))
+    if (clean !== text) {
+      this.screen.write(clean)
+      return
+    }
+    if (text === this.state.draft) return
+    this.commit(withDraft(this.state, text))
+  }
+
+  private lookSoon(wanted: string): void {
+    const looking = Effect.gen({ self: this }, function* () {
+      yield* Effect.sleep(LOOK_MS)
+      const asked = wanted.trim()
+      if (this.state.screen !== "search" || this.state.query.trim() !== asked) return
+      this.dispatch(asked.length < LEAST_TERM ? forgetMatches(this) : this.searchAside(asked))
+    })
+    this.runLooking(looking)
+  }
+
+  private searchAside(wanted: string): Work {
+    return this.aside(this.searching, lookFor(this, wanted))
+  }
+
+  aside(handle: Aside, work: Work): Effect.Effect<void, never, Needs> {
+    const quiet = work.pipe(Effect.catchCause((cause) => Effect.sync(() => this.fail(Cause.squash(cause)))))
+    return Effect.asVoid(FiberHandle.run(handle)(quiet))
+  }
+
+  private pressed(key: KeyEvent): void {
+    if (this.renderer.hasSelection) this.renderer.clearSelection()
+    Queue.offerUnsafe(this.intents, Intent.Key({ key }))
+  }
+
+  private letGo(key: KeyEvent): void {
+    if (!key.name.endsWith("shift") || !this.grewWithShift) return
+    this.grewWithShift = false
+    Queue.offerUnsafe(this.intents, Intent.Key({ key: keyNamed("c") }))
+  }
+
+  private onKey(key: KeyEvent, forced?: Action): Work {
+    return Effect.gen({ self: this }, function* () {
+      if (forced === undefined && keyName(key) === "ctrl+c") {
+        this.askedToLeave()
+        return
+      }
+      this.forgetLeaving()
+      const action = forced ?? actionFor(this.state.screen, keyName(key), this.state.focus)
+      this.grewWithShift = action === "select.grow" || action === "select.shrink"
+      this.remember(action, key)
+      if (action === undefined) {
+        this.onText(key)
+        return
+      }
+      const effect = EFFECTS[action]
+      if (effect === undefined) {
+        this.commit(reduce(this.measured(), action))
+        return
+      }
+      yield* effect(this)
+    })
+  }
+
+  private onText(key: KeyEvent): void {
+    if (!listens(this.state.screen)) return
+    if (key.name === "down" || key.name === "up") {
+      this.commit(paletteMoved(this.state, key.name === "down" ? 1 : -1))
+    }
+  }
+
+  private remember(action: Action | undefined, key: KeyEvent): void {
+    if (takesText(this.state.screen) && action === undefined) return
+    const named = action ?? keyName(key)
+    this.keys.push(named)
+    if (this.keys.length > KEY_HISTORY) this.keys.shift()
+    this.trail.push(momentOf(named, this.state, this.since()))
+    if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
+  }
+
+  runChoice(): Work {
+    return Effect.gen({ self: this }, function* () {
+      const chosen = paletteChoice(this.state)
+      const closed = paletteClosed(this.state)
+      if (chosen === undefined) {
+        this.commit(closed)
+        return
+      }
+      this.write(closed)
+      yield* this.onKey(keyNamed(""), chosen)
+    })
+  }
+
+  private forgetLeaving(): void {
+    if (this.leaving === undefined) return
+    this.leaving = undefined
+    if (this.state.notice === leavingSaid(this.state)) this.commit(withNoticeHere(this.state, ""))
+  }
+
+  private askedToLeave(): void {
+    if (overReview(this.state.screen)) {
+      this.leaving = undefined
+      this.commit(reduce(this.measured(), "back"))
+      return
+    }
+    if (this.leaving !== undefined && Date.now() - this.leaving < LEAVING_MS) {
+      this.renderer.destroy()
+      return
+    }
+    this.leaving = Date.now()
+    this.commit(withNotice(this.state, leavingSaid(this.state)))
+  }
+
+  private dragged(from: Spot, to: Spot, done: boolean): void {
+    const held = { ...this.measured(), focus: "diff" as const }
+    if (unmoved(from, to) && !this.selectingNow) {
+      this.commit(restingOn(held, from.row))
+      return
+    }
+    const along = from.row === to.row
+    this.selectingNow = !done
+    this.commit(
+      along ? pickedIn(held, from.row, from.column, to.column) : draggedTo(held, from.row, to.row),
+    )
+    if (done) copySelection(this, true)
   }
 
   private onWheel(delta: number): void {
@@ -690,10 +608,6 @@ export class App {
   private onPanWheel(delta: number): void {
     this.sideways += delta
     this.renderer.requestRender()
-  }
-
-  private applying(): Effect.Effect<void> {
-    return Effect.sync(() => this.applyWheel())
   }
 
   private applyWheel(): void {
@@ -710,936 +624,9 @@ export class App {
     this.commit(across === 0 ? moved : panBy(moved, across))
   }
 
-  private resized(): void {
-    Effect.runSync(this.display.paint(this.state))
-    this.syncGeometry()
-  }
-
-  private syncGeometry(): void {
-    const rows = Effect.runSync(this.display.rows)
-    if (rows !== this.state.viewport) {
-      this.commit({ ...this.state, viewport: rows })
-      return
-    }
-    const columns = Effect.runSync(this.display.columns)
-    if (columns !== this.state.columns) {
-      this.commit(withColumns(this.state, columns))
-      return
-    }
-    const tallest = Effect.runSync(this.display.tallest)
-    if (tallest !== this.state.tallest) {
-      this.commit({ ...this.state, tallest })
-      return
-    }
-    const railRows = Effect.runSync(this.display.rail)
-    if (railRows !== this.state.railRows) {
-      this.commit({ ...this.state, railRows })
-      return
-    }
-    const room = Effect.runSync(this.display.room)
-    if (room === this.roomed) return
-    this.roomed = room
-    Effect.runSync(this.display.paint(this.state))
-  }
-
-  private standing(): TuiState {
-    const held = this.measured()
-    return held.scroll >= 0 ? held : { ...held, scroll: Effect.runSync(this.display.at) }
-  }
-
-  private measured(): TuiState {
-    return { ...this.state, viewport: Effect.runSync(this.display.rows) }
-  }
-
-  private get state(): TuiState {
-    return SubscriptionRef.getUnsafe(this.held)
-  }
-
-  private write(next: TuiState): void {
-    Effect.runSync(SubscriptionRef.set(this.held, next))
-  }
-
-  private since(): number {
-    return Date.now() - this.began
-  }
-
-  private commit(given: TuiState): void {
-    const kept = this.keptScroll(given)
-    const next = kept.patchIndex === this.state.patchIndex ? kept : turnedOver(kept)
-    this.turnWriting(next)
-    const appeared = next.notice.length > 0 && next.notice !== this.state.notice
-    if (appeared) this.recordNotice(next.notice)
-    this.rememberPlace(next)
-    this.rememberChosen(next)
-    this.write(next)
-    if (appeared) this.fade()
-  }
-
-  private keptScroll(given: TuiState): TuiState {
-    if (this.state.screen !== "compose" || given.screen === "compose") return given
-    if (given.patchIndex !== this.state.patchIndex) return given
-    return { ...given, scroll: Effect.runSync(this.display.at) }
-  }
-
-  private recordNotice(notice: string): void {
-    this.trail.push(noticeOf(notice, this.since()))
-    if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
-  }
-
-  private stopPainting(): void {
-    Effect.runFork(Fiber.interrupt(this.painting))
-  }
-
-  private stopConsuming(): void {
-    const fiber = this.consuming
-    this.consuming = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
-  }
-
-  watch(fiber: Fiber.Fiber<void>): void {
-    this.consuming = fiber
-  }
-
-  private stopLighting(): void {
-    const fiber = this.lighting
-    this.lighting = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
-  }
-
-  private startTicking(): void {
-    this.commit({ ...this.state, now: Date.now() })
-    this.ticking = setInterval(() => {
-      this.commit({ ...this.state, now: Date.now() })
-    }, AGE_TICK_MS)
-    this.ticking.unref?.()
-  }
-
-  private stopTicking(): void {
-    if (this.ticking === undefined) return
-    clearInterval(this.ticking)
-    this.ticking = undefined
-  }
-
-  private stopFading(): void {
-    const fiber = this.fading
-    this.fading = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
-  }
-
-  private clearing(): Effect.Effect<void> {
-    return Effect.gen({ self: this }, function* () {
-      yield* Effect.sleep(this.noticeMs)
-      this.fading = undefined
-      if (this.state.notice.length > 0) this.commit({ ...this.state, notice: "" })
-    })
-  }
-
-  private fade(): void {
-    this.stopFading()
-    this.fading = Effect.runFork(this.clearing())
-  }
-
-  private effects(): Readonly<Partial<Record<Action, () => Work>>> {
-    return {
-      quit: () => Effect.sync(() => this.renderer.destroy()),
-      "branch.open": () => this.openBranch(),
-      "branch.pull": () => this.showPull(),
-      "compose.open": () => this.compose(),
-      "compose.submit": () => this.send(),
-      "held.send": () => this.sendHeld(),
-      "palette.run": () => this.runChoice(),
-      "comment.next": () => this.walkComments(1),
-      "comment.prev": () => this.walkComments(-1),
-      "file.next": () => this.moveFile(1),
-      "file.prev": () => this.moveFile(-1),
-      "cursor.next": () => this.stepped(1),
-      "cursor.prev": () => this.stepped(-1),
-      "rail.toggle": () => this.commitSynced("rail.toggle"),
-      "layers.ask": () => this.askForLayers(),
-      "file.vouch": () => this.vouch(false),
-      "file.vouch.next": () => this.vouch(true),
-      "ask.take": () => this.tookTheAnswer(),
-      "ask.next": () => Effect.sync(() => this.commit(reduce(this.measured(), "ask.next"))),
-      "ask.prev": () => Effect.sync(() => this.commit(reduce(this.measured(), "ask.prev"))),
-      "thread.settle": () => this.settleHere(),
-      "thread.settleRead": () => this.settleWhatIsRead(),
-      "thread.remove": () => this.removeHere(),
-      "thread.reply": () => this.replyHere(),
-      "remark.accept": () => this.acceptRemarkHere(),
-      "selection.copy": () => Effect.sync(() => this.copySelection(false)),
-      "search.open": () => this.findSelection(),
-      "search.jump": () => this.runFinder(),
-      "review.reload": () =>
-        this.state.screen === "branches" ? this.reloadList() : this.reloadBranch(),
-      "base.open": () => this.openBases(),
-      "base.set": () => (this.state.screen === "editor" ? this.editorChosen() : this.setBaseHere()),
-      "base.clear": () => (this.state.screen === "editor" ? this.forgetEditor() : this.clearBaseHere()),
-      "line.open": () => this.openInEditor(),
-      "editor.open": () => this.chooseEditor(),
-      "report.open": () => Effect.sync(() => this.commit(reduce(this.measured(), "report.open"))),
-      back: () => this.goBack(),
-      "report.send": () => this.sendReport(),
-      "context.more": () => this.expand(1),
-      "context.less": () => this.expand(-1),
-      "context.whole": () => this.widen(contextToggled(this.state)),
-      "tree.expand": () => this.unfold(1),
-      "tree.collapse": () => this.unfold(-1),
-      "match.next": () => this.walkMatches(1),
-      "match.prev": () => this.walkMatches(-1),
-    }
-  }
-
-  private walkMatches(delta: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      this.commit(reduce(this.measured(), delta > 0 ? "match.next" : "match.prev"))
-      yield* this.readAround()
-    })
-  }
-
-  private unfold(delta: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      const gap =
-        this.state.focus === "diff" ? gapAtRow(this.state, this.state.cursor) : undefined
-      const action: Action = delta > 0 ? "tree.expand" : "tree.collapse"
-      if (gap === undefined) {
-        this.commit(reduce(this.measured(), action))
-        return
-      }
-      if (delta > 0) yield* this.loadFull()
-      this.commit(gapOpened(this.measured(), gap.index, delta * GAP_CHUNK))
-    })
-  }
-
-  private loadFull(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      const patch = selectedPatch(this.state)
-      if (branch === undefined || patch === undefined) return
-      if (this.state.full.some((one) => one.path === patch.path)) return
-      const worktree = this.worktreeFor(branch.branch)
-      const full =
-        worktree === undefined
-          ? yield* listPatches(this.repo, branch.branch, WHOLE_FILE, patch.path)
-          : yield* patchIn(worktree, WHOLE_FILE, patch.path)
-      this.commit(withFull(this.state, [...this.state.full, ...full]))
-    })
-  }
-
-  private onKey(key: KeyEvent, forced?: Action): Work {
-    return Effect.gen({ self: this }, function* () {
-      if (forced === undefined && keyName(key) === "ctrl+c") {
-        yield* this.askedToLeave()
-        return
-      }
-      this.forgetLeaving()
-      const action = forced ?? actionFor(this.state.screen, keyName(key), this.state.focus)
-      this.grewWithShift = action === "select.grow" || action === "select.shrink"
-      this.remember(action, key)
-      if (action === undefined) {
-        this.onText(key)
-        return
-      }
-      const effect = this.effects()[action]
-      if (effect === undefined) {
-        this.commit(reduce(this.measured(), action))
-        return
-      }
-      yield* effect()
-    })
-  }
-
-  private onText(key: KeyEvent): void {
-    if (!listens(this.state.screen)) return
-    if (key.name === "down" || key.name === "up") {
-      this.commit(paletteMoved(this.state, key.name === "down" ? 1 : -1))
-    }
-  }
-
-  private turnWriting(next: TuiState): void {
-    if (listens(next.screen) !== listens(this.state.screen) || next.screen !== this.state.screen) {
-      Effect.runSync(this.display.askOn(listens(next.screen) ? next.screen : undefined))
-    }
-    const was = writesInto(this.state.screen)
-    const now = writesInto(next.screen)
-    if (was === now) {
-      if (now && next.draftAt !== this.state.draftAt) {
-        Effect.runSync(this.display.write(next.draft))
-      }
-      return
-    }
-    if (now) Effect.runSync(this.display.write(next.draft))
-    Effect.runSync(this.display.writeOn(now))
-  }
-
-  private askedBack(text: string): void {
-    const clean = legible(text).replaceAll("\n", " ")
-    if (clean !== text) {
-      Effect.runSync(this.display.askWith(clean))
-      return
-    }
-    if (!listens(this.state.screen) || clean === this.state.query) return
-    this.commit({ ...this.state, query: clean, paletteIndex: 0, refIndex: 0 })
-    if (this.state.screen === "search") this.lookSoon(clean)
-  }
-
-  private readBack(text: string): void {
-    const clean = legible(stripAnsiSequences(text))
-    if (clean !== text) {
-      Effect.runSync(this.display.write(clean))
-      return
-    }
-    if (text === this.state.draft) return
-    this.commit(withDraft(this.state, text))
-  }
-
-  private openBases(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const [refs, recent] = yield* Effect.all([
-        listRefs(this.repo),
-        recentBases(this.repo, branch.branch),
-      ])
-      const said = Object.fromEntries(recent.map((one) => [one.ref, one.said]))
-      const kept = refs.filter((ref) => ref !== branch.branch)
-      this.commit(withRefs(this.state, [...recent.map((one) => one.ref), ...kept], said))
-    })
-  }
-
-  private basedOnRef(ref: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const held = yield* Effect.result(setBase(this.repo, branch.branch, ref))
-      if (Result.isFailure(held)) {
-        this.commit(withNotice(this.state, `${ref} names nothing here`))
-        return
-      }
-      yield* this.afterBase(branch.branch, `based on ${ref}`)
-    })
-  }
-
-  private clearBaseHere(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      yield* clearBase(this.repo, branch.branch)
-      yield* this.afterBase(branch.branch, "the base is adiff's guess again")
-    })
-  }
-
-  private afterBase(branch: string, said: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const listed = yield* listBranches(this.repo, this.base)
-      const back = { ...this.state, screen: this.state.returnTo, query: "" }
-      const held = withBranches(back, listed)
-      const at = listed.findIndex((one) => one.branch === branch)
-      this.commit(withNotice(at === -1 ? held : { ...held, branchIndex: at }, said))
-      if (this.state.screen !== "review") return
-      this.commit(yield* this.readBranch(branch))
-      yield* this.fetchRemarks()
-      yield* this.loadSource()
-    })
-  }
-
-  private setBaseHere(): Work {
-    const ref = refHere(this.state)
-    return ref === undefined ? Effect.void : this.basedOnRef(ref)
-  }
-
-  private runChoice(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const chosen = paletteChoice(this.state)
-      const closed = paletteClosed(this.state)
-      if (chosen === undefined) {
-        this.commit(closed)
-        return
-      }
-      this.write(closed)
-      yield* this.onKey({ name: "", ctrl: false, sequence: "" } as KeyEvent, chosen)
-    })
-  }
-
-  private readBranch(name: string): Work<TuiState> {
-    return Effect.gen({ self: this }, function* () {
-      const reading = yield* readingOf(this.repo, name, this.base)
-      this.reading = reading
-      yield* markOpened(reading.worktree.path, new Date().toISOString())
-      const [progress, layers, sent, remarks] = yield* Effect.all(
-        [
-          progressIn(reading),
-          layersIn(reading),
-          sentIn(reading),
-          this.state.remarksOn
-            ? remarksHeldIn(reading)
-            : Effect.succeed([] as ReadonlyArray<Remark>),
-        ],
-        { concurrency: "unbounded" },
-      )
-      const opened = withVouched(withPatches(this.state, reading.patches), progress.vouched)
-      return withRemarks(withLayers(withSent(opened, sent), layers), remarks)
-    })
-  }
-
-  private remarksHeld(reading: BranchReading): Work<ReadonlyArray<Remark>> {
-    return this.state.remarksOn
-      ? remarksHeldIn(reading)
-      : Effect.succeed([] as ReadonlyArray<Remark>)
-  }
-
-  private fetchRemarks(): Work {
-    return Effect.gen({ self: this }, function* () {
-      this.stopFetching()
-      if (!this.state.remarksOn || this.reading === undefined) return
-      this.fetching = yield* Effect.forkDetach(this.readRemarks(this.reading))
-    })
-  }
-
-  private stopFetching(): void {
-    const fiber = this.fetching
-    this.fetching = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
-  }
-
-  private readRemarks(reading: BranchReading): Work {
-    return Effect.gen({ self: this }, function* () {
-      const said = this.state.waiting
-      this.commit(withWaiting(this.state, READING_PULL))
-      const found = yield* Effect.result(remarksIn(this.repo, reading))
-      if (this.reading !== reading) return
-      const rested = withWaiting(this.state, said)
-      const hasPull = (this.state.pulls[reading.worktree.branch] ?? "").length > 0
-      if (Result.isFailure(found)) {
-        this.commit(hasPull ? withNoticeHere(rested, FORGE_QUIET) : rested)
-        return
-      }
-      this.commit(withRemarks(rested, Result.getOrElse(found, () => this.state.remarks)))
-    })
-  }
-
-  private openBranch(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      this.commit(yield* this.readBranch(branch.branch))
-      yield* this.fetchRemarks()
-      yield* this.loadSource()
-    })
-  }
-
-  private dragged(from: Spot, to: Spot, done: boolean): void {
-    const held = { ...this.measured(), focus: "diff" as const }
-    if (restsWhereItLanded(from, to) && !this.selectingNow) {
-      this.commit(restingOn(held, from.row))
-      return
-    }
-    const along = from.row === to.row
-    this.selectingNow = !done
-    this.commit(
-      along ? pickedIn(held, from.row, from.column, to.column) : draggedTo(held, from.row, to.row),
-    )
-    if (done) this.copySelection(true)
-  }
-
-  private copyDragged(): void {
-    const taken = this.renderer.getSelection()?.getSelectedText() ?? ""
-    if (taken.trim().length === 0) return
-    copyToClipboard(taken)
-    const lines = taken.split("\n").length
-    const said = lines === 1 ? `${taken.length} characters copied` : `${lines} lines copied`
-    this.commit(withNoticeHere(this.state, said))
-  }
-
-  private copySelection(keep: boolean): void {
-    const said = keep ? withNoticeHere : withNotice
-    const thread = this.state.selecting ? undefined : threadAtStop(this.state)
-    if (thread !== undefined) {
-      copyToClipboard(`${thread.body}\n`)
-      this.commit(said(this.state, "comment copied"))
-      return
-    }
-    const taken = pickedText(this.state)
-    if (taken !== undefined) {
-      copyToClipboard(taken)
-      this.commit(said(this.state, `${taken.length} characters copied`))
-      return
-    }
-    const lines = this.state.selecting ? selectedLines(this.state) : lineUnder(this.state)
-    if (lines.length === 0) {
-      this.commit(withNoticeHere(this.state, "nothing to copy"))
-      return
-    }
-    copyToClipboard(`${lines.join("\n")}\n`)
-    const many = lines.length === 1 ? "1 line copied" : `${lines.length} lines copied`
-    this.commit(said(this.state, many))
-  }
-
-  private findSelection(): Work {
-    return Effect.sync(() => {
-      const seed = seedFor(pickedText(this.state))
-      this.commit(withFinder(this.state, seed))
-      Effect.runSync(this.display.askWith(seed))
-    })
-  }
-
-  private lookSoon(wanted: string): void {
-    this.stopLooking()
-    this.looking = setTimeout(() => {
-      this.looking = undefined
-      const asked = wanted.trim()
-      if (this.state.screen !== "search" || this.state.query.trim() !== asked) return
-      this.dispatchTask(asked.length < LEAST_TERM ? this.forgetMatches() : this.searchAside(asked))
-    }, LOOK_MS)
-  }
-
-  private stopLooking(): void {
-    if (this.looking === undefined) return
-    clearTimeout(this.looking)
-    this.looking = undefined
-  }
-
-  private forgetMatches(): Work {
-    return Effect.sync(() =>
-      this.commit(
-        withMatches(this.state, { matches: [], counted: NOTHING_COUNTED, left: 0 }, ""),
-      ),
-    )
-  }
-
-  private runFinder(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const wanted = this.state.query.trim()
-      if (wanted.length < LEAST_TERM) return
-      if (wanted !== this.state.term) {
-        this.stopLooking()
-        yield* this.lookFor(wanted)
-        return
-      }
-      yield* this.openMatch()
-    })
-  }
-
-  private searchAside(wanted: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      this.stopSearching()
-      this.searching = yield* Effect.forkDetach(this.lookFor(wanted))
-    })
-  }
-
-  private stopSearching(): void {
-    const fiber = this.searching
-    this.searching = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
-  }
-
-  private lookFor(wanted: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const reading = this.reading
-      const here = selectedPatch(this.state)?.path ?? ""
-      const found =
-        reading === undefined || reading.worktree.branch !== branch.branch
-          ? yield* searchBranch(this.repo, branch.branch, wanted, here)
-          : yield* searchIn(reading, wanted, here)
-      if (this.state.screen !== "search" || this.state.query.trim() !== wanted) return
-      this.commit(withMatches(this.state, found, wanted))
-      yield* this.readAround()
-    })
-  }
-
-  private readAround(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const reading = this.reading
-      const match = matchHere(this.state)
-      if (reading === undefined || match === undefined) return
-      const lines = yield* aroundIn(reading, match.path, match.line)
-      const still = matchHere(this.state)
-      if (still?.path !== match.path || still.line !== match.line) return
-      this.commit(withAround(this.state, lines))
-    })
-  }
-
-  private openMatch(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const match = matchHere(this.state)
-      if (match === undefined) return
-      const at = this.state.patches.findIndex((patch) => patch.path === match.path)
-      const patch = this.state.patches[at]
-      if (patch === undefined) {
-        this.commit(withNoticeHere(this.state, `${match.path} is not changed on this branch`))
-        return
-      }
-      const landed = atFile({ ...this.state, screen: "review", matches: [], term: "" }, at)
-      const shown = selectedPatch(landed)
-      const showing = shown !== undefined && rowShowing(shown, match.line) !== undefined
-      const opened = showing ? landed : { ...landed, revealed: allRevealed(landed) }
-      const found = selectedPatch(opened) ?? patch
-      this.commit({ ...opened, cursor: rowAtSourceLine(found, match.line) })
-      yield* this.loadSource()
-    })
-  }
-
-  private compose(): Work {
-    return Effect.gen({ self: this }, function* () {
-      if (this.state.focus !== "review") {
-        this.commit(reduce(this.measured(), "compose.open"))
-        return
-      }
-      yield* this.openPanelEntry()
-    })
-  }
-
-  private openPanelEntry(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const entry = panelEntry(this.state)
-      if (entry === undefined) {
-        this.commit(withNoticeHere(this.state, "nothing in the review yet"))
-        return
-      }
-      if (entry.kind === "fold") {
-        this.commit({ ...this.state, openMoved: !entry.open })
-        return
-      }
-      if (entry.kind === "remark") {
-        yield* this.openRemark(entry.remark)
-        return
-      }
-      const at = this.state.patches.findIndex((patch) => patch.path === entry.comment.file)
-      const patch = this.state.patches[at]
-      if (patch === undefined) {
-        yield* this.readAnswers(entry.comment.id)
-        this.commit(withNoticeHere(this.state, `${entry.comment.file} is not on this branch`))
-        return
-      }
-      const opened = { ...this.measured(), patchIndex: at }
-      const shown = selectedPatch(opened)
-      if (shown !== undefined && rowShowing(shown, entry.comment.end) === undefined) {
-        yield* this.jumpingPastGaps(opened, at, entry)
-        return
-      }
-      this.commit(openedAt(this.measured(), at, entry.comment.end))
-      yield* this.turnedTo()
-      yield* this.readAnswers(entry.comment.id)
-    })
-  }
-
-  private jumpingPastGaps(
-    opened: TuiState,
-    at: number,
-    entry: Extract<PanelEntry, { kind: "comment" }>,
-  ): Work {
-    return Effect.gen({ self: this }, function* () {
-      const wide = { ...opened, revealed: allRevealed(opened) }
-      const shown = selectedPatch(wide)
-      if (shown === undefined || rowShowing(shown, entry.comment.end) === undefined) {
-        yield* this.readAnswers(entry.comment.id)
-        const said = withNoticeHere(this.state, "the diff no longer has that line")
-        this.commit({ ...said, screen: "thread", returnTo: said.screen })
-        return
-      }
-      this.commit(openedAt({ ...this.measured(), revealed: wide.revealed }, at, entry.comment.end))
-      yield* this.turnedTo()
-      yield* this.readAnswers(entry.comment.id)
-    })
-  }
-
-  private readAnswers(id: string | undefined): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (id === undefined || branch === undefined) return
-      yield* markRead(this.repo, branch.branch, id)
-      const held = this.state.panelIndex
-      const sent = yield* this.loadSent(branch.branch)
-      this.commit({ ...withSent(this.state, sent), panelIndex: held })
-    })
-  }
-
-  private settleWhatIsRead(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const done = yield* settleRead(this.repo, branch.branch, new Date().toISOString())
-      if (done.settled === 0) {
-        this.commit(withNotice(this.state, "nothing read is waiting to be settled"))
-        return
-      }
-      const sent = yield* this.loadSent(branch.branch)
-      const said = `settled ${done.settled} read comment${done.settled === 1 ? "" : "s"}`
-      this.commit(withNotice(withSent(this.state, sent), said))
-    })
-  }
-
-  private settleHere(): Work {
-    const thread = threadHere(this.state)
-    const id = thread?.id
-    if (selectedBranch(this.state) === undefined || id === undefined) {
-      return Effect.sync(() => this.commit(withNotice(this.state, "no thread here")))
-    }
-    if (thread?.settled !== true) return this.settleThread(id, false)
-    if (!standingOnThread(this.state)) {
-      return Effect.sync(() =>
-        this.commit(withNotice(this.state, "stand on the thread to take it back")),
-      )
-    }
-    return this.settleThread(id, true)
-  }
-
-  private settleThread(id: string, back: boolean): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const was = this.state.panelIndex
-      yield* back ? this.unsettling(branch.branch, id) : this.settling(branch.branch, id)
-      const sent = yield* this.loadSent(branch.branch)
-      const opened = this.state.opened.filter((one) => one !== id)
-      const held = withSent({ ...this.state, opened }, sent)
-      const where = back ? this.following(held, id, was) : this.staying(held, was)
-      this.commit(withNotice(where, back ? "unsettled" : "settled"))
-    })
-  }
-
-  private replyHere(): Work {
-    return Effect.sync(() => {
-      const thread = threadHere(this.state)
-      if (thread?.id !== undefined) {
-        this.commit({ ...this.state, screen: "compose", draft: "", replyTo: thread.id })
-        return
-      }
-      const remark = remarkToTakeOn(this.state)
-      if (remark === undefined) {
-        this.commit(withNotice(this.state, "no thread here"))
-        return
-      }
-      this.commit({ ...this.state, screen: "compose", draft: "", answerTo: remark.id })
-    })
-  }
-
-  private sendRemarkAnswer(to: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      if (this.state.draft.trim().length === 0) {
-        this.commit(withNotice(this.state, NOTHING_WRITTEN))
-        return
-      }
-      const said = yield* this.display.written
-      const done = yield* Effect.as(
-        answerRemark({ repo: this.repo, branch: branch.branch, id: to, body: said }),
-        true,
-      ).pipe(Effect.catchTag("ForgeUnavailable", () => Effect.succeed(false)))
-      const clear = { ...sentAway(this.state), answerTo: undefined }
-      if (!done) {
-        this.commit(withNotice(clear, "the forge would not take that reply"))
-        return
-      }
-      this.commit(clear)
-      yield* this.reloadFromForge("replied on the pull request")
-    })
-  }
-
-  private reloadFromForge(said: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const reading = this.reading
-      if (reading === undefined) return
-      const remarks = yield* Effect.orElseSucceed(
-        remarksIn(this.repo, reading),
-        () => this.state.remarks,
-      )
-      this.commit(withNoticeHere(withRemarks(this.state, remarks), said))
-    })
-  }
-
-  private staying(state: TuiState, was: number): TuiState {
-    const last = Math.max(0, panelEntries(state).length - 1)
-    return { ...state, panelIndex: Math.min(was, last) }
-  }
-
-  private following(state: TuiState, id: string, was: number): TuiState {
-    if (state.focus !== "review") return this.staying(state, was)
-    const at = panelEntries(state).findIndex(
-      (entry) => entry.kind === "comment" && entry.comment.id === id,
-    )
-    return at === -1 ? this.staying(state, was) : { ...state, panelIndex: at }
-  }
-
-  private heldUnderCursor(): number {
-    if (this.state.focus !== "review") return -1
-    const entry = panelEntry(this.state)
-    if (entry === undefined || entry.kind !== "comment" || entry.section !== "held") return -1
-    return this.state.held.indexOf(entry.comment)
-  }
-
-  private openRemark(remark: Remark): Work {
-    return Effect.gen({ self: this }, function* () {
-      const at = this.state.patches.findIndex((patch) => patch.path === remark.file)
-      const patch = this.state.patches[at]
-      if (patch === undefined || !remark.placed) {
-        this.commit(withNoticeHere(this.state, `${remark.file} is not in this diff`))
-        return
-      }
-      this.commit(openedAt(this.measured(), at, remark.end))
-      yield* this.turnedTo()
-    })
-  }
-
-  private acceptRemarkHere(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const remark = remarkHere(this.state)
-      const reading = this.reading
-      if (remark === undefined || reading === undefined) {
-        this.commit(withNoticeHere(this.state, "no remark here"))
-        return
-      }
-      if (this.state.hold) {
-        this.holding({
-          file: remark.file,
-          side: remark.side,
-          start: remark.start,
-          end: remark.end,
-          body: quoted(remark),
-          remark: remark.id,
-        })
-        return
-      }
-      const done = yield* Effect.as(
-        acceptIn({
-          reading,
-          id: remark.id,
-          at: new Date().toISOString(),
-          commentId: randomUUID(),
-        }),
-        true,
-      ).pipe(Effect.catchTag("RemarkTaken", () => Effect.succeed(false)))
-      if (!done) {
-        this.commit(withNoticeHere(this.state, "that remark is already a comment of yours"))
-        return
-      }
-      yield* this.reloadRemarks("accepted, the agent has it")
-    })
-  }
-
-  private dismissRemarkHere(remark: Remark, back: boolean): Work {
-    return Effect.gen({ self: this }, function* () {
-      const reading = this.reading
-      if (reading === undefined) return
-      const at = new Date().toISOString()
-      yield* back
-        ? undismissIn(reading.worktree.path, remark.id)
-        : dismissIn(reading.worktree.path, remark.id, at)
-      yield* this.reloadRemarks(back ? "restored" : "dismissed, it is under Dismissed")
-    })
-  }
-
-  private reloadRemarks(said: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const reading = this.reading
-      if (reading === undefined) return
-      const [remarks, sent] = yield* Effect.all([this.remarksHeld(reading), sentIn(reading)], {
-        concurrency: "unbounded",
-      })
-      const held = this.staying(withRemarks(withSent(this.state, sent), remarks), this.state.panelIndex)
-      this.commit(withNoticeHere(held, said))
-    })
-  }
-
-  private removeHere(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const waitingHeld = this.heldUnderCursor()
-      const triaged = waitingHeld === -1 ? remarkUnderCursor(this.state) : undefined
-      if (triaged !== undefined) {
-        yield* this.dismissRemarkHere(triaged.remark, triaged.dismissed)
-        return
-      }
-      const waiting = this.heldUnderCursor()
-      if (waiting !== -1) {
-        yield* this.dropHeld(waiting)
-        return
-      }
-      const branch = selectedBranch(this.state)
-      const thread = threadHere(this.state)
-      const id = thread?.id
-      if (branch === undefined || id === undefined) {
-        this.commit(withNotice(this.state, "no thread here"))
-        return
-      }
-      yield* this.turningOver(branch.branch, id, thread?.removed === true)
-    })
-  }
-
-  private turningOver(branch: string, id: string, back: boolean): Work {
-    return Effect.gen({ self: this }, function* () {
-      const was = this.state.panelIndex
-      yield* back ? this.restoring(branch, id) : this.removing(branch, id)
-      const sent = yield* this.loadSent(branch)
-      const kept = { ...this.state, opened: this.state.opened.filter((one) => one !== id) }
-      const said = back ? "restored" : "removed, it is under Removed in the review"
-      const held = this.reading
-      const remarks = held === undefined ? this.state.remarks : yield* this.remarksHeld(held)
-      this.commit(
-        withNotice(this.staying(withRemarks(withSent(kept, sent), remarks), was), said),
-      )
-    })
-  }
-
-  private fillBranches(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const here = selectedBranch(this.state)?.branch
-      const branches = yield* (listBranches(this.repo, this.base))
-      const read = withBranches(this.state, branches)
-      const at = branches.findIndex((candidate) => candidate.branch === here)
-      this.commit(at === -1 ? read : { ...read, branchIndex: at })
-      this.dispatchTask(this.loadPulls())
-    })
-  }
-
-  private reloadList(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const here = selectedBranch(this.state)?.branch
-      const branches = yield* (listBranches(this.repo, this.base))
-      const read = withBranches(this.state, branches)
-      const at = branches.findIndex((candidate) => candidate.branch === here)
-      const kept = at === -1 ? read : { ...read, branchIndex: at }
-      this.commit(withWaiting(withNoticeHere(kept, "read the list again"), ""))
-      this.dispatchTask(this.loadPulls())
-    })
-  }
-
-  private reloadBranch(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const path = selectedPatch(this.state)?.path
-      const line = sourceLineAt(this.state, this.state.cursor)
-      const offset = this.state.cursor - this.state.top
-      const read = yield* this.readBranch(branch.branch)
-      const held = restoredTo(read, path, line, offset)
-      this.commit(withWaiting(withNotice(held, "read the branch again"), ""))
-      yield* this.fetchRemarks()
-      yield* this.loadSource()
-    })
-  }
-
-  private goBack(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const next = reduce(this.measured(), "back")
-      this.commit(next)
-      if (next.screen !== "branches") return
-      this.commit(withBranches(this.state, yield* (listBranches(this.repo, this.base))))
-    })
-  }
-
-  private walkComments(delta: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      const was = this.state.patchIndex
-      this.commit(reduce(this.measured(), delta > 0 ? "comment.next" : "comment.prev"))
-      if (this.state.patchIndex !== was) yield* this.turnedTo()
-    })
-  }
-
   private rollFrom(delta: number): void {
     if (!onLayers(this.state)) {
-      this.dispatchTask(this.rolled(delta))
+      this.dispatch(rolled(this, delta))
       return
     }
     if (this.rolling) {
@@ -1647,54 +634,7 @@ export class App {
       return
     }
     this.rolling = true
-    this.dispatchTask(this.rolled(delta))
-  }
-
-  private stepped(delta: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      if (this.paged(delta)) return
-      this.catchUp()
-      yield* this.commitSynced(delta > 0 ? "cursor.next" : "cursor.prev")
-    })
-  }
-
-  private catchUp(): void {
-    const state = this.state
-    if (state.screen !== "review" || state.focus !== "diff" || state.scroll < 0) return
-    const last = state.scroll + Math.max(1, Effect.runSync(this.display.rows)) - 1
-    const at = Effect.runSync(this.display.screenRowOf(state.cursor)) ?? last
-    if (at >= state.scroll && at <= last) return
-    const wanted = at < state.scroll ? state.scroll : last
-    const top = Effect.runSync(this.display.rowAt(state.scroll))
-    this.commit({ ...state, cursor: Effect.runSync(this.display.rowAt(wanted)), stop: 0, top })
-  }
-
-  private paged(delta: number): boolean {
-    if (this.state.screen !== "review" || this.state.focus !== "diff") return false
-    const state = this.standing()
-    const span = Effect.runSync(this.display.block(state.cursor, state.stop))
-    const height = Math.max(1, state.viewport)
-    if (span.rows <= height) return false
-    const room = delta > 0 ? span.start + span.rows - height : span.start
-    if (delta > 0 ? state.scroll >= room : state.scroll <= room) return false
-    this.commit(scrolled(state, delta * Math.max(1, height - 2)))
-    return true
-  }
-
-  private commitSynced(action: Action): Work {
-    return Effect.gen({ self: this }, function* () {
-      const was = this.state.patchIndex
-      this.commit(reduce(this.measured(), action))
-      if (this.state.patchIndex !== was) yield* this.turnedTo()
-    })
-  }
-
-  private rolled(delta: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      const was = this.state.patchIndex
-      this.commit(railScrolled(this.measured(), delta))
-      if (this.state.patchIndex !== was) yield* this.turnedTo()
-    }).pipe(Effect.ensuring(Effect.sync(() => this.rolledOn())))
+    this.dispatch(rolled(this, delta).pipe(Effect.ensuring(Effect.sync(() => this.rolledOn()))))
   }
 
   private rolledOn(): void {
@@ -1704,597 +644,38 @@ export class App {
     if (held !== 0) this.rollFrom(held > 0 ? 1 : -1)
   }
 
-  private moveFile(delta: number): Work {
-    return this.commitSynced(delta > 0 ? "file.next" : "file.prev")
+  private resized(): void {
+    this.screen.update(this.state)
+    this.syncGeometry()
   }
 
-  private vouch(advance: boolean): Work {
-    return Effect.gen({ self: this }, function* () {
-      const patch = selectedPatch(this.state)
-      const branch = selectedBranch(this.state)
-      if (patch === undefined || branch === undefined) return
-      if (advance && this.readHere()) {
-        this.commit(alongFrom(this.state))
-        return
-      }
-      const open = this.readHere() ? [] : this.threadsToAsk()
-      const threads = open.flatMap((entry) => (entry.id === undefined ? [] : [entry.id]))
-      if (threads.length === 0) {
-        yield* this.marking(patch.path, advance, 0)
-        return
-      }
-      const layer = this.layerAsked(threads.length)
-      this.commit(withAsking(this.measured(), { path: patch.path, layer, threads, advance }))
-    })
-  }
-
-  private layerAsked(asked: number): string | undefined {
-    if (this.partHereNow() === undefined) return undefined
-    const inside = threadsInLayer(this.state, this.state.patchIndex, this.state.layerIndex).length
-    if (inside !== asked) return undefined
-    return this.state.layers[this.state.layerIndex]?.title
-  }
-
-  private threadsToAsk(): ReadonlyArray<StagedComment> {
-    const layered = this.partHereNow() === undefined ? undefined : this.state.layerIndex
-    return threadsOpenOn(this.state, this.state.patchIndex, layered)
-  }
-
-  private tookTheAnswer(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const asking = this.state.asking
-      const branch = selectedBranch(this.state)
-      if (asking === undefined || branch === undefined) return
-      const settling = this.state.askIndex === 0
-      const named = asking.layer ?? asking.path
-      if (settling) yield* this.settleThese(branch.branch, asking.threads)
-      this.commit(reduce(this.measured(), "back"))
-      yield* this.marking(asking.path, asking.advance, settling ? asking.threads.length : 0, named)
-    })
-  }
-
-  private settleThese(branch: string, ids: ReadonlyArray<string>): Work {
-    return Effect.gen({ self: this }, function* () {
-      for (const id of ids) yield* this.settling(branch, id)
-      const sent = yield* this.loadSent(branch)
-      this.commit(withSent(this.state, sent))
-    })
-  }
-
-  private marking(path: string, advance: boolean, settled: number, named = path): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      const report = yield* this.vouching(branch.branch, path)
-      const next = withVouched(this.state, report.vouched, report.parts)
-      if (!advance) {
-        this.commit(withNotice(next, this.markedSaid(report, path, settled, named)))
-        return
-      }
-      this.movedOn(next, named, settled)
-    })
-  }
-
-  private markedSaid(report: VouchReport, path: string, settled: number, named: string): string {
-    const part = this.partHereNow()
-    const marked = part === undefined ? report.vouched.includes(path) : report.parts.includes(part)
-    return marked ? markedIs(named, settled) : `unmarked ${named}`
-  }
-
-  private movedOn(next: TuiState, path: string, settled: number): void {
-    const said = markedIs(path, settled)
-    const target = nextUnreviewed(next, next.patchIndex)
-    if (target === undefined) {
-      const done = settled === 0 ? "every file reviewed" : `${said}, and every file reviewed`
-      this.commit(withNotice(next, done))
+  private syncGeometry(): void {
+    const rows = this.screen.viewportRows()
+    if (rows !== this.state.viewport) {
+      this.commit({ ...this.state, viewport: rows })
       return
     }
-    this.commit(withNotice(atFile(next, target), said))
-  }
-
-  private forgetLeaving(): void {
-    if (this.leaving === undefined) return
-    this.leaving = undefined
-    if (this.state.notice === leavingSaid(this.state)) this.commit(withNoticeHere(this.state, ""))
-  }
-
-  private askedToLeave(): Work {
-    return Effect.sync(() => {
-      if (overReview(this.state.screen)) {
-        this.leaving = undefined
-        this.commit(reduce(this.measured(), "back"))
-        return
-      }
-      if (this.leaving !== undefined && Date.now() - this.leaving < LEAVING_MS) {
-        this.renderer.destroy()
-        return
-      }
-      this.leaving = Date.now()
-      this.commit(withNotice(this.state, leavingSaid(this.state)))
-    })
-  }
-
-  private worktreeFor(branch: string): Worktree | undefined {
-    const reading = this.reading
-    return reading === undefined || reading.worktree.branch !== branch ? undefined : reading.worktree
-  }
-
-  private commenting(branch: string, request: CommentRequest): Work<unknown> {
-    const worktree = this.worktreeFor(branch)
-    return worktree === undefined ? submitComment(request) : commentIn(worktree, request)
-  }
-
-  private sending(branch: string, requests: Written): Work<unknown> {
-    const worktree = this.worktreeFor(branch)
-    return worktree === undefined ? submitComments(requests) : commentsIn(worktree, requests)
-  }
-
-  private settling(branch: string, id: string): Work<{ readonly settled: string }> {
-    const at = new Date().toISOString()
-    const worktree = this.worktreeFor(branch)
-    return worktree === undefined
-      ? settleThread(this.repo, branch, id, at)
-      : settleIn(worktree, id, at)
-  }
-
-  private unsettling(branch: string, id: string): Work<{ readonly unsettled: string }> {
-    const worktree = this.worktreeFor(branch)
-    return worktree === undefined
-      ? unsettleThread(this.repo, branch, id)
-      : unsettleIn(worktree, id)
-  }
-
-  private restoring(branch: string, id: string): Work<{ readonly restored: string }> {
-    const worktree = this.worktreeFor(branch)
-    return worktree === undefined
-      ? restoreComment(this.repo, branch, id)
-      : restoreIn(worktree, id)
-  }
-
-  private removing(branch: string, id: string): Work<{ readonly removed: string }> {
-    const at = new Date().toISOString()
-    const worktree = this.worktreeFor(branch)
-    return worktree === undefined
-      ? removeComment(this.repo, branch, id, at)
-      : removeIn(worktree, id, at)
-  }
-
-  private readHere(): boolean {
-    return onLayers(this.state)
-      ? readIn(this.state, this.state.layerIndex, this.state.patchIndex)
-      : isReviewed(this.state, this.state.patchIndex)
-  }
-
-  private partHereNow(): string | undefined {
-    if (!onLayers(this.state) || layersHolding(this.state, this.state.patchIndex) < 2) {
-      return undefined
+    const columns = this.screen.columns()
+    if (columns !== this.state.columns) {
+      this.commit(withColumns(this.state, columns))
+      return
     }
-    return partHere(this.state, this.state.layerIndex, this.state.patchIndex)
-  }
-
-  private vouching(branch: string, file: string): Work<VouchReport> {
-    const held = this.reading
-    if (held === undefined || held.worktree.branch !== branch) {
-      return toggleVouch({ repo: this.repo, branch, file })
+    const tallest = this.screen.tallestRows()
+    if (tallest !== this.state.tallest) {
+      this.commit({ ...this.state, tallest })
+      return
     }
-    const part = this.partHereNow()
-    return part === undefined ? vouchIn(held, file) : vouchPartIn(held, file, part)
-  }
-
-  private loadSent(branch: string): Work<TuiState["sent"]> {
-    const reading = this.reading
-    return reading === undefined || reading.worktree.branch !== branch
-      ? listSent(this.repo, branch)
-      : sentIn(reading)
-  }
-
-  private whereTheLineIs():
-    | {
-        readonly file: string
-        readonly path: string
-        readonly root: string
-        readonly line: number
-      }
-    | undefined {
-    const branch = selectedBranch(this.state)
-    const patch = selectedPatch(this.state)
-    if (branch === undefined || patch === undefined) return undefined
-    const held = this.worktreeFor(branch.branch)?.path ?? this.repo
-    return {
-      file: resolve(held, patch.path),
-      path: patch.path,
-      root: held,
-      line: sourceLineAt(this.state, this.state.cursor) ?? 1,
+    const railRows = this.screen.railRows()
+    if (railRows !== this.state.railRows) {
+      this.commit({ ...this.state, railRows })
+      return
     }
-  }
-
-  private chooseEditor(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const around = editorsAround(onThePath)
-      const held = templateFor(yield* editorTold)
-      const offered = held === undefined || around.includes(held) ? around : [held, ...around]
-      this.commit(withChoices(this.state, offered, "editor", held ?? ""))
-    })
-  }
-
-  private editorChosen(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const chosen = refHere(this.state)
-      if (chosen === undefined) return
-      yield* saveEditor(chosen)
-      this.commit({ ...this.state, screen: this.state.returnTo, query: "" })
-      yield* this.openInEditor()
-    })
-  }
-
-  private forgetEditor(): Work {
-    return Effect.gen({ self: this }, function* () {
-      yield* saveEditor("")
-      const back = { ...this.state, screen: this.state.returnTo, query: "" }
-      this.commit(withNotice(back, "the editor is the environment's again"))
-    })
-  }
-
-  private openInEditor(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const where = this.whereTheLineIs()
-      if (where === undefined) return
-      const template = templateFor(yield* editorTold)
-      const opening =
-        template === undefined
-          ? undefined
-          : openingOf(template, where.file, where.line, where.root)
-      if (opening === undefined) {
-        yield* this.chooseEditor()
-        return
-      }
-      const said = ranAside(opening.command, opening.args, where.root)
-        ? `${where.path}:${where.line} in ${opening.command}`
-        : `${opening.command} would not start`
-      this.commit(withNoticeHere(this.state, said))
-    })
-  }
-
-  private showPull(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      if (pullHere(this.state).length === 0) yield* this.loadPulls()
-      if (knownToHaveNoPull(this.state)) {
-        this.commit(withNoticeHere(this.state, "no pull request for this branch"))
-        return
-      }
-      const forge = yield* Forge
-      const asked = forge.openPull(this.repo, branch.branch)
-      const opened = yield* (
-        asked.pipe(
-          Effect.as(true),
-          Effect.catchTag("ForgeUnavailable", () => Effect.succeed(false)),
-        )
-      )
-      this.commit(withNoticeHere(this.state, openedPull(pullHere(this.state), opened)))
-    })
-  }
-
-  private loadPulls(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const forge = yield* Forge
-      const answered = yield* (
-        forge.pulls(this.repo).pipe(
-          Effect.map(Option.some),
-          Effect.catchTag("ForgeUnavailable", () => Effect.succeed(Option.none())),
-        )
-      )
-      this.commit(
-        Option.match(answered, {
-          onNone: () => withSilentForge(this.state),
-          onSome: (pulls) =>
-            withPulls(this.state, Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state]))),
-        }),
-      )
-    })
-  }
-
-  private turnedTo(): Work {
-    return Effect.gen({ self: this }, function* () {
-      this.commit(withSource(this.state, []))
-      this.stopSourcing()
-      this.sourcing = yield* Effect.forkDetach(this.loadSource())
-    })
-  }
-
-  private letGoOfEverything(): void {
-    this.stopWatching()
-    this.stopFading()
-    this.stopLooking()
-    this.stopTicking()
-    this.stopLighting()
-    this.stopSourcing()
-    this.stopFetching()
-    this.stopSearching()
-    this.stopPainting()
-    this.stopConsuming()
-    void getTreeSitterClient().destroy()
-  }
-
-  private stopSourcing(): void {
-    const fiber = this.sourcing
-    this.sourcing = undefined
-    if (fiber !== undefined) Effect.runFork(Fiber.interrupt(fiber))
-  }
-
-  private loadSource(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      const patch = selectedPatch(this.state)
-      if (branch === undefined || patch === undefined) return
-      const asked = patch.path
-      const source = yield* (fileSource(this.repo, branch.branch, asked))
-      if (selectedPatch(this.state)?.path !== asked) return
-      this.commit(withSource(this.state, source))
-      const before = yield* (fileBefore(this.repo, branch.branch, asked))
-      if (selectedPatch(this.state)?.path !== asked) return
-      this.stopLighting()
-      this.lighting = yield* Effect.forkDetach(this.lightUp(asked, source, before))
-      yield* this.openTinyGaps()
-    })
-  }
-
-  private openTinyGaps(): Work {
-    return Effect.gen({ self: this }, function* () {
-      if (lonelyGaps(this.state).length === 0) return
-      yield* this.loadFull()
-      const alone = lonelyGaps(this.state)
-      if (alone.length === 0) return
-      this.commit(alone.reduce((held, gap) => gapShown(held, gap.index, gap.hidden), this.state))
-    })
-  }
-
-  private lightUp(
-    path: string,
-    source: ReadonlyArray<string>,
-    before: ReadonlyArray<string>,
-  ): Work {
-    return Effect.gen({ self: this }, function* () {
-      yield* this.display.light(path, "new", source)
-      if (before.length > 0) yield* this.display.light(path, "old", before)
-    })
-  }
-
-  private expand(delta: number): Work {
-    return this.widen(layerContext(this.state.context, delta))
-  }
-
-  private widen(next: number): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined || next === this.state.context) return
-      const line = sourceLineAt(this.state, this.state.cursor)
-      const worktree = this.worktreeFor(branch.branch)
-      const patches =
-        worktree === undefined
-          ? yield* listPatches(this.repo, branch.branch, next)
-          : yield* patchIn(worktree, next)
-      const widened = withContext(this.state, next, patches, 0)
-      const patch = selectedPatch(widened)
-      const cursor = patch === undefined || line === undefined ? 0 : rowAtSourceLine(patch, line)
-      const held = this.reading
-      const remarks =
-        held === undefined
-          ? this.state.remarks
-          : yield* remarksAgainst(held.worktree.path, patches)
-      this.commit(withRemarks(withContext(this.state, next, patches, cursor), remarks))
-    })
-  }
-
-  private remember(action: Action | undefined, key: KeyEvent): void {
-    if (takesText(this.state.screen) && action === undefined) return
-    const named = action ?? keyName(key)
-    this.keys.push(named)
-    if (this.keys.length > KEY_HISTORY) this.keys.shift()
-    this.trail.push(momentOf(named, this.state, this.since()))
-    if (this.trail.length > TRAIL_HISTORY) this.trail.shift()
-  }
-
-  private sendReport(): Work {
-    return Effect.gen({ self: this }, function* () {
-      if (this.state.draft.trim().length === 0) {
-        this.commit(withNotice(this.state, "say what went wrong first"))
-        return
-      }
-      const text = buildReport(this.state, {
-        repo: this.repo,
-        base: this.base ?? "",
-        slowest: this.slowest(),
-        keys: this.keys,
-        trail: this.trail,
-        failure: this.failure,
-        failureKind: this.failureKind,
-        width: this.renderer.width,
-        height: this.renderer.height,
-      })
-      const stamp = new Date().toISOString().replace(/[:.]/g, "-")
-      const path = yield* (saveReport(stamp, text))
-      copyToClipboard(text)
-      const closed = { ...this.state, screen: this.state.returnTo, draft: "" }
-      this.commit(withNotice(closed, `report copied — ${path}`))
-    })
-  }
-
-  private send(): Work {
-    if (this.state.answerTo !== undefined) return this.sendRemarkAnswer(this.state.answerTo)
-    return this.state.replyTo === undefined ? this.sendComment() : this.sendReply(this.state.replyTo)
-  }
-
-  private sendReply(to: string): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      if (branch === undefined) return
-      if (this.state.draft.trim().length === 0) {
-        this.commit(withNotice(this.state, NOTHING_WRITTEN))
-        return
-      }
-      yield* submitReply({
-        repo: this.repo,
-        branch: branch.branch,
-        to,
-        body: yield* this.display.written,
-        id: randomUUID(),
-        at: new Date().toISOString(),
-      })
-      const sent = yield* this.loadSent(branch.branch)
-      this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
-    })
-  }
-
-  private askForLayers(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const patch = this.state.patches[0]
-      const branch = selectedBranch(this.state)
-      if (patch === undefined || branch === undefined) return
-      yield* this.commenting(branch.branch, {
-        repo: this.repo,
-        branch: branch.branch,
-        file: patch.path,
-        side: "new",
-        start: 1,
-        end: 1,
-        body: layersAsk(this.state),
-        id: randomUUID(),
-        at: new Date().toISOString(),
-      })
-      const sent = yield* this.loadSent(branch.branch)
-      this.commit(withNotice(withSent(this.state, sent), askedFor(this.state)))
-    })
-  }
-
-  private sendComment(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const patch = selectedPatch(this.state)
-      const branch = selectedBranch(this.state)
-      const [from, to] = selectionRange(this.state)
-      if (patch === undefined || branch === undefined) return
-      if (this.state.draft.trim().length === 0) {
-        this.commit(withNotice(this.state, NOTHING_WRITTEN))
-        return
-      }
-      const anchor = anchorFor(patch, from, to)
-      if (Option.isNone(anchor)) {
-        this.commit(withNotice(this.state, "nothing selected"))
-        return
-      }
-      const body = yield* this.display.written
-      if (this.state.hold) {
-        this.holding({
-          file: patch.path,
-          side: anchor.value.side,
-          start: anchor.value.start,
-          end: anchor.value.end,
-          body,
-        })
-        return
-      }
-      yield* this.commenting(branch.branch, {
-        repo: this.repo,
-        branch: branch.branch,
-        file: patch.path,
-        side: anchor.value.side,
-        start: anchor.value.start,
-        end: anchor.value.end,
-        body,
-        id: randomUUID(),
-        at: new Date().toISOString(),
-      })
-      const sent = yield* this.loadSent(branch.branch)
-      this.commit(withNotice(sentAway(withSent(this.state, sent)), "sent to the agent"))
-    })
-  }
-
-  private holding(comment: StagedComment): void {
-    const held = [...this.state.held, comment]
-    this.commit(
-      withNotice(
-        sentAway({ ...this.state, held }),
-        `held — ${countOf(held.length, "comment")} waiting, press C to send`,
-      ),
-    )
-  }
-
-  private dropHeld(at: number): Work {
-    return Effect.sync(() => {
-      const was = this.state.panelIndex
-      const held = this.state.held.filter((_, index) => index !== at)
-      this.commit(withNotice(this.staying({ ...this.state, held }, was), "dropped, it was never sent"))
-    })
-  }
-
-  private sendHeld(): Work {
-    return Effect.gen({ self: this }, function* () {
-      const branch = selectedBranch(this.state)
-      const [first, ...rest] = this.state.held
-      if (branch === undefined || first === undefined) return
-      const at = new Date().toISOString()
-      const asked = (comment: StagedComment): CommentRequest => ({
-        repo: this.repo,
-        branch: branch.branch,
-        file: comment.file,
-        side: comment.side,
-        start: comment.start,
-        end: comment.end,
-        body: comment.body,
-        id: randomUUID(),
-        at,
-        ...(comment.remark === undefined ? {} : { remark: comment.remark }),
-      })
-      const many = this.state.held.length
-      yield* this.sending(branch.branch, [asked(first), ...rest.map(asked)])
-      const sent = yield* this.loadSent(branch.branch)
-      this.commit(
-        withNotice(
-          withSent({ ...this.state, held: [] }, sent),
-          `sent ${countOf(many, "comment")} to the agent`,
-        ),
-      )
-    })
+    const room = this.screen.noteRoom()
+    if (room === this.roomed) return
+    this.roomed = room
+    this.screen.update(this.state)
   }
 }
-
-const sentAway = (state: TuiState): TuiState => ({
-  ...state,
-  screen: "review",
-  draft: "",
-  draftAt: "",
-  replyTo: undefined,
-})
-
-const turnedOver = (state: TuiState): TuiState => ({
-  ...state,
-  picked: undefined,
-  railScroll: -1,
-  scroll: -1,
-  selecting: false,
-  anchorRow: state.cursor,
-})
-
-const settledPath = (path: string): Effect.Effect<string> =>
-  Effect.promise(() => realpath(path).catch(() => resolve(path)))
-
-const restsWhereItLanded = (from: Spot, to: Spot): boolean =>
-  from.row === to.row && from.column === to.column
-
-const lonelyGaps = (state: TuiState): ReadonlyArray<{ index: number; hidden: number }> =>
-  (shownOf(state)?.gaps ?? []).filter((gap) => gap.hidden === 1)
-
-const chosenIn = (state: TuiState): Readonly<Record<string, boolean>> => ({
-  wrap: state.wrap,
-  sticky: state.sticky,
-  panel: state.panelOpen,
-  hideReviewed: state.hideReviewed,
-  hideSettled: state.hideSettled,
-  newestFirst: state.newestFirst,
-  remarks: state.remarksOn,
-  hold: state.hold,
-})
 
 const settingsHeld = Effect.gen(function* () {
   const store = yield* Store
@@ -2317,9 +698,9 @@ const firstBranches = Effect.fn("Tui.firstBranches")(function* (
   branch: string | undefined,
   base: string | undefined,
 ) {
-  if (branch === undefined) return yield* listBranches(repo, base)
-  const only = yield* summaryFor(repo, branch, base).pipe(Effect.orElseSucceed(() => undefined))
-  return only === undefined ? yield* listBranches(repo, base) : [only]
+  if (branch === undefined) return yield* Branch.list(repo, base)
+  const only = yield* Effect.option(Branch.summary(repo, branch, base))
+  return Option.isNone(only) ? yield* Branch.list(repo, base) : [only.value]
 })
 
 const missing = (branch: string | undefined, found: Option.Option<number>): string =>
@@ -2334,6 +715,41 @@ const openingOn = (
   return at === -1 ? Option.none() : Option.some(at)
 }
 
+const sessionToResume = (
+  opensOn: Option.Option<number>,
+  sessionPath: string | undefined,
+): Effect.Effect<Option.Option<Session>> =>
+  Option.isSome(opensOn) || sessionPath === undefined
+    ? Effect.succeed(Option.none())
+    : readSession(sessionPath)
+
+const asidesMade = Effect.gen(function* () {
+  return {
+    sourcing: yield* FiberHandle.make<void, never>(),
+    fetching: yield* FiberHandle.make<void, never>(),
+    searching: yield* FiberHandle.make<void, never>(),
+    lighting: yield* FiberHandle.make<void, never>(),
+    looking: yield* FiberHandle.make<void, never>(),
+    fading: yield* FiberHandle.make<void, never>(),
+  }
+})
+
+const treeSitterFreed = Effect.addFinalizer(() => Effect.promise(() => getTreeSitterClient().destroy()))
+
+const shownOn =
+  (screen: Screen) =>
+  (shown: TuiState): Effect.Effect<void> =>
+    Effect.sync(() => screen.update(shown))
+
+const painting = (screen: Screen, state: SubscriptionRef.SubscriptionRef<TuiState>): Effect.Effect<void> =>
+  Stream.runForEach(SubscriptionRef.changes(state), shownOn(screen))
+
+const ticking = (app: App): Effect.Effect<number> =>
+  Effect.repeat(Effect.sync(() => app.ticked()), Schedule.spaced(AGE_TICK_MS))
+
+const noticing = (app: App, root: string): Effect.Effect<void> =>
+  Stream.runForEach(answers(root), () => Effect.sync(() => app.answered()))
+
 export type LaunchOptions = {
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
@@ -2346,53 +762,46 @@ export const launch = Effect.fn("Tui.launch")(function* (
   renderer: CliRenderer,
   options: LaunchOptions = {},
 ) {
-  const { noticeMs, sessionPath } = options
-  const repo = yield* settledPath(asked)
+  const git = yield* Git
+  const repo = yield* git.realPathOf(asked)
   const branches = yield* firstBranches(repo, options.branch, options.base)
-  const asOpened = openingOn(branches, options.branch)
-  const missed = missing(options.branch, asOpened)
-  const resume = Option.isSome(asOpened)
-    ? Option.none<Session>()
-    : sessionPath === undefined
-      ? Option.none<Session>()
-      : yield* readSession(sessionPath)
+  const opensOn = openingOn(branches, options.branch)
+  const session = yield* sessionToResume(opensOn, options.sessionPath)
   const store = yield* Store
-  const kept = yield* settingsHeld
-  const display = yield* Display.pipe(Effect.provide(displayOn(renderer, repo)))
+  const chosen = yield* settingsHeld
   const waiting = yield* upgradeHint
   const state = yield* SubscriptionRef.make({
     ...initialState(branches),
-    ...kept,
+    ...chosen,
     waiting,
-    notice: missed,
+    notice: missing(options.branch, opensOn),
   })
-  const painting = yield* Effect.forkDetach(
-    Stream.runForEach(SubscriptionRef.changes(state), display.paint),
-  )
-  const partial = options.branch !== undefined && branches.length === 1
-  const intents = yield* Queue.unbounded<Intent>()
+  const screen = new Screen(renderer, repo)
+  yield* Effect.forkScoped(painting(screen, state))
+  const asides = yield* asidesMade
+  const runFading = yield* FiberHandle.runtime(asides.fading)()
+  const runLooking = yield* FiberHandle.runtime(asides.looking)()
   const app = new App({
     renderer,
+    screen,
     repo,
     base: options.base,
-    display,
     state,
-    painting,
-    noticeMs,
-    sessionPath,
-    resume: Option.getOrUndefined(resume),
-    opensOn: Option.getOrUndefined(asOpened),
-    chosen: kept,
-    partial,
-    intents,
+    intents: yield* Queue.unbounded<Intent>(),
+    asides,
+    runFading,
+    runLooking,
+    noticeMs: options.noticeMs ?? NOTICE_MS,
+    sessionPath: options.sessionPath,
+    chosen,
   })
-  app.watch(yield* Effect.forkDetach(app.consume()))
-  const noticing = Stream.runForEach(answers(store.root), () => told(app))
-  app.listen(yield* Effect.forkDetach(noticing))
+  yield* Effect.forkScoped(app.consume())
+  yield* Effect.forkScoped(ticking(app))
+  yield* Effect.forkScoped(noticing(app, store.root))
+  yield* treeSitterFreed
+  app.open(opensOn, session, options.branch !== undefined && branches.length === 1)
   return app
 })
-
-const told = (app: App): Effect.Effect<void> => Effect.sync(() => app.answered())
 
 const untilDestroyed = (renderer: CliRenderer): Effect.Effect<void> =>
   Effect.callback<void>((resume) => {
@@ -2406,22 +815,24 @@ export const runOn = Effect.fn("Tui.runOn")(function* (
 ) {
   yield* launch(repo, renderer, options)
   yield* untilDestroyed(renderer)
-})
+}, Effect.scoped)
+
+const rendererMade = Effect.acquireRelease(
+  Effect.promise(() =>
+    createCliRenderer({
+      exitOnCtrlC: false,
+      useKittyKeyboard: { events: true, allKeysAsEscapes: true },
+    }),
+  ),
+  (made) => Effect.sync(() => made.destroy()),
+)
 
 export const runTui = Effect.fn("Tui.run")(function* (
   repo: string,
   options: LaunchOptions = {},
 ) {
-  const renderer = yield* Effect.promise(() =>
-    createCliRenderer({
-      exitOnCtrlC: false,
-      useKittyKeyboard: { events: true, allKeysAsEscapes: true },
-    }),
-  )
-  yield* Effect.ensuring(
-    runOn(repo, renderer, options),
-    Effect.sync(() => renderer.destroy()),
-  )
-})
+  const renderer = yield* rendererMade
+  yield* runOn(repo, renderer, options)
+}, Effect.scoped)
 
 export type { Action }

@@ -1,7 +1,9 @@
 import { spawn, type StdioOptions } from "node:child_process"
 import { fileURLToPath } from "node:url"
-import { Effect } from "effect"
+import { Effect, Option, Schema } from "effect"
 import manifest from "../../package.json" with { type: "json" }
+import { registryUrl, upgradeRoute } from "./config.ts"
+import { RegistryUnanswered } from "./error.ts"
 
 export type Route = "brew" | "npm" | "bun" | "binary" | "source"
 
@@ -97,34 +99,46 @@ export const newer = (candidate: string, held: string): boolean => {
   return compare(left.pre, right.pre) > 0
 }
 
-const tagIn = (body: unknown): string | undefined => {
-  if (typeof body !== "object" || body === undefined || body === null) return undefined
-  const tags = body as Record<string, unknown>
-  const named = tags[TAG] ?? tags["latest"]
-  return typeof named === "string" ? named : undefined
-}
+const DistTags = Schema.Struct({
+  alpha: Schema.optionalKey(Schema.String),
+  latest: Schema.optionalKey(Schema.String),
+})
 
-const fetched = (url: string): Promise<string | undefined> =>
-  fetch(url, { signal: AbortSignal.timeout(ASK_MS) })
-    .then((response) => (response.ok ? response.json() : undefined))
-    .then(tagIn)
-    .catch(() => undefined)
+const readTags = Schema.decodeUnknownEffect(DistTags)
 
-export const askLatest: Effect.Effect<string | undefined> = Effect.promise(() =>
-  fetched(process.env["ADIFF_REGISTRY"] ?? REGISTRY),
-)
+const unanswered = (url: string) => (reason: unknown) =>
+  new RegistryUnanswered({ url, reason: String(reason) })
+
+const fetched = Effect.fn("Cli.fetchRegistry")(function* (url: string) {
+  const response = yield* Effect.tryPromise({
+    try: (signal) => fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(ASK_MS)]) }),
+    catch: unanswered(url),
+  })
+  if (!response.ok) return yield* unanswered(url)(`HTTP ${response.status}`)
+  return yield* Effect.tryPromise({ try: (): Promise<unknown> => response.json(), catch: unanswered(url) })
+})
+
+export const askLatest: Effect.Effect<string, RegistryUnanswered> = Effect.gen(function* () {
+  const named = yield* Effect.mapError(registryUrl, unanswered(REGISTRY))
+  const url = Option.getOrElse(named, () => REGISTRY)
+  const body = yield* fetched(url)
+  const tags = yield* Effect.mapError(readTags(body), unanswered(url))
+  const version = tags[TAG] ?? tags.latest
+  if (version === undefined) return yield* unanswered(url)("no version tag")
+  return version
+}).pipe(Effect.withSpan("Cli.askLatest"))
 
 export const here = (): { executable: string; module: string } => ({
   executable: process.execPath,
   module: fileURLToPath(new URL(".", import.meta.url)),
 })
 
-export const findUpgrade: Effect.Effect<UpgradeFound> = Effect.gen(function* () {
+export const findUpgrade = Effect.gen(function* () {
   const { executable, module } = here()
-  const route = asRoute(process.env["ADIFF_UPGRADE_ROUTE"]) ?? routeOf(executable, module)
+  const route = asRoute(Option.getOrUndefined(yield* upgradeRoute)) ?? routeOf(executable, module)
   const version = manifest.version
   const command = commandFor(route, executable, module)
-  const latest = yield* askLatest
+  const latest = Option.getOrUndefined(yield* Effect.option(askLatest))
   const known = latest === undefined ? {} : { latest, current: !newer(latest, version) }
   return { route, version, checked: latest !== undefined, ...known, command } satisfies UpgradeFound
 }).pipe(Effect.withSpan("Cli.findUpgrade"))

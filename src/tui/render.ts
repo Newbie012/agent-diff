@@ -1,1670 +1,164 @@
-import {
+import type {
   BoxRenderable,
-  RGBA,
-  TextRenderable,
-  type CliRenderer,
-} from "@opentui/core"
-import {
+  TextRenderable} from "@opentui/core";
+import { type CliRenderer, type MouseEvent, type Renderable } from "@opentui/core"
+import type {
   ASCIIFontRenderable,
-  bg,
-  fg,
-  StyledText,
-  t,
-  TextareaRenderable,
-  defaultTextareaKeyBindings,
-  type KeyBinding,
-  type TextChunk,
-} from "@opentui/core"
-import { absurd } from "effect"
-import { displayKey, hintsFor, takesText, type Command, type Offered } from "./command.ts"
-import { REMAINDER_TITLE } from "../domain/layers/index.ts"
-import { stickyChain, type RowKind } from "../domain/patch/index.ts"
+  TextareaRenderable} from "@opentui/core";
+import { bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
+import { stickyChain } from "../domain/patch/index.ts"
+import { hintsFor, takesText } from "./command.ts"
 import {
-  ANSWER_MARK,
-  DiffView,
-  REPLY_MARK,
-  type Draft,
-  type LinePaint,
-  type Note,
-} from "./diffview.ts"
-import { gapRowSet, shownOf } from "./gaps.ts"
-import { keyMatches, paletteMatches } from "./reduce.ts"
-import {
-  composeTarget,
-  draftPlace,
-  filePlace,
-  hiddenLines,
-  isReviewed,
-  markedStands,
   newLineAt,
-  onLayers,
-  railWindow,
-  selectionReadout,
-  layerDone,
-  layerFitted,
-  layerRoomIn,
-  RAIL_DIR_LEAD,
-  RAIL_FILE_LEAD,
-  RAIL_GUTTER,
-  RAIL_TITLE_LEAD,
-  type LayerRoom,
-  type RailWindow,
-  preferenceRows,
-  standingOnThread,
-  askedRows,
-  asksAbout,
-  type LayerRow,
-  type PreferenceRow,
-  wrapped,
-  selectedLineCount,
-  snippetOf,
-  threadQuote,
-  reviewedCount,
-  reviewedCountIn,
-  pullHere,
-  selectedBranch,
-  selectedPatch,
+  isPicking,
+  refNoteOf,
+  refsShown,
   selectionRange,
-  threadHere,
-  threadStand,
-  threadsOn,
-  treeWindow,
+  shownMatches,
+} from "./cursor.ts"
+import { DiffView, type Draft, type LinePaint } from "./diffview.ts"
+import { treeWindow } from "./files.ts"
+import { CHIP_GAP, keptWithin } from "./footer.ts"
+import { FOUND_LEAST, foundBlocks, foundTitle, nothingYet, windowedBlocks } from "./found.ts"
+import { gapRowSet, shownOf } from "./gaps.ts"
+import {
+  atHome,
+  branchCells,
+  branchHeading,
+  elide,
+  EMPTY_LIST,
+  fallbackScope,
+  headerFitted,
+  headerParts,
+  headerRoom,
+  HOME_PATH_CHROME,
+  HOME_PATH_MIN,
+  homeWidth,
+  longestName,
+  longestState,
+  nameRoom,
+  shortPath,
+  stateCell,
+  stateRoom,
+  summaryLines,
+} from "./home.ts"
+import {
+  layerFitted,
+  type LayerRoom,
+  layerRoomIn,
+  proseFor,
+  railWindow,
+  type RailWindow,
+} from "./layerview.ts"
+import {
+  FRAME_PAD,
+  wrappedDraft,
+  panelShown,
+  reviewWidth,
+  selectionReadout,
   tooSmall,
   treeWidth,
-  type TuiState,
-  WHOLE_FILE,
-  clip,
-  FRAME_PAD,
-  type StagedComment,
-  proseFor,
-  composeBox,
-  composeRoom as composeText,
-  panelEntries,
-  panelEntry,
-  picking,
-  refsShown,
-  remarkQuote,
-  remarkShown,
-  remarkToTakeOn,
-  remarkUnderCursor,
-  panelShown,
-  shownMatches,
-  reviewWidth,
-  type PanelEntry,
-  PANEL_SECTIONS,
-  type PanelSection,
-  type Spot,
-  laidDraft,
-  panelHolds,
+} from "./layout.ts"
+import { marks, standMark } from "./marks.ts"
+import { askedRows, askingWords, composeTarget, draftPlace, markedStands } from "./notes.ts"
+import {
+  COMPOSE_ACTION_ROWS,
+  COMPOSE_CHROME,
+  DRAFT_HEAD,
+  DRAFT_PAD,
+  DRAFT_ROOM,
+  NOTE_ROOM_MIN,
+  REPLIES,
+  SENDS,
+  SNIPPET_LINES,
+  actionsText,
+  clipMiddle,
+  clipPath,
+  composeRoom,
+  laidOut,
+  notesFor,
+  quotedFor,
+  reportActions,
+} from "./notespane.ts"
+import { pickPaint } from "./paint.ts"
+import { panelEntry } from "./panel.ts"
+import { lostCode, panelText, restingOrHere } from "./panelpane.ts"
+import {
+  bar,
+  type BaseParts,
+  crampedBar,
+  type FoundParts,
+  frameRoot,
+  makeBody,
+  makeCompose,
+  makeComposeParts,
+  makeDiffPane,
+  makeGutter,
+  makeHome,
+  makeListParts,
+  makeModals,
+  makePanel,
+  makeScrim,
+  makeScroll,
+  makeScroller,
+} from "./parts.ts"
+import { keyMatches, paletteMatches } from "./reduce.ts"
+import {
+  askText,
+  commandRow,
+  LEGEND_ROWS,
+  legendText,
+  offeredIn,
+  PALETTE_CHROME,
+  PENDING_CHROME,
+  pickedTail,
+  pickingTitle,
+  readerText,
+  readerTitle,
+  settingsText,
+  sheetDeep,
+  sheetText,
+  voicesOf,
+} from "./sheets.ts"
+import {
   type Clicked,
-  refSaidOf,
-} from "./model.ts"
-import type { TreeRow } from "./tree.ts"
-import type { Match, Remark } from "../cli/index.ts"
-import { marks, standMark, type MarkSet } from "./marks.ts"
+  type LayerRow,
+  onLayers,
+  preferenceRows,
+  selectedBranch,
+  selectedPatch,
+  type Spot,
+  type TuiState,
+} from "./state.ts"
+import { inRange, layerLook, layerText, litRow, staleBanner, treeLine } from "./treepane.ts"
+import { clip } from "./words.ts"
+import {
+  ASKING,
+  COMPOSE_EDGE,
+  CRAMPED,
+  DIFF_CHROME_MOST,
+  DIFF_FLOOR,
+  GUTTER_X,
+  MODAL_ROOM,
+  type Mouse,
+  notchOf,
+  PANE_CHROME,
+  PANE_EDGES,
+  PANE_INSET,
+  PANEL_FIFTH,
+  PANEL_QUARTER,
+  panelRows,
+  panelTop,
+  panelWidth,
+  type Screened,
+  STICKY_MAX,
+} from "./chrome.ts"
+import { unaskedForge } from "./home.ts"
+import { keysTitle, listText } from "./sheets.ts"
 import { palette } from "./theme.ts"
 
-const ROW_HEIGHT = 1
-const COMPOSE_WIDTH = 72
-const GUTTER_X = 2
-const CHIP_GAP = 4
-const MODAL_ROOM = 8
-const COMPOSE_CHROME = 3
-const DRAFT_PAD = 2
-const NOTE_ROOM_MIN = 24
-const DRAFT_ROOM = 6
-const DRAFT_HEAD = 1
-const COMPOSE_ACTION_ROWS = 2
-
-const reportActions = (full: boolean): StyledText =>
-  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^t")} ${fg(palette.muted)(full ? "sending everything" : "sending the least")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)("copy and save")}`
-
-const SENDS = "send it"
-const REPLIES = "reply on the pull request"
-
-const actionsText = (said: string): StyledText =>
-  t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)(said)}`
-const SNIPPET_LINES = 4
-const PALETTE_KEY = 11
-const PALETTE_TITLE = 60
-const PALETTE_GAP = 2
-const PALETTE_CHROME = 4
-const PENDING_CHROME = 4
-const LEGEND_ROWS = 1
-
-const LEGEND: ReadonlyArray<readonly [keyof MarkSet, string]> = [
-  ["filed", "written"],
-  ["waiting", "picked up"],
-  ["answered", "answered"],
-  ["asked", "waiting on you"],
-  ["done", "settled"],
-]
-
-const legendText = (room: number): string => {
-  const said = LEGEND.map(([key, means]) => `${marks()[key]} ${means}`)
-  const voices = [`${REMARK_MARK} remark`, `${REPLY_MARK} you`, `${ANSWER_MARK} the agent`]
-  return clip([...said, ...voices].join("   "), room)
-}
-
-const keysTitle = (found: number, whole: boolean): string => {
-  if (found === 0) return "No key matches"
-  return whole ? `Keys here, ${found} of them` : `Keys here, ${found} of them — arrows for the rest`
-}
-const PALETTE_WIDTH = 76
-const PANEL_SHARE = 0.62
-const PANEL_MAX = 120
-const PANEL_FLOOR = 6
-const PANEL_FOOT = 2
-const PANEL_QUARTER = 4
-const PANEL_FIFTH = 5
-const PANE_CHROME = 3
-const PANE_EDGES = 2
-const PANE_INSET = 1
-const DIFF_FLOOR = 24
-const COMPOSE_EDGE = 4
-const CRAMPED = "adiff needs more room than this"
-const CRAMPED_ROWS = 4
-const DIFF_CHROME_MOST = 16
-const BRANCH_WIDTH = 82
-const BRANCH_NAME_MIN = 12
-const BRANCH_FIXED = 36
-const STATE_MIN = 11
-const EMPTY_LIST = "  nothing to review. No branch differs from the one it started from."
-const MODAL_MARGIN = 4
-
-const shareOf = (width: number, least: number): number =>
-  Math.max(least, Math.min(PANEL_MAX, Math.floor(width * PANEL_SHARE)))
-
-const homeWidth = (width: number, longest: number, said = STATE_MIN): number =>
-  Math.max(
-    0,
-    Math.min(
-      width - FRAME_PAD * 2,
-      Math.min(
-        PANEL_MAX,
-        Math.max(BRANCH_WIDTH, longest + BRANCH_FIXED + Math.max(STATE_MIN, said)),
-      ),
-    ),
-  )
-
-const longestName = (state: TuiState): number =>
-  Math.max(0, ...state.branches.map((branch) => branch.branch.length))
-
-const longestState = (state: TuiState): number =>
-  Math.max(0, ...state.branches.map((branch) => stateCell(state, branch).length))
-
-const keysOf = (entry: Command): string =>
-  entry.keys.map((one) => displayKey(one)).join(" ")
-
-const commandRow = (entry: Command, room: number): string => {
-  const key = clip(keysOf(entry), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
-  const left = Math.max(1, Math.min(PALETTE_TITLE, room - PALETTE_KEY - entry.category.length - PALETTE_GAP))
-  return `${key}${clip(entry.title, left - PALETTE_GAP).padEnd(left)}${entry.category}`
-}
-
-const modalWidth = (width: number, wanted: number): number =>
-  Math.max(0, Math.min(wanted, width - MODAL_MARGIN))
-
-const panelWidth = (width: number): number => modalWidth(width, shareOf(width, PALETTE_WIDTH))
-
-const panelTop = (height: number, part: number): number => Math.max(2, Math.floor(height / part))
-
-const panelRows = (height: number, part: number): number =>
-  Math.max(PANEL_FLOOR, height - panelTop(height, part) - PANEL_FOOT)
-
-type ComposeRoom = { readonly box: number; readonly text: number }
-
-const composeRoom = (width: number): ComposeRoom => ({
-  box: composeBox(width),
-  text: composeText(width),
-})
-
-const laidOut = (lines: ReadonlyArray<string>, room: number): ReadonlyArray<string> =>
-  lines.flatMap((line) => {
-    const parts = wrapped(line, room)
-    return parts.length === 0 ? [""] : parts
-  })
-
-const STICKY_MAX = 4
-
-type PaintFlags = {
-  readonly cursor: boolean
-  readonly selected: boolean
-  readonly gap: boolean
-}
-
-const pickPaint = (view: DiffView, kind: RowKind, flags: PaintFlags): LinePaint | undefined => {
-  if (flags.cursor) return UNDER_CURSOR[kind] ?? PLAIN_CURSOR
-  if (flags.selected) return PICKED[kind] ?? PLAIN_PICKED
-  if (flags.gap) return GAP_PAINT
-  return view.washOf(kind)
-}
-
-const PLAIN_PICKED: LinePaint = {
-  gutter: RGBA.fromHex(palette.pickedGutter),
-  content: RGBA.fromHex(palette.pickedOn),
-}
-
-const PICKED: Partial<Record<RowKind, LinePaint>> = {
-  added: {
-    gutter: RGBA.fromHex(palette.pickedGutterAdded),
-    content: RGBA.fromHex(palette.pickedOnAdded),
-  },
-  removed: {
-    gutter: RGBA.fromHex(palette.pickedGutterRemoved),
-    content: RGBA.fromHex(palette.pickedOnRemoved),
-  },
-}
-
-const PLAIN_CURSOR: LinePaint = {
-  gutter: RGBA.fromHex(palette.cursorGutter),
-  content: RGBA.fromHex(palette.cursorOn),
-}
-
-const UNDER_CURSOR: Partial<Record<RowKind, LinePaint>> = {
-  added: {
-    gutter: RGBA.fromHex(palette.cursorGutterAdded),
-    content: RGBA.fromHex(palette.cursorOnAdded),
-  },
-  removed: {
-    gutter: RGBA.fromHex(palette.cursorGutterRemoved),
-    content: RGBA.fromHex(palette.cursorOnRemoved),
-  },
-}
-const GAP_PAINT: LinePaint = {
-  gutter: RGBA.fromHex(palette.overlay),
-  content: RGBA.fromHex(palette.overlay),
-}
-
-const frameRoot = (renderer: CliRenderer): void => {
-  renderer.root.flexDirection = "column"
-  renderer.root.paddingLeft = FRAME_PAD
-  renderer.root.paddingRight = FRAME_PAD
-  renderer.root.paddingTop = 0
-  renderer.root.paddingBottom = 0
-}
-
-const crampedBar = (renderer: CliRenderer): TextRenderable => {
-  const made = bar(renderer, "cramped", palette.muted)
-  made.wrapMode = "word"
-  made.height = CRAMPED_ROWS
-  return made
-}
-
-const bar = (renderer: CliRenderer, id: string, color: string): TextRenderable =>
-  new TextRenderable(renderer, {
-    id,
-    content: "",
-    fg: color,
-    height: ROW_HEIGHT,
-    flexShrink: 0,
-    marginLeft: GUTTER_X,
-    marginRight: GUTTER_X,
-  })
-
-const makeList = (renderer: CliRenderer): BoxRenderable => {
-  const box = new BoxRenderable(renderer, {
-    id: "list-pane",
-    width: BRANCH_WIDTH,
-    flexShrink: 0,
-    flexDirection: "column",
-    minHeight: 0,
-    overflow: "hidden",
-    borderColor: palette.rule,
-  })
-  return box
-}
-
-const makeDiffPane = (renderer: CliRenderer): BoxRenderable =>
-  new BoxRenderable(renderer, {
-    id: "diff-pane",
-    flexGrow: 1,
-    flexDirection: "column",
-    minWidth: 0,
-    minHeight: 0,
-    overflow: "hidden",
-    visible: false,
-  })
-
-const makePanel = (renderer: CliRenderer): { pane: BoxRenderable; text: TextRenderable } => {
-  const pane = new BoxRenderable(renderer, {
-    id: "panel-pane",
-    width: 0,
-    flexShrink: 0,
-    flexDirection: "column",
-    minHeight: 0,
-    overflow: "hidden",
-    borderColor: palette.rule,
-    visible: false,
-  })
-  const text = new TextRenderable(renderer, {
-    id: "panel",
-    content: "",
-    fg: palette.ink,
-    flexGrow: 1,
-    wrapMode: "none",
-  })
-  pane.add(text)
-  return { pane, text }
-}
-
-const makeListParts = (renderer: CliRenderer): { pane: BoxRenderable; text: TextRenderable } => {
-  const pane = makeList(renderer)
-  const text = makeListText(renderer)
-  pane.add(text)
-  return { pane, text }
-}
-
-const makeListText = (renderer: CliRenderer): TextRenderable =>
-  new TextRenderable(renderer, {
-    id: "list",
-    content: "",
-    fg: palette.ink,
-    flexGrow: 1,
-    wrapMode: "none",
-  })
-
-const makeGutter = (renderer: CliRenderer): TextRenderable =>
-  new TextRenderable(renderer, {
-    id: "gutter",
-    content: "",
-    fg: palette.marker,
-    width: 2,
-    flexShrink: 0,
-    wrapMode: "none",
-  })
-
-const makeScroller = (
-  renderer: CliRenderer,
-  gutter: TextRenderable,
-  scroll: BoxRenderable,
-): BoxRenderable => {
-  const box = new BoxRenderable(renderer, {
-    id: "scroller",
-    flexGrow: 1,
-    flexDirection: "row",
-    minHeight: 0,
-  })
-  box.add(gutter)
-  box.add(scroll)
-  return box
-}
-
-const makeScrim = (renderer: CliRenderer): BoxRenderable =>
-  new BoxRenderable(renderer, {
-    id: "scrim",
-    position: "absolute",
-    left: 0,
-    top: 0,
-    width: "100%",
-    height: "100%",
-    zIndex: 90,
-    visible: false,
-    backgroundColor: palette.scrim,
-  })
-
-const makeScroll = (renderer: CliRenderer): BoxRenderable =>
-  new BoxRenderable(renderer, {
-    id: "diff-scroll",
-    flexGrow: 1,
-    flexDirection: "column",
-    minHeight: 0,
-    minWidth: 0,
-    overflow: "hidden",
-  })
-
-const makePalette = (renderer: CliRenderer): BoxRenderable => {
-  const box = makeCompose(renderer)
-  box.id = "palette"
-  box.height = PANEL_FLOOR
-  box.width = PALETTE_WIDTH
-  return box
-}
-
-type PaletteParts = {
-  readonly box: BoxRenderable
-  readonly title: TextRenderable
-  readonly query: TextareaRenderable
-  readonly choices: TextRenderable
-}
-
-type KeysParts = PaletteParts & { readonly legend: TextRenderable }
-
-type FoundParts = {
-  readonly box: BoxRenderable
-  readonly title: TextRenderable
-  readonly query: TextareaRenderable
-  readonly peek: TextRenderable
-  readonly choices: TextRenderable
-}
-
-const asking = (renderer: CliRenderer, id: string, placeholder = "Type to filter…"): TextareaRenderable =>
-  new TextareaRenderable(renderer, {
-    id,
-    height: ROW_HEIGHT,
-    wrapMode: "none",
-    flexShrink: 0,
-    marginLeft: GUTTER_X,
-    marginRight: GUTTER_X,
-    placeholder,
-    placeholderColor: palette.faint,
-    backgroundColor: palette.panel,
-    focusedBackgroundColor: palette.panel,
-    textColor: palette.ink,
-    focusedTextColor: palette.ink,
-    cursorColor: palette.ink,
-  })
-
-const makePaletteParts = (renderer: CliRenderer): PaletteParts => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "palette-title", palette.faint)
-  const query = asking(renderer, "palette-query")
-  const choices = makeChoices(renderer)
-  box.add(title)
-  box.add(query)
-  box.add(choices)
-  return { box, title, query, choices }
-}
-
-const makeChoices = (renderer: CliRenderer): TextRenderable =>
-  new TextRenderable(renderer, {
-    id: "palette-choices",
-    content: "",
-    flexGrow: 1,
-    fg: palette.ink,
-    selectable: true,
-  })
-
-const LIST_LEAD = 2
-
-const windowed = <Row,>(
-  rows: ReadonlyArray<Row>,
-  at: number,
-  height: number,
-): { readonly rows: ReadonlyArray<Row>; readonly from: number } => {
-  if (rows.length <= height) return { rows, from: 0 }
-  const last = rows.length - height
-  const from = Math.max(0, Math.min(last, at - Math.floor(height / 2)))
-  return { rows: rows.slice(from, from + height), from }
-}
-
-const listText = (
-  rows: ReadonlyArray<string>,
-  at: number,
-  height: number,
-): StyledText => {
-  const shown = windowed(rows, at, Math.max(1, height))
-  const drawn = shown.rows.map((row, index) => {
-    const here = shown.from + index === at
-    const text = `${here ? marks().cursor : " "} ${row}`.padEnd(LIST_LEAD)
-    return here ? bg(palette.selection)(fg(palette.ink)(`${text}\n`)) : fg(palette.ink)(`${text}\n`)
-  })
-  return new StyledText(drawn)
-}
-
-type SheetRow = { readonly text: string; readonly at: number; readonly heading: boolean }
-
-const SHEET_GAP = 3
-
-const sheetRow = (entry: Command, room: number): string => {
-  const key = clip(keysOf(entry), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
-  return `${key}${clip(entry.title, Math.max(1, room - PALETTE_KEY))}`
-}
-
-const groupedBy = (rows: ReadonlyArray<Command>): ReadonlyArray<ReadonlyArray<number>> => {
-  const groups: Array<Array<number>> = []
-  for (const [at, entry] of rows.entries()) {
-    const last = groups.at(-1)
-    const same = last !== undefined && rows[last[0] ?? 0]?.category === entry.category
-    if (same && last !== undefined) last.push(at)
-    else groups.push([at])
-  }
-  return groups
-}
-
-const sheetBlock = (
-  rows: ReadonlyArray<Command>,
-  group: ReadonlyArray<number>,
-  room: number,
-): ReadonlyArray<SheetRow> => [
-  { text: rows[group[0] ?? 0]?.category ?? "", at: -1, heading: true },
-  ...group.map((at) => ({
-    text: sheetRow(rows[at] as Command, room),
-    at,
-    heading: false,
-  })),
-  { text: "", at: -1, heading: false },
-]
-
-const splitInTwo = (
-  blocks: ReadonlyArray<ReadonlyArray<SheetRow>>,
-): { readonly left: ReadonlyArray<SheetRow>; readonly right: ReadonlyArray<SheetRow> } => {
-  const total = blocks.reduce((sum, block) => sum + block.length, 0)
-  const left: Array<SheetRow> = []
-  const right: Array<SheetRow> = []
-  for (const block of blocks) {
-    if (left.length + block.length <= Math.ceil(total / 2) || left.length === 0) {
-      left.push(...block)
-    } else right.push(...block)
-  }
-  return { left, right }
-}
-
-const sheetPaint = (row: SheetRow | undefined, here: boolean, room: number): TextChunk => {
-  if (row === undefined) return fg(palette.ink)("".padEnd(room))
-  const mark = row.heading || row.at === -1 ? " " : here ? marks().cursor : " "
-  const text = `${mark} ${row.text}`.padEnd(room)
-  if (row.heading) return fg(palette.accent)(text)
-  return here ? bg(palette.selection)(fg(palette.ink)(text)) : fg(palette.ink)(text)
-}
-
-const sheetDeep = (rows: ReadonlyArray<Command>, room: number): number => {
-  const column = Math.max(12, Math.floor((room - SHEET_GAP) / 2))
-  const { left, right } = splitInTwo(
-    groupedBy(rows).map((group) => sheetBlock(rows, group, column - 2)),
-  )
-  return Math.max(left.length, right.length)
-}
-
-const sheetText = (
-  rows: ReadonlyArray<Command>,
-  at: number,
-  shown: { readonly height: number; readonly room: number },
-): StyledText => {
-  const column = Math.max(12, Math.floor((shown.room - SHEET_GAP) / 2))
-  const { left, right } = splitInTwo(
-    groupedBy(rows).map((group) => sheetBlock(rows, group, column - 2)),
-  )
-  const deep = Math.max(left.length, right.length)
-  const where = left.findIndex((row) => row.at === at)
-  const also = right.findIndex((row) => row.at === at)
-  const on = where === -1 ? also : where
-  const top = Math.max(0, Math.min(deep - shown.height, on - Math.floor(shown.height / 2)))
-  const drawn: Array<TextChunk> = []
-  for (let step = 0; step < Math.min(shown.height, deep); step += 1) {
-    const row = top + step
-    drawn.push(
-      sheetPaint(left[row], left[row]?.at === at, column),
-      fg(palette.ink)(" ".repeat(SHEET_GAP)),
-      sheetPaint(right[row], right[row]?.at === at, column),
-      fg(palette.ink)("\n"),
-    )
-  }
-  return new StyledText(drawn)
-}
-
-const askText = (state: TuiState, room: number): StyledText => {
-  const drawn = askedRows(state).map((row) => {
-    const head = `${row.here ? marks().cursor : " "} ${row.title}`
-    return row.here
-      ? bg(palette.selection)(fg(palette.ink)(`${head.padEnd(room)}\n`))
-      : fg(palette.muted)(`${head.padEnd(room)}\n`)
-  })
-  return new StyledText(drawn)
-}
-
-const SETTING_LEAD = 4
-
-const settingsText = (rows: ReadonlyArray<PreferenceRow>, room: number): StyledText => {
-  const drawn = rows.flatMap((row) => {
-    const mark = row.on ? marks().done : " "
-    const head = `${row.here ? marks().cursor : " "} ${mark} ${row.title}`
-    const said = `${" ".repeat(SETTING_LEAD)}${clip(row.about, Math.max(8, room - SETTING_LEAD))}`
-    const tone = row.on ? palette.added : palette.muted
-    return [
-      row.here
-        ? bg(palette.selection)(fg(palette.ink)(`${head.padEnd(room)}\n`))
-        : fg(tone)(`${head.padEnd(room)}\n`),
-      fg(palette.faint)(`${said.padEnd(room)}\n`),
-    ]
-  })
-  return new StyledText(drawn)
-}
-
-const stack = (parent: { add: (child: never) => void }, children: ReadonlyArray<unknown>): void => {
-  for (const child of children) parent.add(child as never)
-}
-
-const makeBody = (renderer: CliRenderer): BoxRenderable =>
-  new BoxRenderable(renderer, {
-    id: "body",
-    flexGrow: 1,
-    flexDirection: "row",
-    minHeight: 0,
-    minWidth: 0,
-    overflow: "hidden",
-  })
-
-const makeHome = (renderer: CliRenderer) => ({
-  logo: makeLogo(renderer),
-  path: makeLanding(renderer, "landing", palette.muted, 0),
-  keys: makeLanding(renderer, "landing-keys", palette.faint, 2),
-})
-
-const makeModals = (renderer: CliRenderer) => ({
-  palette: makePaletteParts(renderer),
-  found: makeFoundParts(renderer),
-  keys: makeKeysParts(renderer),
-  settings: makeSettingsParts(renderer),
-  reader: makeReaderParts(renderer),
-  bases: makeBaseParts(renderer),
-  ask: makeAskParts(renderer),
-})
-
-type BaseParts = {
-  readonly box: BoxRenderable
-  readonly title: TextRenderable
-  readonly query: TextareaRenderable
-  readonly choices: TextRenderable
-}
-
-const makeBaseParts = (renderer: CliRenderer): BaseParts => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "base-title", palette.faint)
-  const query = asking(renderer, "base-query", "Type a branch, a tag or a commit…")
-  const choices = makeChoices(renderer)
-  box.id = "base"
-  box.add(title)
-  box.add(query)
-  box.add(choices)
-  return { box, title, query, choices }
-}
-
-const makeAskParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "ask-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "ask"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeReaderParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "reader-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "reader"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeSettingsParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "settings-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "settings"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeKeysParts = (renderer: CliRenderer): KeysParts => {
-  const parts = makePaletteParts(renderer)
-  parts.box.id = "keys"
-  const legend = bar(renderer, "keys-legend", palette.faint)
-  parts.box.add(legend)
-  return { ...parts, legend }
-}
-
-const makeFoundParts = (renderer: CliRenderer): FoundParts => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "found-title", palette.faint)
-  const query = asking(renderer, "found-query", "Type what to look for…")
-  const peek = bar(renderer, "found-peek", palette.muted)
-  const choices = makeChoices(renderer)
-  box.id = "found"
-  box.add(title)
-  box.add(query)
-  box.add(choices)
-  box.add(peek)
-  return { box, title, query, peek, choices }
-}
-
-const FONTS = ["tiny", "block", "shade", "slick", "huge", "grid", "pallet"] as const
-
-const logoFont = (): (typeof FONTS)[number] => {
-  const wanted = process.env["ADIFF_FONT"] ?? ""
-  return FONTS.find((name) => name === wanted) ?? "tiny"
-}
-
-const makeLanding = (
-  renderer: CliRenderer,
-  id: string,
-  color: string,
-  top: number,
-): TextRenderable =>
-  new TextRenderable(renderer, {
-    id,
-    content: "",
-    fg: color,
-    alignSelf: "center",
-    marginTop: top,
-    marginBottom: top === 0 ? 2 : 0,
-    flexShrink: 0,
-  })
-
-const makeLogo = (renderer: CliRenderer): ASCIIFontRenderable =>
-  new ASCIIFontRenderable(renderer, {
-    id: "logo",
-    text: "adiff",
-    font: logoFont(),
-    color: palette.accent,
-    alignSelf: "center",
-    marginBottom: 2,
-    flexShrink: 0,
-  })
-
-const MAC_KEYS: ReadonlyArray<KeyBinding> = [
-  { name: "left", super: true, action: "line-home" },
-  { name: "right", super: true, action: "line-end" },
-  { name: "left", super: true, shift: true, action: "select-line-home" },
-  { name: "right", super: true, shift: true, action: "select-line-end" },
-  { name: "up", super: true, action: "buffer-home" },
-  { name: "down", super: true, action: "buffer-end" },
-  { name: "backspace", super: true, action: "delete-to-line-start" },
-  { name: "backspace", meta: true, action: "delete-word-backward" },
-  { name: "return", shift: true, action: "newline" },
-  { name: "return", meta: true, action: "newline" },
-]
-
-const makeComposeParts = (
-  renderer: CliRenderer,
-): {
-  readonly title: TextRenderable
-  readonly quoted: TextRenderable
-  readonly body: TextareaRenderable
-  readonly actions: TextRenderable
-} => ({
-  title: new TextRenderable(renderer, {
-    id: "compose-title",
-    content: "",
-    fg: palette.ink,
-    wrapMode: "none",
-  }),
-  quoted: new TextRenderable(renderer, {
-    id: "compose-quoted",
-    content: "",
-    fg: palette.muted,
-    wrapMode: "none",
-  }),
-  body: new TextareaRenderable(renderer, {
-    id: "compose-body",
-    wrapMode: "word",
-    keyBindings: [...defaultTextareaKeyBindings, ...MAC_KEYS],
-    backgroundColor: palette.panel,
-    focusedBackgroundColor: palette.panel,
-    textColor: palette.ink,
-    focusedTextColor: palette.ink,
-    cursorColor: palette.ink,
-    placeholder: "",
-  }),
-  actions: new TextRenderable(renderer, {
-    id: "compose-actions",
-    content: "",
-    fg: palette.muted,
-    marginTop: 1,
-    wrapMode: "none",
-  }),
-})
-
-const makeCompose = (renderer: CliRenderer): BoxRenderable =>
-  new BoxRenderable(renderer, {
-    id: "compose",
-    position: "absolute",
-    width: COMPOSE_WIDTH,
-    height: COMPOSE_CHROME,
-    zIndex: 100,
-    visible: false,
-    backgroundColor: palette.panel,
-    border: ["left"],
-    borderStyle: "heavy",
-    borderColor: palette.accent,
-    paddingLeft: GUTTER_X,
-    paddingRight: GUTTER_X,
-    paddingTop: 1,
-    paddingBottom: 1,
-    flexDirection: "column",
-  })
-
-const stillThere = (sent: TuiState["sent"]): TuiState["sent"] =>
-  sent.filter((one) => one.removed !== true)
-
-const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyArray<string> => {
-  const answering = remarkQuote(state, room)
-  if (answering.length > 0) {
-    return answering.slice(0, shownLines * 2).map((line) => clip(line, room))
-  }
-  const said = threadQuote(state, room)
-  if (said.length > 0) return said.slice(0, shownLines * 2).map((line) => clip(line, room))
-  if (state.replyTo !== undefined) return []
-  const snippet = snippetOf(state, shownLines)
-  const more = selectedLineCount(state) - snippet.length
-  const tail = more > 0 ? [`     … ${more} more lines`] : []
-  return [...snippet, ...tail].map((line) => clip(line, room))
-}
-
-const clipHead = (label: string, room: number): string =>
-  label.length > room ? `…${label.slice(label.length - Math.max(0, room - 1))}` : label
-
-const clipMiddle = (label: string, room: number): string => {
-  if (label.length <= room) return label
-  const kept = Math.max(0, room - 1)
-  const front = Math.floor(kept / 2)
-  return `${label.slice(0, front)}…${label.slice(label.length - (kept - front))}`
-}
-
-const clipPath = (label: string, room: number): string => {
-  if (label.length <= room) return label
-  const segments = label.split("/")
-  const kept = segments.reduce<Array<string>>((tail, _, index) => {
-    const candidate = segments.slice(segments.length - index - 1)
-    return `…/${candidate.join("/")}`.length <= room ? candidate : tail
-  }, [])
-  return kept.length === 0 ? clipHead(label, room) : `…/${kept.join("/")}`
-}
-
-const INDENT_MAX = 3
-
-const treeLabel = (state: TuiState, row: TreeRow, room: number): string => {
-  const indent = " ".repeat(Math.min(row.depth, INDENT_MAX))
-  if (row.kind === "file") {
-    const lead = `${indent}  `
-    return `${lead}${clipMiddle(row.name, Math.max(4, room - lead.length))}`
-  }
-  const shut = state.closed.includes(row.path)
-  const lead = `${indent}${shut ? marks().shut : marks().open} `
-  return `${lead}${clipPath(row.name, Math.max(4, room - lead.length))}`
-}
-
-const waitingLabel = (branch: TuiState["branches"][number]): string =>
-  branch.unanswered > 0 ? `${branch.unanswered} unanswered` : ""
-
-const inRange = (state: TuiState, row: number, from: number, to: number): boolean =>
-  state.selecting && row >= from && row <= to
-
-const notesOf = (
-  comments: ReadonlyArray<StagedComment>,
-  path: string,
-  sent: boolean,
-  shown: { readonly opened: ReadonlyArray<string>; readonly now: number } = {
-    opened: [],
-    now: Date.now(),
-  },
-): ReadonlyArray<Note> =>
-  comments
-    .filter((entry) => entry.file === path && entry.outside !== true)
-    .toSorted((left, right) => (left.at ?? "").localeCompare(right.at ?? ""))
-    .map((entry) => ({
-      id: entry.id ?? "",
-      folded: entry.settled === true && !(entry.id !== undefined && shown.opened.includes(entry.id)),
-      side: entry.side,
-      line: entry.end,
-      body: entry.body,
-      sent,
-      settled: entry.settled === true,
-      stale: entry.stale === true,
-      asks: entry.asks === true,
-      answers: entry.answers ?? [],
-      turns: entry.turns ?? [],
-      takenAt: entry.takenAt,
-      now: shown.now,
-    }))
-
-const remarksOf = (state: TuiState, path: string): ReadonlyArray<Note> =>
-  state.remarks
-    .filter((one) => one.file === path && remarkShown(one))
-    .map((one) => ({
-      id: one.id,
-      from: one.by,
-      folded: false,
-      side: one.side,
-      line: one.end,
-      body: one.body,
-      sent: false,
-      settled: false,
-      stale: one.outdated,
-      asks: false,
-      answers: [],
-      turns: one.replies.map((said) => ({
-        voice: "reviewer" as const,
-        by: said.by,
-        body: said.body,
-      })),
-      takenAt: undefined,
-      now: state.now,
-    }))
-
-const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
-  ...notesOf(stillThere(state.sent), path, true, { opened: state.opened, now: state.now }),
-  ...remarksOf(state, path),
-]
-
-const paired = (chunks: ReadonlyArray<TextChunk>): ReadonlyArray<ReadonlyArray<TextChunk>> => {
-  const chips: Array<ReadonlyArray<TextChunk>> = []
-  for (let at = 0; at < chunks.length; at += CHIP_CHUNKS) {
-    chips.push(chunks.slice(at, at + CHIP_CHUNKS))
-  }
-  return chips
-}
-
-const chipWidth = (chip: ReadonlyArray<TextChunk>): number =>
-  chip.reduce((total, chunk) => total + chunk.text.length, 0)
-
-const WAYS_OUT = 2
-
-const keptWithin = (chunks: ReadonlyArray<TextChunk>, room: number): ReadonlyArray<TextChunk> => {
-  const chips = paired(chunks)
-  if (chips.length <= WAYS_OUT) return chips.flat()
-  const ways = chips.slice(-WAYS_OUT)
-  const kept: Array<ReadonlyArray<TextChunk>> = []
-  let used = ways.reduce((total, chip) => total + chipWidth(chip), 0)
-  for (const chip of chips.slice(0, -WAYS_OUT)) {
-    const width = chipWidth(chip)
-    if (used + width > room) break
-    kept.push(chip)
-    used += width
-  }
-  return [...kept, ...ways].flat()
-}
-
-const CHIP_CHUNKS = 3
-
-const shortPath = (path: string): string => {
-  const home = process.env["HOME"] ?? ""
-  return home.length > 0 && path.startsWith(home) ? `~${path.slice(home.length)}` : path
-}
-
-const KEPT_TAIL = 2
-const HOME_PATH_MIN = 24
-const HOME_PATH_CHROME = 10
-
-const elide = (path: string, room: number): string => {
-  if (path.length <= room) return path
-  const parts = path.split("/").filter((part) => part.length > 0)
-  const first = parts[0] ?? ""
-  const name = parts.at(-1) ?? path
-  const tail = parts.slice(-KEPT_TAIL).join("/")
-  const rooted = path.startsWith("/") ? `/${first}` : path.startsWith("~") ? "~" : first
-  const shorter = [`${rooted}/…/${tail}`, `…/${tail}`, `…/${name}`]
-  return shorter.find((option) => option.length <= room) ?? clipMiddle(name, room)
-}
-
-const SUMMARY_LINES = 5
-
-const summaryLines = (
-  summary: string,
-  room: number,
-  rail: number = Number.MAX_SAFE_INTEGER,
-): ReadonlyArray<string> => {
-  const said = summary.trim()
-  if (said.length === 0) return []
-  const most = Math.max(2, Math.min(SUMMARY_LINES, Math.floor(rail / 6)))
-  const lines = wrapped(said, Math.max(1, room))
-  const kept = lines.slice(0, most)
-  const last = kept.at(-1) ?? ""
-  const shortened = lines.length > most ? [...kept.slice(0, -1), clip(`${last}…`, room)] : kept
-  return [...shortened.map((line) => ` ${line}`), ""]
-}
-
-const contextLabel = (context: number): string => {
-  if (context === 3) return ""
-  return context >= WHOLE_FILE ? "whole file" : `±${context}`
-}
-
-type Cells = {
-  readonly name: string
-  readonly files: string
-  readonly added: string
-  readonly gone: string
-  readonly layers: string
-  readonly state: string
-}
-
-const nameRoom = (pane: number, longest = pane): number =>
-  Math.max(BRANCH_NAME_MIN, Math.min(longest, pane - BRANCH_FIXED - STATE_MIN))
-
-const stateRoom = (pane: number, name: number): number => Math.max(0, pane - name - BRANCH_FIXED)
-
-const columns = (cells: Cells, room: number): string =>
-  `${clip(cells.name, room).padEnd(room)}${cells.files.padStart(5)}${cells.added.padStart(8)}${cells.gone.padStart(8)}  ${cells.layers.padStart(8)}   ${cells.state}`
-
-const FORGE_SILENT = "  could not reach the forge, so no pull request is shown"
-
-const unaskedForge = (state: TuiState): ReadonlyArray<TextChunk> =>
-  state.forge === "silent" ? [fg(palette.attention)(`\n${FORGE_SILENT}`)] : []
-
-const branchHeading = (room: number): string =>
-  `  ${columns(
-    { name: "BRANCH", files: "FILES", added: "+", gone: "-", layers: "LAYERS", state: "STATE" },
-    room,
-  )}`
-
-const atHome = (state: TuiState): boolean =>
-  state.screen === "branches" ||
-  ((state.screen === "palette" || state.screen === "keys") && state.returnTo === "branches")
-
-const layersCell = (branch: TuiState["branches"][number]): string => {
-  if (branch.layers === 0) return ""
-  return branch.stale ? `${branch.layers} stale` : `${branch.layers} layers`
-}
-
-const baseLabel = (branch: TuiState["branches"][number]): string =>
-  branch.basis === "default" ? "" : `on ${branch.base}`
-
-const stateCell = (state: TuiState, branch: TuiState["branches"][number]): string =>
-  [
-    branch.own ? "here" : "",
-    baseLabel(branch),
-    state.pulls[branch.branch] ?? "",
-    waitingLabel(branch).trim(),
-  ]
-    .filter((part) => part.length > 0)
-    .join("  ")
-
-const branchCells = (branch: TuiState["branches"][number], here: boolean, room: number) => ({
-  lead: `${here ? marks().cursor : " "} `,
-  name: clipMiddle(branch.branch, room).padEnd(room),
-  files: `${branch.files}`.padStart(5),
-  added: `+${branch.added}`.padStart(8),
-  gone: `-${branch.removed}`.padStart(8),
-  layers: layersCell(branch),
-  state: "",
-})
-
-const placeLabel = (state: TuiState): string => {
-  const place = filePlace(state)
-  return `file ${place.at} of ${place.of}`
-}
-
-const headerParts = (
-  state: TuiState,
-  branch: string,
-  path: string,
-  across: { readonly pan: number; readonly cutOff: number },
-): ReadonlyArray<string> => [
-  branch,
-  path,
-  state.patches.length === 0 ? "nothing to read" : placeLabel(state),
-  pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
-  state.vouched.length === 0 ? "" : reviewedCount(state),
-  contextLabel(state.context),
-  state.layersStale ? "layers stale · L for a new one" : "",
-  hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} ${hiddenLines(state) === 1 ? "line" : "lines"} hidden`,
-  panLabel(state, across),
-]
-
-const panLabel = (
-  state: TuiState,
-  across: { readonly pan: number; readonly cutOff: number },
-): string => {
-  if (across.pan > 0) return `→ ${across.pan} columns`
-  if (state.wrap || across.cutOff === 0) return ""
-  return `→ ${across.cutOff} columns cut off, > pans`
-}
-
-const HEADER_GAP = 2
-const HEADER_PATH_MIN = 20
-
-const headerRoom = (width: number): number => Math.max(0, width - FRAME_PAD * 2 - GUTTER_X * 2)
-
-const headerFitted = (
-  parts: ReadonlyArray<string>,
-  path: string,
-  room: number,
-): ReadonlyArray<string> => {
-  const gaps = HEADER_GAP * Math.max(0, parts.length - 1)
-  const spent = parts.reduce((total, part) => total + part.length, gaps)
-  if (path.length === 0 || spent <= room) return parts
-  const left = Math.max(HEADER_PATH_MIN, path.length - (spent - room))
-  return parts.map((part) => (part === path ? elide(path, left) : part))
-}
-
-const fallbackScope = (state: TuiState, top: number): ReadonlyArray<string> => {
-  const found = selectedPatch(state)?.hunks.findLast((hunk) => hunk.startRow < top)
-  const scope = found?.scope ?? ""
-  return scope.length === 0 ? [] : [scope]
-}
-
-const treeMarks = (state: TuiState, row: TreeRow): string => {
-  const seen = row.fileIndex !== undefined && isReviewed(state, row.fileIndex) ? marks().done : " "
-  const here = row.fileIndex !== undefined && row.fileIndex === state.patchIndex
-  return `${here ? marks().cursor : " "}${seen}`
-}
-
-const treeTail = (state: TuiState, row: TreeRow): string => {
-  if (row.fileIndex === undefined) return "  "
-  const threads = threadsOn(state, row.fileIndex)
-  return threads.open > 0 ? `${threads.open}${standMark(threads.stand)}`.padStart(3) : "   "
-}
-
-const treeLine = (state: TuiState, row: TreeRow, pane: number): string => {
-  const tail = treeTail(state, row)
-  const room = Math.max(4, pane - PANE_CHROME - 2 - tail.length)
-  return `${treeMarks(state, row)}${clip(treeLabel(state, row, room), room).padEnd(room)}${tail}`
-}
-
-const GUTTER = RAIL_GUTTER
-const DIR_LEAD = RAIL_DIR_LEAD
-const TITLE_LEAD = RAIL_TITLE_LEAD
-const FILE_LEAD = RAIL_FILE_LEAD
-const STALE_ROOM = 13
-const STALE_ASKING = 24
-
-const STALE_LONG = "stale, the branch moved on — press L to ask for a new one"
-const STALE_MIDDLE = "stale, the branch moved on"
-const STALE_SHORT = "stale"
-
-const staleSaid = (room: number): string => {
-  if (room >= STALE_ASKING) return STALE_LONG
-  return room >= STALE_ROOM ? STALE_MIDDLE : STALE_SHORT
-}
-
-const staleBanner = (room: number): string =>
-  wrapped(staleSaid(room), room)
-    .map((line) => ` ${line}`)
-    .join("\n")
-
-type Screened = TuiState["screen"]
-
-type LayerLook = {
-  readonly lead: number
-  readonly mark: string
-  readonly paint: string
-}
-
-const litRow = (row: LayerRow, state: TuiState, drawn: TextChunk): TextChunk =>
-  row.here === true ? bg(restingOrHere(state.focus === "tree"))(drawn) : drawn
-
-const leftOver = (state: TuiState, layerIndex: number): boolean =>
-  state.layers[layerIndex]?.title === REMAINDER_TITLE
-
-const titlePaint = (state: TuiState, layerIndex: number): string => {
-  const here = layerIndex === state.layerIndex
-  if (leftOver(state, layerIndex)) return here ? palette.attention : palette.faint
-  if (layerDone(state, layerIndex)) return palette.faint
-  return here ? palette.ink : palette.muted
-}
-
-const titleMark = (state: TuiState, row: LayerRow): string => {
-  if (!row.lead) return " "
-  if (layerDone(state, row.index)) return marks().done
-  if (leftOver(state, row.index)) return "0"
-  return `${row.index + 1}`
-}
-
-const titleLook = (state: TuiState, row: LayerRow): LayerLook => ({
-  lead: TITLE_LEAD,
-  mark: titleMark(state, row),
-  paint: titlePaint(state, row.index),
-})
-
-const fileMark = (state: TuiState, row: LayerRow): string => {
-  const threads = row.fileIndex === undefined ? undefined : threadsOn(state, row.fileIndex)
-  if (threads !== undefined && threads.open > 0) return standMark(threads.stand)
-  return row.reviewed === true ? marks().done : " "
-}
-
-const fileLook = (state: TuiState, row: LayerRow): LayerLook => ({
-  lead: FILE_LEAD,
-  mark: fileMark(state, row),
-  paint: row.reviewed === true ? palette.added : palette.ink,
-})
-
-const layerLook = (state: TuiState, row: LayerRow): LayerLook => {
-  switch (row.kind) {
-    case "file":
-      return fileLook(state, row)
-    case "dir":
-      return { lead: DIR_LEAD, mark: " ", paint: palette.faint }
-    case "count":
-      return { lead: DIR_LEAD, mark: " ", paint: palette.faint }
-    case "gap":
-      return { lead: TITLE_LEAD, mark: " ", paint: palette.faint }
-    case "note":
-      return { lead: FILE_LEAD, mark: " ", paint: palette.muted }
-    case "title":
-      return titleLook(state, row)
-    default:
-      return absurd(row.kind)
-  }
-}
-
-const layerGutter = (row: LayerRow, look: LayerLook): string => {
-  const here = row.here === true ? marks().cursor : " "
-  return `${here}${look.mark.padStart(GUTTER - 1)}`
-}
-
-const layerText = (row: LayerRow, look: LayerLook, room: LayerRoom): string =>
-  row.kind === "gap"
-    ? ""
-    : `${layerGutter(row, look)}${" ".repeat(look.lead - GUTTER)}${row.text}`.padEnd(
-        room.title + TITLE_LEAD,
-      )
-
-const standingOnRemark = (state: TuiState): boolean => remarkToTakeOn(state) !== undefined
-
-const standingOnDismissed = (state: TuiState): boolean =>
-  remarkUnderCursor(state)?.dismissed === true
-
-const offeredIn = (state: TuiState): Offered => ({
-  comments: state.sent.length,
-  held: state.held.length,
-  layers: state.layers.length,
-  onThread: standingOnThread(state),
-  onRemark: standingOnRemark(state),
-  onDismissed: standingOnDismissed(state),
-  selecting: state.selecting,
-  reviewed: reviewedCountIn(state),
-  pull: pullHere(state).length > 0,
-  pane: state.screen === "review" ? state.focus : "diff",
-  stale: state.layersStale,
-  onLayers: onLayers(state),
-  hidingRead: state.hideReviewed,
-  hidingSettled: state.hideSettled,
-  onRemoved: threadHere(state)?.removed === true,
-  onSettled: threadHere(state)?.settled === true,
-  onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
-})
-
-const readerTitle = (state: TuiState, entry: PanelEntry): string => {
-  if (entry.kind === "fold") return "The branch moved past these"
-  const where = wherePart(state, entry).replace(" · ", "").trim()
-  return where.length === 0 ? "This thread" : `This thread · ${where}`
-}
-
-const voicesOf = (entry: PanelEntry): ReadonlyArray<string> => {
-  if (entry.kind === "fold") return []
-  if (entry.kind === "remark") {
-    return [
-      `@${entry.remark.by} ${entry.remark.body}`,
-      ...entry.remark.replies.map((reply) => `@${reply.by} ${reply.body}`),
-    ]
-  }
-  const turns = entry.comment.turns
-  if (turns === undefined || turns.length === 0) return [entry.comment.body]
-  return turns.map((turn) => `${turn.voice === "agent" ? "↳" : "»"} ${turn.body}`)
-}
-
-const readerText = (entry: PanelEntry, room: number): StyledText => {
-  const named = entry.kind === "fold" ? [] : [...wrapped(panelFile(entry), room), ""]
-  const said = voicesOf(entry).flatMap((line) => wrapped(line, room))
-  const code = lostCode(entry)
-  const quoted =
-    code.length === 0
-      ? []
-      : ["", "the code it was written on", ...code.map((line) => `│ ${line.trim()}`)]
-  const rows = [...named, ...said, ...quoted].flatMap((line) => wrapped(line, room))
-  return new StyledText(
-    rows.map((line) => fg(line.startsWith("│") ? palette.faint : palette.ink)(`${line.padEnd(room)}\n`)),
-  )
-}
-
-const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
-  remarks: "Remarks",
-  dismissed: "Dismissed",
-  held: "Waiting to be sent",
-  asked: "Waiting on you",
-  filed: "Not picked up",
-  with: "Picked up, no answer",
-  answered: "Answered, not settled",
-  movedOn: "The branch moved past these",
-  settled: "Settled",
-  removed: "Removed",
-}
-
-const PANEL_ORDER = PANEL_SECTIONS
-const PANEL_LEAD = 3
-const PANEL_EMPTY = "No comment on this branch yet."
-
-type PanelLine = {
-  readonly text: string
-  readonly tone: string
-  readonly here?: boolean
-  readonly at?: number
-}
-
-const restingOrHere = (focused: boolean): string =>
-  focused ? palette.selection : palette.resting
-
-const FOUND_LEAST = 6
-
-const nothingYet = (state: TuiState, room: number): string => {
-  const wanted = state.query.trim()
-  if (wanted.length === 0 || state.term.length === 0) return "".padEnd(room)
-  return clip(` nothing uses ${wanted}`, room).padEnd(room)
-}
-
-const counting = (many: number): string => many.toLocaleString("en-US")
-
-const foundBlocks = (
-  state: TuiState,
-  shown: ReadonlyArray<Match>,
-  wide: number,
-): { readonly blocks: ReadonlyArray<Block>; readonly chosen: number } => {
-  const blocks: Array<Block> = []
-  let chosen = 0
-  for (const [at, match] of shown.entries()) {
-    if (shown[at - 1]?.path !== match.path) {
-      blocks.push(fileRow(match, wide, shown.some((one) => one.path === match.path && one.declares)))
-    }
-    if (at === state.matchIndex) chosen = blocks.length
-    blocks.push(blockOf(match, wide, at === state.matchIndex, state.around))
-  }
-  if (state.leftOut > 0 && shown.length > 0) blocks.push(leftRow(state.leftOut, wide))
-  return { blocks, chosen }
-}
-
-const JOIN = "  ·  "
-
-const foundTitle = (state: TuiState, room: number): string => {
-  if (state.term.length === 0) return "Look for something"
-  const counted = state.counted
-  if (counted.worktree === 0) return state.term
-  const here = `${counting(counted.file)} in this file`
-  const branch = `${counting(counted.branch)} on this branch`
-  const whole = `${counting(counted.worktree)} in the worktree`
-  const tried = [
-    [state.term, here, branch, whole],
-    [state.term, here, whole],
-    [state.term, whole],
-    [state.term],
-  ].map((parts) => parts.join(JOIN))
-  return tried.find((one) => one.length <= room) ?? clip(tried.at(-1) ?? "", room)
-}
-
-type Block = { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> }
-
-type Found = {
-  readonly changed: boolean
-  readonly declares: boolean
-  readonly path: string
-  readonly line: number
-  readonly text: string
-}
-
-const CHANGED_MARK = "*"
-
-const DECLARED = "declared"
-
-const fileRow = (match: Found, room: number, declares: boolean): Block => {
-  const lead = match.changed ? CHANGED_MARK : " "
-  const tail = declares ? `  ${DECLARED}` : ""
-  const shown = ` ${lead} ${clipHead(match.path, Math.max(8, room - 3 - tail.length))}${tail}`
-  return {
-    rows: 1,
-    chunks: [fg(palette.accent)(shown.padEnd(room)), fg(palette.faint)("\n")],
-  }
-}
-
-const leftRow = (left: number, room: number): Block => ({
-  rows: 1,
-  chunks: [
-    fg(palette.faint)(clip(`   … ${counting(left)} more places not shown`, room).padEnd(room)),
-    fg(palette.faint)("\n"),
-  ],
-})
-
-const placeRow = (match: Found, room: number): TextChunk => {
-  const tail = match.declares ? `  ${DECLARED}` : ""
-  const text = clip(match.text.trim(), Math.max(1, room - 11 - tail.length))
-  const line = `   ${String(match.line).padStart(5)}  ${text}${tail}`
-  return fg(match.declares ? palette.ink : palette.muted)(line.padEnd(room))
-}
-
-const blockOf = (
-  match: Found,
-  room: number,
-  here: boolean,
-  around: ReadonlyArray<string>,
-): Block => {
-  const rows = here && around.length > 0
-    ? around.map((line) => aroundRow(line, match.line, room))
-    : [placeRow(match, room)]
-  const lit = rows.map((chunk) => (here ? bg(palette.selection)(chunk) : chunk))
-  return {
-    rows: lit.length,
-    chunks: lit.flatMap((chunk) => [chunk, fg(palette.faint)("\n")]),
-  }
-}
-
-const aroundRow = (line: string, at: number, room: number): TextChunk => {
-  const numbered = /^\s*(\d+) ?(.*)$/.exec(line)
-  const number = Number(numbered?.[1] ?? 0)
-  const text = numbered?.[2] ?? line
-  const mark = number === at ? marks().cursor : " "
-  const said = `  ${mark} ${String(number).padStart(5)}  ${text}`
-  return fg(number === at ? palette.ink : palette.faint)(clip(said, room).padEnd(room))
-}
-
-const windowedBlocks = (
-  blocks: ReadonlyArray<Block>,
-  at: number,
-  room: number,
-): { readonly rows: number; readonly chunks: ReadonlyArray<TextChunk> } => {
-  const kept: Array<Block> = []
-  let rows = 0
-  for (const [index, block] of blocks.entries()) {
-    if (index < at && rows + block.rows > room) continue
-    if (rows + block.rows > room && index > at) break
-    kept.push(block)
-    rows += block.rows
-  }
-  return { rows, chunks: kept.flatMap((block) => block.chunks) }
-}
-
-const pickingTitle = (state: TuiState): string => {
-  if (state.screen === "editor") {
-    return `Editor${state.editorNow.length === 0 ? " — none found" : ` — now ${state.editorNow}`}`
-  }
-  const here = selectedBranch(state)
-  const on = here === undefined ? "" : `${here.base}${here.basis === "set" ? "" : ", adiff's guess"}`
-  return `Base for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` — now ${on}`}`
-}
-
-const YOURS = "   ← the command you typed"
-
-const YOUR_REF = "   ← the ref you typed"
-
-const pickedTail = (state: TuiState, ref: string, typed: string): string => {
-  if (typed.length === 0 || ref !== typed || state.refs.includes(ref)) return ""
-  return state.screen === "editor" ? YOURS : YOUR_REF
-}
-
-const REMARK_MARK = "◇"
-
-const remarkWhere = (remark: Remark, known: boolean): string => {
-  if (remark.placed) return `:${remark.end}`
-  if (remark.outdated) return " · outdated"
-  return known ? " · outside this diff" : " · not in the diff"
-}
-
-const wherePart = (state: TuiState, entry: PanelEntry): string => {
-  if (entry.kind === "fold") return ""
-  if (entry.kind === "remark") {
-    const known = state.patches.some((patch) => patch.path === entry.remark.file)
-    return remarkWhere(entry.remark, known)
-  }
-  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}`
-}
-
-const panelFile = (entry: PanelEntry): string => {
-  if (entry.kind === "fold") return ""
-  return entry.kind === "remark" ? entry.remark.file : entry.comment.file
-}
-
-const panelWhere = (state: TuiState, entry: PanelEntry, room: number): string => {
-  const where = wherePart(state, entry)
-  return `${clipPath(panelFile(entry), Math.max(4, room - where.length))}${where}`
-}
-
-const panelBody = (entry: PanelEntry): string => {
-  if (entry.kind === "fold") return ""
-  const said = entry.kind === "remark" ? `@${entry.remark.by} ${entry.remark.body}` : entry.comment.body
-  return said.split("\n").find((line) => line.trim().length > 0) ?? ""
-}
-
-const panelMark = (entry: PanelEntry): string => {
-  if (entry.kind === "fold") return entry.open ? marks().open : marks().shut
-  return entry.kind === "remark" ? REMARK_MARK : standMark(threadStand(entry.comment))
-}
-
-type Placed = { readonly entry: PanelEntry; readonly at: number }
-
-const WRITTEN_ON = 4
-
-const lostCode = (entry: PanelEntry): ReadonlyArray<string> => {
-  if (entry.kind === "fold") return []
-  const said = entry.kind === "remark" ? entry.remark.code : (entry.comment.snippet ?? "").split("\n")
-  return said.filter((line) => line.trim().length > 0)
-}
-
-const lostEntry = (state: TuiState, entry: PanelEntry): boolean =>
-  entry.kind === "fold"
-    ? false
-    : entry.kind === "remark"
-    ? !entry.remark.placed && state.patches.some((patch) => patch.path === entry.remark.file)
-    : entry.comment.outside === true
-
-const writtenOn = (
-  state: TuiState,
-  placed: Placed,
-  room: number,
-): ReadonlyArray<PanelLine> => {
-  const { entry } = placed
-  if (placed.at !== state.panelIndex || !lostEntry(state, entry)) return []
-  const code = lostCode(entry)
-  if (code.length === 0) return []
-  const shown = code.slice(-WRITTEN_ON)
-  const cut = code.length - shown.length
-  const rows = shown.map((line) => ({
-    text: clip(`   │ ${line.trim()}`, room),
-    tone: palette.faint,
-  }))
-  const more = cut === 0 ? [] : [{ text: clip(`   │ ⋯ ${cut} more`, room), tone: palette.faint }]
-  return [
-    { text: clip("   the code it was written on", room), tone: palette.faint },
-    ...more,
-    ...rows,
-  ]
-}
-
-const foldLine = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
-  const { entry } = placed
-  if (entry.kind !== "fold") return []
-  const here = placed.at === state.panelIndex
-  const said = entry.open ? "h folds them away" : "l opens them"
-  const text = ` ${panelMark(entry)} ${entry.held} ${entry.held === 1 ? "comment" : "comments"} · ${said}`
-  return [{ text: clip(text, room), tone: palette.faint, here, at: placed.at }]
-}
-
-const panelPair = (state: TuiState, placed: Placed, room: number): ReadonlyArray<PanelLine> => {
-  const { entry } = placed
-  if (entry.kind === "fold") return foldLine(state, placed, room)
-  const lead = ` ${panelMark(entry)} `
-  const here = placed.at === state.panelIndex
-  return [
-    {
-      text: `${lead}${panelWhere(state, entry, room - PANEL_LEAD)}`,
-      tone: palette.ink,
-      here,
-      at: placed.at,
-    },
-    {
-      text: `   ${clip(panelBody(entry), Math.max(4, room - PANEL_LEAD))}`,
-      tone: palette.muted,
-      here,
-      at: placed.at,
-    },
-    ...writtenOn(state, placed, room),
-  ]
-}
-
-const panelSection = (
-  state: TuiState,
-  placed: ReadonlyArray<Placed>,
-  section: PanelSection,
-  room: number,
-): ReadonlyArray<PanelLine> => {
-  const here = placed.filter((one) => one.entry.section === section)
-  if (here.length === 0) return []
-  const counted = panelHolds(state).filter((entry) => entry.section === section).length
-  return [
-    { text: "", tone: palette.faint },
-    { text: `${PANEL_TITLES[section]}  ${counted}`, tone: palette.faint },
-    ...here.flatMap((one) => panelPair(state, one, room)),
-  ]
-}
-
-const PULL_HINT = "answered, press r to pull"
-
-const panelWindow = (
-  lines: ReadonlyArray<PanelLine>,
-  rows: number,
-): { readonly lines: ReadonlyArray<PanelLine>; readonly above: number; readonly below: number } => {
-  if (lines.length <= rows) return { lines, above: 0, below: 0 }
-  const room = Math.max(1, rows - 2)
-  const at = Math.max(0, lines.findIndex((line) => line.here === true))
-  const start = Math.max(0, Math.min(lines.length - room, at - Math.floor(room / 2)))
-  return {
-    lines: lines.slice(start, start + room),
-    above: start,
-    below: lines.length - (start + room),
-  }
-}
-
-const moreLine = (count: number, mark: string, room: number): ReadonlyArray<PanelLine> =>
-  count === 0 ? [] : [{ text: clip(` ${mark} ${count} more`, room), tone: palette.faint }]
-
-const panelPicked = (
-  banner: number,
-  above: number,
-  lines: ReadonlyArray<PanelLine>,
-): ReadonlyArray<Clicked> => [
-  ...Array.from({ length: banner + (above > 0 ? 1 : 0) }, () => ({ pane: "review" as const })),
-  ...lines.map((line) => ({ pane: "review" as const, entry: line.at })),
-]
-
-const panelText = (
-  state: TuiState,
-  room: number,
-  rows: number,
-  picked?: (found: ReadonlyArray<Clicked>) => void,
-): StyledText => {
-  const placed = panelEntries(state).map((entry, at): Placed => ({ entry, at }))
-  const holds = panelHolds(state)
-  const fresh = holds.filter((entry) => entry.kind === "comment" && entry.fresh).length
-  const unread = holds.filter((entry) => entry.kind === "comment" && entry.unread > 0).length
-  const said = fresh > 0 ? `${fresh} ${PULL_HINT}` : unread > 0 ? `${unread} unread` : ""
-  const banner: ReadonlyArray<PanelLine> =
-    said.length === 0 ? [] : [{ text: clip(said, room), tone: palette.attention }]
-  const sections = PANEL_ORDER.flatMap((section) => panelSection(state, placed, section, room))
-  const body = sections.slice(sections[0]?.text === "" ? 1 : 0)
-  const lines = body.length === 0 ? [{ text: PANEL_EMPTY, tone: palette.muted }] : body
-  const window = panelWindow(lines, Math.max(1, rows - banner.length))
-  const shown = [
-    ...banner,
-    ...moreLine(window.above, "▲", room),
-    ...window.lines,
-    ...moreLine(window.below, "▼", room),
-  ]
-  picked?.(panelPicked(banner.length, window.above, shown.slice(banner.length)))
-  return new StyledText(
-    shown.map((line) => {
-      const drawn = fg(line.tone)(`${line.text.padEnd(room)}\n`)
-      return line.here === true ? bg(restingOrHere(state.focus === "review"))(drawn) : drawn
-    }),
-  )
-}
-
-export type Mouse = {
-  readonly onClick: (what: Clicked) => void
-  readonly onScroll: (delta: number) => void
-  readonly onPan: (delta: number) => void
-  readonly onDrag: (from: Spot, to: Spot, done: boolean) => void
-  readonly onChip: (key: string) => void
-  readonly onRail: (delta: number) => void
+const stack = (parent: Renderable, children: ReadonlyArray<Renderable>): void => {
+  for (const child of children) parent.add(child)
 }
 
 export class Screen {
@@ -1780,18 +274,16 @@ export class Screen {
   }
 
   private wheelOnRail(box: BoxRenderable | TextRenderable): void {
-    box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
-      const way = event.scroll?.direction
-      if (way !== "up" && way !== "down") return
-      this.mouse?.onRail(way === "down" ? 1 : -1)
+    box.onMouseScroll = (event) => {
+      const notch = notchOf(event)
+      if (notch !== undefined) this.mouse?.onRail(notch)
     }
   }
 
   private wheelOnSheet(box: BoxRenderable): void {
-    box.onMouseScroll = (event: { scroll?: { direction?: string } }) => {
-      const way = event.scroll?.direction
-      if (way !== "up" && way !== "down") return
-      this.mouse?.onScroll(way === "down" ? 1 : -1)
+    box.onMouseScroll = (event) => {
+      const notch = notchOf(event)
+      if (notch !== undefined) this.mouse?.onScroll(notch)
     }
   }
 
@@ -1799,7 +291,7 @@ export class Screen {
     box: TextRenderable,
     picks: () => ReadonlyArray<Clicked>,
     pane: "tree" | "review",
-  ): (event: { y: number }) => void {
+  ): (event: MouseEvent) => void {
     return (event) => {
       const found = picks()[Math.max(0, event.y - box.y)]
       this.mouse?.onClick(found ?? { pane })
@@ -1866,11 +358,7 @@ export class Screen {
     return this.view.tallestRows()
   }
 
-  writing(): TextareaRenderable {
-    return this.composeBody
-  }
-
-  asking(screen: Screened): TextareaRenderable | undefined {
+  private asking(screen: Screened): TextareaRenderable | undefined {
     switch (screen) {
       case "palette":
         return this.paletteQuery
@@ -1884,6 +372,48 @@ export class Screen {
       default:
         return undefined
     }
+  }
+
+  private askBoxes(): ReadonlyArray<TextareaRenderable> {
+    return ASKING.flatMap((name) => {
+      const box = this.asking(name)
+      return box === undefined ? [] : [box]
+    })
+  }
+
+  written(): string {
+    return this.composeBody.plainText
+  }
+
+  write(text: string): void {
+    this.composeBody.setText(text)
+  }
+
+  writeOn(on: boolean): void {
+    if (on) this.composeBody.focus()
+    else this.composeBody.blur()
+  }
+
+  onWritten(told: (text: string) => void): void {
+    this.composeBody.onContentChange = () => told(this.composeBody.plainText)
+  }
+
+  askOn(which: Screened | undefined): void {
+    const wanted = which === undefined ? undefined : this.asking(which)
+    for (const box of this.askBoxes()) {
+      if (box !== wanted) box.blur()
+    }
+    if (wanted === undefined) return
+    wanted.setText("")
+    wanted.focus()
+  }
+
+  askWith(text: string): void {
+    for (const box of this.askBoxes()) box.setText(text)
+  }
+
+  onAsked(told: (text: string) => void): void {
+    for (const box of this.askBoxes()) box.onContentChange = () => told(box.plainText)
   }
 
   railRows(): number {
@@ -1946,7 +476,7 @@ export class Screen {
     this.body.visible = !cramped
     this.header.visible = !cramped
     this.footer.visible = !cramped
-    if (cramped) this.cramped.content = wrapped(CRAMPED, this.renderer.width - 1).join("\n")
+    if (cramped) this.cramped.content = CRAMPED
   }
 
   private paintPalette(state: TuiState): void {
@@ -1975,8 +505,8 @@ export class Screen {
   }
 
   private paintBases(state: TuiState): void {
-    this.baseBox.box.visible = picking(state)
-    if (!picking(state)) {
+    this.baseBox.box.visible = isPicking(state)
+    if (!isPicking(state)) {
       this.baseBox.title.content = ""
       this.baseBox.choices.content = ""
       return
@@ -1993,7 +523,7 @@ export class Screen {
     this.baseBox.choices.content = listText(
       shown.map((ref) =>
         clip(
-          ` ${ref}${refSaidOf(state, ref).length === 0 ? "" : `  ${refSaidOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
+          ` ${ref}${refNoteOf(state, ref).length === 0 ? "" : `  ${refNoteOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
           room - MODAL_ROOM,
         ),
       ),
@@ -2035,7 +565,7 @@ export class Screen {
       return
     }
     const room = panelWidth(this.renderer.width)
-    const asked = asksAbout(state)
+    const asked = askingWords(state)
     const forName = Math.max(8, room - MODAL_ROOM - asked.tail.length)
     const name = asked.path ? clipPath(asked.name, forName) : clipMiddle(asked.name, forName)
     this.ask.title.content = `${name}${asked.tail}`
@@ -2288,17 +818,17 @@ export class Screen {
 
   private watchChips(): void {
     const strip = this.footer
-    strip.onMouseMove = (event: { x: number }) => this.hover(event.x - strip.x - this.lead)
+    strip.onMouseMove = (event) => this.hover(event.x - strip.x - this.lead)
     strip.onMouseOut = () => this.hover(-1)
-    strip.onMouseDown = (event: { x: number }) => {
+    strip.onMouseDown = (event) => {
       this.hover(event.x - strip.x - this.lead)
       const chip = this.chips[this.hovered]
       if (chip !== undefined) this.mouse?.onChip(chip.press)
     }
     const row = this.landingKeys
-    row.onMouseMove = (event: { x: number }) => this.hover(event.x - row.x)
+    row.onMouseMove = (event) => this.hover(event.x - row.x)
     row.onMouseOut = () => this.hover(-1)
-    row.onMouseDown = (event: { x: number }) => {
+    row.onMouseDown = (event) => {
       this.hover(event.x - row.x)
       const chip = this.chips[this.hovered]
       if (chip !== undefined) this.mouse?.onChip(chip.press)
@@ -2512,7 +1042,7 @@ export class Screen {
 
   private draftBody(state: TuiState): number {
     const most = Math.max(1, this.diffRows() - DRAFT_HEAD - COMPOSE_ACTION_ROWS - 1)
-    return Math.max(1, Math.min(most, laidDraft(state.draft, this.draftRoom()).length))
+    return Math.max(1, Math.min(most, wrappedDraft(state.draft, this.draftRoom()).length))
   }
 
   private paintInline(state: TuiState, draft: Draft): void {
@@ -2560,7 +1090,7 @@ export class Screen {
 
   private fitBody(state: TuiState, room: number, most: number): number {
     if (this.composeBody.width !== room) this.composeBody.width = room
-    const wanted = Math.max(1, laidDraft(state.draft, room).length)
+    const wanted = Math.max(1, wrappedDraft(state.draft, room).length)
     const rows = Math.max(1, Math.min(most, wanted))
     if (this.composeBody.height !== rows) this.composeBody.height = rows
     return rows

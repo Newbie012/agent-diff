@@ -1,17 +1,9 @@
 import { randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { text as readStream } from "node:stream/consumers"
-import { Cause, Effect, Layer } from "effect"
+import { Cause, Effect, Layer, Option } from "effect"
 import {
-  addDraft,
-  dispatchDrafts,
-  dropDraft,
-  editDraft,
-  listDrafts,
-  answerComment,
   addressing,
-  awaitComments,
-  branchAt,
   catalog,
   knownIn,
   valuedIn,
@@ -19,17 +11,8 @@ import {
   fieldsOf,
   findCommand,
   findUpgrade,
+  sessionPath,
   openPane,
-  listBranches,
-  setBase,
-  clearBase,
-  listThreads,
-  listRemarks,
-  acceptRemark,
-  answerRemark,
-  dismissRemark,
-  restoreRemark,
-  MalformedLayers,
   MissingOption,
   narrow,
   strangeField,
@@ -41,35 +24,28 @@ import {
   required,
   seconds,
   verbsUnder,
-  reviewProgress,
-  removeComment,
-  repoOf,
-  restoreComment,
-  unsettleThread,
   runUpgrade,
   type UpgradeFound,
   sayDone,
   SAY_SKILL_TOO,
   sayFound,
-  settleThread,
-  setLayers,
-  showLayers,
-  readPreference,
-  readPreferences,
-  preferenceValue,
-  savePreference,
-  submitComment,
-  submitReply,
-  takeComments,
-  toggleVouch,
-  worktreeOf,
   UnknownCommand,
   UnknownField,
   upgradeReport,
   willUpgrade,
   type Options,
-  lastOpenedIn,
 } from "./cli/index.ts"
+import {
+  Branch,
+  Comment,
+  Draft,
+  Layers,
+  MalformedLayers,
+  Preference,
+  Remark,
+  Thread,
+  Vouch,
+} from "./review/index.ts"
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
@@ -92,71 +68,78 @@ const answer = (
   })
 }
 
+const worktreeIn = Effect.fn("Main.worktreeIn")(function* (options: Options) {
+  return yield* Branch.find(yield* required(options, "repo"), yield* required(options, "branch"))
+})
+
+const readingIn = Effect.fn("Main.readingIn")(function* (options: Options) {
+  return yield* Branch.reading(
+    yield* required(options, "repo"),
+    yield* required(options, "branch"),
+    options["base"],
+  )
+})
+
+const worktreeNamed = Effect.fn("Main.worktreeNamed")(function* (options: Options) {
+  return yield* Branch.worktreeAt(yield* required(options, "worktree"))
+})
+
+const stamp = (options: Options): string => options["at"] ?? new Date().toISOString()
+
 const branchList = Effect.fn("Main.branchList")(function* (options: Options) {
-  const branches = yield* listBranches(yield* required(options, "repo"), options["base"])
+  const branches = yield* Branch.list(yield* required(options, "repo"), options["base"])
   yield* answer(options, { branches })
 })
 
 const baseSet = Effect.fn("Main.baseSet")(function* (options: Options) {
-  const report = yield* setBase(
+  const report = yield* Branch.setBase(
     yield* required(options, "repo"),
-    yield* required(options, "branch"),
+    yield* worktreeIn(options),
     yield* required(options, "base"),
   )
   yield* answer(options, { base: report })
 })
 
 const baseClear = Effect.fn("Main.baseClear")(function* (options: Options) {
-  const report = yield* clearBase(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-  )
+  const report = yield* Branch.clearBase(yield* required(options, "repo"), yield* worktreeIn(options))
   yield* answer(options, { base: report })
 })
 
 const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
-  const batch = yield* submitComment({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
+  const batch = yield* Comment.submit(yield* worktreeIn(options), {
     file: yield* required(options, "file"),
     start: yield* numeric(options, "start"),
     end: yield* numeric(options, "end"),
     body: yield* required(options, "body"),
     side: yield* oneOf(options, "side", ["old", "new"] as const, "new"),
     id: options["id"] ?? randomUUID(),
-    at: options["at"] ?? new Date().toISOString(),
+    at: stamp(options),
   })
   yield* answer(options, { batch })
 })
 
 const draftList = Effect.fn("Main.draftList")(function* (options: Options) {
-  const drafts = yield* listDrafts(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-  )
+  const drafts = yield* Draft.list(yield* worktreeIn(options))
   yield* answer(options, { drafts })
 })
 
 const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
-  const draft = yield* addDraft({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
+  const draft = yield* Draft.add(yield* worktreeIn(options), {
     file: yield* required(options, "file"),
     start: yield* numeric(options, "start"),
     end: yield* numeric(options, "end"),
     body: yield* required(options, "body"),
     side: yield* oneOf(options, "side", ["old", "new"] as const, "new"),
     id: options["id"] ?? randomUUID(),
-    at: options["at"] ?? new Date().toISOString(),
+    at: stamp(options),
     wroteBy: "agent",
   })
   yield* answer(options, { draft })
 })
 
 const draftEdit = Effect.fn("Main.draftEdit")(function* (options: Options) {
-  const draft = yield* editDraft(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
+  const draft = yield* Draft.edit(
+    yield* worktreeIn(options),
     yield* required(options, "id"),
     yield* required(options, "body"),
   )
@@ -164,30 +147,21 @@ const draftEdit = Effect.fn("Main.draftEdit")(function* (options: Options) {
 })
 
 const draftDrop = Effect.fn("Main.draftDrop")(function* (options: Options) {
-  const dropped = yield* dropDraft(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    yield* required(options, "id"),
-  )
+  const dropped = yield* Draft.drop(yield* worktreeIn(options), yield* required(options, "id"))
   yield* answer(options, { dropped })
 })
 
 const draftSend = Effect.fn("Main.draftSend")(function* (options: Options) {
-  const dispatched = yield* dispatchDrafts(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-  )
+  const dispatched = yield* Draft.dispatch(yield* required(options, "repo"), yield* worktreeIn(options))
   yield* answer(options, { dispatched })
 })
 
 const commentReply = Effect.fn("Main.commentReply")(function* (options: Options) {
-  const batch = yield* submitReply({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
+  const batch = yield* Comment.reply(yield* worktreeIn(options), {
     to: yield* required(options, "to"),
     body: yield* required(options, "body"),
     id: options["id"] ?? randomUUID(),
-    at: options["at"] ?? new Date().toISOString(),
+    at: stamp(options),
   })
   yield* answer(options, { batch })
 })
@@ -200,133 +174,101 @@ const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
   const wait = yield* seconds(options, "wait")
   const comments =
     wait > 0
-      ? yield* awaitComments(worktree, Date.now() + wait * WAIT_UNIT)
-      : yield* takeComments(worktree)
+      ? yield* Comment.awaitTaken(worktree, Date.now() + wait * WAIT_UNIT)
+      : yield* Comment.take(worktree)
   const hint = comments.length === 0 ? { hint: NOTHING_WAITING } : {}
-  yield* answer(options, { comments, branch: yield* branchAt(worktree), ...hint })
+  yield* answer(options, { comments, branch: yield* Branch.nameAt(worktree), ...hint })
 })
 
 const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Options) {
-  const report = yield* answerComment({
-    worktree: yield* required(options, "worktree"),
+  const report = yield* Thread.answer(yield* worktreeNamed(options), {
     id: yield* required(options, "id"),
     body: yield* required(options, "body"),
     asks: options["question"] !== undefined,
-    at: options["at"] ?? new Date().toISOString(),
+    at: stamp(options),
   })
   yield* answer(options, { answered: report.answered })
 })
 
 const remarkList = Effect.fn("Main.remarkList")(function* (options: Options) {
-  const remarks = yield* listRemarks(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-  )
+  const remarks = yield* Remark.fetch(yield* required(options, "repo"), yield* readingIn(options))
   yield* answer(options, { remarks })
 })
 
 const remarkAccept = Effect.fn("Main.remarkAccept")(function* (options: Options) {
-  const report = yield* acceptRemark({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
+  const report = yield* Remark.accept(yield* readingIn(options), {
     id: yield* required(options, "id"),
     body: options["body"],
-    at: options["at"] ?? new Date().toISOString(),
+    at: stamp(options),
     commentId: options["comment"] ?? randomUUID(),
   })
   yield* answer(options, report)
 })
 
 const remarkReply = Effect.fn("Main.remarkReply")(function* (options: Options) {
-  const report = yield* answerRemark({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
-    id: yield* required(options, "id"),
-    body: yield* required(options, "body"),
-  })
+  const report = yield* Remark.answer(
+    yield* required(options, "repo"),
+    yield* worktreeIn(options),
+    yield* required(options, "id"),
+    yield* required(options, "body"),
+  )
   yield* answer(options, { answered: report.answered })
 })
 
 const remarkDismiss = Effect.fn("Main.remarkDismiss")(function* (options: Options) {
-  const report = yield* dismissRemark(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
+  const report = yield* Remark.dismiss(
+    yield* worktreeIn(options),
     yield* required(options, "id"),
-    options["at"] ?? new Date().toISOString(),
+    stamp(options),
   )
   yield* answer(options, { dismissed: report.dismissed })
 })
 
 const remarkRestore = Effect.fn("Main.remarkRestore")(function* (options: Options) {
-  const report = yield* restoreRemark(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    yield* required(options, "id"),
-  )
+  const report = yield* Remark.restore(yield* worktreeIn(options), yield* required(options, "id"))
   yield* answer(options, { restored: report.restored })
 })
 
 const commentList = Effect.fn("Main.commentList")(function* (options: Options) {
-  const comments = yield* listThreads(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-  )
+  const comments = yield* Thread.list(yield* readingIn(options))
   yield* answer(options, { comments })
 })
 
 const commentResolve = Effect.fn("Main.commentResolve")(function* (options: Options) {
-  const report = yield* settleThread(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
+  const report = yield* Thread.settle(
+    yield* worktreeIn(options),
     yield* required(options, "id"),
-    options["at"] ?? new Date().toISOString(),
+    stamp(options),
   )
   yield* answer(options, { settled: report.settled })
 })
 
 const commentRemove = Effect.fn("Main.commentRemove")(function* (options: Options) {
-  const report = yield* removeComment(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
+  const report = yield* Thread.remove(
+    yield* worktreeIn(options),
     yield* required(options, "id"),
-    options["at"] ?? new Date().toISOString(),
+    stamp(options),
   )
   yield* answer(options, { removed: report.removed })
 })
 
 const commentRestore = Effect.fn("Main.commentRestore")(function* (options: Options) {
-  const report = yield* restoreComment(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    yield* required(options, "id"),
-  )
+  const report = yield* Thread.restore(yield* worktreeIn(options), yield* required(options, "id"))
   yield* answer(options, { restored: report.restored })
 })
 
 const commentReopen = Effect.fn("Main.commentReopen")(function* (options: Options) {
-  const report = yield* unsettleThread(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    yield* required(options, "id"),
-  )
+  const report = yield* Thread.unsettle(yield* worktreeIn(options), yield* required(options, "id"))
   yield* answer(options, { reopened: report.unsettled })
 })
 
 const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
-  const report = yield* toggleVouch({
-    repo: yield* required(options, "repo"),
-    branch: yield* required(options, "branch"),
-    file: yield* required(options, "file"),
-  })
+  const report = yield* Vouch.toggle(yield* readingIn(options), yield* required(options, "file"))
   yield* answer(options, { reviewed: report.vouched, total: report.total })
 })
 
 const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options) {
-  const report = yield* reviewProgress(
-    yield* required(options, "repo"),
-    yield* required(options, "branch"),
-    options["base"],
-  )
+  const report = yield* Vouch.progress(yield* readingIn(options))
   yield* answer(options, { reviewed: report.vouched, total: report.total })
 })
 
@@ -339,32 +281,28 @@ const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
 
 const layersSet = Effect.fn("Main.layersSet")(function* (options: Options) {
   const document = yield* documentAt(yield* required(options, "json"))
-  const layers = yield* setLayers(
-    yield* required(options, "worktree"),
-    document,
-    options["at"] ?? new Date().toISOString(),
-  )
+  const layers = yield* Layers.set(yield* worktreeNamed(options), document, stamp(options))
   yield* answer(options, { layers })
 })
 
 const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
-  const layers = yield* showLayers(yield* required(options, "worktree"))
+  const layers = yield* Layers.show(yield* worktreeNamed(options))
   yield* answer(options, { layers })
 })
 
 const configList = Effect.fn("Main.configList")(function* (options: Options) {
-  yield* answer(options, { preferences: yield* readPreferences() })
+  yield* answer(options, { preferences: yield* Preference.list() })
 })
 
 const configGet = Effect.fn("Main.configGet")(function* (options: Options) {
-  const preference = yield* readPreference(yield* required(options, "name"))
+  const preference = yield* Preference.read(yield* required(options, "name"))
   yield* answer(options, { preference })
 })
 
 const configSet = Effect.fn("Main.configSet")(function* (options: Options) {
   const name = yield* required(options, "name")
-  const wanted = yield* preferenceValue(name, yield* required(options, "value"))
-  yield* answer(options, { preference: yield* savePreference(name, wanted) })
+  const wanted = yield* Preference.parse(name, yield* required(options, "value"))
+  yield* answer(options, { preference: yield* Preference.save(name, wanted) })
 })
 
 const reviewPane = Effect.fn("Main.reviewPane")(function* (options: Options) {
@@ -463,14 +401,14 @@ const unknown = (name: string): UnknownCommand => {
 const byBranch = Effect.fn("Main.byBranch")(function* (options: Options, repo: string, branch: string) {
   return options["worktree"] !== undefined
     ? options
-    : { ...options, worktree: yield* worktreeOf(repo, branch) }
+    : { ...options, worktree: (yield* Branch.find(repo, branch)).path }
 })
 
 const byWorktree = Effect.fn("Main.byWorktree")(function* (options: Options, worktree: string) {
   const found: Options = {
     ...options,
-    repo: yield* repoOf(worktree),
-    branch: yield* branchAt(worktree),
+    repo: yield* Branch.repoOf(worktree),
+    branch: yield* Branch.nameAt(worktree),
   }
   return found
 })
@@ -489,7 +427,7 @@ const RESUME_ADVICE = "Nothing has been opened here yet. Run `adiff review open 
 
 const resume = Effect.fn("Main.resume")(function* (options: Options) {
   const repo = options["repo"] ?? process.cwd()
-  const found = yield* lastOpenedIn(repo)
+  const found = yield* Branch.lastOpened(repo)
   if (options["check"] !== undefined) {
     return yield* answer(options, {
       resume: found === undefined ? {} : found,
@@ -502,7 +440,7 @@ const resume = Effect.fn("Main.resume")(function* (options: Options) {
   }
   const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
   return yield* runTui(repo, {
-    sessionPath: process.env["ADIFF_SESSION"],
+    sessionPath: Option.getOrUndefined(yield* sessionPath),
     branch: found.branch,
     base: options["base"],
   })
@@ -517,7 +455,7 @@ const dispatch = Effect.fn("Main.dispatch")(function* (name: string, given: Opti
   if (name === "review open") {
     const { runTui } = yield* Effect.promise(() => import("./tui/index.ts"))
     return yield* runTui(yield* required(options, "repo"), {
-      sessionPath: process.env["ADIFF_SESSION"],
+      sessionPath: Option.getOrUndefined(yield* sessionPath),
       branch: options["branch"],
       base: options["base"],
     })
@@ -587,7 +525,9 @@ if (said !== undefined) {
   process.exit(0)
 }
 
-const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot()))
+const layer = Layer.mergeAll(ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot())).pipe(
+  Layer.provideMerge(GitLive),
+)
 
 const reportFailure = (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
   Effect.sync(() => {

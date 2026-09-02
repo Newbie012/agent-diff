@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, type Scope } from "effect"
 import manifest from "../../package.json" with { type: "json" }
 import { askLatest, newer } from "../cli/index.ts"
 import { Store, type UpgradeCheck } from "../service/store/index.ts"
@@ -16,7 +16,6 @@ const stale = (held: UpgradeCheck): boolean =>
 const refresh = Effect.gen(function* () {
   const store = yield* Store
   const latest = yield* askLatest
-  if (latest === undefined) return
   const held = yield* store.upgradeCheck
   yield* store.saveUpgradeCheck({
     ...held,
@@ -35,10 +34,10 @@ const worded = Effect.gen(function* () {
   if (due && latest !== undefined) {
     yield* store.saveUpgradeCheck({ ...held, note: NOTE, told: latest })
   }
-  if (stale(held)) yield* Effect.forkDetach(Effect.ignore(refresh))
+  if (stale(held)) yield* Effect.forkScoped(Effect.ignore(refresh))
   return due ? `adiff ${latest} is out · adiff upgrade` : ""
 }).pipe(Effect.withSpan("Tui.upgradeHint"))
 
-export const upgradeHint: Effect.Effect<string, never, Store> = worded.pipe(
-  Effect.orElseSucceed(() => ""),
+export const upgradeHint: Effect.Effect<string, never, Store | Scope.Scope> = worded.pipe(
+  Effect.catchTag(["StoreUnreadable", "StoreUnwritable"], () => Effect.succeed("")),
 )

@@ -1,6 +1,6 @@
 import { mkdir, readFile, appendFile, rename, rm, stat, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
 import { Cache, Context, Effect, Layer, Option, Schedule, Schema } from "effect"
+import { Git } from "../git/index.ts"
 import { StoreUnreadable, StoreUnwritable } from "./error.ts"
 import {
   emptyBranchState,
@@ -304,90 +304,75 @@ const reportOps = (root: string) =>
     return path
   })
 
-const HEAD_REF = /^ref:\s*refs\/heads\/(.+)$/
+type Identity = Git["Service"]
 
-const gitDirOf = (worktreePath: string): Promise<string> =>
-  readFile(join(worktreePath, ".git"), "utf8")
-    .then((raw) => {
-      const linked = raw.match(/^gitdir:\s*(.+)$/m)
-      return linked?.[1] === undefined ? join(worktreePath, ".git") : linked[1].trim()
-    })
-    .catch(() => join(worktreePath, ".git"))
+const branchKeyIn = Effect.fn("Store.branchKeyIn")(function* (git: Identity, worktreePath: string) {
+  const [repo, head] = yield* Effect.all(
+    [git.commonDirOf(worktreePath), git.headOf(worktreePath)],
+    { concurrency: 2 },
+  )
+  return `${repo}#${head}`
+})
 
-const headOf = (worktreePath: string): Promise<string> =>
-  gitDirOf(worktreePath)
-    .then((dir) => readFile(join(dir, "HEAD"), "utf8"))
-    .then((raw) => {
-      const named = raw.trim().match(HEAD_REF)
-      return named?.[1] === undefined ? raw.trim() : named[1]
-    })
-    .catch(() => "")
+export const branchKeyOf = Effect.fn("Store.branchKeyOf")(function* (worktreePath: string) {
+  return yield* branchKeyIn(yield* Git, worktreePath)
+})
 
-const repoOf = (worktreePath: string): Promise<string> =>
-  gitDirOf(worktreePath).then((dir) =>
-    readFile(join(dir, "commondir"), "utf8")
-      .then((raw) => resolve(dir, raw.trim()))
-      .catch(() => dir),
+const wasKeyOf = Effect.fn("Store.wasKeyOf")(function* (git: Identity, worktreePath: string) {
+  return `${worktreePath}#${yield* git.headOf(worktreePath)}`
+})
+
+const there = (path: string): Effect.Effect<boolean> =>
+  Effect.tryPromise({ try: () => stat(path), catch: damaged(path) }).pipe(
+    Effect.map(() => true),
+    Effect.catchTag("StoreUnreadable", () => Effect.succeed(false)),
   )
 
-export const branchKeyOf = (worktreePath: string): Effect.Effect<string> =>
-  Effect.map(
-    Effect.all(
-      [Effect.promise(() => repoOf(worktreePath)), Effect.promise(() => headOf(worktreePath))],
-      { concurrency: 2 },
-    ),
-    ([repo, head]) => `${repo}#${head}`,
+const moved = (from: string, to: string): Effect.Effect<void> =>
+  Effect.tryPromise({ try: () => rename(from, to), catch: unwritable(to) }).pipe(
+    Effect.catchTag("StoreUnwritable", () => Effect.void),
   )
-
-const wasKeyOf = (worktreePath: string): Effect.Effect<string> =>
-  Effect.promise(() => headOf(worktreePath).then((head) => `${worktreePath}#${head}`))
-
-const there = (path: string): Promise<boolean> =>
-  stat(path).then(
-    () => true,
-    () => false,
-  )
-
-const moved = (from: string, to: string): Promise<void> =>
-  rename(from, to).catch(() => undefined)
 
 const adopt = Effect.fn("Store.adopt")(function* (root: string, key: string, was: string) {
   const here = branchDir(root, key)
-  if (yield* Effect.promise(() => there(here))) return
+  if (yield* there(here)) return
   const older = branchDir(root, was)
-  if (!(yield* Effect.promise(() => there(older)))) return
-  yield* Effect.promise(() => moved(older, here))
+  if (!(yield* there(older))) return
+  yield* moved(older, here)
 })
 
 const SPLIT = "\u0000"
 
 const ADOPT_SIZE = 256
 
-const adopting = (root: string) =>
+const adopting = (root: string, git: Identity) =>
   Effect.fn("Store.adopting")(function* (mark: string) {
     const [key = "", worktreePath = ""] = mark.split(SPLIT)
-    const was = yield* wasKeyOf(worktreePath)
+    const was = yield* wasKeyOf(git, worktreePath)
     if (key !== was) yield* adopt(root, key, was)
     return key
   })
 
 type Keys = Cache.Cache<string, string>
 
-const keyIn = (adopted: Keys, worktreePath: string): Effect.Effect<string> =>
-  Effect.flatMap(branchKeyOf(worktreePath), (key) =>
-    Cache.get(adopted, `${key}${SPLIT}${worktreePath}`),
-  )
+type KeyOf = (worktreePath: string) => Effect.Effect<string>
 
-const answerOps = (root: string, adopted: Keys) => {
+const keyIn = (adopted: Keys, git: Identity): KeyOf =>
+  Effect.fn("Store.keyIn")(function* (worktreePath: string) {
+    const key = yield* branchKeyIn(git, worktreePath)
+    return yield* Cache.get(adopted, `${key}${SPLIT}${worktreePath}`)
+  })
+
+const answerOps = (root: string, keyOf: KeyOf) => {
   const answer = Effect.fn("Store.answer")(function* (worktreePath: string, entry: StoredAnswer) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = outboxPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* writeAnswer(path, entry)
   })
 
   const answers = Effect.fn("Store.answers")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = outboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -399,9 +384,9 @@ const answerOps = (root: string, adopted: Keys) => {
   return { answer, answers }
 }
 
-const layersOps = (root: string, adopted: Keys) => {
+const layersOps = (root: string, keyOf: KeyOf) => {
   const layers = Effect.fn("Store.layers")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = layersPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return Option.none<StoredLayers>()
@@ -412,7 +397,7 @@ const layersOps = (root: string, adopted: Keys) => {
     worktreePath: string,
     next: StoredLayers,
   ) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = layersPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* writeLayers(path, next)
@@ -421,9 +406,9 @@ const layersOps = (root: string, adopted: Keys) => {
   return { layers, saveLayers }
 }
 
-const remarksOps = (root: string, adopted: Keys) => {
+const remarksOps = (root: string, keyOf: KeyOf) => {
   const remarks = Effect.fn("Store.remarks")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = remarksPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return Option.none<StoredRemarks>()
@@ -434,7 +419,7 @@ const remarksOps = (root: string, adopted: Keys) => {
     worktreePath: string,
     next: StoredRemarks,
   ) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = remarksPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* writeRemarks(path, next)
@@ -445,7 +430,7 @@ const remarksOps = (root: string, adopted: Keys) => {
     work: Effect.Effect<A, E, R>,
   ): Effect.Effect<A, E | StoreUnwritable, R> =>
     Effect.gen(function* () {
-      const key = yield* keyIn(adopted, worktreePath)
+      const key = yield* keyOf(worktreePath)
       yield* ensureDir(branchDir(root, key))
       return yield* alone(`${remarksPath(root, key)}.lock`, DRAFTS_LOCK, work)
     }).pipe(Effect.withSpan("Store.whileHoldingRemarks"))
@@ -453,16 +438,16 @@ const remarksOps = (root: string, adopted: Keys) => {
   return { remarks, saveRemarks, whileHoldingRemarks }
 }
 
-const inboxOps = (root: string, adopted: Keys) => {
+const inboxOps = (root: string, keyOf: KeyOf) => {
   const submit = Effect.fn("Store.submit")(function* (worktreePath: string, batch: Batch) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = inboxPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* writeBatch(path, batch)
   })
 
   const inbox = Effect.fn("Store.inbox")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = inboxPath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -524,9 +509,9 @@ const alone = <A, E, R>(
 ): Effect.Effect<A, E | StoreUnwritable, R> =>
   Effect.acquireUseRelease(taken(path, waiting), () => work, () => freed(path))
 
-const watchOps = (root: string, adopted: Keys) => {
+const watchOps = (root: string, keyOf: KeyOf) => {
   const watching = Effect.fn("Store.watching")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = watchPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return Option.none<Watching>()
@@ -538,7 +523,7 @@ const watchOps = (root: string, adopted: Keys) => {
     worktreePath: string,
     at: string,
   ) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = watchPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* Effect.tryPromise({
@@ -550,9 +535,9 @@ const watchOps = (root: string, adopted: Keys) => {
   return { watching, noteWatching }
 }
 
-const draftsOps = (root: string, adopted: Keys) => {
+const draftsOps = (root: string, keyOf: KeyOf) => {
   const drafts = Effect.fn("Store.drafts")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = draftsPath(root, key)
     const raw = yield* readOptional(path)
     if (Option.isNone(raw)) return [] as ReadonlyArray<StoredDraft>
@@ -565,7 +550,7 @@ const draftsOps = (root: string, adopted: Keys) => {
     worktreePath: string,
     next: ReadonlyArray<StoredDraft>,
   ) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = draftsPath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* writeDrafts(path, { version: DRAFTS_VERSION, drafts: next })
@@ -576,7 +561,7 @@ const draftsOps = (root: string, adopted: Keys) => {
     work: Effect.Effect<A, E, R>,
   ): Effect.Effect<A, E | StoreUnwritable, R> =>
     Effect.gen(function* () {
-      const key = yield* keyIn(adopted, worktreePath)
+      const key = yield* keyOf(worktreePath)
       yield* ensureDir(branchDir(root, key))
       return yield* alone(`${draftsPath(root, key)}.lock`, DRAFTS_LOCK, work)
     }).pipe(Effect.withSpan("Store.whileHoldingDrafts"))
@@ -584,9 +569,9 @@ const draftsOps = (root: string, adopted: Keys) => {
   return { drafts, saveDrafts, whileHoldingDrafts }
 }
 
-const stateOps = (root: string, adopted: Keys) => {
+const stateOps = (root: string, keyOf: KeyOf) => {
   const state = Effect.fn("Store.state")(function* (worktreePath: string) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = statePath(root, key)
     const raw = yield* readOptional(path)
     return yield* Option.match(raw, {
@@ -599,7 +584,7 @@ const stateOps = (root: string, adopted: Keys) => {
     worktreePath: string,
     next: BranchState,
   ) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     const path = statePath(root, key)
     yield* ensureDir(branchDir(root, key))
     yield* writeState(path, next)
@@ -609,7 +594,7 @@ const stateOps = (root: string, adopted: Keys) => {
     worktreePath: string,
     change: (was: BranchState) => BranchState,
   ) {
-    const key = yield* keyIn(adopted, worktreePath)
+    const key = yield* keyOf(worktreePath)
     yield* ensureDir(branchDir(root, key))
     yield* alone(`${statePath(root, key)}.lock`, STATE_LOCK, under(worktreePath, change))
   })
@@ -624,14 +609,14 @@ const stateOps = (root: string, adopted: Keys) => {
   return { state, saveState, changeState }
 }
 
-const makeStore = (root: string, adopted: Keys): Shape => {
-  const { submit, inbox } = inboxOps(root, adopted)
-  const { state, saveState, changeState } = stateOps(root, adopted)
-  const talk = answerOps(root, adopted)
+const makeStore = (root: string, git: Identity, keyOf: KeyOf): Shape => {
+  const { submit, inbox } = inboxOps(root, keyOf)
+  const { state, saveState, changeState } = stateOps(root, keyOf)
+  const talk = answerOps(root, keyOf)
   const cursors = cursorOps(state, inbox, talk.answers, changeState)
   return {
     root,
-    branchAt: (worktreePath: string) => Effect.promise(() => headOf(worktreePath)),
+    branchAt: git.headOf,
     submit,
     inbox,
     state,
@@ -641,17 +626,19 @@ const makeStore = (root: string, adopted: Keys): Shape => {
     ...settingsOps(root),
     ...upgradeOps(root),
     ...talk,
-    ...layersOps(root, adopted),
-    ...remarksOps(root, adopted),
-    ...watchOps(root, adopted),
-    ...draftsOps(root, adopted),
+    ...layersOps(root, keyOf),
+    ...remarksOps(root, keyOf),
+    ...watchOps(root, keyOf),
+    ...draftsOps(root, keyOf),
     ...cursors,
   }
 }
 
 const madeStore = Effect.fn("Store.make")(function* (root: string) {
-  const adopted = yield* Cache.make({ capacity: ADOPT_SIZE, lookup: adopting(root) })
-  return makeStore(root, adopted)
+  const git = yield* Git
+  const adopted = yield* Cache.make({ capacity: ADOPT_SIZE, lookup: adopting(root, git) })
+  return makeStore(root, git, keyIn(adopted, git))
 })
 
-export const storeAt = (root: string): Layer.Layer<Store> => Layer.effect(Store)(madeStore(root))
+export const storeAt = (root: string): Layer.Layer<Store, never, Git> =>
+  Layer.effect(Store)(madeStore(root))

@@ -21,6 +21,9 @@ const STAT = /(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) delet
 type Shape = {
   readonly worktrees: (repo: string) => Effect.Effect<ReadonlyArray<Worktree>, NotARepository>
   readonly repoOf: (worktree: string) => Effect.Effect<string>
+  readonly commonDirOf: (worktree: string) => Effect.Effect<string>
+  readonly headOf: (worktree: string) => Effect.Effect<string>
+  readonly realPathOf: (path: string) => Effect.Effect<string>
   readonly diff: (worktree: Worktree, context: number, only?: string) => Effect.Effect<string>
   readonly stat: (worktree: Worktree) => Effect.Effect<DiffStat>
   readonly source: (
@@ -229,6 +232,31 @@ const findRepo = Effect.fn("Git.repoOf")(function* (worktree: string) {
   return trimmed.length === 0 ? resolve(worktree) : resolve(trimmed, "..")
 })
 
+const LINKED_GIT_DIR = /^gitdir:\s*(.+)$/m
+const HEAD_REF = /^ref:\s*refs\/heads\/(.+)$/
+
+const gitDirOf = Effect.fn("Git.gitDirOf")(function* (worktree: string) {
+  const own = join(worktree, ".git")
+  const file = yield* readText(own, ".git")
+  if (Option.isNone(file)) return own
+  const linked = LINKED_GIT_DIR.exec(file.value)?.[1]
+  return linked === undefined ? own : linked.trim()
+})
+
+const findCommonDir = Effect.fn("Git.commonDirOf")(function* (worktree: string) {
+  const dir = yield* gitDirOf(worktree)
+  const file = yield* readText(join(dir, "commondir"), "commondir")
+  return Option.match(file, { onNone: () => dir, onSome: (raw) => resolve(dir, raw.trim()) })
+})
+
+const readHead = Effect.fn("Git.headOf")(function* (worktree: string) {
+  const dir = yield* gitDirOf(worktree)
+  const file = yield* readText(join(dir, "HEAD"), "HEAD")
+  if (Option.isNone(file)) return ""
+  const raw = file.value.trim()
+  return HEAD_REF.exec(raw)?.[1] ?? raw
+})
+
 const REFS_MOST = 200
 
 export type Commit = { readonly sha: string; readonly said: string }
@@ -305,6 +333,9 @@ const makeCaches = Effect.fn("Git.caches")(function* () {
 const shapeWith = (caches: Caches): Shape => ({
   worktrees: (repo: string) => listWorktrees(caches, repo),
   repoOf: findRepo,
+  commonDirOf: findCommonDir,
+  realPathOf: settled,
+  headOf: readHead,
   diff: readDiff,
   stat: readStat,
   source: readSource,

@@ -169,12 +169,6 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "The pull request has moved since these comments were written, so they name lines that may no longer be there. Nothing was sent and nothing was lost. Read the diff again and check each draft still says what you mean.",
     retriable: false,
   },
-  InitUnwritable: {
-    exit: FAILED,
-    suggestion:
-      "adiff could not write the skill. Check that .claude/skills/adiff/ is somewhere you can write to.",
-    retriable: false,
-  },
   UnselectableRange: {
     exit: USAGE,
     suggestion: "Those lines are not in the diff. Check --side: new is the working tree, old is the version being replaced.",

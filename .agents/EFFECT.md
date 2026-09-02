@@ -37,6 +37,17 @@ constructed. Nothing else builds one.
 Dependencies arrive through the context, never through a constructor argument or a module-level
 singleton. One place provides them: `src/main.ts` for the CLI, the driver for tests.
 
+## Use cases
+
+A use case is not a service. Nothing swaps it and nothing acquires it, so a `Context.Service` around
+one would add a layer for the sake of a dot. What a use case wants is a home: one file per noun in
+`src/review`, exported from the index as a namespace, so the caller writes `Thread.settle(worktree,
+id, at)` and the file owns the word. Spans read `Review.Thread.settle`.
+
+A use case takes a `Worktree` or a `BranchReading`, never a repo and a branch name and never a bare
+path. The caller resolves the address once with `Branch.find` or `Branch.reading`. That is what keeps
+one verb from existing twice, once per way of naming the same worktree.
+
 ## Errors
 
 An error is a `Data.TaggedError` in the module's `error.ts`, carrying the facts a caller needs to
@@ -67,7 +78,7 @@ Handle by tag. `Effect.catchAll` and cause-level recovery need a reason in the P
 transformation of an effect you already have, as in the `catchTag` above.
 
 Public service methods and anything non-trivial use `Effect.fn` with a span named
-`Area.operation`, where `Area` is the module: `Forge.pulls`, `Store.stage`, `Cli.listBranches`,
+`Area.operation`, where `Area` is the module: `Forge.pulls`, `Store.stage`, `Review.listBranches`,
 `Main.branchList`. **Rule:** `adiff/span-name`.
 
 `src/domain` and `src/service` contain no promises: no `async`, no `await`, no `new Promise`. Wrap a
@@ -85,11 +96,21 @@ watch it. A plain mutable field is for values that never cross a fibre boundary.
 ## Where Effect meets opentui
 
 opentui renderables are mutable objects and keypresses arrive as callbacks, so `src/tui` is the one
-place that holds a runner rather than composing effects. The boundary is a single captured
-`Effect.runPromiseWith`, and everything the terminal needs from the rest of the program goes through
-it. The terminal builds no effects of its own beyond calling one.
+place where a callback has to hand work to Effect. Every callback does the same thing: it offers an
+intent to one queue, and one scoped fibre consumes that queue in order. That is what keeps keystroke
+N finished before N+1 starts, and it is what the test driver's `settled()` rests on.
 
-That is the current shape, not the intended one. See ADR-005.
+Work that may outlive a keystroke, such as reading a file's source, fetching remarks or a search,
+runs in a `FiberHandle`: running the next one interrupts the last, and the handle dies with the
+scope. The notice fade and the search debounce are `Effect.sleep` in a handle. The age tick is
+`Effect.repeat` on `Schedule.spaced`. `launch` forks all of it with `Effect.forkScoped`, so the scope
+that `runOn` opens, or that the driver holds, is the only lifetime anything in the terminal has.
+
+The `Screen` is used directly. It is the opentui side of the boundary and its methods are
+synchronous, so wrapping each in `Effect.sync` to run it back with `runSync` would add ceremony and
+remove nothing. Two escapes remain and both are honest: `App.write` sets the `SubscriptionRef` with
+`runSync` because `commit` is reached from renderer callbacks, and `settled()` returns a promise
+because the harness keeps its promises (ADR-006).
 
 ## Spacing, imports, layout
 

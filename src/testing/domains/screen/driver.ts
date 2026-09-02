@@ -1,4 +1,4 @@
-import { CodeRenderable, Renderable } from "@opentui/core"
+import { CodeRenderable, KeyEvent, Renderable } from "@opentui/core"
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing"
 import { Effect, Exit, Layer, Scope } from "effect"
 import { Git, GitLive } from "../../../service/git/index.ts"
@@ -157,10 +157,8 @@ export class ScreenTestDriver {
     this.slowedBy(options)
     this.watch()
     this.countKeys(setup)
-    const layer = Layer.mergeAll(
-      this.countingGit(),
-      this.forgeFor(options),
-      storeAt(this.state.storeRoot),
+    const layer = Layer.mergeAll(this.forgeFor(options), storeAt(this.state.storeRoot)).pipe(
+      Layer.provideMerge(this.countingGit()),
     )
     const scope = Scope.makeUnsafe()
     this.scope = scope
@@ -171,9 +169,7 @@ export class ScreenTestDriver {
         sessionPath: this.state.sessionPath,
         branch: options.branch,
         base: options.base,
-      }).pipe(
-        Effect.provideContext(context),
-      ),
+      }).pipe(Effect.provideContext(context), Scope.provide(scope)),
     )
     await this.app.settled()
     await setup.waitForVisualIdle()
@@ -656,18 +652,21 @@ export class ScreenTestDriver {
 
   async releaseShift(): Promise<void> {
     const setup = this.active()
-    setup.renderer.keyInput.emit("keyrelease", {
-      name: "leftshift",
-      ctrl: false,
-      meta: false,
-      shift: false,
-      option: false,
-      sequence: "",
-      number: false,
-      raw: "",
-      eventType: "release",
-      source: "kitty",
-    } as never)
+    setup.renderer.keyInput.emit(
+      "keyrelease",
+      new KeyEvent({
+        name: "leftshift",
+        ctrl: false,
+        meta: false,
+        shift: false,
+        option: false,
+        sequence: "",
+        number: false,
+        raw: "",
+        eventType: "release",
+        source: "kitty",
+      }),
+    )
     await this.app?.settled()
     await setup.waitForVisualIdle()
   }

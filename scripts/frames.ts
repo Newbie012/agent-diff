@@ -26,10 +26,10 @@ const space = await createWorkspace({ branches: number("branches", 7) })
 await seedDemo(space)
 const setup = await createTestRenderer({ width, height })
 const scope = Scope.makeUnsafe()
-const layer = Layer.mergeAll(GitLive, ForgeLive, storeAt(space.storeRoot))
+const layer = Layer.mergeAll(ForgeLive, storeAt(space.storeRoot)).pipe(Layer.provideMerge(GitLive))
 const context = await Effect.runPromise(Layer.buildWithScope(layer, scope))
 const app: App = await Effect.runPromise(
-  launch(space.repo, setup.renderer).pipe(Effect.provideContext(context)),
+  launch(space.repo, setup.renderer).pipe(Effect.provideContext(context), Scope.provide(scope)),
 )
 
 const settle = async (): Promise<void> => {

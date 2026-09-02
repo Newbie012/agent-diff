@@ -5,43 +5,46 @@ import { gapNumbered, gapRowSet, shownOf } from "./gaps.ts"
 import { searchCommands, searchGlossary } from "./match.ts"
 import { preferences } from "../domain/preferences/index.ts"
 import {
-  askedRows,
-  crowdedOf,
   carriesLine,
-  foldersOfFile,
-  openingRow,
-  fileOrder,
-  changeAround,
-  hunkStarts,
-  onLayers,
-  selectedPatch,
-  shownMatches,
-  selectionRange,
-  layerAfter,
-  layerFile,
-  layerHolding,
-  placeIn,
-  readingOrder,
-  type Screen,
-  type TuiState,
-  needingRowsIn,
-  openCommentRows,
-  filesWithComments,
+  refsShown,
   rowAtSourceLine,
   rowShowing,
-  stopsAtRow,
-  WHOLE_FILE,
-  threadAtStop,
-  panelEntries,
-  panelFits,
-  panelShown,
-  chosenNow,
-  refsShown,
+  selectionRange,
+  shownMatches,
+} from "./cursor.ts"
+import {
+  changeAround,
+  crowdedOf,
+  fileOrder,
+  foldersOfFile,
+  hunkStarts,
+  layerAfter,
+  layerFile,
+  openingRow,
+  placeIn,
+  readingOrder,
   treeRows,
-  withChosen,
   treeStart,
-  panelEntry,
-} from "./model.ts"
+} from "./files.ts"
+import { layerHolding } from "./layerview.ts"
+import { panelFits, panelShown, WHOLE_FILE } from "./layout.ts"
+import {
+  askedRows,
+  filesWithComments,
+  needingRowsIn,
+  openCommentRows,
+  stopsAtRow,
+  threadAtStop,
+} from "./notes.ts"
+import { panelEntries, panelEntry } from "./panel.ts"
+import {
+  chosenNow,
+  onLayers,
+  type ScreenName,
+  selectedPatch,
+  type TuiState,
+  withChosen,
+} from "./state.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
   Math.max(low, Math.min(high, value))
@@ -488,7 +491,7 @@ const outOfDiff = (state: TuiState): TuiState =>
     ? { ...state, selecting: false, anchorRow: state.cursor }
     : { ...state, screen: "branches", selecting: false }
 
-const BACK_FROM: Partial<Record<Screen, (state: TuiState) => TuiState>> = {
+const BACK_FROM: Partial<Record<ScreenName, (state: TuiState) => TuiState>> = {
   search: (state) => ({ ...state, screen: "review", matches: [], term: "", query: "" }),
   report: (state) => ({ ...state, screen: state.returnTo, draft: "" }),
   palette: (state) => ({ ...state, screen: state.returnTo, query: "" }),

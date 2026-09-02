@@ -1,4 +1,4 @@
-import type { Screen } from "./model.ts"
+import type { ScreenName } from "./state.ts"
 
 export type Action =
   | "branch.first"
@@ -89,7 +89,7 @@ export type Command = {
   readonly title: string
   readonly category: string
   readonly keys: ReadonlyArray<string>
-  readonly screens: ReadonlyArray<Screen>
+  readonly screens: ReadonlyArray<ScreenName>
   readonly hint: string
   readonly also: ReadonlyArray<string>
   readonly listed: boolean
@@ -908,7 +908,7 @@ export const commands: ReadonlyArray<Command> = [
   }),
 ]
 
-const TEXT_SCREENS: ReadonlySet<Screen> = new Set<Screen>([
+const TEXT_SCREENS: ReadonlySet<ScreenName> = new Set<ScreenName>([
   "compose",
   "keys",
   "palette",
@@ -918,21 +918,21 @@ const TEXT_SCREENS: ReadonlySet<Screen> = new Set<Screen>([
 
 const PRINTABLE_KEY = /^[\S ]$/
 
-export const takesText = (screen: Screen): boolean => TEXT_SCREENS.has(screen)
+export const takesText = (screen: ScreenName): boolean => TEXT_SCREENS.has(screen)
 
-export const commandsFor = (screen: Screen): ReadonlyArray<Command> =>
+export const commandsFor = (screen: ScreenName): ReadonlyArray<Command> =>
   commands.filter((entry) => entry.screens.includes(screen))
 
-export const listableFor = (screen: Screen): ReadonlyArray<Command> =>
+export const listableFor = (screen: ScreenName): ReadonlyArray<Command> =>
   commandsFor(screen).filter((entry) => entry.listed)
 
-export const glossaryFor = (screen: Screen): ReadonlyArray<Command> =>
+export const glossaryFor = (screen: ScreenName): ReadonlyArray<Command> =>
   commandsFor(screen).toSorted(
     (left, right) =>
       left.category.localeCompare(right.category) || left.title.localeCompare(right.title),
   )
 
-export const actionFor = (screen: Screen, key: string, pane?: Pane): Action | undefined => {
+export const actionFor = (screen: ScreenName, key: string, pane?: Pane): Action | undefined => {
   if (takesText(screen) && PRINTABLE_KEY.test(key)) return undefined
   const found = commandsFor(screen).filter((entry) => entry.keys.includes(key))
   const here = pane === undefined ? undefined : found.find((entry) => entry.panes.includes(pane))
@@ -978,7 +978,7 @@ const hintOf = (entry: Command, offered: Offered): string => {
 }
 
 export const hintsFor = (
-  screen: Screen,
+  screen: ScreenName,
   offered: Offered,
 ): ReadonlyArray<{ key: string; hint: string; press: string }> =>
   commandsFor(screen)

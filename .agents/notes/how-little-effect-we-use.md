@@ -210,4 +210,5 @@ layer.
 | 5 | `Config` for the four real settings | low | low | scattered reads |
 | 6 | Brands used or deleted | low | low | one dishonest declaration |
 
-Item 1 is done in this branch. The rest are written up as ADR-007.
+Item 1 was done in the branch that wrote this. Items 2, 3 and 4 followed; ADR-007 records what each
+became.

@@ -146,6 +146,7 @@ const areaOf = (path) => {
   const parts = path.split("/")
   if (parts[1] === "main.ts") return "Main"
   if (parts[1] === "cli") return "Cli"
+  if (parts[1] === "review") return "Review"
   if (parts[1] === "tui") return "Tui"
   if (parts[1] === "domain" || parts[1] === "service") return pascal(parts[2] ?? "")
   return undefined

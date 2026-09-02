@@ -1,5 +1,5 @@
 import { execFile, type ChildProcess } from "node:child_process"
-import { absurd, Context, Effect, Layer, Schema } from "effect"
+import { Context, Effect, Layer, Option, Schema, absurd } from "effect"
 import { ForgeUnavailable } from "./error.ts"
 
 export type PullState = "open" | "draft" | "merged" | "closed"
@@ -216,7 +216,9 @@ const Landed = Schema.Struct({
   ),
 })
 
-const readLanded = Schema.decodeUnknownEffect(Landed)
+const readLanded = Schema.decodeUnknownOption(Landed)
+
+const jsonOf = Option.liftThrowable((raw: string): unknown => JSON.parse(raw))
 
 type Acknowledged = { readonly path: string; readonly line?: number }
 
@@ -232,15 +234,7 @@ const counted = (back: ReadonlyArray<Acknowledged>): Map<string, number> => {
 }
 
 const acknowledged = (said: string): ReadonlyArray<Acknowledged> | undefined =>
-  Effect.runSync(
-    Effect.orElseSucceed(
-      Effect.flatMap(
-        Effect.try(() => JSON.parse(said) as unknown),
-        (value) => Effect.orElseSucceed(readLanded(value), () => ({ comments: undefined })),
-      ),
-      () => ({ comments: undefined }),
-    ),
-  ).comments
+  Option.getOrUndefined(Option.flatMap(jsonOf(said), readLanded))?.comments
 
 const landedIn = (said: string, asked: ReadonlyArray<ForgeComment>): ReadonlyArray<number> => {
   const back = acknowledged(said)

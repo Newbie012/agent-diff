@@ -24,7 +24,12 @@ uses, `.agents/prd/CONTEXT.md`; for durable technical choices, `.agents/adr/`.
 ```
 
 `Patch` knows nothing about comments. `Review` knows nothing about git or the store. `Delivery`
-knows nothing about rendering. The terminal depends on all of them and is depended on by none.
+asks `Git` which repository and branch a worktree is, and nothing else; it knows nothing about
+rendering. `review/` is the use-case layer: every verb a reviewer or an agent can ask for,
+as an Effect over the services. Each noun is one file exported as a namespace, so a call reads
+`Thread.settle(worktree, id, at)` or `Remark.fetch(repo, reading)`. Every use case is addressed by a
+`Worktree` or a `BranchReading`; the caller resolves a repo and branch name once, with `Branch.find`
+or `Branch.reading`. The CLI and the terminal both call it and neither calls the other.
 
 ## Modules
 
@@ -37,8 +42,13 @@ src/
   service/         Effect services, one directory each
     git/           worktree discovery, diffs, file reads  PRD 001
     store/         review state, inbox, what is owed      PRD 004
-  cli/             commands and their errors              PRD 007
+  review/          use cases over the services, shared by the CLI and the terminal
+  cli/             parsing, help, the exit report          PRD 007
   tui/             the review terminal                    PRD 003
+    app.ts         the App: one intent queue, one scope, the action table
+    state.ts …     the model by what it describes: state, layout, files, layerview, notes, panel, cursor
+    branches.ts …  handlers named for what they do, functions over the Terminal interface
+    render.ts      the Screen; each pane it paints is a file of its own, diffview.ts the diff
   testing/         the TestDriver                         PRD 008
   main.ts          the only place an Effect is run
 ```
