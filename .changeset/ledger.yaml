@@ -386,6 +386,10 @@
   dir: ""
   intents:
     - a-moved-past-thread-opens-in-full
+"@eliya-oss/agent-diff@0.1.0-alpha.175":
+  dir: ""
+  intents:
+    - commit-when-the-work-is-a-unit
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
