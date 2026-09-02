@@ -65,6 +65,19 @@ export const withAsking = (state: TuiState, asking: Asking): TuiState => ({
   askIndex: 0,
 })
 
+const firstLineOf = (body: string): string => body.split("\n").find((line) => line.trim().length > 0) ?? ""
+
+export const askedThreads = (state: TuiState): ReadonlyArray<string> => {
+  const asking = state.asking
+  if (asking === undefined) return []
+  return asking.threads.flatMap((id) => {
+    const thread = state.sent.find((entry) => entry.id === id)
+    if (thread === undefined) return []
+    const where = thread.outside === true ? "not in the diff" : `line ${thread.end}`
+    return [`${firstLineOf(thread.body)} · ${where}`]
+  })
+}
+
 export const askingWords = (
   state: TuiState,
 ): { readonly name: string; readonly path: boolean; readonly tail: string } => {
