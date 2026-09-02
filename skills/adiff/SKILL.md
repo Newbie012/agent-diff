@@ -121,9 +121,13 @@ Read `snippet` before opening the file: the reviewer commented on the diff, and 
 moved on since. If `head` no longer matches `git rev-parse --short HEAD`, the change you are being
 asked about may already be gone — say so rather than guessing at what they meant.
 
-Answer the comment by doing the work, not by replying. The reviewer is watching the diff; your
-next commit is the reply. When a comment is a question rather than a request, answer it in the
-commit message of the change it concerns, or plainly in chat if no change is needed.
+Answer the comment by doing the work, then say what you did with `adiff comment answer`, by id.
+The reviewer is watching the diff, and the diff is read from the working tree, so an edit shows the
+moment they read the branch again: no commit is needed for them to see it. Do not commit once per
+comment. Commit when the work forms a change you would want as a commit anyway, and let one commit
+answer as many comments as it addresses. When a comment is a question rather than a request, answer
+it with `adiff comment answer` too; an answer written into a commit message never reaches the
+reviewer's screen.
 
 Handle every comment in the batch before taking again.
 
