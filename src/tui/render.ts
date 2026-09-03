@@ -6,7 +6,7 @@ import type {
   ASCIIFontRenderable,
   TextareaRenderable} from "@opentui/core";
 import { bg, fg, StyledText, t, type TextChunk } from "@opentui/core"
-import { stickyChain } from "../domain/patch/index.ts"
+import { reindentRows, stickyChain } from "../domain/patch/index.ts"
 import { hintsFor, takesText } from "./command.ts"
 import {
   newLineAt,
@@ -1012,6 +1012,7 @@ export class Screen {
     const shown = shownOf(state)
     const rows = shown?.patch.rows ?? []
     const gaps = shown === undefined ? new Set<number>() : gapRowSet(shown)
+    const reindents = shown === undefined ? new Set<number>() : reindentRows(shown.patch)
     return (row) => {
       const kind = rows[row]?.kind
       if (kind === undefined) return undefined
@@ -1019,6 +1020,7 @@ export class Screen {
         cursor: row === state.cursor,
         selected: selecting && row >= from && row <= to,
         gap: gaps.has(row),
+        reindent: reindents.has(row),
       })
     }
   }

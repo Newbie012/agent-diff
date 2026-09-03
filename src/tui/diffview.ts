@@ -88,6 +88,17 @@ const WASH: Partial<Record<RowKind, LinePaint>> = {
   },
 }
 
+const REINDENT_WASH: Partial<Record<RowKind, LinePaint>> = {
+  added: {
+    gutter: RGBA.fromHex(palette.reindentAddedGutter),
+    content: RGBA.fromHex(palette.reindentAddedBg),
+  },
+  removed: {
+    gutter: RGBA.fromHex(palette.reindentRemovedGutter),
+    content: RGBA.fromHex(palette.reindentRemovedBg),
+  },
+}
+
 const NOTE_MIN = 24
 export const ANSWER_MARK = "↳"
 export const REPLY_MARK = "»"
@@ -594,8 +605,8 @@ export class DiffView {
     this.numbers.setLineColors(colors)
   }
 
-  washOf(kind: RowKind): LinePaint | undefined {
-    return WASH[kind]
+  washOf(kind: RowKind, reindent: boolean): LinePaint | undefined {
+    return reindent ? REINDENT_WASH[kind] : WASH[kind]
   }
 }
 
