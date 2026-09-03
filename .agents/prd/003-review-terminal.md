@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-09-03
+- **Last updated:** 2026-08-23
 
 ## Problem Statement
 
@@ -115,12 +115,6 @@ Three screens, and the keys each answers to:
   taken when the review opened. An edit between the two shifts every line after it, and colours drawn
   by line number then land on the wrong words. A row whose source line no longer matches is left
   plain, which reads as unfinished rather than as wrong.
-
-- **A reindent is washed dimmer than a change.** An added row and a removed row that are a
-  [reindent](CONTEXT.md#reindent) keep their sign and their side, but their wash is a quieter green
-  and a quieter red, so the eye lands on the rows that are still lit: the wrapper that was opened
-  and closed around them. The cursor and a selection paint over the wash the way they do on any
-  other row.
 
 - **One stretch of code takes one colour.** The highlighter answers with a group per range, and for
   a file of TypeScript with markup in it — a `.tsx` — it answers three times over the same range:

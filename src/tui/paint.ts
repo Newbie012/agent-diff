@@ -8,14 +8,13 @@ type PaintFlags = {
   readonly cursor: boolean
   readonly selected: boolean
   readonly gap: boolean
-  readonly reindent: boolean
 }
 
 export const pickPaint = (view: DiffView, kind: RowKind, flags: PaintFlags): LinePaint | undefined => {
   if (flags.cursor) return UNDER_CURSOR[kind] ?? PLAIN_CURSOR
   if (flags.selected) return PICKED[kind] ?? PLAIN_PICKED
   if (flags.gap) return GAP_PAINT
-  return view.washOf(kind, flags.reindent)
+  return view.washOf(kind)
 }
 
 const PLAIN_PICKED: LinePaint = {

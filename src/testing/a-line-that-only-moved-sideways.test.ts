@@ -20,7 +20,7 @@ const wrapped = {
 }
 
 describe("when a block of lines is wrapped in a new function", () => {
-  test("then the wrapper is washed as a change and the lines inside are washed dimmer", async () => {
+  test("then the diff shows the wrapper as the only change and the lines inside as unchanged", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(wrapped)
@@ -29,17 +29,15 @@ describe("when a block of lines is wrapped in a new function", () => {
     await driver.screen.open({ review: true })
 
     // ASSERT
+    const rows = (await driver.screen.getFrame()).split("\n")
+    expect(rows.filter((row) => row.includes("setPage(0)"))).toHaveLength(1)
+    expect(rows.filter((row) => row.includes("setTitle(next.title)"))).toHaveLength(1)
     const added = await driver.screen.findHighlighted(palette.addedBg)
     expect(added.join(" ")).toContain("startTransition")
     expect(added.join(" ")).toContain("})")
     expect(added.join(" ")).not.toContain("setPage(0)")
     const removed = await driver.screen.findHighlighted(palette.removedBg)
-    expect(removed.join(" ")).not.toContain("setPage(0)")
-    const movedIn = await driver.screen.findHighlighted(palette.reindentAddedBg)
-    expect(movedIn.join(" ")).toContain("setPage(0)")
-    expect(movedIn.join(" ")).toContain("setTitle(next.title)")
-    const movedOut = await driver.screen.findHighlighted(palette.reindentRemovedBg)
-    expect(movedOut.join(" ")).toContain("setPage(0)")
+    expect(removed).toEqual([])
   })
 })
 
