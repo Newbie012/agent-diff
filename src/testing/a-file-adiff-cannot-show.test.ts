@@ -13,7 +13,6 @@ describe("when a binary file is opened", () => {
 
     // ACT
     await driver.screen.open({ width: 130, height: 26, review: true })
-    await driver.screen.pressKeys(["["])
 
     // ASSERT
     expect(await driver.screen.getFrame()).toContain("binary file")

@@ -11,32 +11,57 @@ const walk = async (driver: TestDriver, key: string, times: number): Promise<voi
   )
 }
 
+const fileShown = (frame: string): string => frame.split("\n")[0] ?? ""
+
 describe("when the reviewer presses on past the last file", () => {
-  test("then the footer reports no next file", async () => {
+  test("then the review comes around to the first file and the footer names the wrap", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
     await driver.screen.open({ width: 120, height: 24, review: true })
+    const first = fileShown(await driver.screen.getFrame())
     await walk(driver, "]", (spread?.files.length ?? 1) - 1)
+    expect(fileShown(await driver.screen.getFrame())).not.toBe(first)
 
     // ACT
     await driver.screen.pressKeys(["]"])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("last file")
+    const frame = await driver.screen.getFrame()
+    expect(fileShown(frame)).toBe(first)
+    expect(frame).toContain("around to the first file")
   })
 
-  test("then the footer reports no previous file at the first one", async () => {
+  test("then the review comes around to the last file from the first one", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ files: [...(spread?.files ?? [])] })
     await driver.screen.open({ width: 120, height: 24, review: true })
+    const first = fileShown(await driver.screen.getFrame())
 
     // ACT
     await driver.screen.pressKeys(["["])
 
     // ASSERT
-    expect(await driver.screen.getFrame()).toContain("first file")
+    const frame = await driver.screen.getFrame()
+    expect(fileShown(frame)).not.toBe(first)
+    expect(frame).toContain(`file ${spread?.files.length ?? 0} of ${spread?.files.length ?? 0}`)
+    expect(frame).toContain("around to the last file")
+  })
+
+  test("then the file list's k comes around to the last file as well", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ files: [...(spread?.files ?? [])] })
+    await driver.screen.open({ width: 120, height: 24, review: true })
+    await driver.screen.pressKeys(["shift+tab"])
+
+    // ACT
+    await driver.screen.pressKeys(["k"])
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame).toContain(`file ${spread?.files.length ?? 0} of ${spread?.files.length ?? 0}`)
   })
 
   test("then the footer stays quiet while there are files to turn to", async () => {
@@ -50,7 +75,6 @@ describe("when the reviewer presses on past the last file", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).not.toContain("last file")
-    expect(frame).not.toContain("first file")
+    expect(frame).not.toContain("around to")
   })
 })

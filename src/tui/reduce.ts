@@ -411,15 +411,24 @@ const atTheEnd = (state: TuiState, delta: number): boolean => {
   return at !== -1 && (wanted < 0 || wanted >= readingOrder(state).length)
 }
 
+const aroundTheEnd = (state: TuiState, delta: number): number => {
+  const at = placeIn(state)
+  return delta > 0 ? -at : readingOrder(state).length - 1 - at
+}
+
+const CAME_AROUND: Readonly<Record<"forward" | "back", string>> = {
+  forward: "around to the first file",
+  back: "around to the last file",
+}
+
 const moveFile = (state: TuiState, delta: number): TuiState => {
-  if (atTheEnd(state, delta)) {
-    return withNoticeHere(state, delta > 0 ? "last file" : "first file")
-  }
-  const next = layerFile(state, delta)
-  const layer = onLayers(state) ? layerAfter(state, delta) : state.layerIndex
+  const around = atTheEnd(state, delta)
+  const step = around ? aroundTheEnd(state, delta) : delta
+  const next = layerFile(state, step)
+  const layer = onLayers(state) ? layerAfter(state, step) : state.layerIndex
   return {
     ...state,
-    notice: "",
+    notice: around ? CAME_AROUND[delta > 0 ? "forward" : "back"] : "",
     layerIndex: layer,
     openLayers: state.openLayers.includes(layer)
       ? state.openLayers

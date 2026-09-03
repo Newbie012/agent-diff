@@ -447,9 +447,11 @@ Three screens, and the keys each answers to:
   branch to fill one gap in one of them. Only the file on the screen is ever asked for, and each
   file is read once and kept.
 
-- **Turning past the last file says so.** `]` on the last file and `[` on the first did nothing at
-  all, which is the same thing the review does when a key is not bound, or not delivered, or the
-  process is wedged. A reviewer cannot tell those apart by looking. It says which end it is.
+- **Turning past the last file comes around to the first, and says so.** `]` on the last file and
+  `[` on the first used to stop and name the end, so getting from the last file back to the first
+  meant pressing `[` once per file. Now the walk wraps, in the file list under `j` and `k` as well,
+  and the footer says `around to the first file` so the jump reads as a wrap and not as a dead key.
+  `g`, `G` and the paging keys still stop at the ends: a jump to the end is a jump, not a step.
 
 - **The keys a terminal sends without being taught also move the review.** Paging and jumping were
   bound to `ctrl+d`, `ctrl+u`, `g` and `G`, which are the right keys for anyone who already knows
