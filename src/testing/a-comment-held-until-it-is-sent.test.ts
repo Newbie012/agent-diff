@@ -12,7 +12,9 @@ const oneFile = {
 }
 
 const holdComments = async (driver: TestDriver): Promise<void> => {
-  await driver.screen.pressKeys([",", "j", "j", "j", "j", "j", "j", "j", "RETURN", "ESCAPE"])
+  await driver.screen.pressKeys([","])
+  await driver.screen.pressKeys(["j", "j", "j", "j", "j", "j", "j", "RETURN"])
+  await driver.screen.pressEscape()
 }
 
 describe("when a comment is held until the review is sent", () => {
