@@ -398,6 +398,10 @@
   dir: ""
   intents:
     - the-files-come-around
+"@eliya-oss/agent-diff@0.1.0-alpha.178":
+  dir: ""
+  intents:
+    - a-line-that-only-moved-sideways
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
