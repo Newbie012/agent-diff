@@ -394,6 +394,10 @@
   dir: ""
   intents:
     - a-held-comment-shows-in-the-diff
+"@eliya-oss/agent-diff@0.1.0-alpha.177":
+  dir: ""
+  intents:
+    - the-files-come-around
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
