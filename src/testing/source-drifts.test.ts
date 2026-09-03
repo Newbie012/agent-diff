@@ -29,7 +29,6 @@ describe("when a file changes on disk after the review loaded", () => {
     // ACT
     await driver.branch.setFile(made, "src/jobs/scheduler.ts", ["const drifted = 0", ...body])
     await driver.screen.pressKeys(["]"])
-    await driver.screen.pressKeys(["]"])
 
     // ASSERT
     expect((await driver.screen.findForeground(keyword)).join(" ")).not.toContain("const")
