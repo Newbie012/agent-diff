@@ -35,7 +35,7 @@ describe("when the file list runs past the pane", () => {
     await opened(driver)
 
     // ACT
-    await driver.screen.pressKeys(Array.from({ length: 40 }, () => "]"))
+    await driver.screen.pressKeys(["G"])
 
     // ASSERT
     expect(holdingBack(await driver.screen.getFrame())).toBeUndefined()
