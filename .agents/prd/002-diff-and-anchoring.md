@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-23
+- **Last updated:** 2026-09-03
 
 ## Problem Statement
 
@@ -93,6 +93,13 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
   the words come first and the diff follows.
 - **A row that sits on no line on either side carries no line number.** The words above, the
   binary notice, the hidden-lines marker, and the no-newline notice are all of this kind.
+- **A removed row and an added row that read the same after their leading whitespace are a
+  [reindent](CONTEXT.md#reindent).** Pairs are made within one hunk, in order: the first removed
+  row that has a match takes the first added row still free with that text, and so on down the hunk.
+  A blank line is never paired, since it carries nothing that could have moved. A line that differs
+  in its trailing whitespace is not a reindent either: there the whitespace is the change, and it
+  must stay lit. Twenty-five lines wrapped in `startTransition(() => { … })` are twenty-five
+  reindents and two real additions, and the reviewer should have to read two lines, not fifty.
 - **Rendering a patch produces the display text and the row-to-line map in one pass.** These two
   must never be computed separately — a cursor that lands on a line the text does not have is the
   failure mode this rule exists to prevent.
@@ -102,7 +109,7 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
 | Decision | Trigger |
 | --- | --- |
 | Expanding the context around a hunk on demand | A reviewer needing more than three lines to judge a change |
-| Word-level intra-line diffing | A review where line granularity demonstrably misleads |
+| Word-level intra-line diffing | A reindent covers the whitespace case; a review where a one-word rename inside a long line misleads would open the rest |
 
 ## Testing Decisions
 

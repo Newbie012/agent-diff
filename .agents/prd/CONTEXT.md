@@ -111,6 +111,13 @@ One line of the rendered diff, counted from the start of the patch. The coordina
 terminal moves the cursor in. Rows and file line numbers are different things and are converted in
 exactly one place — see [PRD 002](002-diff-and-anchoring.md).
 
+### Reindent
+
+A removed [row](#row) and an added row in one [hunk](#hunk) that carry the same text once their
+leading whitespace is set aside. The line moved sideways, and nothing in it changed. The terminal
+washes both rows dimmer than a real change, so a block wrapped in a new function reads as one wrapper
+and not as a rewrite of every line inside it.
+
 ---
 
 ## Delivery
