@@ -121,3 +121,9 @@ store's location and the `ADIFF_ROOT` override belong to
 
 - **A held comment can be dropped before it is sent.** Holding exists so a point can be reconsidered,
   and a set that can only grow is not a pause, it is a queue.
+
+- **A held comment sits in the diff under its line, marked waiting to be sent.** It used to reach
+  only the review panel, so the diff looked as if nothing had been written against the line and the
+  reviewer could not tell a line they had commented on from one they had not. The note reads as a
+  sent one does, with a head that says it has not gone yet, and the head changes to sent when the
+  set goes.

@@ -95,7 +95,7 @@ export const markedStands = (state: TuiState): ReadonlyMap<number, ThreadStand> 
   const patch = selectedPatch(state)
   const found = new Map<number, ThreadStand>()
   if (patch === undefined) return found
-  const here = state.sent.filter(
+  const here = [...state.sent, ...state.held].filter(
     (entry) => entry.file === patch.path && entry.removed !== true && entry.outside !== true,
   )
   for (const entry of here) {
@@ -171,7 +171,9 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
   const patch =
     fileIndex === state.patchIndex ? selectedPatch(state) : state.patches[fileIndex]
   if (patch === undefined) return []
-  const notes = state.sent.filter((entry) => entry.file === patch.path && entry.outside !== true)
+  const notes = [...state.sent, ...state.held].filter(
+    (entry) => entry.file === patch.path && entry.outside !== true,
+  )
   const rows = patch.rows.filter((row) =>
     notes.some((note) => lineOnSide(row, note.side) === note.end),
   )

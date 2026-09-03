@@ -624,6 +624,7 @@ const bareOf = (patch: Patch, display: ReadonlyArray<PaneLine>): Set<number> => 
 export const noteKey = (note: Note): string =>
   [
     `${note.side}${note.line}:${note.folded ? "-" : "+"}${note.body}`,
+    note.sent ? "sent" : "held",
     note.settled ? "settled" : note.asks ? "asked" : "open",
     ...(note.turns.length > 0
       ? note.turns.map((turn) => `${turn.voice[0] ?? ""}:${turn.body}`)
@@ -786,6 +787,8 @@ const REMARK_MARK = "\u25c7"
 const remarkHead = (note: Note, from: string): string =>
   `${REMARK_MARK} @${from}${note.stale ? " · outdated" : ""}`
 
+const HELD_HEAD = "waiting to be sent"
+
 const commentHead = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
   if (note.settled) return `${marks().done} settled${moved}`
@@ -796,8 +799,10 @@ const commentHead = (note: Note): string => {
   return `${marks().waiting} picked up ${agoText(note.takenAt, note.now)}${moved}`
 }
 
-const headOf = (note: Note): string =>
-  note.from === undefined ? commentHead(note) : remarkHead(note, note.from)
+const headOf = (note: Note): string => {
+  if (note.from !== undefined) return remarkHead(note, note.from)
+  return note.sent ? commentHead(note) : `${marks().filed} ${HELD_HEAD}`
+}
 
 const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {
   const wrapped = body.split("\n").flatMap((line) => wrap(line, Math.max(NOTE_MIN, room - 2)))

@@ -144,6 +144,7 @@ const remarksOf = (state: TuiState, path: string): ReadonlyArray<Note> =>
 
 export const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
   ...notesOf(stillThere(state.sent), path, true, { opened: state.opened, now: state.now }),
+  ...notesOf(state.held, path, false, { opened: state.opened, now: state.now }),
   ...remarksOf(state, path),
 ]
 
