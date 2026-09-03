@@ -114,9 +114,9 @@ exactly one place — see [PRD 002](002-diff-and-anchoring.md).
 ### Reindent
 
 A removed [row](#row) and an added row in one [hunk](#hunk) that carry the same text once their
-leading whitespace is set aside. The line moved sideways, and nothing in it changed. The terminal
-washes both rows dimmer than a real change, so a block wrapped in a new function reads as one wrapper
-and not as a rewrite of every line inside it.
+leading whitespace is set aside. The line moved sideways, and nothing in it changed, so the diff
+shows the pair as one unchanged row that stands on both sides. A block wrapped in a new function
+then reads as two added lines, the opener and the closer, and not as a rewrite of every line inside.
 
 ---
 

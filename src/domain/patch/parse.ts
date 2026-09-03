@@ -1,4 +1,5 @@
 import { Option } from "effect"
+import { foldReindents } from "./reindent.ts"
 import type { Hunk, Patch, Row, RowKind } from "./model.ts"
 
 const FILE_MARKER = "diff --git "
@@ -210,5 +211,5 @@ export const parsePatches = (diff: string): ReadonlyArray<Patch> => {
     if (draft !== undefined) readLine(draft, line)
   }
   for (const draft of drafts) told(draft, notesOf(draft))
-  return drafts
+  return drafts.map((draft) => Object.assign(draft, foldReindents(draft.hunks)))
 }
