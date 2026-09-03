@@ -390,6 +390,10 @@
   dir: ""
   intents:
     - commit-when-the-work-is-a-unit
+"@eliya-oss/agent-diff@0.1.0-alpha.176":
+  dir: ""
+  intents:
+    - a-held-comment-shows-in-the-diff
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
