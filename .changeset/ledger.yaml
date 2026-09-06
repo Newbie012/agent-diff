@@ -402,6 +402,10 @@
   dir: ""
   intents:
     - a-line-that-only-moved-sideways
+"@eliya-oss/agent-diff@0.1.0-alpha.179":
+  dir: ""
+  intents:
+    - a-line-that-only-changed-its-indentation
 "@eliya-oss/agent-diff@0.1.0-alpha.18":
   dir: ""
   intents:
