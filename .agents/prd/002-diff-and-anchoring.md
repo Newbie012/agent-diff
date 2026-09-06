@@ -94,12 +94,13 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
 - **A row that sits on no line on either side carries no line number.** The words above, the
   binary notice, the hidden-lines marker, and the no-newline notice are all of this kind.
 - **A removed row and an added row that read the same after their leading whitespace are a
-  [reindent](CONTEXT.md#reindent).** Pairs are made within one hunk, in order: the first removed
-  row that has a match takes the first added row still free with that text, and so on down the hunk.
-  A blank line is never paired, since it carries nothing that could have moved. A line that differs
-  in its trailing whitespace is not a reindent either: there the whitespace is the change, and it
-  must stay lit. Twenty-five lines wrapped in `startTransition(() => { … })` are twenty-five
-  reindents and two real additions, and the reviewer should have to read two lines, not fifty.
+  [reindent](CONTEXT.md#reindent), and become one context row.** Within each run of removed and
+  added rows, the two sides are matched on their text without leading whitespace, longest common
+  run first, and each match is one context row carrying the removed row's old line, the added row's
+  new line, and the added row's text. What is left unmatched stays removed or added, in order. The
+  patch's added and removed counts are taken after the fold. A line that differs in its trailing
+  whitespace is not a reindent: there the whitespace is the change, and it stays a change. A run so
+  large that matching it would cost more than a million comparisons is left as git gave it.
 - **Rendering a patch produces the display text and the row-to-line map in one pass.** These two
   must never be computed separately — a cursor that lands on a line the text does not have is the
   failure mode this rule exists to prevent.

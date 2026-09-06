@@ -32,10 +32,6 @@ export const palette = {
   removedBg: "#2e1418",
   addedGutter: "#1d4a2b",
   removedGutter: "#4a1f26",
-  reindentAddedBg: "#0e1c14",
-  reindentRemovedBg: "#1c1216",
-  reindentAddedGutter: "#16351f",
-  reindentRemovedGutter: "#33191e",
 
   pickedOn: "#2b3854",
   pickedOnAdded: "#22432f",
