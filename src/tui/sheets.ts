@@ -7,9 +7,19 @@ import { askedRows, cursorOnThread, threadHere } from "./notes.ts"
 import { standingOnDismissed, standingOnRemark } from "./notespane.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { lostCode, panelFile, REMARK_MARK, wherePart } from "./panelpane.ts"
-import { onLayers, type PreferenceRow, pullHere, selectedBranch, type TuiState, theirPull } from "./state.ts"
+import {
+  authorHere,
+  heldWhere,
+  onLayers,
+  type PreferenceRow,
+  pullHere,
+  selectedBranch,
+  type StagedComment,
+  type TuiState,
+  theirPull,
+} from "./state.ts"
 import { palette } from "./theme.ts"
-import { clip, wrapped } from "./words.ts"
+import { clip, counted, wrapped } from "./words.ts"
 import { askedThreads } from "./notes.ts"
 
 const PALETTE_KEY = 11
@@ -170,6 +180,71 @@ export const sheetText = (
   return new StyledText(drawn)
 }
 
+type NoteRow = {
+  readonly text: string
+  readonly note: number
+  readonly tone: "heading" | "code" | "body" | "gap"
+}
+
+const REWRITTEN_TAIL = " · rewritten by the agent"
+
+const NOTHING_HELD = "Before you send — nothing held for the author"
+
+export const sendingTitle = (state: TuiState): string => {
+  const many = state.held.length
+  if (many === 0) return NOTHING_HELD
+  return `Before you send — ${counted(many, "note")} to @${authorHere(state)}'s pull request`
+}
+
+const noteBlock = (note: StagedComment, at: number, room: number): ReadonlyArray<NoteRow> => {
+  const tail = note.rewritten === true ? REWRITTEN_TAIL : ""
+  const code = (note.snippet ?? "").split("\n").filter((line) => line.trim().length > 0)
+  return [
+    { text: clip(`${heldWhere(note)}${tail}`, room), note: at, tone: "heading" },
+    ...code.map((line): NoteRow => ({ text: clip(`│ ${line}`, room), note: at, tone: "code" })),
+    ...note.body
+      .split("\n")
+      .flatMap((line) => wrapped(line, room))
+      .map((text): NoteRow => ({ text, note: at, tone: "body" })),
+    { text: "", note: at, tone: "gap" },
+  ]
+}
+
+const sendingRows = (state: TuiState, room: number): ReadonlyArray<NoteRow> =>
+  state.held.flatMap((note, at) => noteBlock(note, at, room))
+
+const sendingTop = (rows: ReadonlyArray<NoteRow>, at: number, height: number): number => {
+  const first = rows.findIndex((row) => row.note === at)
+  const last = rows.findLastIndex((row) => row.note === at)
+  const wanted = Math.max(0, Math.min(first, last - height + 1))
+  return Math.max(0, Math.min(rows.length - height, wanted))
+}
+
+const TONES: Readonly<Record<NoteRow["tone"], string>> = {
+  heading: palette.accent,
+  code: palette.faint,
+  body: palette.ink,
+  gap: palette.ink,
+}
+
+const notePaint = (row: NoteRow, here: boolean, room: number): TextChunk => {
+  const mark = here ? marks().cursor : " "
+  const text = `${mark} ${row.text}`.padEnd(room)
+  return here ? bg(palette.selection)(fg(palette.ink)(`${text}\n`)) : fg(TONES[row.tone])(`${text}\n`)
+}
+
+export const sendingText = (
+  state: TuiState,
+  shown: { readonly height: number; readonly room: number },
+): StyledText => {
+  const rows = sendingRows(state, Math.max(1, shown.room - LIST_LEAD))
+  const top = sendingTop(rows, state.sendIndex, shown.height)
+  const drawn = rows
+    .slice(top, top + shown.height)
+    .map((row) => notePaint(row, row.tone === "heading" && row.note === state.sendIndex, shown.room))
+  return new StyledText(drawn)
+}
+
 export const askText = (state: TuiState, room: number): StyledText => {
   const listed = askedThreads(state).map((line) =>
     fg(palette.faint)(`${clip(`  ${line}`, room).padEnd(room)}\n`),
@@ -220,10 +295,11 @@ export const offeredIn = (state: TuiState): Offered => ({
   onSettled: threadHere(state)?.settled === true,
   onHeld: onHeldEntry(state),
   theirs: theirPull(state),
+  rewording: state.editing !== undefined,
 })
 
 const onHeldEntry = (state: TuiState): boolean =>
-  state.focus === "review" && panelEntry(state)?.section === "held"
+  state.screen === "sending" || (state.focus === "review" && panelEntry(state)?.section === "held")
 
 export const readerTitle = (state: TuiState, entry: PanelEntry): string => {
   if (entry.kind === "fold") return "The branch moved past these"

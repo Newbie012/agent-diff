@@ -23,7 +23,8 @@ export const NOTHING_WRITTEN = "nothing written yet"
 
 export const sentAway = (state: TuiState): TuiState => ({
   ...state,
-  screen: "review",
+  screen: state.returnTo === "sending" ? "sending" : "review",
+  selecting: false,
   draft: "",
   draftAt: "",
   replyTo: undefined,

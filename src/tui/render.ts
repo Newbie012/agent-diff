@@ -114,6 +114,8 @@ import {
   pickingTitle,
   readerText,
   readerTitle,
+  sendingText,
+  sendingTitle,
   settingsText,
   sheetDeep,
   sheetText,
@@ -212,6 +214,11 @@ export class Screen {
     readonly title: TextRenderable
     readonly choices: TextRenderable
   }
+  private readonly sending: {
+    readonly box: BoxRenderable
+    readonly title: TextRenderable
+    readonly choices: TextRenderable
+  }
   private readonly foundBox: FoundParts
 
   private readonly renderer: CliRenderer
@@ -268,6 +275,7 @@ export class Screen {
     this.keysLegend = modals.keys.legend
     this.baseBox = modals.bases
     this.reader = modals.reader
+    this.sending = modals.sending
     this.ask = modals.ask
     this.foundBox = modals.found
     this.assemble(renderer)
@@ -387,6 +395,7 @@ export class Screen {
 
   write(text: string): void {
     this.composeBody.setText(text)
+    this.composeBody.gotoBufferEnd()
   }
 
   writeOn(on: boolean): void {
@@ -463,6 +472,7 @@ export class Screen {
     this.paintSettings(state)
     this.paintBases(state)
     this.paintReader(state)
+    this.paintSending(state)
     this.paintAsk(state)
     this.paintFound(state)
     this.paintReport(state)
@@ -594,6 +604,26 @@ export class Screen {
     this.reader.box.width = room
     this.reader.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.reader.box.top = panelTop(this.renderer.height, PANEL_QUARTER)
+  }
+
+  private paintSending(state: TuiState): void {
+    this.sending.box.visible = state.screen === "sending"
+    if (state.screen !== "sending") {
+      this.sending.title.content = ""
+      this.sending.choices.content = ""
+      return
+    }
+    const room = this.renderer.width
+    const tall = Math.max(PALETTE_CHROME, this.renderer.height - 1)
+    this.sending.title.content = clip(sendingTitle(state), room - MODAL_ROOM)
+    this.sending.choices.content = sendingText(state, {
+      height: Math.max(1, tall - PALETTE_CHROME),
+      room: room - MODAL_ROOM,
+    })
+    this.sending.box.height = tall
+    this.sending.box.width = room
+    this.sending.box.left = 0
+    this.sending.box.top = 0
   }
 
   private paintKeys(state: TuiState): void {
@@ -811,6 +841,7 @@ export class Screen {
       this.keys,
       this.settings,
       this.reader.box,
+      this.sending.box,
       this.ask.box,
       this.baseBox.box,
     ])
@@ -1023,7 +1054,7 @@ export class Screen {
   }
 
   private draftFor(state: TuiState): Draft | undefined {
-    if (state.screen !== "compose") return undefined
+    if (state.screen !== "compose" || state.returnTo === "sending") return undefined
     if (this.diffRows() < DRAFT_ROOM) return undefined
     const place = draftPlace(state)
     if (place === undefined || this.view.screenRowOf(place.row) === undefined) return undefined

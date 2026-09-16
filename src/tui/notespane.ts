@@ -12,7 +12,7 @@ import {
   snippetOf,
   threadQuote,
 } from "./notes.ts"
-import { type StagedComment, theirPull, type TuiState } from "./state.ts"
+import { noteEditing, type StagedComment, theirPull, type TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip, wrapped } from "./words.ts"
 
@@ -39,7 +39,10 @@ const HOLDS = "hold it for the author"
 
 const ASKS = "send it to the agent"
 
+const SAVES = "save the note"
+
 export const composeSaid = (state: TuiState): string => {
+  if (state.editing !== undefined) return SAVES
   if (state.answerTo !== undefined) return REPLIES
   if (!theirPull(state)) return SENDS
   return state.reader === "author" ? HOLDS : ASKS
@@ -74,7 +77,14 @@ const draftQuote = (state: TuiState, room: number): ReadonlyArray<string> => {
   )
 }
 
+const editQuote = (state: TuiState, room: number): ReadonlyArray<string> =>
+  (noteEditing(state)?.snippet ?? "")
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => clip(`  ${line}`, room))
+
 export const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyArray<string> => {
+  if (state.editing !== undefined) return editQuote(state, room).slice(0, shownLines * 2)
   const redrafting = draftQuote(state, room)
   if (redrafting.length > 0) return redrafting.slice(0, shownLines * 2)
   const answering = remarkQuote(state, room)

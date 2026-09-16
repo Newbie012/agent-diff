@@ -157,7 +157,7 @@ const toAgent = (
       ...(about === undefined ? {} : { draft: about }),
     })
     const sent = yield* loadSent(app, branch.branch)
-    app.commit(withNotice(sentAway({ ...withSent(app.state, sent), about: undefined }), "sent to the agent"))
+    app.commit(withNoticeHere(sentAway({ ...withSent(app.state, sent), about: undefined }), "sent to the agent"))
   })
 }
 
@@ -256,6 +256,12 @@ export const sendComment = (app: Terminal): Work => {
   })
 }
 
+const stillListing = (state: TuiState): TuiState => {
+  if (state.screen !== "sending") return state
+  if (state.held.length === 0) return { ...state, screen: "review", returnTo: "review" }
+  return { ...state, sendIndex: Math.min(state.sendIndex, state.held.length - 1) }
+}
+
 export const dropHeld = (app: Terminal, at: number): Work => {
   return Effect.gen(function* () {
     const was = app.state.panelIndex
@@ -264,7 +270,9 @@ export const dropHeld = (app: Terminal, at: number): Work => {
     if (theirPull(app.state) && branch !== undefined && draft !== undefined) {
       yield* Effect.ignore(Draft.drop(yield* worktreeOf(app, branch.branch), draft))
       yield* loadHeld(app)
-      app.commit(withNotice(staying(app.state, was), "dropped, the author never saw it"))
+      const listed = stillListing(app.state)
+      const said = "dropped, the author never saw it"
+      app.commit(listed.screen === "sending" ? withNoticeHere(listed, said) : withNotice(staying(listed, was), said))
       return
     }
     const held = app.state.held.filter((_, index) => index !== at)
@@ -274,18 +282,20 @@ export const dropHeld = (app: Terminal, at: number): Work => {
 
 const unreadSaid = (unread: number): string =>
   unread === 1
-    ? "1 note rewritten by the agent is unread — open it in the review first"
-    : `${unread} notes rewritten by the agent are unread — open them in the review first`
+    ? "1 note rewritten by the agent is unread — stand on it to read it"
+    : `${unread} notes rewritten by the agent are unread — stand on each to read them`
 
 const keptSaid = (kept: number): string => `${counted(kept, "note")} kept`
 
-const dispatchDrafts = (app: Terminal): Work => {
+export const dispatchDrafts = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
+    yield* loadHeld(app)
     const unread = app.state.held.filter((one) => one.rewritten === true).length
     if (unread > 0) {
-      app.commit(withNotice(app.state, unreadSaid(unread)))
+      const said = unreadSaid(unread)
+      app.commit(app.state.screen === "sending" ? withNoticeHere(app.state, said) : withNotice(app.state, said))
       return
     }
     const worktree = yield* worktreeOf(app, branch.branch)
@@ -304,13 +314,12 @@ const dispatchDrafts = (app: Terminal): Work => {
       }),
     )
     yield* loadHeld(app)
-    app.commit(withNotice(app.state, said))
+    app.commit(withNotice({ ...app.state, returnTo: "review" }, said))
     yield* fetchRemarks(app)
   })
 }
 
 export const sendHeld = (app: Terminal): Work => {
-  if (theirPull(app.state)) return dispatchDrafts(app)
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     const [first, ...rest] = app.state.held
@@ -357,18 +366,25 @@ export const askForLayers = (app: Terminal): Work => {
   })
 }
 
+const heldChosen = (state: TuiState): StagedComment | undefined => {
+  if (state.screen === "sending") return state.held[state.sendIndex]
+  const entry = state.focus === "review" ? panelEntry(state) : undefined
+  return entry?.kind === "comment" && entry.section === "held" ? entry.comment : undefined
+}
+
 export const askAgent = (app: Terminal): Work => {
   return Effect.sync(() => {
-    const entry = app.state.focus === "review" ? panelEntry(app.state) : undefined
-    if (entry?.kind === "comment" && entry.section === "held" && entry.comment.id !== undefined) {
+    const chosen = heldChosen(app.state)
+    if (chosen?.id !== undefined) {
       app.commit({
         ...app.state,
         screen: "compose",
+        returnTo: app.state.screen,
         draft: "",
         draftAt: "",
         replyTo: undefined,
         reader: "agent",
-        about: entry.comment.id,
+        about: chosen.id,
       })
       return
     }

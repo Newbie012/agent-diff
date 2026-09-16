@@ -75,6 +75,7 @@ import {
 } from "./search.ts"
 import { copyDragged, copySelection } from "./selection.ts"
 import { expand, unfold, widen } from "./source.ts"
+import { movedInList, openSending, rewordDraft, rewordHeld, sendFromList } from "./sending.ts"
 import { removeHere, settleHere, settleWhatIsRead } from "./threads.ts"
 import { tookTheAnswer, vouch } from "./vouching.ts"
 import { contextToggled } from "./files.ts"
@@ -174,8 +175,12 @@ const EFFECTS: Effects = {
   "branch.open": openBranch,
   "branch.pull": showPull,
   "compose.open": compose,
-  "compose.submit": send,
-  "held.send": sendHeld,
+  "compose.submit": (app) => (app.state.editing === undefined ? send(app) : rewordDraft(app, app.state.editing)),
+  "held.send": (app) => (theirPull(app.state) ? openSending(app) : sendHeld(app)),
+  "send.next": (app) => movedInList(app, 1),
+  "send.prev": (app) => movedInList(app, -1),
+  "send.reword": rewordHeld,
+  "send.go": sendFromList,
   "agent.ask": askAgent,
   "palette.run": (app) => app.runChoice(),
   "comment.next": (app) => walkComments(app, 1),

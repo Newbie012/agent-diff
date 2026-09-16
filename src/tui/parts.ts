@@ -236,6 +236,7 @@ export const makeHome = (renderer: CliRenderer) => ({
 
 export const makeModals = (renderer: CliRenderer) => ({
   palette: makePaletteParts(renderer),
+  sending: makeSendingParts(renderer),
   found: makeFoundParts(renderer),
   keys: makeKeysParts(renderer),
   settings: makeSettingsParts(renderer),
@@ -268,6 +269,16 @@ const makeAskParts = (renderer: CliRenderer) => {
   const title = bar(renderer, "ask-title", palette.faint)
   const choices = makeChoices(renderer)
   box.id = "ask"
+  box.add(title)
+  box.add(choices)
+  return { box, title, choices }
+}
+
+const makeSendingParts = (renderer: CliRenderer) => {
+  const box = makePalette(renderer)
+  const title = bar(renderer, "sending-title", palette.faint)
+  const choices = makeChoices(renderer)
+  box.id = "sending"
   box.add(title)
   box.add(choices)
   return { box, title, choices }

@@ -2,7 +2,7 @@
 "@eliya-oss/agent-diff": patch
 ---
 
-feat(review): on a pull request somebody else opened, `c` holds a note for the author and `i` asks your agent, so a review of a stranger's change is drafted beside the code, talked through with the agent, and sent to the pull request as one review with `C`.
+feat(review): on a pull request somebody else opened, `c` holds a note for the author and `i` asks your agent, `C` lists every held note with its code and its text before anything goes, and `ctrl+s` there sends the lot to the pull request as one review.
 
 <details><summary>What was wrong</summary>
 

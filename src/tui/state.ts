@@ -67,6 +67,7 @@ export type ScreenName =
   | "editor"
   | "thread"
   | "settling"
+  | "sending"
 
 const HOLDS: Readonly<Record<string, keyof TuiState>> = {
   wrap: "wrap",
@@ -164,6 +165,8 @@ export type TuiState = {
   readonly theirs: Readonly<Record<string, string>>
   readonly reader: "agent" | "author"
   readonly about: string | undefined
+  readonly editing: string | undefined
+  readonly sendIndex: number
   readonly forge: ForgeAnswer
   readonly layerIndex: number
   readonly openLayers: ReadonlyArray<number>
@@ -204,6 +207,8 @@ const nothingReviewed = {
   theirs: {} as Readonly<Record<string, string>>,
   reader: "agent" as const,
   about: undefined as string | undefined,
+  editing: undefined as string | undefined,
+  sendIndex: 0,
   held: [] as ReadonlyArray<StagedComment>,
   arrived: [] as ReadonlyArray<StagedComment>,
   panelOpen: true,
@@ -301,6 +306,12 @@ export const authorHere = (state: TuiState): string =>
   state.theirs[selectedBranch(state)?.branch ?? ""] ?? ""
 
 export const theirPull = (state: TuiState): boolean => authorHere(state).length > 0
+
+export const heldWhere = (note: Pick<StagedComment, "file" | "start" | "end">): string =>
+  note.start === note.end ? `${note.file}:${note.end}` : `${note.file}:${note.start}-${note.end}`
+
+export const noteEditing = (state: TuiState): StagedComment | undefined =>
+  state.editing === undefined ? undefined : state.held.find((one) => one.id === state.editing)
 
 export const hasNoPull = (state: TuiState): boolean =>
   state.forge === "answered" && pullHere(state).length === 0

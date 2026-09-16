@@ -66,14 +66,18 @@ prose and never edits the code.
 Held notes sit under their line marked `held for the author`, and in the panel under `Held for the
 author`. `X` on one drops it. `i` on one asks the agent to redraft it: the box quotes the note, you say
 what you want changed, and the agent rewrites the draft. A draft the agent wrote or rewrote reads
-`rewritten by the agent, unread` until you open it in the panel with `return`, and `C` will not send while
-one is unread, so what goes out is always words you have read.
+`rewritten by the agent, unread` until you open it in the panel with `return` or stand on it in the list
+below, and nothing sends while one is unread, so what goes out is always words you have read.
 
-`C` sends every held note as one review on the pull request, and the footer says how many landed. A pull
-request that moved under you refuses the send and keeps the notes; so does a forge that cannot be reached.
-Drafts survive closing adiff, and `ctrl+c` says how many are waiting before it leaves. Only you send:
-the agent can list, add and rewrite drafts from the command line, and nothing it runs reaches the pull
-request.
+`C` opens the list before sending, titled `Before you send — 2 notes to @dana's pull request`. Every held
+note is there with its file and lines, the code it was written on, and its whole text, so nothing goes
+blind. `j`/`k` move between the notes, `e` rewords the one under the cursor with its text already in the
+box, `X` drops it, `i` asks the agent to redraft it, and `esc` returns to the diff with everything still
+held. `ctrl+s` sends every note as one review on the pull request, and the footer says how many landed. A
+pull request that moved under you refuses the send and keeps the notes; so does a forge that cannot be
+reached. Drafts survive closing adiff, and `ctrl+c` says how many are waiting before it leaves. Only you
+send: the agent can list, add and rewrite drafts from the command line, and nothing it runs reaches the
+pull request.
 
 ## Remove one with `X`
 

@@ -133,13 +133,17 @@ file ([PRD 011](011-preferences.md)), which this PRD reuses rather than redefine
   opens a box quoting that draft, and the comment the agent takes names the draft's id, so the
   agent rewrites that one and no other.
 
-- **A draft the agent wrote or rewrote reads as unread until the reviewer opens it.** The diff and
-  the review panel mark it, the footer counts it, and opening it in the panel clears the mark.
+- **A draft the agent wrote or rewrote reads as unread until the reviewer opens it.** The diff,
+  the review panel and the list before sending mark it `rewritten by the agent`, the footer counts
+  it, and opening it in the panel clears the mark. So does standing on it in the list: the whole
+  text is on screen there, so the note under the list cursor is read, the first one when the list
+  opens and each one the cursor reaches after.
 
 - **Sending from the terminal is refused while a draft is unread.** What is sent is what the
   reviewer last saw, so a rewrite the reviewer has not opened holds the whole send, and the refusal
-  says how many are waiting to be read. `draft send` from a shell is the reviewer typing the command
-  with the list in front of them, and is not refused.
+  says how many are waiting to be read. The list reads the drafts again before it sends, so a
+  rewrite that landed while the list was open is caught, marked, and refused too. `draft send` from
+  a shell is the reviewer typing the command with the list in front of them, and is not refused.
 
 - **Drafts survive the session; they do not survive being sent.** A review you slept on is the
   normal case and losing it to a closed terminal is unacceptable. Once dispatched, a draft becomes a
@@ -151,8 +155,19 @@ file ([PRD 011](011-preferences.md)), which this PRD reuses rather than redefine
 - **Leaving with drafts waiting says so and asks once.** The same shape as leaving with anything
   else unfinished, and it says the drafts are kept.
 
-- **One key sends everything held, as one review.** Not one request per comment. The author of the
-  pull request gets a single notification and a single conversation, which is what a review is.
+- **`C` opens the list before sending; nothing is sent blind.** On somebody else's pull request,
+  `C` opens a full-screen list of every held note: its file and line range, the lines the note was
+  written on, and its whole text. The title says how many and whose: `Before you send — 2 notes to
+  @dana's pull request`. From the list `j`/`k` move between the notes, `e` rewords the note under
+  the cursor in the compose box with its text already there, `X` drops it, `i` asks the agent to
+  redraft it, `ctrl+s` sends, and `esc` returns to the diff with every note still held. Rewording
+  and asking return to the list. The list is offered only while something is held; dropping the
+  last note returns to the diff.
+
+- **One key sends everything held, as one review.** `ctrl+s` in the list. Not one request per
+  comment. The author of the pull request gets a single notification and a single conversation,
+  which is what a review is. Own branches with the `hold` preference are not given the list yet:
+  there `C` still sends the held comments to the agent.
 
 - **Nothing is sent twice.** A dispatch that partly succeeded says which comments landed and keeps
   the rest. Pressing send again sends only what did not go. A comment counts as landed only when the
@@ -230,7 +245,12 @@ Covered as outcomes:
   request, and never reaches the forge.
 - Sending the held notes makes one review on the pull request and the footer says how many landed.
 - A draft the agent rewrote reads as rewritten until it is opened, and the send is refused while it
-  is.
+  is, even when the rewrite landed after the list before sending was opened.
+- `C` opens the list of every held note with its lines and its text, and nothing reaches the pull
+  request until `ctrl+s` there; `esc` leaves every note held.
+- From the list, `e` rewords the note under the cursor and what is sent is the new text, and `X`
+  drops it from the list and from the drafts.
+- Moving the list cursor onto a note the agent rewrote reads it.
 - Asking the agent to redraft hands the agent the draft's id.
 - Dropping a held note in the panel removes the draft.
 

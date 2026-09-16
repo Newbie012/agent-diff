@@ -99,9 +99,10 @@ describe("when the branch holds a pull request somebody else opened", () => {
     await driver.screen.writeComment("why first")
     await driver.screen.pressKeys(["j"])
     await driver.screen.writeComment("and second")
+    await driver.screen.pressKeys(["C"])
 
     // ACT
-    await driver.screen.pressKeys(["C"])
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     const posted = await driver.forge.posted()
@@ -158,15 +159,16 @@ describe("when the agent rewrote a held note the reviewer has not opened", () =>
     await driver.screen.pressKeys(["j"])
     await driver.screen.writeComment("why first")
     const [draft] = await drafts(driver, branch.name)
+    await driver.screen.pressKeys(["C"])
     await driver.app.rewroteDraft({ branch: branch.name, id: draft?.id ?? "", body: "Is first still needed?" })
-    await driver.screen.pressKeys(["r"])
-    await driver.screen.untilShown("Is first still needed?")
 
     // ACT
-    await driver.screen.pressKeys(["C"])
+    await driver.screen.pressCtrl("s")
 
     // ASSERT
     const frame = await driver.screen.getFrame()
+    expect(frame).toContain("Before you send — 1 note to @dana's pull request")
+    expect(frame).toContain("Is first still needed?")
     expect(frame).toContain("rewritten by the agent")
     expect(frame).toContain("1 note rewritten by the agent is unread")
     expect(await driver.forge.posted()).toBeUndefined()
