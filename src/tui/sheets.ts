@@ -205,7 +205,7 @@ export const offeredIn = (state: TuiState): Offered => ({
   comments: state.sent.length,
   held: state.held.length,
   layers: state.layers.length,
-  onThread: cursorOnThread(state),
+  onThread: cursorOnThread(state) && !onHeldEntry(state),
   onRemark: standingOnRemark(state),
   onDismissed: standingOnDismissed(state),
   selecting: state.selecting,
@@ -218,9 +218,12 @@ export const offeredIn = (state: TuiState): Offered => ({
   hidingSettled: state.hideSettled,
   onRemoved: threadHere(state)?.removed === true,
   onSettled: threadHere(state)?.settled === true,
-  onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
+  onHeld: onHeldEntry(state),
   theirs: theirPull(state),
 })
+
+const onHeldEntry = (state: TuiState): boolean =>
+  state.focus === "review" && panelEntry(state)?.section === "held"
 
 export const readerTitle = (state: TuiState, entry: PanelEntry): string => {
   if (entry.kind === "fold") return "The branch moved past these"

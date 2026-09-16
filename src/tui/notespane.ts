@@ -142,6 +142,7 @@ const notesOf = (
       takenAt: entry.takenAt,
       now: shown.now,
       waiting: waitingOf(entry, shown.author === true),
+      redrafts: entry.draft !== undefined,
     }))
 
 const remarksOf = (state: TuiState, path: string): ReadonlyArray<Note> =>

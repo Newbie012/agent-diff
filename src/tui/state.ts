@@ -23,6 +23,7 @@ export type StagedComment = {
   readonly takenAt?: string
   readonly remark?: string
   readonly rewritten?: boolean
+  readonly draft?: string
 }
 import { type Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"

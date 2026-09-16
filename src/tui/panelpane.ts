@@ -60,8 +60,10 @@ export const wherePart = (state: TuiState, entry: PanelEntry): string => {
     const known = state.patches.some((patch) => patch.path === entry.remark.file)
     return remarkWhere(entry.remark, known)
   }
-  const rewritten = entry.comment.rewritten === true ? " · rewritten by the agent" : ""
-  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}${rewritten}`
+  const tail = entry.comment.rewritten === true
+    ? " · rewritten by the agent"
+    : entry.comment.draft === undefined ? "" : " · asks to redraft"
+  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}${tail}`
 }
 
 export const panelFile = (entry: PanelEntry): string => {

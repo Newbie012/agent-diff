@@ -3,7 +3,7 @@ import { Effect, Option } from "effect"
 import { anchorFor } from "../domain/patch/index.ts"
 import type { Work } from "./needs.ts"
 import { allRevealed, openedAt, reduce, withNotice, withNoticeHere, withSent } from "./reduce.ts"
-import { openRemark, sendRemarkAnswer } from "./remarks.ts"
+import { fetchRemarks, openRemark, sendRemarkAnswer } from "./remarks.ts"
 import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { HELD_FOR_AUTHOR, holding, NOTHING_WRITTEN, sentAway } from "./drafts.ts"
@@ -290,7 +290,7 @@ const dispatchDrafts = (app: Terminal): Work => {
     }
     const worktree = yield* worktreeOf(app, branch.branch)
     const said = yield* Draft.dispatch(app.repo, worktree).pipe(
-      Effect.map((sent) => `sent ${counted(sent.sent, "note")} to the pull request`),
+      Effect.map((sent) => `sent ${counted(sent.sent, "note")} to the pull request — press p to read them there`),
       Effect.catchTags({
         PullMoved: () => Effect.succeed(`the pull request moved — read it again; ${keptSaid(app.state.held.length)}`),
         NothingDrafted: () => Effect.succeed("nothing held for the author"),
@@ -305,6 +305,7 @@ const dispatchDrafts = (app: Terminal): Work => {
     )
     yield* loadHeld(app)
     app.commit(withNotice(app.state, said))
+    yield* fetchRemarks(app)
   })
 }
 

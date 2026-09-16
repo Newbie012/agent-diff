@@ -127,6 +127,7 @@ const sentOf = (
     unread: Math.max(0, said.length - seen),
     asks: last?.voice === "agent" && last.asks,
     ...(takenAt === undefined ? {} : { takenAt }),
+    ...(comment.draft === undefined ? {} : { draft: comment.draft }),
     answers: said.map(bodyOf),
     turns: spun.map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn),
   }
