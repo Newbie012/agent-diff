@@ -80,6 +80,10 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   contents untouched.
 - **A submission is one line of JSON** carrying its id, timestamp, the HEAD it was written
   against, and its comments. Appending never rewrites what is there.
+- **A comment says when it was written on somebody else's pull request**, and which draft it asks
+  the agent to rewrite, and taking hands both through untouched. The agent reads the first as "do
+  not change this code" and the second as "edit that draft and no other"
+  ([PRD 012](012-reviewing-someone-elses-work.md)).
 - **Taking returns every comment that is still owed an answer**, oldest first, and keeps returning
   it until one exists. Taking with nothing owed returns an empty list and a zero exit. What taking
   writes is the time each comment was first picked up, which is how the review screen says a comment

@@ -9,7 +9,7 @@ import {
   type PanelSection,
   threadStand,
 } from "./panel.ts"
-import type { Clicked, TuiState } from "./state.ts"
+import { type Clicked, theirPull, type TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip } from "./words.ts"
 import type { ReportedRemark } from "../review/index.ts"
@@ -26,6 +26,9 @@ const PANEL_TITLES: Readonly<Record<PanelSection, string>> = {
   settled: "Settled",
   removed: "Removed",
 }
+
+const panelTitle = (state: TuiState, section: PanelSection): string =>
+  section === "held" && theirPull(state) ? "Held for the author" : PANEL_TITLES[section]
 
 const PANEL_ORDER = PANEL_SECTIONS
 
@@ -57,7 +60,10 @@ export const wherePart = (state: TuiState, entry: PanelEntry): string => {
     const known = state.patches.some((patch) => patch.path === entry.remark.file)
     return remarkWhere(entry.remark, known)
   }
-  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}`
+  const tail = entry.comment.rewritten === true
+    ? " · rewritten by the agent"
+    : entry.comment.draft === undefined ? "" : " · asks to redraft"
+  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}${tail}`
 }
 
 export const panelFile = (entry: PanelEntry): string => {
@@ -163,7 +169,7 @@ const panelSection = (
   const counted = panelHolds(state).filter((entry) => entry.section === section).length
   return [
     { text: "", tone: palette.faint },
-    { text: `${PANEL_TITLES[section]}  ${counted}`, tone: palette.faint },
+    { text: `${panelTitle(state, section)}  ${counted}`, tone: palette.faint },
     ...here.flatMap((one) => panelPair(state, one, room)),
   ]
 }

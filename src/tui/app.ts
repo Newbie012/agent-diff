@@ -60,7 +60,7 @@ import {
   setBaseHere,
   showPull,
 } from "./branches.ts"
-import { askForLayers, compose, replyHere, send, sendHeld } from "./comments.ts"
+import { askForLayers, compose, replyHere, send, sendHeld, askAgent } from "./comments.ts"
 import { chooseEditor, editorChosen, forgetEditor, openInEditor } from "./editor.ts"
 import { clicked, commitSynced, moveFile, rolled, stepped, walkComments } from "./moving.ts"
 import { acceptRemarkHere } from "./remarks.ts"
@@ -75,10 +75,11 @@ import {
 } from "./search.ts"
 import { copyDragged, copySelection } from "./selection.ts"
 import { expand, unfold, widen } from "./source.ts"
+import { movedInList, openSending, rewordDraft, rewordHeld, sendFromList } from "./sending.ts"
 import { removeHere, settleHere, settleWhatIsRead } from "./threads.ts"
 import { tookTheAnswer, vouch } from "./vouching.ts"
 import { contextToggled } from "./files.ts"
-import { initialState, onLayers, selectedPatch, type Spot, type TuiState } from "./state.ts"
+import { initialState, onLayers, selectedPatch, type Spot, type TuiState, theirPull } from "./state.ts"
 import { counted } from "./words.ts"
 import { Branch, type BranchReading, type BranchSummary, Preference } from "../review/index.ts"
 
@@ -95,10 +96,13 @@ const DRAIN_PASSES = 8
 
 const LEAVING_SAID = "press ctrl+c again to leave"
 
-const leavingSaid = (state: TuiState): string =>
-  state.held.length === 0
-    ? LEAVING_SAID
-    : `${counted(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
+const leavingSaid = (state: TuiState): string => {
+  if (state.held.length === 0) return LEAVING_SAID
+  if (theirPull(state)) {
+    return `${counted(state.held.length, "note")} to the author not sent — they are kept; press ctrl+c again to leave`
+  }
+  return `${counted(state.held.length, "comment")} never sent — press ctrl+c again to leave without them`
+}
 
 const clockOf = (elapsed: number): string => {
   const seconds = Math.floor(elapsed / 1000)
@@ -171,8 +175,13 @@ const EFFECTS: Effects = {
   "branch.open": openBranch,
   "branch.pull": showPull,
   "compose.open": compose,
-  "compose.submit": send,
-  "held.send": sendHeld,
+  "compose.submit": (app) => (app.state.editing === undefined ? send(app) : rewordDraft(app, app.state.editing)),
+  "held.send": (app) => (theirPull(app.state) ? openSending(app) : sendHeld(app)),
+  "send.next": (app) => movedInList(app, 1),
+  "send.prev": (app) => movedInList(app, -1),
+  "send.reword": rewordHeld,
+  "send.go": sendFromList,
+  "agent.ask": askAgent,
   "palette.run": (app) => app.runChoice(),
   "comment.next": (app) => walkComments(app, 1),
   "comment.prev": (app) => walkComments(app, -1),

@@ -64,8 +64,12 @@ export class Review implements AsyncDisposable {
         await this.driver.app.runLayersSet(this.worktree, held)
       },
       remarks: async (held) => {
-        await this.driver.forge.holds([{ branch: this.branch?.name ?? "", threads: held }])
+        const author = this.said.world.author
+        await this.driver.forge.holds([
+          { branch: this.branch?.name ?? "", threads: held, ...(author === undefined ? {} : { author }) },
+        ])
       },
+      author: async () => {},
       readsRemarks: async (held) => {
         if (held) await this.driver.app.runConfigSet("remarks", true)
       },

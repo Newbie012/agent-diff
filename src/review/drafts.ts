@@ -24,8 +24,18 @@ export type ReportedDraft = {
   readonly start: number
   readonly end: number
   readonly body: string
+  readonly snippet: string
   readonly at: string
   readonly wroteBy: "reviewer" | "agent"
+  readonly unread: boolean
+}
+
+type Seen = Readonly<Record<string, string>>
+
+const unreadIn = (draft: StoredDraft, seen: Seen): boolean => {
+  if (draft.wroteBy !== "agent") return false
+  const last = seen[draft.id]
+  return last === undefined || last < draft.at
 }
 
 export type Dispatched = {
@@ -34,20 +44,35 @@ export type Dispatched = {
   readonly held: number
 }
 
-const reported = (draft: StoredDraft): ReportedDraft => ({
+const reported = (draft: StoredDraft, seen: Seen): ReportedDraft => ({
   id: draft.id,
   file: draft.anchor.path,
   side: draft.anchor.side,
   start: draft.anchor.start,
   end: draft.anchor.end,
   body: draft.body,
+  snippet: draft.anchor.snippet,
   at: draft.at,
   wroteBy: draft.wroteBy,
+  unread: unreadIn(draft, seen),
 })
 
 export const list = Effect.fn("Review.Draft.list")(function* (worktree: Worktree) {
   const store = yield* Store
-  return (yield* store.drafts(worktree.path)).map(reported)
+  const seen = (yield* store.state(worktree.path)).seen
+  return (yield* store.drafts(worktree.path)).map((one) => reported(one, seen))
+})
+
+export const markSeen = Effect.fn("Review.Draft.markSeen")(function* (
+  worktree: Worktree,
+  id: string,
+  at: string,
+) {
+  const store = yield* Store
+  yield* store.changeState(worktree.path, (current) => ({
+    ...current,
+    seen: { ...current.seen, [id]: at },
+  }))
 })
 
 export const add = Effect.fn("Review.Draft.add")(function* (worktree: Worktree, request: DraftRequest) {
@@ -62,22 +87,25 @@ export const add = Effect.fn("Review.Draft.add")(function* (worktree: Worktree, 
     wroteBy: request.wroteBy,
   }
   yield* store.saveDrafts(worktree.path, [...held, one])
-  return reported(one)
+  return reported(one, {})
 })
 
-export const edit = Effect.fn("Review.Draft.edit")(function* (
-  worktree: Worktree,
-  id: string,
-  body: string,
-) {
+export type Rewrite = {
+  readonly id: string
+  readonly body: string
+  readonly at: string
+  readonly by: "reviewer" | "agent"
+}
+
+export const edit = Effect.fn("Review.Draft.edit")(function* (worktree: Worktree, rewrite: Rewrite) {
   const store = yield* Store
   const held = yield* store.drafts(worktree.path)
-  const found = held.find((one) => one.id === id)
-  if (found === undefined) return yield* new UnknownDraft({ id })
-  const said: StoredDraft = { ...found, body }
-  const next = held.map((one) => (one.id === id ? said : one))
+  const found = held.find((one) => one.id === rewrite.id)
+  if (found === undefined) return yield* new UnknownDraft({ id: rewrite.id })
+  const said: StoredDraft = { ...found, body: rewrite.body, at: rewrite.at, wroteBy: rewrite.by }
+  const next = held.map((one) => (one.id === rewrite.id ? said : one))
   yield* store.saveDrafts(worktree.path, next)
-  return reported(said)
+  return reported(said, (yield* store.state(worktree.path)).seen)
 })
 
 export const drop = Effect.fn("Review.Draft.drop")(function* (worktree: Worktree, id: string) {

@@ -4,7 +4,7 @@ import { filePlace, reviewedCount } from "./files.ts"
 import { FRAME_PAD, WHOLE_FILE } from "./layout.ts"
 import { marks } from "./marks.ts"
 import { clipMiddle } from "./notespane.ts"
-import { pullHere, selectedPatch, type TuiState } from "./state.ts"
+import { authorHere, pullHere, selectedPatch, type TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { waitingLabel } from "./treepane.ts"
 import { clip, wrapped } from "./words.ts"
@@ -124,11 +124,17 @@ const layersCell = (branch: TuiState["branches"][number]): string => {
 const baseLabel = (branch: TuiState["branches"][number]): string =>
   branch.basis === "default" ? "" : `on ${branch.base}`
 
+const whosePull = (state: TuiState, branch: string): string => {
+  const pull = state.pulls[branch] ?? ""
+  const author = state.theirs[branch]
+  return author === undefined || pull.length === 0 ? pull : `@${author}'s ${pull}`
+}
+
 export const stateCell = (state: TuiState, branch: TuiState["branches"][number]): string =>
   [
     branch.own ? "here" : "",
     baseLabel(branch),
-    state.pulls[branch.branch] ?? "",
+    whosePull(state, branch.branch),
     waitingLabel(branch).trim(),
   ]
     .filter((part) => part.length > 0)
@@ -149,6 +155,12 @@ const placeLabel = (state: TuiState): string => {
   return `file ${place.at} of ${place.of}`
 }
 
+const pullLabel = (state: TuiState): string => {
+  if (pullHere(state).length === 0) return ""
+  const whose = authorHere(state).length === 0 ? "" : `@${authorHere(state)}'s `
+  return `${whose}${pullHere(state)} pull request`
+}
+
 export const headerParts = (
   state: TuiState,
   branch: string,
@@ -158,7 +170,7 @@ export const headerParts = (
   branch,
   path,
   state.patches.length === 0 ? "nothing to read" : placeLabel(state),
-  pullHere(state).length === 0 ? "" : `${pullHere(state)} pull request`,
+  pullLabel(state),
   state.vouched.length === 0 ? "" : reviewedCount(state),
   contextLabel(state.context),
   state.layersStale ? "layers stale · L for a new one" : "",

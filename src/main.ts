@@ -138,11 +138,12 @@ const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
 })
 
 const draftEdit = Effect.fn("Main.draftEdit")(function* (options: Options) {
-  const draft = yield* Draft.edit(
-    yield* worktreeIn(options),
-    yield* required(options, "id"),
-    yield* required(options, "body"),
-  )
+  const draft = yield* Draft.edit(yield* worktreeIn(options), {
+    id: yield* required(options, "id"),
+    body: yield* required(options, "body"),
+    at: stamp(options),
+    by: "agent",
+  })
   yield* answer(options, { draft })
 })
 

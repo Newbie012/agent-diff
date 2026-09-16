@@ -4,7 +4,7 @@ import { anchorFor } from "../domain/patch/index.ts"
 import { lineOf, lineOnSide, rowsUnder, selectedRows, selectionRange } from "./cursor.ts"
 import { readIn } from "./files.ts"
 import { louderOf, panelEntry, threadChosen, threadStand } from "./panel.ts"
-import { type Asking, selectedPatch, type StagedComment, type TuiState } from "./state.ts"
+import { type Asking, heldWhere, noteEditing, selectedPatch, type StagedComment, theirPull, type TuiState } from "./state.ts"
 import { counted, wrapped } from "./words.ts"
 import type { ReportedLayer, ReportedRemark } from "../review/index.ts"
 
@@ -395,7 +395,15 @@ export const threadsInLayer = (
   return threadsOpenOn(state, fileIndex).filter((entry) => coveredBy(layer, patch.path, entry))
 }
 
-export const composeTarget = (state: TuiState): string => {
+const rewordTarget = (state: TuiState): string => {
+  const note = noteEditing(state)
+  return note === undefined ? "Reword the note" : `Reword the note on ${heldWhere(note)}`
+}
+
+export const composeTarget = (state: TuiState): string =>
+  state.editing === undefined ? anchoredTarget(state) : rewordTarget(state)
+
+const anchoredTarget = (state: TuiState): string => {
   const patch = selectedPatch(state)
   if (state.answerTo !== undefined) return answerTarget(state)
   if (state.replyTo !== undefined) return replyTarget(state)
@@ -406,5 +414,8 @@ export const composeTarget = (state: TuiState): string => {
     onNone: () => "",
     onSome: (found) => (found.start === found.end ? `${found.start}` : `${found.start}-${found.end}`),
   })
-  return span === "" ? `Comment on ${patch.path}` : `Comment on ${patch.path}:${span}`
+  const where = span === "" ? patch.path : `${patch.path}:${span}`
+  if (state.about !== undefined) return "Ask the agent to redraft the note"
+  if (!theirPull(state)) return `Comment on ${where}`
+  return state.reader === "author" ? `Note to the author on ${where}` : `Ask the agent about ${where}`
 }

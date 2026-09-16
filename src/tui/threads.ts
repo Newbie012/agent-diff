@@ -98,6 +98,7 @@ export const turningOver = (app: Terminal, branch: string, id: string, back: boo
 }
 
 export const heldUnderCursor = (app: Terminal): number => {
+  if (app.state.screen === "sending") return Math.min(app.state.sendIndex, app.state.held.length - 1)
   if (app.state.focus !== "review") return -1
   const entry = panelEntry(app.state)
   if (entry === undefined || entry.kind !== "comment" || entry.section !== "held") return -1

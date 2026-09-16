@@ -44,6 +44,7 @@ import {
   selectedPatch,
   type TuiState,
   withChosen,
+  theirPull,
 } from "./state.ts"
 
 const clamp = (value: number, low: number, high: number): number =>
@@ -491,6 +492,8 @@ const openCompose = (state: TuiState): TuiState => {
     draft: kept,
     draftAt: mark,
     replyTo: undefined,
+    about: undefined,
+    reader: theirPull(state) ? "author" : "agent",
     anchorRow: state.selecting ? state.anchorRow : state.cursor,
   }
 }
@@ -507,11 +510,23 @@ const BACK_FROM: Partial<Record<ScreenName, (state: TuiState) => TuiState>> = {
   keys: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   settings: (state) => ({ ...state, screen: state.returnTo }),
   thread: (state) => ({ ...state, screen: state.returnTo }),
-  compose: (state) => ({ ...state, screen: "review", replyTo: undefined }),
+  compose: (state) => ({
+    ...state,
+    screen: state.returnTo === "sending" ? "sending" : "review",
+    replyTo: undefined,
+    about: undefined,
+    editing: undefined,
+  }),
+  sending: (state) => ({ ...state, screen: "review", returnTo: "review" }),
   base: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   editor: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   settling: (state) => ({ ...state, screen: state.returnTo, asking: undefined }),
 }
+
+const movedInList = (state: TuiState, delta: number): TuiState => ({
+  ...state,
+  sendIndex: clamp(state.sendIndex + delta, 0, Math.max(0, state.held.length - 1)),
+})
 
 const goBack = (state: TuiState): TuiState =>
   BACK_FROM[state.screen]?.(state) ?? outOfDiff(state)
@@ -633,6 +648,11 @@ const transitions: Record<Action, (state: TuiState) => TuiState> = {
   "compose.open": openCompose,
   "compose.submit": (state) => state,
   "held.send": (state) => state,
+  "send.next": (state) => movedInList(state, 1),
+  "send.prev": (state) => movedInList(state, -1),
+  "send.reword": (state) => state,
+  "send.go": (state) => state,
+  "agent.ask": (state) => state,
   "thread.reply": (state) => state,
   "remark.accept": (state) => state,
   "focus.toggle": (state) => ({ ...state, focus: focusStepped(state, 1) }),
@@ -843,7 +863,8 @@ export const withLayers = (
 export const withPulls = (
   state: TuiState,
   pulls: Readonly<Record<string, string>>,
-): TuiState => ({ ...state, pulls, forge: "answered" })
+  theirs: Readonly<Record<string, string>>,
+): TuiState => ({ ...state, pulls, theirs, forge: "answered" })
 
 export const withSilentForge = (state: TuiState): TuiState => ({ ...state, forge: "silent" })
 

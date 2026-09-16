@@ -12,7 +12,7 @@ import {
   snippetOf,
   threadQuote,
 } from "./notes.ts"
-import type { StagedComment, TuiState } from "./state.ts"
+import { noteEditing, type StagedComment, theirPull, type TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip, wrapped } from "./words.ts"
 
@@ -35,6 +35,19 @@ export const SENDS = "send it"
 
 export const REPLIES = "reply on the pull request"
 
+const HOLDS = "hold it for the author"
+
+const ASKS = "send it to the agent"
+
+const SAVES = "save the note"
+
+export const composeSaid = (state: TuiState): string => {
+  if (state.editing !== undefined) return SAVES
+  if (state.answerTo !== undefined) return REPLIES
+  if (!theirPull(state)) return SENDS
+  return state.reader === "author" ? HOLDS : ASKS
+}
+
 export const actionsText = (said: string): StyledText =>
   t`${fg(palette.accent)("esc")} ${fg(palette.muted)("cancel")}     ${fg(palette.accent)("^s")} ${fg(palette.muted)(said)}`
 
@@ -56,7 +69,24 @@ export const laidOut = (lines: ReadonlyArray<string>, room: number): ReadonlyArr
 const stillThere = (sent: TuiState["sent"]): TuiState["sent"] =>
   sent.filter((one) => one.removed !== true)
 
+const draftQuote = (state: TuiState, room: number): ReadonlyArray<string> => {
+  const held = state.held.find((one) => one.id === state.about)
+  if (held === undefined) return []
+  return ["  the note held for the author:", ...held.body.split("\n").map((line) => `  ${line}`)].map(
+    (line) => clip(line, room),
+  )
+}
+
+const editQuote = (state: TuiState, room: number): ReadonlyArray<string> =>
+  (noteEditing(state)?.snippet ?? "")
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => clip(`  ${line}`, room))
+
 export const quotedFor = (state: TuiState, shownLines: number, room: number): ReadonlyArray<string> => {
+  if (state.editing !== undefined) return editQuote(state, room).slice(0, shownLines * 2)
+  const redrafting = draftQuote(state, room)
+  if (redrafting.length > 0) return redrafting.slice(0, shownLines * 2)
   const answering = remarkQuote(state, room)
   if (answering.length > 0) {
     return answering.slice(0, shownLines * 2).map((line) => clip(line, room))
@@ -90,11 +120,16 @@ export const clipPath = (label: string, room: number): string => {
   return kept.length === 0 ? clipHead(label, room) : `…/${kept.join("/")}`
 }
 
+const waitingOf = (entry: StagedComment, author: boolean): Note["waiting"] => {
+  if (entry.rewritten === true) return "rewritten"
+  return author ? "author" : undefined
+}
+
 const notesOf = (
   comments: ReadonlyArray<StagedComment>,
   path: string,
   sent: boolean,
-  shown: { readonly opened: ReadonlyArray<string>; readonly now: number } = {
+  shown: { readonly opened: ReadonlyArray<string>; readonly now: number; readonly author?: boolean } = {
     opened: [],
     now: Date.now(),
   },
@@ -116,6 +151,8 @@ const notesOf = (
       turns: entry.turns ?? [],
       takenAt: entry.takenAt,
       now: shown.now,
+      waiting: waitingOf(entry, shown.author === true),
+      redrafts: entry.draft !== undefined,
     }))
 
 const remarksOf = (state: TuiState, path: string): ReadonlyArray<Note> =>
@@ -144,7 +181,7 @@ const remarksOf = (state: TuiState, path: string): ReadonlyArray<Note> =>
 
 export const notesFor = (state: TuiState, path: string): ReadonlyArray<Note> => [
   ...notesOf(stillThere(state.sent), path, true, { opened: state.opened, now: state.now }),
-  ...notesOf(state.held, path, false, { opened: state.opened, now: state.now }),
+  ...notesOf(state.held, path, false, { opened: state.opened, now: state.now, author: theirPull(state) }),
   ...remarksOf(state, path),
 ]
 

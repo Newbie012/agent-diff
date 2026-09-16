@@ -68,8 +68,13 @@ export type Action =
   | "select.swap"
   | "compose.open"
   | "compose.submit"
+  | "agent.ask"
   | "palette.open"
   | "held.send"
+  | "send.next"
+  | "send.prev"
+  | "send.reword"
+  | "send.go"
   | "settings.open"
   | "settings.next"
   | "settings.prev"
@@ -104,6 +109,7 @@ export type Command = {
   readonly whenReviewed: boolean
   readonly whenPull: boolean
   readonly whenHeld: boolean
+  readonly whenTheirs: boolean
   readonly panes: ReadonlyArray<Pane>
   readonly rank: number
 }
@@ -128,8 +134,10 @@ export type Offered = {
   readonly onRemoved: boolean
   readonly onSettled: boolean
   readonly onHeld: boolean
+  readonly theirs: boolean
   readonly onRemark: boolean
   readonly onDismissed: boolean
+  readonly rewording: boolean
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -148,6 +156,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenReviewed: false,
   whenPull: false,
   whenHeld: false,
+  whenTheirs: false,
   panes: EVERY_PANE,
   rank: 0,
   ...input,
@@ -756,6 +765,18 @@ export const commands: ReadonlyArray<Command> = [
     rank: 3,
   }),
   command({
+    action: "agent.ask",
+    also: ["ask", "agent", "question", "redraft"],
+    panes: ["diff", "review"],
+    category: "Comments",
+    title: "Ask the agent about the selection, or to redraft the note here",
+    keys: ["i"],
+    screens: ["review"],
+    hint: "ask your agent",
+    whenTheirs: true,
+    rank: 3,
+  }),
+  command({
     action: "held.send",
     also: ["send", "dispatch", "flush", "send everything"],
     panes: ["diff", "tree", "review"],
@@ -766,6 +787,63 @@ export const commands: ReadonlyArray<Command> = [
     hint: "send",
     whenHeld: true,
     rank: 1,
+  }),
+  command({
+    action: "send.next",
+    title: "Next note",
+    category: "Comments",
+    keys: ["down", "j"],
+    screens: ["sending"],
+    hint: "move",
+    listed: false,
+  }),
+  command({
+    action: "send.prev",
+    title: "Previous note",
+    category: "Comments",
+    keys: ["up", "k"],
+    screens: ["sending"],
+    listed: false,
+  }),
+  command({
+    action: "send.reword",
+    title: "Reword the note under the cursor",
+    category: "Comments",
+    keys: ["e"],
+    screens: ["sending"],
+    hint: "reword",
+    rank: 1,
+    listed: false,
+  }),
+  command({
+    action: "thread.remove",
+    title: "Drop the note under the cursor",
+    category: "Comments",
+    keys: ["X"],
+    screens: ["sending"],
+    hint: "drop",
+    rank: 2,
+    listed: false,
+  }),
+  command({
+    action: "agent.ask",
+    title: "Ask the agent to redraft the note under the cursor",
+    category: "Comments",
+    keys: ["i"],
+    screens: ["sending"],
+    hint: "ask your agent",
+    rank: 3,
+    listed: false,
+  }),
+  command({
+    action: "send.go",
+    title: "Send every note as one review",
+    category: "Comments",
+    keys: ["ctrl+s"],
+    screens: ["sending"],
+    hint: "send",
+    rank: 4,
+    listed: false,
   }),
   command({
     action: "report.open",
@@ -797,7 +875,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Find a command",
     category: "App",
     keys: ["ctrl+p"],
-    screens: ["review"],
+    screens: ["review", "sending"],
     listed: false,
   }),
   command({
@@ -865,7 +943,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "List every key",
     category: "App",
     keys: ["?"],
-    screens: ["branches", "review", "search"],
+    screens: ["branches", "review", "search", "sending"],
     hint: "keys",
     rank: 5,
     listed: false,
@@ -891,7 +969,7 @@ export const commands: ReadonlyArray<Command> = [
     title: "Go back",
     category: "App",
     keys: ["escape", "q"],
-    screens: ["review", "compose", "palette", "report", "search", "keys", "thread"],
+    screens: ["review", "compose", "palette", "report", "search", "keys", "thread", "sending"],
     hint: "back",
     listed: false,
     rank: 9,
@@ -968,7 +1046,12 @@ const SWAPPED: Readonly<Record<string, (offered: Offered) => string>> = {
   "panel.winnow": (offered) => (offered.hidingSettled ? "show settled" : "hide settled"),
   "thread.remove": (offered) => heldOrRemoved(offered),
   "thread.settle": (offered) => (offered.onSettled ? "unsettle" : "settle"),
-  "held.send": (offered) => `send ${offered.held}`,
+  "held.send": (offered) =>
+    offered.theirs ? `send ${offered.held} to the pull request` : `send ${offered.held}`,
+  "send.go": (offered) => `send ${offered.held} to the pull request`,
+  "compose.submit": (offered) => (offered.rewording ? "save the note" : "send"),
+  "compose.open": (offered) => (offered.theirs ? "note to the author" : "comment"),
+  "agent.ask": (offered) => (offered.onHeld ? "ask your agent to redraft" : "ask your agent"),
 }
 
 const hintOf = (entry: Command, offered: Offered): string => {
@@ -993,6 +1076,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
     .filter((entry) => !entry.whenPull || offered.pull)
     .filter((entry) => !entry.whenHeld || offered.held > 0)
+    .filter((entry) => !entry.whenTheirs || offered.theirs)
     .filter((entry) => entry.panes.includes(offered.pane))
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({

@@ -44,6 +44,8 @@ export type Note = {
   }>
   readonly takenAt: string | undefined
   readonly now?: number
+  readonly waiting?: "author" | "rewritten" | undefined
+  readonly redrafts?: boolean | undefined
 }
 
 type Placed = { readonly text: string; readonly row: number; readonly stop: number }
@@ -789,19 +791,33 @@ const remarkHead = (note: Note, from: string): string =>
 
 const HELD_HEAD = "waiting to be sent"
 
+const redraftAsked = (note: Note): boolean =>
+  note.redrafts === true && note.answers.length === 0 && !note.settled
+
+const openHead = (note: Note): string => {
+  if (redraftAsked(note)) return `${marks().sent} sent · asks the agent to redraft the note held here`
+  return note.takenAt === undefined
+    ? `${marks().sent} sent`
+    : `${marks().waiting} picked up ${agoText(note.takenAt, note.now)}`
+}
+
 const commentHead = (note: Note): string => {
   const moved = note.stale ? ", the branch moved on" : ""
   if (note.settled) return `${marks().done} settled${moved}`
   if (note.asks) return `${marks().asked} asked back${moved}`
   if (note.turns.at(-1)?.voice === "reviewer") return `${marks().waiting} replied${moved}`
   if (note.answers.length > 0) return `${marks().answered} answered${moved}`
-  if (note.takenAt === undefined) return `${marks().sent} sent${moved}`
-  return `${marks().waiting} picked up ${agoText(note.takenAt, note.now)}${moved}`
+  return `${openHead(note)}${moved}`
+}
+
+const heldHead = (note: Note): string => {
+  if (note.waiting === "rewritten") return "rewritten by the agent, unread"
+  return note.waiting === "author" ? "held for the author" : HELD_HEAD
 }
 
 const headOf = (note: Note): string => {
   if (note.from !== undefined) return remarkHead(note, note.from)
-  return note.sent ? commentHead(note) : `${marks().filed} ${HELD_HEAD}`
+  return note.sent ? commentHead(note) : `${marks().filed} ${heldHead(note)}`
 }
 
 const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {

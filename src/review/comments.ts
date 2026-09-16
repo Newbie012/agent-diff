@@ -23,6 +23,8 @@ export type CommentRequest = {
   readonly id: string
   readonly at: string
   readonly remark?: string | undefined
+  readonly theirs?: boolean | undefined
+  readonly draft?: string | undefined
 }
 
 export type ReplyRequest = {
@@ -51,6 +53,8 @@ export type PendingComment = {
   readonly replyTo?: string | undefined
   readonly layer?: string | undefined
   readonly thread?: ReadonlyArray<Turn> | undefined
+  readonly theirs?: boolean | undefined
+  readonly draft?: string | undefined
 }
 
 export type Written = readonly [CommentRequest, ...ReadonlyArray<CommentRequest>]
@@ -123,6 +127,7 @@ const sentOf = (
     unread: Math.max(0, said.length - seen),
     asks: last?.voice === "agent" && last.asks,
     ...(takenAt === undefined ? {} : { takenAt }),
+    ...(comment.draft === undefined ? {} : { draft: comment.draft }),
     answers: said.map(bodyOf),
     turns: spun.map((turn) => ({ voice: turn.voice, body: turn.body }) satisfies Turn),
   }
@@ -224,6 +229,8 @@ const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =
       snippet: comment.anchor.snippet,
       body: comment.body,
       replyTo: comment.replyTo,
+      ...(comment.theirs === true ? { theirs: true } : {}),
+      ...(comment.draft === undefined ? {} : { draft: comment.draft }),
     })),
   )
 
@@ -266,6 +273,8 @@ export const submitMany = Effect.fn("Review.Comment.submitMany")(function* (
       anchor: anchored,
       body: request.body,
       ...(request.remark === undefined ? {} : { remark: request.remark }),
+      ...(request.theirs === true ? { theirs: true } : {}),
+      ...(request.draft === undefined ? {} : { draft: request.draft }),
     }
   })
   const anchored = yield* Effect.forEach(requests, anchoring)

@@ -15,7 +15,7 @@ export type { AnswerRequest, Thread as ReportedThread, ThreadAnswer, ThreadTurn 
 export type { AcceptRequest, Remark as ReportedRemark, RemarkState } from "./remarks.ts"
 export type { ProgressReport, VouchReport } from "./vouching.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
-export type { Dispatched, DraftRequest, ReportedDraft } from "./drafts.ts"
+export type { Dispatched, DraftRequest, ReportedDraft, Rewrite } from "./drafts.ts"
 export type { Match, Searched } from "./search.ts"
 export {
   MalformedLayers,
