@@ -31,8 +31,9 @@ than you meant.
 ## The pull request line
 
 The pull requests come from `gh`. With it installed and authenticated, each branch's own pull request
-sits in `STATE`. Without it, a line under the list reads "could not reach the forge, so no pull request
-is shown", and everything else works.
+sits in `STATE`, and a pull request somebody else opened carries their handle: `@dana's open`. Without
+`gh`, a line under the list reads "could not reach the forge, so no pull request is shown", and
+everything else works. Reviewing somebody else's pull request is covered under [Comments](Comments).
 
 `gh` is what [Remarks](Remarks) needs too, and nothing else in adiff asks for it.
 

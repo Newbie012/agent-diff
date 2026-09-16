@@ -7,7 +7,7 @@ import { askedRows, cursorOnThread, threadHere } from "./notes.ts"
 import { standingOnDismissed, standingOnRemark } from "./notespane.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { lostCode, panelFile, REMARK_MARK, wherePart } from "./panelpane.ts"
-import { onLayers, type PreferenceRow, pullHere, selectedBranch, type TuiState } from "./state.ts"
+import { onLayers, type PreferenceRow, pullHere, selectedBranch, type TuiState, theirPull } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip, wrapped } from "./words.ts"
 import { askedThreads } from "./notes.ts"
@@ -219,6 +219,7 @@ export const offeredIn = (state: TuiState): Offered => ({
   onRemoved: threadHere(state)?.removed === true,
   onSettled: threadHere(state)?.settled === true,
   onHeld: state.focus === "review" && panelEntry(state)?.section === "held",
+  theirs: theirPull(state),
 })
 
 export const readerTitle = (state: TuiState, entry: PanelEntry): string => {

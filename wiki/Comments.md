@@ -45,6 +45,36 @@ and `C` sends the lot as one review.
 
 Held comments live only in this session. `ctrl+c` says how many were never sent before it leaves.
 
+## On somebody else's pull request
+
+When the branch holds a pull request you did not open, the header says whose it is: `@dana's open pull
+request`. Check the pull request out into a worktree with `gh pr checkout` and it appears in the branch
+list like any branch, with the author's handle in `STATE`.
+
+On that branch a note has one of two readers, and each has its own key:
+
+| Key | Who reads it | What happens |
+| --- | --- | --- |
+| `c` | The author | The note is held as a draft. Nothing reaches GitHub until you send. |
+| `i` | Your agent | The note goes at once, as a comment, and the agent answers it by id. |
+
+The box says which one you are in. Its title reads `Note to the author on src/api.ts:12` or `Ask the
+agent about src/api.ts:12`, and the actions row reads `hold it for the author` or `send it to the agent`.
+A note to the agent tells the agent it came from a stranger's pull request, so the agent answers in
+prose and never edits the code.
+
+Held notes sit under their line marked `held for the author`, and in the panel under `Held for the
+author`. `X` on one drops it. `i` on one asks the agent to redraft it: the box quotes the note, you say
+what you want changed, and the agent rewrites the draft. A draft the agent wrote or rewrote reads
+`rewritten by the agent, unread` until you open it in the panel with `return`, and `C` will not send while
+one is unread, so what goes out is always words you have read.
+
+`C` sends every held note as one review on the pull request, and the footer says how many landed. A pull
+request that moved under you refuses the send and keeps the notes; so does a forge that cannot be reached.
+Drafts survive closing adiff, and `ctrl+c` says how many are waiting before it leaves. Only you send:
+the agent can list, add and rewrite drafts from the command line, and nothing it runs reaches the pull
+request.
+
 ## Remove one with `X`
 
 `X` removes the comment the cursor is on, and a second press puts it back. A removed comment leaves the

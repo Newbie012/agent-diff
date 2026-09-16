@@ -146,8 +146,9 @@ a `suggestion` naming the fix.
 
 ## Drafts on a pull request
 
-When you are reading somebody else's pull request rather than an agent's branch, a comment is a draft of
-what you will say on that pull request. Nothing reaches GitHub until you send it.
+When you are reading somebody else's pull request rather than an agent's branch, a note to the author is
+a draft of what you will say on that pull request. Nothing reaches GitHub until you send it.
+[Comments](Comments) covers the keys; these are the commands underneath.
 
     adiff draft list --repo . --branch their-change
     adiff draft add  --repo . --branch their-change --file src/api.ts --start 40 --end 52 --body "…"
@@ -155,9 +156,13 @@ what you will say on that pull request. Nothing reaches GitHub until you send it
     adiff draft drop --repo . --branch their-change --id d1
     adiff draft send --repo . --branch their-change
 
-`draft add` anchors the same way `comment send` does. `draft send` posts every held comment to the pull
-request as one review, under your name, and only you run it. An agent helping you draft writes the
-wording and lists the drafts back; it never sends. Where GitHub confirms some of the comments and says
+`draft add` anchors the same way `comment send` does, and `--id` for `edit` and `drop` is the one `list`
+reports. `draft list` also says whether each draft is `unread`, meaning the agent wrote or rewrote it
+and you have not opened it in the review. `draft send` posts every held comment to the pull request as
+one review, under your name, and only you run it. An agent helping you draft writes the wording and
+lists the drafts back; it never sends. A comment you write to the agent from such a branch carries
+`theirs`, and one that asks for a rewrite carries the `draft` id, so `comment take` tells the agent
+which is which. Where GitHub confirms some of the comments and says
 nothing about the rest, adiff reports `PartlySent`: what it confirmed is on the pull request, what it did
 not is still held, and running the same send again sends only those.
 

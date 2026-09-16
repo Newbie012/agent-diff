@@ -22,6 +22,7 @@ export type StagedComment = {
   readonly unread?: number
   readonly takenAt?: string
   readonly remark?: string
+  readonly rewritten?: boolean
 }
 import { type Patch } from "../domain/patch/index.ts"
 import { shownOf, type Reveal } from "./gaps.ts"
@@ -159,6 +160,9 @@ export type TuiState = {
   readonly layersStale: boolean
   readonly summary: string
   readonly pulls: Readonly<Record<string, string>>
+  readonly theirs: Readonly<Record<string, string>>
+  readonly reader: "agent" | "author"
+  readonly about: string | undefined
   readonly forge: ForgeAnswer
   readonly layerIndex: number
   readonly openLayers: ReadonlyArray<number>
@@ -196,6 +200,9 @@ export type TuiState = {
 }
 
 const nothingReviewed = {
+  theirs: {} as Readonly<Record<string, string>>,
+  reader: "agent" as const,
+  about: undefined as string | undefined,
   held: [] as ReadonlyArray<StagedComment>,
   arrived: [] as ReadonlyArray<StagedComment>,
   panelOpen: true,
@@ -288,6 +295,11 @@ export const selectedPatch = (state: TuiState): Patch | undefined => shownOf(sta
 
 export const pullHere = (state: TuiState): string =>
   state.pulls[selectedBranch(state)?.branch ?? ""] ?? ""
+
+export const authorHere = (state: TuiState): string =>
+  state.theirs[selectedBranch(state)?.branch ?? ""] ?? ""
+
+export const theirPull = (state: TuiState): boolean => authorHere(state).length > 0
 
 export const hasNoPull = (state: TuiState): boolean =>
   state.forge === "answered" && pullHere(state).length === 0

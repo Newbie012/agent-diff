@@ -108,7 +108,9 @@ store's location and the `ADIFF_ROOT` override belong to
 
 - **Comments are held only if the reviewer asked for that.** The default is what adiff does today:
   a comment goes the moment it is written. With holding on, writing a comment puts it in a set that
-  has not gone anywhere, the review says how many are waiting, and one key sends them all.
+  has not gone anywhere, the review says how many are waiting, and one key sends them all. On
+  somebody else's pull request the preference governs nothing: a note to the author is held always
+  and a note to the agent goes at once ([PRD 012](012-reviewing-someone-elses-work.md)).
 
 - **A held comment is not a sent comment.** It has no id an agent could answer, it is not in the
   inbox, and nothing about delivery changes when the set is sent — it is the same submission the

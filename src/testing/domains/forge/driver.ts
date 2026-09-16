@@ -21,6 +21,7 @@ export type ThreadOnForge = {
 
 export type PullOnForge = {
   readonly branch: string
+  readonly author?: string
   readonly number?: number
   readonly head?: string
   readonly url?: string
@@ -33,6 +34,7 @@ export type Landing = {
 }
 
 export type ForgeOptions = {
+  readonly viewer?: string
   readonly remarksOn?: boolean
   readonly threadsSlowMs?: number
   readonly threadsRaw?: string
@@ -180,11 +182,14 @@ const graphqlBranch = (
   "fi",
 ]
 
-const pullBranch = (pulls: ReadonlyArray<PullOnForge>): ReadonlyArray<string> => {
+const VIEWER = "reviewer"
+
+const pullBranch = (pulls: ReadonlyArray<PullOnForge>, viewer: string): ReadonlyArray<string> => {
   const rows = pulls.map((pull) => ({
     headRefName: pull.branch,
     state: "OPEN",
     isDraft: false,
+    author: { login: pull.author ?? viewer, is_bot: false },
   }))
   const named = Object.fromEntries(
     pulls.map((pull, at) => [
@@ -197,6 +202,10 @@ const pullBranch = (pulls: ReadonlyArray<PullOnForge>): ReadonlyArray<string> =>
     ]),
   )
   return [
+    'if [ "$1" = "api" ] && [ "$2" = "user" ]; then',
+    `printf '%s' ${quoted(JSON.stringify({ login: viewer }))}`,
+    "exit 0",
+    "fi",
     'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then',
     `cat <<'JSON'`,
     JSON.stringify(rows),
@@ -223,7 +232,7 @@ const scriptFor = (
   return [
     "#!/bin/sh",
     `printf '%s\\n' "$*" >> "${asked}"`,
-    ...pullBranch(pulls),
+    ...pullBranch(pulls, options.viewer ?? VIEWER),
     ...graphqlBranch(pulls, options),
     'if [ "$1" = "api" ]; then',
     "body=$(cat)",
@@ -270,7 +279,7 @@ export class ForgeTestDriver {
     if (options.refuses === true || options.threadsRaw !== undefined) {
       this.state.tracer.cannotReplay("a forge that answers oddly")
     } else {
-      this.state.tracer.sawForge(pulls[0]?.threads ?? [], reads)
+      this.state.tracer.sawForge(pulls[0]?.threads ?? [], reads, pulls[0]?.author)
     }
     const bin = join(this.state.workspace, "bin")
     await mkdir(bin, { recursive: true })

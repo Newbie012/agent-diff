@@ -46,6 +46,13 @@ A git worktree and the ticket branch checked out in it. The unit of review. adif
 
 An anchored note written by the reviewer, belonging to one [branch](#branch).
 
+### Draft
+
+A note to the author of somebody else's pull request, held on the reviewer's machine until every
+draft on the [branch](#branch) is sent as one review. It has no id an [agent](#agent) answers. The
+agent may write or rewrite one; only the reviewer sends. The text being typed in the compose box is
+not a draft, it is the text.
+
 ### Remark
 
 An anchored remark on the [branch](#branch)'s pull request, read from the forge rather than written

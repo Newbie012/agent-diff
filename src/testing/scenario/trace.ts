@@ -30,6 +30,7 @@ export type Trace = {
     readonly layers?: LayersInput
     readonly remarks?: ReadonlyArray<ThreadOnForge>
     readonly readsRemarks?: boolean
+    readonly author?: string
   }
   readonly seat: Seat
   readonly changes?: ReadonlyArray<Change>
@@ -44,11 +45,19 @@ const NAMED: Readonly<Record<string, string>> = {
   RETURN: "enter",
   ESCAPE: "escape",
   TAB: "tab",
+  tab: "tab",
   "shift+tab": "shift-tab",
   UP: "up",
   DOWN: "down",
   LEFT: "left",
   RIGHT: "right",
+  up: "up",
+  down: "down",
+  left: "left",
+  right: "right",
+  escape: "escape",
+  return: "enter",
+  backspace: "backspace",
 }
 
 export const asTermctrl = (key: string): string => {
@@ -102,8 +111,8 @@ export class Tracer {
     this.world = { ...this.world, layers }
   }
 
-  sawForge(remarks: ReadonlyArray<ThreadOnForge>, readsRemarks: boolean): void {
-    this.world = { ...this.world, remarks, readsRemarks }
+  sawForge(remarks: ReadonlyArray<ThreadOnForge>, readsRemarks: boolean, author?: string): void {
+    this.world = { ...this.world, remarks, readsRemarks, ...(author === undefined ? {} : { author }) }
   }
 
   sawSeat(seat: Seat): void {

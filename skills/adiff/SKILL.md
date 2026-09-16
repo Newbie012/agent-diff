@@ -301,11 +301,21 @@ first of the next.
 
 ## Helping draft a review of somebody else's pull request
 
-Sometimes the reviewer is not reading your work — they are reading a stranger's pull request and
-want you to think it through with them before they say anything on it. There, a comment is not an
-instruction to you. It is a draft of what the reviewer will say, in the reviewer's name.
+Sometimes the reviewer is not reading your work — they are reading a stranger's pull request,
+checked out into this worktree, and want you to think it through with them before they say anything
+on it. You learn that from the comment itself: a comment written on somebody else's pull request
+carries `"theirs": true`. Read it before anything else you do with the comment.
 
-Comments on a pull request are **held**. Nothing reaches the forge until the reviewer sends them.
+```json
+{"id":"c7","file":"src/retry.ts","start":40,"end":52,"snippet":"…","body":"is this retry loop safe?","theirs":true}
+```
+
+On such a branch the code is not yours to change. **Never edit, commit or push.** A comment that
+reads like a fix request is a point the reviewer wants made to the author: answer it with
+`comment answer`, in prose, and put the wording the author should read in a draft. A comment with
+no `theirs` is your own work, and the rest of this skill applies.
+
+A note to the author is **held** as a draft. Nothing reaches the forge until the reviewer sends it.
 
 ```bash
 adiff draft list --repo . --branch their-change
@@ -315,11 +325,24 @@ adiff draft drop --repo . --branch their-change --id d1
 ```
 
 `draft add` anchors the same way `comment send` does, so `--side old` is the version being replaced.
+The `id` you pass to `draft edit` and `draft drop` is the one `draft list` reports.
+
+A comment can ask you to rewrite one draft in particular. It carries `"draft": "<id>"` beside
+`theirs`, and its body is the instruction:
+
+```json
+{"id":"c8","body":"shorter, and less sure","theirs":true,"draft":"4f1c…"}
+```
+
+Rewrite that draft with `draft edit`, then answer the comment by its id, saying what you changed. A
+draft you wrote or rewrote reads as unread in the review until the reviewer opens it, and the review
+will not send while one is unread, so say you rewrote it rather than leaving the reviewer to notice.
 
 Rules for drafting on somebody else's behalf:
 
-- **You never send.** `draft send` exists and it is the reviewer's, not yours. The reviewer signs
-  the review, so the reviewer sends it.
+- **You never write to the pull request.** `draft send`, `remark reply` and `remark accept` all do,
+  and every one is the reviewer's, not yours. The reviewer signs the review, so the reviewer sends
+  it. Anything that must reach the pull request goes through a draft.
 - **Write what the reviewer meant, not what you would say.** They told you the point; your job is
   the wording. If you are not sure what the point is, ask rather than inventing one.
 - **One draft per point.** A held comment that covers three things cannot be dropped in part.

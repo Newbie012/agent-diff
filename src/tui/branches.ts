@@ -25,8 +25,9 @@ import { loadSource } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
 import { refHere, sourceLineAt } from "./cursor.ts"
 import { answersSince } from "./notes.ts"
-import { hasNoPull, pullHere, selectedBranch, selectedPatch, type TuiState } from "./state.ts"
-import { Branch, Comment, Layers, Remark, type ReportedRemark, Vouch } from "../review/index.ts"
+import { hasNoPull, pullHere, selectedBranch, selectedPatch, theirPull, type TuiState } from "./state.ts"
+import { Branch, Comment, Draft, Layers, Remark, type ReportedRemark, Vouch } from "../review/index.ts"
+import { heldOf } from "./drafts.ts"
 import { worktreeOf } from "./reading.ts"
 import { loadSent } from "./reading.ts"
 
@@ -71,7 +72,7 @@ export const readBranch = (app: Terminal, name: string): Work<TuiState> => {
     const reading = yield* Branch.reading(app.repo, name, app.base)
     app.reading = reading
     yield* Branch.markOpened(reading.worktree, new Date().toISOString())
-    const [progress, layers, sent, remarks] = yield* Effect.all(
+    const [progress, layers, sent, remarks, drafts] = yield* Effect.all(
       [
         Vouch.progress(reading),
         Layers.read(reading),
@@ -79,11 +80,13 @@ export const readBranch = (app: Terminal, name: string): Work<TuiState> => {
         app.state.remarksOn
           ? Remark.list(reading)
           : Effect.succeed([] as ReadonlyArray<ReportedRemark>),
+        Draft.list(reading.worktree),
       ],
       { concurrency: "unbounded" },
     )
     const opened = withVouched(withPatches(app.state, reading.patches), progress.vouched)
-    return withRemarks(withLayers(withSent(opened, sent), layers), remarks)
+    const held = drafts.length > 0 || theirPull(app.state) ? heldOf(drafts) : app.state.held
+    return withRemarks(withLayers(withSent({ ...opened, held }, sent), layers), remarks)
   })
 }
 
@@ -147,9 +150,23 @@ export const loadPulls = (app: Terminal): Work => {
       Option.match(answered, {
         onNone: () => withSilentForge(app.state),
         onSome: (pulls) =>
-          withPulls(app.state, Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state]))),
+          withPulls(
+            app.state,
+            Object.fromEntries(pulls.map((pull) => [pull.branch, pull.state])),
+            Object.fromEntries(pulls.filter((pull) => pull.theirs).map((pull) => [pull.branch, pull.author])),
+          ),
       }),
     )
+    if (app.state.screen !== "branches" && theirPull(app.state)) yield* loadHeld(app)
+  })
+}
+
+export const loadHeld = (app: Terminal): Work => {
+  return Effect.gen(function* () {
+    const branch = selectedBranch(app.state)
+    if (branch === undefined) return
+    const drafts = yield* Draft.list(yield* worktreeOf(app, branch.branch))
+    app.commit({ ...app.state, held: heldOf(drafts) })
   })
 }
 

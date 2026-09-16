@@ -8,8 +8,9 @@ export type WorldHands = {
 const ORDER: { readonly [K in keyof Required<World>]: number } = {
   branch: 0,
   remarks: 1,
-  readsRemarks: 2,
-  layers: 3,
+  author: 2,
+  readsRemarks: 3,
+  layers: 4,
 }
 
 const parts = (): ReadonlyArray<keyof World> =>

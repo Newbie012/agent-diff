@@ -7,6 +7,8 @@ export type PullState = "open" | "draft" | "merged" | "closed"
 export type Pull = {
   readonly branch: string
   readonly state: PullState
+  readonly author: string
+  readonly theirs: boolean
 }
 
 export type ForgeComment = {
@@ -70,13 +72,23 @@ const LIMIT = "200"
 const TIMEOUT_MS = 4000
 const SEND_TIMEOUT_MS = 20_000
 const MOST_OUTPUT = 4 * 1024 * 1024
-const FIELDS = "headRefName,state,isDraft"
+const FIELDS = "headRefName,state,isDraft,author"
+
+const Author = Schema.Struct({
+  login: Schema.String,
+  is_bot: Schema.optionalKey(Schema.Boolean),
+})
 
 const Row = Schema.Struct({
   headRefName: Schema.String,
   state: Schema.String,
   isDraft: Schema.Boolean,
+  author: Schema.optionalKey(Author),
 })
+
+const Viewer = Schema.Struct({ login: Schema.String })
+
+const readViewer = Schema.decodeUnknownEffect(Viewer)
 
 const decode = Schema.decodeUnknownEffect(Schema.Array(Row))
 
@@ -128,7 +140,18 @@ const show = (repo: string, branch: string): Effect.Effect<void, ForgeUnavailabl
     return ended(child)
   })
 
-const read = Effect.fn("Forge.read")(function* (repo: string, raw: string) {
+const whoseOf = (row: typeof Row.Type, viewer: string): Pick<Pull, "author" | "theirs"> => {
+  const author = row.author?.login ?? ""
+  const bot = row.author?.is_bot === true
+  return { author, theirs: bot || (author.length > 0 && author !== viewer) }
+}
+
+const pullOf = (row: typeof Row.Type, viewer: string): Pull => {
+  const whose = whoseOf(row, viewer)
+  return { branch: row.headRefName, state: stateOf(row), author: whose.author, theirs: whose.theirs }
+}
+
+const read = Effect.fn("Forge.read")(function* (repo: string, raw: string, viewer: string) {
   const parsed = yield* Effect.try({
     try: () => JSON.parse(raw) as unknown,
     catch: (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
@@ -137,12 +160,25 @@ const read = Effect.fn("Forge.read")(function* (repo: string, raw: string) {
     decode(parsed),
     (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
   )
-  return rows.map((row) => ({ branch: row.headRefName, state: stateOf(row) }))
+  return rows.map((row) => pullOf(row, viewer))
+})
+
+const viewerOf = Effect.fn("Forge.viewer")(function* (repo: string) {
+  const raw = yield* gh(repo, ["api", "user"])
+  const parsed = yield* Effect.try({
+    try: () => JSON.parse(raw) as unknown,
+    catch: (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
+  })
+  const who = yield* Effect.mapError(
+    readViewer(parsed),
+    (cause) => new ForgeUnavailable({ repo, reason: String(cause) }),
+  )
+  return who.login
 })
 
 const pulls = Effect.fn("Forge.pulls")(function* (repo: string) {
-  const raw = yield* ask(repo)
-  return yield* read(repo, raw)
+  const [raw, viewer] = yield* Effect.all([ask(repo), viewerOf(repo)], { concurrency: 2 })
+  return yield* read(repo, raw, viewer)
 })
 
 const openPull = Effect.fn("Forge.openPull")(function* (repo: string, branch: string) {
@@ -175,9 +211,7 @@ const gh = (
         resume(Effect.fail(new ForgeUnavailable({ repo, reason: said })))
       },
     )
-    if (input !== undefined) {
-      child.stdin?.end(input)
-    }
+    child.stdin?.end(input ?? "")
     return ended(child)
   })
 

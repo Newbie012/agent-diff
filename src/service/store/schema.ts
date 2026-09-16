@@ -17,6 +17,8 @@ export const StoredComment = Schema.Struct({
   body: Schema.String,
   replyTo: Schema.optionalKey(Schema.String),
   remark: Schema.optionalKey(Schema.String),
+  theirs: Schema.optionalKey(Schema.Boolean),
+  draft: Schema.optionalKey(Schema.String),
 })
 
 export const StoredDraft = Schema.Struct({
@@ -64,6 +66,7 @@ export const BranchState = Schema.Struct({
   base: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(""))),
   read: Counts.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
   dismissed: Stamps.pipe(noStamps),
+  seen: Stamps.pipe(noStamps),
 })
 
 const StoredSaid = Schema.Struct({

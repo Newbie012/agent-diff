@@ -68,6 +68,7 @@ export type Action =
   | "select.swap"
   | "compose.open"
   | "compose.submit"
+  | "agent.ask"
   | "palette.open"
   | "held.send"
   | "settings.open"
@@ -104,6 +105,7 @@ export type Command = {
   readonly whenReviewed: boolean
   readonly whenPull: boolean
   readonly whenHeld: boolean
+  readonly whenTheirs: boolean
   readonly panes: ReadonlyArray<Pane>
   readonly rank: number
 }
@@ -128,6 +130,7 @@ export type Offered = {
   readonly onRemoved: boolean
   readonly onSettled: boolean
   readonly onHeld: boolean
+  readonly theirs: boolean
   readonly onRemark: boolean
   readonly onDismissed: boolean
 }
@@ -148,6 +151,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenReviewed: false,
   whenPull: false,
   whenHeld: false,
+  whenTheirs: false,
   panes: EVERY_PANE,
   rank: 0,
   ...input,
@@ -756,6 +760,18 @@ export const commands: ReadonlyArray<Command> = [
     rank: 3,
   }),
   command({
+    action: "agent.ask",
+    also: ["ask", "agent", "question", "redraft"],
+    panes: ["diff", "review"],
+    category: "Comments",
+    title: "Ask the agent about the selection, or to redraft the note here",
+    keys: ["i"],
+    screens: ["review"],
+    hint: "ask the agent",
+    whenTheirs: true,
+    rank: 3,
+  }),
+  command({
     action: "held.send",
     also: ["send", "dispatch", "flush", "send everything"],
     panes: ["diff", "tree", "review"],
@@ -968,7 +984,10 @@ const SWAPPED: Readonly<Record<string, (offered: Offered) => string>> = {
   "panel.winnow": (offered) => (offered.hidingSettled ? "show settled" : "hide settled"),
   "thread.remove": (offered) => heldOrRemoved(offered),
   "thread.settle": (offered) => (offered.onSettled ? "unsettle" : "settle"),
-  "held.send": (offered) => `send ${offered.held}`,
+  "held.send": (offered) =>
+    offered.theirs ? `send ${offered.held} to the pull request` : `send ${offered.held}`,
+  "compose.open": (offered) => (offered.theirs ? "note to the author" : "comment"),
+  "agent.ask": (offered) => (offered.onHeld ? "ask the agent to redraft" : "ask the agent"),
 }
 
 const hintOf = (entry: Command, offered: Offered): string => {
@@ -993,6 +1012,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenReviewed || offered.reviewed > 0)
     .filter((entry) => !entry.whenPull || offered.pull)
     .filter((entry) => !entry.whenHeld || offered.held > 0)
+    .filter((entry) => !entry.whenTheirs || offered.theirs)
     .filter((entry) => entry.panes.includes(offered.pane))
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({

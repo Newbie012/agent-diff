@@ -65,25 +65,46 @@ const threadsFor = (threads: ReadonlyArray<ThreadOnForge>): string =>
     },
   })
 
-const forgeFor = (space: Workspace, threads: ReadonlyArray<ThreadOnForge>): string => {
+const VIEWER = "reviewer"
+
+const ECHOES =
+  "const asked = JSON.parse(process.argv[1]); process.stdout.write(JSON.stringify(asked.in_reply_to === undefined ? { comments: asked.comments.map((one) => ({ path: one.path, line: one.line })) } : { id: 90210 }))"
+
+const headOf = (worktree: string | undefined): string =>
+  worktree === undefined
+    ? "headcommit"
+    : execFileSync("git", ["rev-parse", "HEAD"], { cwd: worktree, encoding: "utf8" }).trim()
+
+const forgeFor = (space: Workspace, threads: ReadonlyArray<ThreadOnForge>, author?: string): string => {
   const bin = join(space.root, "bin")
   mkdirSync(bin, { recursive: true })
   const branch = space.branches[0]?.name ?? "review"
+  const head = headOf(space.branches[0]?.worktree)
+  const row = { headRefName: branch, state: "OPEN", isDraft: false, author: { login: author ?? VIEWER } }
   const lines =
-    threads.length === 0
+    threads.length === 0 && author === undefined
       ? ["#!/bin/sh", "printf '[]'"]
       : [
           "#!/bin/sh",
+          'if [ "$1" = "api" ] && [ "$2" = "user" ]; then',
+          `printf '%s' '${JSON.stringify({ login: VIEWER })}'`,
+          "exit 0",
+          "fi",
           'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then',
-          `printf '%s' '${JSON.stringify([{ headRefName: branch, state: "OPEN", isDraft: false }])}'`,
+          `printf '%s' '${JSON.stringify([row])}'`,
           "exit 0",
           "fi",
           'if [ "$1" = "pr" ] && [ "$2" = "view" ]; then',
-          `printf '%s' '${JSON.stringify({ number: 1, headRefOid: "headcommit", url: "https://forge.test/one/two/pull/1" })}'`,
+          `printf '%s' '${JSON.stringify({ number: 1, headRefOid: head, url: "https://forge.test/one/two/pull/1" })}'`,
           "exit 0",
           "fi",
           'if [ "$1" = "repo" ]; then',
           "printf '%s' 'one/two'",
+          "exit 0",
+          "fi",
+          'if [ "$1" = "api" ] && [ "$2" = "--method" ]; then',
+          "body=$(cat)",
+          `node -e '${ECHOES}' "$body"`,
           "exit 0",
           "fi",
           'if [ "$1" = "api" ]; then',
@@ -133,7 +154,10 @@ export const builtWorld = async (
       })
     },
     remarks: async (threads) => {
-      bin = forgeFor(mustHaveSpace(space), threads)
+      bin = forgeFor(mustHaveSpace(space), threads, held.world.author)
+    },
+    author: async (author) => {
+      bin = forgeFor(mustHaveSpace(space), held.world.remarks ?? [], author)
     },
     readsRemarks: async (on) => {
       if (on) remarksOn(mustHaveSpace(space))

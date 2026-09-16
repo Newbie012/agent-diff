@@ -22,6 +22,7 @@ export type Seat = {
 export type World = {
   readonly branch: Partial<BranchTestModel>
   readonly remarks?: ReadonlyArray<ThreadOnForge>
+  readonly author?: string
   readonly readsRemarks?: boolean
   readonly layers?: LayersInput
 }

@@ -44,6 +44,7 @@ export type Note = {
   }>
   readonly takenAt: string | undefined
   readonly now?: number
+  readonly waiting?: "author" | "rewritten" | undefined
 }
 
 type Placed = { readonly text: string; readonly row: number; readonly stop: number }
@@ -799,9 +800,14 @@ const commentHead = (note: Note): string => {
   return `${marks().waiting} picked up ${agoText(note.takenAt, note.now)}${moved}`
 }
 
+const heldHead = (note: Note): string => {
+  if (note.waiting === "rewritten") return "rewritten by the agent, unread"
+  return note.waiting === "author" ? "held for the author" : HELD_HEAD
+}
+
 const headOf = (note: Note): string => {
   if (note.from !== undefined) return remarkHead(note, note.from)
-  return note.sent ? commentHead(note) : `${marks().filed} ${HELD_HEAD}`
+  return note.sent ? commentHead(note) : `${marks().filed} ${heldHead(note)}`
 }
 
 const spokenLines = (body: string, room: number, mark: string): ReadonlyArray<string> => {

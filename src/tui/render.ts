@@ -68,8 +68,6 @@ import {
   DRAFT_PAD,
   DRAFT_ROOM,
   NOTE_ROOM_MIN,
-  REPLIES,
-  SENDS,
   SNIPPET_LINES,
   actionsText,
   clipMiddle,
@@ -78,6 +76,7 @@ import {
   laidOut,
   notesFor,
   quotedFor,
+  composeSaid,
   reportActions,
 } from "./notespane.ts"
 import { pickPaint } from "./paint.ts"
@@ -1055,7 +1054,7 @@ export class Screen {
     this.composeQuoted.content = ""
     this.composeQuoted.height = 0
     this.fitBody(state, this.draftRoom(), draft.rows - DRAFT_HEAD - COMPOSE_ACTION_ROWS)
-    this.composeActions.content = actionsText(state.answerTo === undefined ? SENDS : REPLIES)
+    this.composeActions.content = actionsText(composeSaid(state))
     this.compose.height = draft.rows - DRAFT_HEAD
     this.compose.width = this.draftRoom()
     this.compose.left = this.view.saidLeft()
@@ -1115,7 +1114,7 @@ export class Screen {
     const spare =
       this.renderer.height - quoted.length - 1 - COMPOSE_ACTION_ROWS - COMPOSE_CHROME - COMPOSE_EDGE
     const written = this.fitBody(state, room.text, Math.max(1, spare))
-    this.composeActions.content = actionsText(state.answerTo === undefined ? SENDS : REPLIES)
+    this.composeActions.content = actionsText(composeSaid(state))
     const height = quoted.length + 1 + written + COMPOSE_ACTION_ROWS + COMPOSE_CHROME
     this.compose.height = height
     this.compose.width = room.box

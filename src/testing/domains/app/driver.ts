@@ -39,6 +39,7 @@ export type PullInput = {
   readonly branch: string
   readonly state: "open" | "merged" | "closed"
   readonly draft?: boolean
+  readonly author?: string
 }
 
 export type CommentOptions = {
@@ -85,6 +86,26 @@ export class AppTestDriver {
     }
   }
 
+  async rewroteDraft(options: {
+    readonly branch: string
+    readonly id: string
+    readonly body: string
+  }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a draft rewritten from the command line")
+    return this.run([
+      "draft",
+      "edit",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+      "--body",
+      options.body,
+    ])
+  }
+
   private runWith(args: ReadonlyArray<string>, input: string): Promise<CliResult> {
     const env = {
       ...process.env,
@@ -118,6 +139,7 @@ export class AppTestDriver {
       headRefName: pull.branch,
       state: pull.state.toUpperCase(),
       isDraft: pull.draft === true,
+      author: { login: pull.author ?? "reviewer", is_bot: false },
     }))
     const named = pulls.map((pull, at) => ({
       branch: pull.branch,
@@ -134,6 +156,10 @@ export class AppTestDriver {
       delayMs > 0 ? `sleep ${(delayMs / 1000).toFixed(2)}` : "",
       'if [ "$1" = "repo" ]; then',
       "printf '%s\\n' 'someone/their-repo'",
+      "exit 0",
+      "fi",
+      'if [ "$1" = "api" ] && [ "$2" = "user" ]; then',
+      `printf '%s' '{"login":"reviewer"}'`,
       "exit 0",
       "fi",
       'if [ "$1" = "api" ]; then',
