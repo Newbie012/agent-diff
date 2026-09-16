@@ -211,7 +211,9 @@ const gh = (
         resume(Effect.fail(new ForgeUnavailable({ repo, reason: said })))
       },
     )
-    child.stdin?.end(input ?? "")
+    child.stdin?.on("error", () => undefined)
+    if (input === undefined) child.stdin?.end()
+    else child.stdin?.end(input)
     return ended(child)
   })
 
