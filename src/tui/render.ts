@@ -621,9 +621,9 @@ export class Screen {
       this.reader.choices.content = ""
       return
     }
-    const room = boxWidth(this.renderer.width)
+    const room = panelWidth(this.renderer.width)
     this.reader.title.content = titleText({ title: readerTitle(state, entry), count: "" }, room - MODAL_ROOM)
-    this.reader.choices.content = readerText(entry, room - MODAL_PAD * 2)
+    this.reader.choices.content = readerText(entry, room - MODAL_ROOM)
     this.reader.box.height = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
       voicesOf(entry).length + lostCode(entry).length + PLAIN_CHROME + 8,

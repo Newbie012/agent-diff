@@ -364,21 +364,16 @@ export const voicesOf = (entry: PanelEntry): ReadonlyArray<string> => {
 }
 
 export const readerText = (entry: PanelEntry, room: number): StyledText => {
-  const wide = Math.max(1, room - LIST_LEAD)
-  const named = entry.kind === "fold" ? [] : [...wrapped(panelFile(entry), wide), ""]
-  const said = voicesOf(entry).flatMap((line) => wrapped(line, wide))
+  const named = entry.kind === "fold" ? [] : [...wrapped(panelFile(entry), room), ""]
+  const said = voicesOf(entry).flatMap((line) => wrapped(line, room))
   const code = lostCode(entry)
   const quoted =
     code.length === 0
       ? []
       : ["", "the code it was written on", ...code.map((line) => `│ ${line.trim()}`)]
-  const rows = [...named, ...said, ...quoted].flatMap((line) => wrapped(line, wide))
+  const rows = [...named, ...said, ...quoted].flatMap((line) => wrapped(line, room))
   return new StyledText(
-    rows.map((line) =>
-      fg(line.startsWith("│") ? palette.faint : palette.ink)(
-        `${`${" ".repeat(LIST_LEAD)}${line}`.padEnd(room)}\n`,
-      ),
-    ),
+    rows.map((line) => fg(line.startsWith("│") ? palette.faint : palette.ink)(`${line.padEnd(room)}\n`)),
   )
 }
 
