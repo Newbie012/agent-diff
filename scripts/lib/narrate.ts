@@ -20,10 +20,7 @@ export type Seat = { readonly cols: number; readonly rows: number }
 
 export type Narration = {
   readonly seat: Seat
-  readonly asks: string
-  readonly proves: string
   readonly beats: ReadonlyArray<Beat>
-  readonly lead: number
 }
 
 const FONTS = [
@@ -184,44 +181,16 @@ const checkCard = (
   }
 }
 
-const titleCard = (
-  said: Narration,
-  wide: number,
-  tall: number,
-): ReadonlyArray<Drawn> => {
-  const size = Math.round(tall / 20)
-  const small = Math.round(tall / 38)
-  const when = `lt(t,${said.lead})`
-  return [
-    box({ y: 0, height: tall, wide }, "0x05070a@0.94", when),
-    text(
-      { said: said.asks, size: small, colour: "0x8b95a7", y: Math.round(tall / 2 - size * 1.5), centred: true },
-      when,
-    ),
-    text(
-      { said: said.proves, size, colour: "0xffffff", y: Math.round(tall / 2 - size * 0.2), centred: true },
-      when,
-    ),
-  ]
-}
-
-const shiftedBy = (beat: Beat, lead: number): Beat =>
-  beat.where === undefined
-    ? { kind: beat.kind, does: beat.does, from: beat.from + lead, to: beat.to + lead }
-    : { kind: beat.kind, does: beat.does, from: beat.from + lead, to: beat.to + lead, where: beat.where }
-
 export const narrate = (raw: string, out: string, said: Narration): void => {
   const { wide, tall } = sizeOf(raw)
-  const shifted = said.beats.map((beat) => shiftedBy(beat, said.lead))
   const strip = stripOf(tall)
-  const spoken = shifted.map((beat) =>
+  const spoken = said.beats.map((beat) =>
     beat.kind === "check"
       ? checkCard(beat, said.seat, wide, tall)
       : { screen: [] as ReadonlyArray<string>, strip: beat.kind === "key" ? keyCap(beat, wide, tall) : stepBand(beat, wide, tall) },
   )
   const filters = [
     `pad=${wide}:${tall + strip}:0:0:color=0x05070a`,
-    ...titleCard(said, wide, tall + strip).map((one) => one.filter),
     ...spoken.flatMap((held) =>
       held.screen.concat(inStrip(held.strip, tall, strip).map((one) => one.filter)),
     ),
@@ -232,7 +201,7 @@ export const narrate = (raw: string, out: string, said: Narration): void => {
       "-y",
       "-loglevel", "error",
       "-i", raw,
-      "-vf", `tpad=start_duration=${said.lead}:start_mode=clone,${filters.join(",")}`,
+      "-vf", filters.join(","),
       "-c:v", "libx264",
       "-pix_fmt", "yuv420p",
       out,

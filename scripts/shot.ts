@@ -253,14 +253,7 @@ const filmAt = (root: string, name: string): string => {
     return mark.where === undefined ? held : { ...held, where: mark.where }
   }
   const beats = marks.map(beatOf)
-  const at = chosen.test.lastIndexOf(" > ")
-  narrate(raw, out, {
-    seat: { cols, rows },
-    asks: at === -1 ? chosen.test : chosen.test.slice(0, at),
-    proves: at === -1 ? "" : chosen.test.slice(at + 3),
-    beats,
-    lead: 2.5,
-  })
+  narrate(raw, out, { seat: { cols, rows }, beats })
   rmSync(tape, { force: true })
   rmSync(plan, { force: true })
   rmSync(raw, { force: true })
