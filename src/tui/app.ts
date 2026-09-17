@@ -61,7 +61,14 @@ import {
   showPull,
 } from "./branches.ts"
 import { askForLayers, compose, replyHere, send, sendHeld, askAgent } from "./comments.ts"
-import { chooseEditor, editorChosen, forgetEditor, openInEditor } from "./editor.ts"
+import {
+  chooseEditor,
+  editorChosen,
+  flipPreference,
+  forgetEditor,
+  openInEditor,
+  openPreferences,
+} from "./editor.ts"
 import { clicked, commitSynced, moveFile, rolled, stepped, walkComments } from "./moving.ts"
 import { acceptRemarkHere } from "./remarks.ts"
 import { sendReport } from "./reporting.ts"
@@ -208,6 +215,8 @@ const EFFECTS: Effects = {
   "base.clear": (app) => (app.state.screen === "editor" ? forgetEditor(app) : clearBaseHere(app)),
   "line.open": openInEditor,
   "editor.open": chooseEditor,
+  "settings.open": openPreferences,
+  "settings.flip": flipPreference,
   back: goBack,
   "report.send": sendReport,
   "context.more": (app) => expand(app, 1),
@@ -473,7 +482,7 @@ export class App implements Terminal {
   }
 
   private askedBack(text: string): void {
-    const clean = legible(text).replaceAll("\n", " ")
+    const clean = text.includes("\n") ? legible(text).replaceAll("\n", " ").trim() : legible(text)
     if (clean !== text) {
       this.screen.askWith(clean)
       return

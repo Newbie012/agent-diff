@@ -49,7 +49,7 @@ describe("when a reviewer types a name into the search box at their own pace", (
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(driver.screen.grepsRun()).toBe(0)
-    expect(frame).toContain("Look for something")
+    expect(frame).toContain("Search")
     expect(frame.split("\n").some((row) => /^\s*│\s+s\s*│/.test(row) || row.includes(" s "))).toBe(
       true,
     )

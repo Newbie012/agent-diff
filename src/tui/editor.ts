@@ -5,7 +5,7 @@ import { Effect } from "effect"
 import { editorsAround, openingOf, templateFor } from "../domain/editor/index.ts"
 import { Store } from "../service/store/index.ts"
 import type { Work } from "./needs.ts"
-import { withChoices, withNotice, withNoticeHere } from "./reduce.ts"
+import { onTheEditorRow, reduce, withChoices, withNotice, withNoticeHere } from "./reduce.ts"
 import type { Terminal } from "./terminal.ts"
 import { refHere, sourceLineAt } from "./cursor.ts"
 import { selectedBranch, selectedPatch } from "./state.ts"
@@ -48,6 +48,18 @@ const editorTold = Effect.gen(function* () {
   }
 })
 
+const editorSaid = Effect.map(editorTold, (told) => templateFor(told) ?? "")
+
+export const openPreferences = (app: Terminal): Work =>
+  Effect.map(editorSaid, (now) => {
+    app.commit({ ...reduce(app.measured(), "settings.open"), editorNow: now })
+  })
+
+export const flipPreference = (app: Terminal): Work =>
+  onTheEditorRow(app.state)
+    ? chooseEditor(app)
+    : Effect.sync(() => app.commit(reduce(app.measured(), "settings.flip")))
+
 export const chooseEditor = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const around = editorsAround(onThePath)
@@ -62,7 +74,12 @@ export const editorChosen = (app: Terminal): Work => {
     const chosen = refHere(app.state)
     if (chosen === undefined) return
     yield* saveEditor(chosen)
-    app.commit({ ...app.state, screen: app.state.returnTo, query: "" })
+    const back = { ...app.state, screen: app.state.returnTo, query: "" }
+    if (back.screen === "settings") {
+      app.commit({ ...back, editorNow: chosen })
+      return
+    }
+    app.commit(back)
     yield* openInEditor(app)
   })
 }
@@ -70,7 +87,8 @@ export const editorChosen = (app: Terminal): Work => {
 export const forgetEditor = (app: Terminal): Work => {
   return Effect.gen(function* () {
     yield* saveEditor("")
-    const back = { ...app.state, screen: app.state.returnTo, query: "" }
+    const now = yield* editorSaid
+    const back = { ...app.state, screen: app.state.returnTo, query: "", editorNow: now }
     app.commit(withNotice(back, "the editor is the environment's again"))
   })
 }

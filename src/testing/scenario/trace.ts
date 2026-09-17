@@ -58,6 +58,10 @@ const NAMED: Readonly<Record<string, string>> = {
   escape: "escape",
   return: "enter",
   backspace: "backspace",
+  ARROW_UP: "up",
+  ARROW_DOWN: "down",
+  ARROW_LEFT: "left",
+  ARROW_RIGHT: "right",
 }
 
 export const asTermctrl = (key: string): string => {
@@ -75,6 +79,10 @@ const SPELT: Readonly<Record<string, string>> = {
   DOWN: "down",
   LEFT: "left",
   RIGHT: "right",
+  ARROW_UP: "up",
+  ARROW_DOWN: "down",
+  ARROW_LEFT: "left",
+  ARROW_RIGHT: "right",
 }
 
 const lower = (said: string): string => `${said.charAt(0).toLowerCase()}${said.slice(1)}`

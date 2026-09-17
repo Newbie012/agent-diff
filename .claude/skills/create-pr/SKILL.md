@@ -28,7 +28,6 @@ another PR needs so it records only its own tests.
 
 A recording narrates itself, so somebody who has never opened adiff can follow it:
 
-- it opens on a title card carrying the test's `when` and `then`
 - each step is held for a second, with a band naming it in plain words — `open the branch`,
   `leave a comment saying "worth a second look"` — and a key cap in the corner showing the key as it
   is pressed, so the caption, the key and what happens on screen line up

@@ -37,7 +37,7 @@ describe("when the preferences screen is opened", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).not.toContain("What adiff does")
+    expect(frame).not.toContain("Preferences")
     expect(frame).toContain("const one = 2")
   })
 })
@@ -84,6 +84,6 @@ describe("when a preference is turned on from the screen", () => {
     // ASSERT
     const rows = (await driver.screen.getFrame()).split("\n")
     const found = rows.find((row) => row.includes("Wrap long lines")) ?? ""
-    expect(found).toContain("✓")
+    expect(found).toMatch(/on\s*$/)
   })
 })

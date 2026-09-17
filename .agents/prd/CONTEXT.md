@@ -127,6 +127,22 @@ then reads as two added lines, the opener and the closer, and not as a rewrite o
 
 ---
 
+## Terminal
+
+### Overlay
+
+A box the terminal draws over the review for one question — the command palette, the search, the
+base picker, the thread reader, the settling prompt, the sheet of keys. Every overlay shares one
+grammar ([PRD 003](003-review-terminal.md)): title, query, rows, keys.
+
+### Sheet
+
+An [overlay](#overlay) that spans the terminal instead of floating over its middle. The sheet of
+keys fills the screen; the preferences sheet sits along the bottom edge and leaves the review
+readable above it.
+
+---
+
 ## Delivery
 
 ### Inbox

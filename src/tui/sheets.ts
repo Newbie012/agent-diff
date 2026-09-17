@@ -1,4 +1,4 @@
-import { bg, fg, StyledText, type TextChunk } from "@opentui/core"
+import { bg, bold, fg, StyledText, type TextChunk } from "@opentui/core"
 import { type Command, displayKey, type Offered } from "./command.ts"
 import { ANSWER_MARK, REPLY_MARK } from "./diffview.ts"
 import { reviewedCountIn } from "./files.ts"
@@ -19,18 +19,31 @@ import {
   theirPull,
 } from "./state.ts"
 import { palette } from "./theme.ts"
+import { LIST_LEAD } from "./chrome.ts"
 import { clip, counted, wrapped } from "./words.ts"
 import { askedThreads } from "./notes.ts"
 
 const PALETTE_KEY = 11
 
-const PALETTE_TITLE = 60
-
 const PALETTE_GAP = 2
 
-export const PALETTE_CHROME = 4
+export const MODAL_CHROME = 8
 
-export const PENDING_CHROME = 4
+export const PLAIN_CHROME = 6
+
+export const SHEET_CHROME = 6
+
+export type Titled = { readonly title: string; readonly count: string }
+
+export const titleText = (titled: Titled, room: number): StyledText => {
+  const spent = titled.count.length === 0 ? 0 : titled.count.length + PALETTE_GAP
+  const shown = clip(titled.title, Math.max(1, room - spent))
+  const gap = Math.max(0, room - shown.length - titled.count.length)
+  return new StyledText([
+    bold(fg(palette.accent)(shown)),
+    fg(palette.muted)(`${" ".repeat(gap)}${titled.count}`),
+  ])
+}
 
 export const LEGEND_ROWS = 1
 
@@ -48,21 +61,13 @@ export const legendText = (room: number): string => {
   return clip([...said, ...voices].join("   "), room)
 }
 
-export const keysTitle = (found: number, whole: boolean): string => {
-  if (found === 0) return "No key matches"
-  return whole ? `Keys here, ${found} of them` : `Keys here, ${found} of them — arrows for the rest`
+export const keysTitle = (found: number, whole: boolean): Titled => {
+  if (found === 0) return { title: "No key matches", count: "" }
+  return { title: "Keys", count: whole ? `${found}` : `${found}, arrows for the rest` }
 }
 
 const keysOf = (entry: Command): string =>
   entry.keys.map((one) => displayKey(one)).join(" ")
-
-export const commandRow = (entry: Command, room: number): string => {
-  const key = clip(keysOf(entry), PALETTE_KEY - PALETTE_GAP).padEnd(PALETTE_KEY)
-  const left = Math.max(1, Math.min(PALETTE_TITLE, room - PALETTE_KEY - entry.category.length - PALETTE_GAP))
-  return `${key}${clip(entry.title, left - PALETTE_GAP).padEnd(left)}${entry.category}`
-}
-
-const LIST_LEAD = 2
 
 const windowed = <Row,>(
   rows: ReadonlyArray<Row>,
@@ -79,11 +84,12 @@ export const listText = (
   rows: ReadonlyArray<string>,
   at: number,
   height: number,
+  wide: number,
 ): StyledText => {
   const shown = windowed(rows, at, Math.max(1, height))
   const drawn = shown.rows.map((row, index) => {
     const here = shown.from + index === at
-    const text = `${here ? marks().cursor : " "} ${row}`.padEnd(LIST_LEAD)
+    const text = `${here ? marks().cursor : " "} ${row}`.padEnd(wide)
     return here ? bg(palette.selection)(fg(palette.ink)(`${text}\n`)) : fg(palette.ink)(`${text}\n`)
   })
   return new StyledText(drawn)
@@ -141,8 +147,44 @@ const sheetPaint = (row: SheetRow | undefined, here: boolean, room: number): Tex
   if (row === undefined) return fg(palette.ink)("".padEnd(room))
   const mark = row.heading || row.at === -1 ? " " : here ? marks().cursor : " "
   const text = `${mark} ${row.text}`.padEnd(room)
-  if (row.heading) return fg(palette.accent)(text)
+  if (row.heading) return bold(fg(palette.muted)(text))
   return here ? bg(palette.selection)(fg(palette.ink)(text)) : fg(palette.ink)(text)
+}
+
+const paletteBlocks = (rows: ReadonlyArray<Command>, room: number): ReadonlyArray<SheetRow> => {
+  const categories = [...new Set(rows.map((entry) => entry.category))]
+  const blocks = categories.map((category) =>
+    sheetBlock(
+      rows,
+      rows.flatMap((entry, at) => (entry.category === category ? [at] : [])),
+      room,
+    ),
+  )
+  return blocks.flat().slice(0, -1)
+}
+
+const windowTop = (listed: ReadonlyArray<SheetRow>, on: number, height: number): number => {
+  const centred = Math.max(0, Math.min(listed.length - height, on - Math.floor(height / 2)))
+  const withHeading = centred > 0 && listed[centred - 1]?.heading === true ? centred - 1 : centred
+  const keepsCursor = on < 0 || (on >= withHeading && on < withHeading + height)
+  return keepsCursor ? withHeading : centred
+}
+
+export const paletteDeep = (rows: ReadonlyArray<Command>, room: number): number =>
+  paletteBlocks(rows, room - LIST_LEAD).length
+
+export const paletteText = (
+  rows: ReadonlyArray<Command>,
+  at: number,
+  shown: { readonly height: number; readonly room: number },
+): StyledText => {
+  const listed = paletteBlocks(rows, shown.room - LIST_LEAD)
+  const on = listed.findIndex((row) => row.at === at)
+  const top = windowTop(listed, on, shown.height)
+  const drawn = listed
+    .slice(top, top + shown.height)
+    .flatMap((row) => [sheetPaint(row, row.at === at, shown.room), fg(palette.ink)("\n")])
+  return new StyledText(drawn)
 }
 
 export const sheetDeep = (rows: ReadonlyArray<Command>, room: number): number => {
@@ -258,22 +300,23 @@ export const askText = (state: TuiState, room: number): StyledText => {
   return new StyledText([...listed, ...drawn])
 }
 
-const SETTING_LEAD = 4
+const SETTING_TITLE = 36
+
+export const SETTING_TAIL = 2
 
 export const settingsText = (rows: ReadonlyArray<PreferenceRow>, room: number): StyledText => {
   const drawn = rows.flatMap((row) => {
-    const mark = row.on ? marks().done : " "
-    const head = `${row.here ? marks().cursor : " "} ${mark} ${row.title}`
-    const said = `${" ".repeat(SETTING_LEAD)}${clip(row.about, Math.max(8, room - SETTING_LEAD))}`
-    const tone = row.on ? palette.added : palette.muted
-    return [
-      row.here
-        ? bg(palette.selection)(fg(palette.ink)(`${head.padEnd(room)}\n`))
-        : fg(tone)(`${head.padEnd(room)}\n`),
-      fg(palette.faint)(`${said.padEnd(room)}\n`),
-    ]
+    const head = `${row.here ? marks().cursor : " "} ${clip(row.title, SETTING_TITLE - PALETTE_GAP).padEnd(SETTING_TITLE)}`
+    const state = clip(row.said, Math.max(1, room - head.length)).padEnd(Math.max(0, room - head.length))
+    if (row.here) return [bg(palette.selection)(fg(palette.ink)(`${head}${state}\n`))]
+    return [fg(palette.ink)(head), fg(row.on ? palette.added : palette.muted)(`${state}\n`)]
   })
-  return new StyledText(drawn)
+  const here = rows.find((row) => row.here)
+  const about =
+    here === undefined
+      ? []
+      : [fg(palette.ink)("\n"), fg(palette.faint)(`${`  ${clip(here.about, Math.max(8, room - 2))}`.padEnd(room)}\n`)]
+  return new StyledText([...drawn, ...about])
 }
 
 export const offeredIn = (state: TuiState): Offered => ({
@@ -321,26 +364,37 @@ export const voicesOf = (entry: PanelEntry): ReadonlyArray<string> => {
 }
 
 export const readerText = (entry: PanelEntry, room: number): StyledText => {
-  const named = entry.kind === "fold" ? [] : [...wrapped(panelFile(entry), room), ""]
-  const said = voicesOf(entry).flatMap((line) => wrapped(line, room))
+  const wide = Math.max(1, room - LIST_LEAD)
+  const named = entry.kind === "fold" ? [] : [...wrapped(panelFile(entry), wide), ""]
+  const said = voicesOf(entry).flatMap((line) => wrapped(line, wide))
   const code = lostCode(entry)
   const quoted =
     code.length === 0
       ? []
       : ["", "the code it was written on", ...code.map((line) => `│ ${line.trim()}`)]
-  const rows = [...named, ...said, ...quoted].flatMap((line) => wrapped(line, room))
+  const rows = [...named, ...said, ...quoted].flatMap((line) => wrapped(line, wide))
   return new StyledText(
-    rows.map((line) => fg(line.startsWith("│") ? palette.faint : palette.ink)(`${line.padEnd(room)}\n`)),
+    rows.map((line) =>
+      fg(line.startsWith("│") ? palette.faint : palette.ink)(
+        `${`${" ".repeat(LIST_LEAD)}${line}`.padEnd(room)}\n`,
+      ),
+    ),
   )
 }
 
-export const pickingTitle = (state: TuiState): string => {
+export const pickingTitle = (state: TuiState): { readonly title: string; readonly sub: string } => {
   if (state.screen === "editor") {
-    return `Editor${state.editorNow.length === 0 ? " — none found" : ` — now ${state.editorNow}`}`
+    return {
+      title: "Editor",
+      sub: state.editorNow.length === 0 ? "none found" : `now ${state.editorNow}`,
+    }
   }
   const here = selectedBranch(state)
   const on = here === undefined ? "" : `${here.base}${here.basis === "set" ? "" : ", adiff's guess"}`
-  return `Base for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` — now ${on}`}`
+  return {
+    title: "Base",
+    sub: `for ${here?.branch ?? "this branch"}${on.length === 0 ? "" : ` · now ${on}`}`,
+  }
 }
 
 const YOURS = "   ← the command you typed"

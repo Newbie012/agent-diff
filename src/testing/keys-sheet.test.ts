@@ -131,7 +131,7 @@ describe("when the key sheet is open", () => {
 })
 
 describe("when a command is found by typing", () => {
-  test("then the match names the key that runs it", async () => {
+  test("then the match names the key that runs it, under its category", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -142,9 +142,9 @@ describe("when a command is found by typing", () => {
     await driver.screen.typeText("wrap")
 
     // ASSERT
-    const frame = await driver.screen.getFrame()
-    const row = frame.split("\n").find((line) => line.includes("Wrap long lines")) ?? ""
-    expect(row).toContain("w")
-    expect(row).toContain("Reading")
+    const rows = (await driver.screen.getFrame()).split("\n")
+    const found = rows.findIndex((line) => line.includes("Wrap long lines"))
+    expect(rows[found]).toMatch(/▎ w\s/)
+    expect(rows.slice(0, found).some((line) => line.includes("Reading"))).toBe(true)
   })
 })

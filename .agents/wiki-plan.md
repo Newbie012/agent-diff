@@ -339,8 +339,8 @@ How capture works here, read out of `origin/main`'s `scripts/shot.ts`, `scripts/
   comments waiting to go cannot be captured at all until the simulation holds a comment of the
   reviewer's own.
 - **Traces.** Any test that presses keys through the screen driver writes a trace when `ADIFF_TRACE` is
-  set. `pnpm record --test <path>` films every case in a file whose trace replays, with a title card
-  naming the case, and skips a case whose trace says a replay cannot do what it did. `pnpm shot
+  set. `pnpm record --test <path>` films every case in a file whose trace replays, with a band
+  naming each step, and skips a case whose trace says a replay cannot do what it did. `pnpm shot
   --trace <file> --test-name "<full name>"` replays one trace as a still; it takes the last entry with
   that name and refuses a trace a capture cannot replay. Print the trace path you generated rather
   than assuming one: BSD `mktemp` substitutes only trailing X's, so `mktemp /tmp/x-XXXX.jsonl` creates

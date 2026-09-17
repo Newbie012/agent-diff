@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-21
+- **Last updated:** 2026-09-17
 
 ## Problem Statement
 
@@ -69,11 +69,13 @@ store's location and the `ADIFF_ROOT` override belong to
   nesting. Every preference can be drawn as a line with a mark against it and toggled with one key,
   and anything that cannot be is not a preference — it is a command, or an argument.
 
-- **A setting that is not on or off lives in the file, and is not a preference.** The `editor`
-  command is the first of these: it is a string with `{repo}`, `{file}` and `{line}` in it, so it cannot be a
-  line with a mark against it, and the screen that lists preferences does not list it. The file holds
-  it, the terminal reads it, and `config` neither reports nor sets it. It is still set from the
-  terminal — the file is storage, not an interface ([PRD 003](003-review-terminal.md)).
+- **A setting that is not on or off lives in the file, and is not a preference — but the sheet
+  still shows it.** The `editor` is the first of these: a string with `{repo}`, `{file}` and `{line}`
+  in it, so `config` neither reports nor sets it and the file holds it. The preferences sheet lists
+  it all the same, as its last row, `Open lines in` with the editor's command in the value column or
+  `none found`. Return on that row opens the same picker `e` opens when no editor is known, and
+  choosing one comes back to the sheet with the row updated and opens no line, since there is no
+  line in hand. A reviewer looking for how adiff opens a line looks where the other choices are.
 
 - **Preferences are global.** One file, one answer, for every repository on the machine. A review
   is a thing a person does the same way wherever they are, and a per-repository answer is a second
@@ -93,6 +95,14 @@ store's location and the `ADIFF_ROOT` override belong to
   review, moved through with the arrows, toggled with return, closed with escape. A toggle takes
   effect where it can be seen — the diff behind the screen redraws under it — and is written when
   it is made, not when the screen closes.
+
+- **The preferences are a sheet along the bottom of the terminal, not a box over the middle.** It
+  spans the width, sits on the bottom edge, and leaves the review readable above it with no scrim,
+  since the point of a toggle is to watch the diff change. Each preference is one row: its title,
+  then `on` in green or `off` in muted in a value column, so eight of them are read in one glance.
+  What the highlighted preference does is one faint line under the list, for that row only. The
+  sheet keeps the overlay grammar of [PRD 003](003-review-terminal.md): title, rows, keys, and the
+  same padding.
 
 - **The keys that toggle a preference keep working.** A reviewer who knows the key for wrapping
   keeps it, and pressing it changes the same preference the screen shows. Two ways to reach one

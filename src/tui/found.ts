@@ -8,10 +8,12 @@ import type { Match } from "../review/index.ts"
 
 export const FOUND_LEAST = 6
 
+const NOTHING_TYPED = "Matches list here as you type, with the file each one sits in."
+
 export const nothingYet = (state: TuiState, room: number): string => {
   const wanted = state.query.trim()
-  if (wanted.length === 0 || state.term.length === 0) return "".padEnd(room)
-  return clip(` nothing uses ${wanted}`, room).padEnd(room)
+  if (wanted.length === 0 || state.term.length === 0) return clip(`  ${NOTHING_TYPED}`, room).padEnd(room)
+  return clip(`  nothing uses ${wanted}`, room).padEnd(room)
 }
 
 const counting = (many: number): string => many.toLocaleString("en-US")
@@ -37,7 +39,7 @@ export const foundBlocks = (
 const JOIN = "  ·  "
 
 export const foundTitle = (state: TuiState, room: number): string => {
-  if (state.term.length === 0) return "Look for something"
+  if (state.term.length === 0) return "Search"
   const counted = state.counted
   if (counted.worktree === 0) return state.term
   const here = `${counting(counted.file)} in this file`

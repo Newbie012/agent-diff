@@ -508,7 +508,7 @@ const BACK_FROM: Partial<Record<ScreenName, (state: TuiState) => TuiState>> = {
   report: (state) => ({ ...state, screen: state.returnTo, draft: "" }),
   palette: (state) => ({ ...state, screen: state.returnTo, query: "" }),
   keys: (state) => ({ ...state, screen: state.returnTo, query: "" }),
-  settings: (state) => ({ ...state, screen: state.returnTo }),
+  settings: (state) => ({ ...state, screen: state.beneath }),
   thread: (state) => ({ ...state, screen: state.returnTo }),
   compose: (state) => ({
     ...state,
@@ -556,13 +556,17 @@ const openSettings = (state: TuiState): TuiState => ({
   ...state,
   screen: "settings",
   returnTo: state.screen,
+  beneath: state.screen,
   settingsIndex: 0,
 })
 
 const moveSettings = (state: TuiState, delta: number): TuiState => ({
   ...state,
-  settingsIndex: clamp(state.settingsIndex + delta, 0, Math.max(0, preferences.length - 1)),
+  settingsIndex: clamp(state.settingsIndex + delta, 0, preferences.length),
 })
+
+export const onTheEditorRow = (state: TuiState): boolean =>
+  state.settingsIndex === preferences.length
 
 const flipSetting = (state: TuiState): TuiState => {
   const wanted = preferences[state.settingsIndex]
@@ -607,7 +611,15 @@ const movePalette = (state: TuiState, delta: number): TuiState => ({
   paletteIndex: clamp(state.paletteIndex + delta, 0, Math.max(0, offered(state).length - 1)),
 })
 
-export const paletteMatches = (state: TuiState) => searchCommands(state.returnTo, state.query)
+const groupedByCategory = <Entry extends { readonly category: string }>(
+  rows: ReadonlyArray<Entry>,
+): ReadonlyArray<Entry> =>
+  [...new Set(rows.map((row) => row.category))].flatMap((category) =>
+    rows.filter((row) => row.category === category),
+  )
+
+export const paletteMatches = (state: TuiState) =>
+  groupedByCategory(searchCommands(state.returnTo, state.query))
 
 export const keyMatches = (state: TuiState) =>
   searchGlossary(state.returnTo, state.query)
