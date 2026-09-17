@@ -84,9 +84,10 @@ import { panelEntry } from "./panel.ts"
 import { lostCode, panelText, restingOrHere } from "./panelpane.ts"
 import {
   bar,
-  type BaseParts,
+  type AskingParts,
   crampedBar,
   type FoundParts,
+  type Modals,
   frameRoot,
   makeBody,
   makeCompose,
@@ -104,12 +105,16 @@ import {
 import { keyMatches, paletteMatches } from "./reduce.ts"
 import {
   askText,
-  commandRow,
   LEGEND_ROWS,
   legendText,
   offeredIn,
-  PALETTE_CHROME,
-  PENDING_CHROME,
+  MODAL_CHROME,
+  paletteDeep,
+  paletteText,
+  PLAIN_CHROME,
+  SETTING_TAIL,
+  SHEET_CHROME,
+  titleText,
   pickedTail,
   pickingTitle,
   readerText,
@@ -140,6 +145,7 @@ import {
   DIFF_CHROME_MOST,
   DIFF_FLOOR,
   GUTTER_X,
+  MODAL_PAD,
   MODAL_ROOM,
   type Mouse,
   notchOf,
@@ -148,16 +154,22 @@ import {
   PANE_INSET,
   PANEL_FIFTH,
   PANEL_QUARTER,
+  boxWidth,
   panelRows,
   panelTop,
   panelWidth,
   type Screened,
+  SHEET_PAD_ROWS,
   STICKY_MAX,
 } from "./chrome.ts"
 import { unaskedForge } from "./home.ts"
 import { keysTitle, listText } from "./sheets.ts"
 import { palette } from "./theme.ts"
 import { askedThreads } from "./notes.ts"
+
+const ASK_REF = "Type a branch, a tag or a commit…"
+
+const ASK_COMMAND = "Type the command that opens a file, or pick one…"
 
 const stack = (parent: Renderable, children: ReadonlyArray<Renderable>): void => {
   for (const child of children) parent.add(child)
@@ -197,7 +209,8 @@ export class Screen {
   private readonly paletteChoices: TextRenderable
   private readonly keys: BoxRenderable
   private readonly keysTitle: TextRenderable
-  private readonly baseBox: BaseParts
+  private readonly baseBox: AskingParts
+  private readonly modals: Modals
   private readonly settings: BoxRenderable
   private readonly settingsTitle: TextRenderable
   private readonly settingsChoices: TextRenderable
@@ -261,6 +274,7 @@ export class Screen {
     this.scrim = makeScrim(renderer)
     this.gutter = makeGutter(renderer)
     const modals = makeModals(renderer)
+    this.modals = modals
     this.palette = modals.palette.box
     this.paletteTitle = modals.palette.title
     this.paletteQuery = modals.palette.query
@@ -476,7 +490,9 @@ export class Screen {
     this.paintAsk(state)
     this.paintFound(state)
     this.paintReport(state)
-    this.scrim.visible = state.screen !== "branches" && state.screen !== "review"
+    this.paintModalKeys()
+    this.scrim.visible =
+      state.screen !== "branches" && state.screen !== "review" && state.screen !== "settings"
     this.paintCramped()
   }
 
@@ -497,16 +513,22 @@ export class Screen {
       return
     }
     const matches = paletteMatches(state)
-    this.paletteTitle.content = matches.length === 0 ? "No command matches" : "Commands"
-    const room = panelWidth(this.renderer.width)
+    const room = boxWidth(this.renderer.width)
+    this.paletteTitle.content = titleText(
+      matches.length === 0
+        ? { title: "No command matches", count: "" }
+        : { title: "Commands", count: `${matches.length}` },
+      room - MODAL_ROOM,
+    )
+    const inside = room - MODAL_PAD * 2
     const paletteRoom = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
-      matches.length + PALETTE_CHROME,
+      paletteDeep(matches, inside) + MODAL_CHROME,
     )
-    this.paletteChoices.content = listText(
-      matches.map((entry) => commandRow(entry, room - MODAL_ROOM)),
+    this.paletteChoices.content = paletteText(
+      matches,
       Math.min(state.paletteIndex, Math.max(0, matches.length - 1)),
-      paletteRoom - PALETTE_CHROME,
+      { height: Math.max(1, paletteRoom - MODAL_CHROME), room: inside },
     )
     this.palette.height = paletteRoom
     this.palette.width = room
@@ -518,27 +540,33 @@ export class Screen {
     this.baseBox.box.visible = isPicking(state)
     if (!isPicking(state)) {
       this.baseBox.title.content = ""
+      this.baseBox.sub.content = ""
       this.baseBox.choices.content = ""
       return
     }
     const shown = refsShown(state)
-    const room = panelWidth(this.renderer.width)
-    this.baseBox.title.content = clip(pickingTitle(state), room - MODAL_ROOM)
+    const room = boxWidth(this.renderer.width)
+    const picking = pickingTitle(state)
+    this.baseBox.title.content = titleText({ title: picking.title, count: "" }, room - MODAL_ROOM)
+    this.baseBox.sub.height = 1
+    this.baseBox.sub.content = clip(picking.sub, room - MODAL_ROOM)
     this.baseBox.query.visible = true
+    this.baseBox.query.placeholder = state.screen === "editor" ? ASK_COMMAND : ASK_REF
     const tall = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
-      shown.length + PALETTE_CHROME + 1,
+      shown.length + MODAL_CHROME + 1,
     )
     const typed = state.query.trim()
     this.baseBox.choices.content = listText(
       shown.map((ref) =>
         clip(
-          ` ${ref}${refNoteOf(state, ref).length === 0 ? "" : `  ${refNoteOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
+          `${ref}${refNoteOf(state, ref).length === 0 ? "" : `  ${refNoteOf(state, ref)}`}${pickedTail(state, ref, typed)}`,
           room - MODAL_ROOM,
         ),
       ),
       Math.min(state.refIndex, Math.max(0, shown.length - 1)),
-      Math.max(1, tall - PALETTE_CHROME - 1),
+      Math.max(1, tall - MODAL_CHROME - 1),
+      room - MODAL_PAD * 2,
     )
     this.baseBox.box.height = tall
     this.baseBox.box.width = room
@@ -554,17 +582,16 @@ export class Screen {
       return
     }
     const rows = preferenceRows(state)
-    const room = panelWidth(this.renderer.width)
-    const tall = Math.min(
-      panelRows(this.renderer.height, PANEL_QUARTER),
-      rows.length * 2 + PALETTE_CHROME - 1,
-    )
-    this.settingsTitle.content = "What adiff does"
-    this.settingsChoices.content = settingsText(rows, room - MODAL_ROOM)
+    const room = this.renderer.width
+    const tall = Math.min(this.renderer.height, rows.length + SHEET_CHROME + SETTING_TAIL)
+    this.settingsTitle.content = titleText({ title: "Preferences", count: "" }, room - MODAL_ROOM)
+    this.settingsChoices.content = settingsText(rows, room - MODAL_PAD * 2)
+    this.settings.paddingTop = SHEET_PAD_ROWS
+    this.settings.paddingBottom = SHEET_PAD_ROWS
     this.settings.height = tall
     this.settings.width = room
-    this.settings.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
-    this.settings.top = panelTop(this.renderer.height, PANEL_QUARTER)
+    this.settings.left = 0
+    this.settings.top = Math.max(0, this.renderer.height - tall)
   }
 
   private paintAsk(state: TuiState): void {
@@ -574,13 +601,13 @@ export class Screen {
       this.ask.choices.content = ""
       return
     }
-    const room = panelWidth(this.renderer.width)
+    const room = boxWidth(this.renderer.width)
     const asked = askingWords(state)
     const forName = Math.max(8, room - MODAL_ROOM - asked.tail.length)
     const name = asked.path ? clipPath(asked.name, forName) : clipMiddle(asked.name, forName)
-    this.ask.title.content = `${name}${asked.tail}`
-    this.ask.choices.content = askText(state, room - MODAL_ROOM)
-    this.ask.box.height = askedThreads(state).length + askedRows(state).length + PALETTE_CHROME
+    this.ask.title.content = titleText({ title: `${name}${asked.tail}`, count: "" }, room - MODAL_ROOM)
+    this.ask.choices.content = askText(state, room - MODAL_PAD * 2)
+    this.ask.box.height = askedThreads(state).length + askedRows(state).length + PLAIN_CHROME
     this.ask.box.width = room
     this.ask.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.ask.box.top = panelTop(this.renderer.height, PANEL_QUARTER)
@@ -594,12 +621,12 @@ export class Screen {
       this.reader.choices.content = ""
       return
     }
-    const room = panelWidth(this.renderer.width)
-    this.reader.title.content = clip(readerTitle(state, entry), room - MODAL_ROOM)
-    this.reader.choices.content = readerText(entry, room - MODAL_ROOM)
+    const room = boxWidth(this.renderer.width)
+    this.reader.title.content = titleText({ title: readerTitle(state, entry), count: "" }, room - MODAL_ROOM)
+    this.reader.choices.content = readerText(entry, room - MODAL_PAD * 2)
     this.reader.box.height = Math.min(
       panelRows(this.renderer.height, PANEL_QUARTER),
-      voicesOf(entry).length + lostCode(entry).length + PALETTE_CHROME + 8,
+      voicesOf(entry).length + lostCode(entry).length + PLAIN_CHROME + 8,
     )
     this.reader.box.width = room
     this.reader.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
@@ -614,11 +641,11 @@ export class Screen {
       return
     }
     const room = this.renderer.width
-    const tall = Math.max(PALETTE_CHROME, this.renderer.height - 1)
-    this.sending.title.content = clip(sendingTitle(state), room - MODAL_ROOM)
+    const tall = Math.max(PLAIN_CHROME, this.renderer.height - 1)
+    this.sending.title.content = titleText({ title: sendingTitle(state), count: "" }, room - MODAL_ROOM)
     this.sending.choices.content = sendingText(state, {
-      height: Math.max(1, tall - PALETTE_CHROME),
-      room: room - MODAL_ROOM,
+      height: Math.max(1, tall - PLAIN_CHROME),
+      room: room - MODAL_PAD * 2,
     })
     this.sending.box.height = tall
     this.sending.box.width = room
@@ -637,12 +664,15 @@ export class Screen {
     const rows = keyMatches(state)
     const room = this.renderer.width
     const keysRoom = this.renderer.height
-    const shown = Math.max(1, keysRoom - PENDING_CHROME - LEGEND_ROWS)
-    this.keysTitle.content = keysTitle(rows.length, sheetDeep(rows, room - MODAL_ROOM) <= shown)
+    const shown = Math.max(1, keysRoom - MODAL_CHROME - LEGEND_ROWS - 1)
+    this.keysTitle.content = titleText(
+      keysTitle(rows.length, sheetDeep(rows, room - MODAL_ROOM) <= shown),
+      room - MODAL_ROOM,
+    )
     this.keysChoices.content = sheetText(
       rows,
       Math.min(state.paletteIndex, Math.max(0, rows.length - 1)),
-      { height: shown, room: room - MODAL_ROOM },
+      { height: shown, room: room - MODAL_PAD * 2 },
     )
     this.keysLegend.content = legendText(room - MODAL_ROOM)
     this.keys.height = keysRoom
@@ -904,6 +934,10 @@ export class Screen {
     return homeWidth(this.renderer.width, longestName(state), longestState(state))
   }
 
+  private paintModalKeys(): void {
+    for (const part of Object.values(this.modals)) part.keys.content = this.chipRow()
+  }
+
   private chipRow(): StyledText {
     return new StyledText(
       this.chips.flatMap((chip, index) => {
@@ -968,11 +1002,11 @@ export class Screen {
     }
     const room = panelWidth(this.renderer.width)
     const wide = Math.max(1, room - MODAL_ROOM)
-    this.foundBox.title.content = foundTitle(state, wide)
+    this.foundBox.title.content = titleText({ title: foundTitle(state, wide), count: "" }, wide)
     const shown = shownMatches(state)
     const most = panelRows(this.renderer.height, PANEL_FIFTH)
     const { blocks, chosen } = foundBlocks(state, shown, wide)
-    const tall = Math.max(FOUND_LEAST, most - PALETTE_CHROME)
+    const tall = Math.max(FOUND_LEAST, most - MODAL_CHROME)
     const window = windowedBlocks(blocks, chosen, tall)
     this.foundBox.choices.content =
       blocks.length === 0
@@ -980,7 +1014,8 @@ export class Screen {
         : new StyledText([...window.chunks])
     this.foundBox.peek.content = ""
     this.foundBox.peek.height = 0
-    this.foundBox.box.height = Math.min(most, Math.max(FOUND_LEAST, window.rows) + PALETTE_CHROME)
+    const listed = blocks.length === 0 ? 1 : Math.max(FOUND_LEAST, window.rows)
+    this.foundBox.box.height = Math.min(most, listed + MODAL_CHROME)
     this.foundBox.box.width = room
     this.foundBox.box.left = Math.max(FRAME_PAD, Math.floor((this.renderer.width - room) / 2))
     this.foundBox.box.top = panelTop(this.renderer.height, PANEL_FIFTH)

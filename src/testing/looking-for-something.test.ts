@@ -26,7 +26,7 @@ describe("when the reviewer searches", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("Look for something")
+    expect(frame).toContain("Search")
     expect(frame).not.toContain("useProcessFold  ·")
   })
 

@@ -15,7 +15,15 @@ import { BRANCH_WIDTH } from "./home.ts"
 import { FRAME_PAD } from "./layout.ts"
 import { COMPOSE_CHROME } from "./notespane.ts"
 import { palette } from "./theme.ts"
-import { CRAMPED_ROWS, GUTTER_X, PALETTE_WIDTH, PANEL_FLOOR, ROW_HEIGHT } from "./chrome.ts"
+import {
+  CRAMPED_ROWS,
+  GUTTER_X,
+  MODAL_PAD,
+  MODAL_PAD_ROWS,
+  PALETTE_WIDTH,
+  PANEL_FLOOR,
+  ROW_HEIGHT,
+} from "./chrome.ts"
 
 const COMPOSE_WIDTH = 72
 
@@ -156,30 +164,37 @@ export const makeScroll = (renderer: CliRenderer): BoxRenderable =>
     overflow: "hidden",
   })
 
-const makePalette = (renderer: CliRenderer): BoxRenderable => {
-  const box = makeCompose(renderer)
-  box.id = "palette"
-  box.height = PANEL_FLOOR
-  box.width = PALETTE_WIDTH
-  return box
-}
+const makePalette = (renderer: CliRenderer): BoxRenderable =>
+  new BoxRenderable(renderer, {
+    id: "palette",
+    position: "absolute",
+    width: PALETTE_WIDTH,
+    height: PANEL_FLOOR,
+    zIndex: 100,
+    visible: false,
+    backgroundColor: palette.overlay,
+    paddingLeft: MODAL_PAD,
+    paddingRight: MODAL_PAD,
+    paddingTop: MODAL_PAD_ROWS,
+    paddingBottom: MODAL_PAD_ROWS,
+    flexDirection: "column",
+  })
 
-type PaletteParts = {
+export type ModalParts = {
   readonly box: BoxRenderable
   readonly title: TextRenderable
-  readonly query: TextareaRenderable
+  readonly sub: TextRenderable
   readonly choices: TextRenderable
+  readonly keys: TextRenderable
 }
 
-type KeysParts = PaletteParts & { readonly legend: TextRenderable }
-
-export type FoundParts = {
-  readonly box: BoxRenderable
-  readonly title: TextRenderable
+export type AskingParts = ModalParts & {
   readonly query: TextareaRenderable
-  readonly peek: TextRenderable
-  readonly choices: TextRenderable
 }
+
+export type KeysParts = AskingParts & { readonly legend: TextRenderable }
+
+export type FoundParts = AskingParts & { readonly peek: TextRenderable }
 
 export const asking = (renderer: CliRenderer, id: string, placeholder = "Type to filter…"): TextareaRenderable =>
   new TextareaRenderable(renderer, {
@@ -187,36 +202,121 @@ export const asking = (renderer: CliRenderer, id: string, placeholder = "Type to
     height: ROW_HEIGHT,
     wrapMode: "none",
     flexShrink: 0,
-    marginLeft: GUTTER_X,
-    marginRight: GUTTER_X,
+    flexGrow: 1,
     placeholder,
     placeholderColor: palette.faint,
-    backgroundColor: palette.panel,
-    focusedBackgroundColor: palette.panel,
+    backgroundColor: palette.overlay,
+    focusedBackgroundColor: palette.overlay,
     textColor: palette.ink,
     focusedTextColor: palette.ink,
     cursorColor: palette.ink,
   })
 
-const makePaletteParts = (renderer: CliRenderer): PaletteParts => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "palette-title", palette.faint)
-  const query = asking(renderer, "palette-query")
-  const choices = makeChoices(renderer)
-  box.add(title)
-  box.add(query)
-  box.add(choices)
-  return { box, title, query, choices }
+const PROMPT = "› "
+
+const prompted = (renderer: CliRenderer, id: string, query: TextareaRenderable): BoxRenderable => {
+  const row = new BoxRenderable(renderer, {
+    id: `${id}-prompt`,
+    height: ROW_HEIGHT,
+    flexDirection: "row",
+    flexShrink: 0,
+    marginTop: 1,
+    marginBottom: 1,
+  })
+  row.add(
+    new TextRenderable(renderer, {
+      id: `${id}-mark`,
+      content: PROMPT,
+      fg: palette.accent,
+      width: PROMPT.length,
+      height: ROW_HEIGHT,
+      flexShrink: 0,
+    }),
+  )
+  row.add(query)
+  return row
 }
 
-const makeChoices = (renderer: CliRenderer): TextRenderable =>
+const makeChoices = (renderer: CliRenderer, id: string): TextRenderable =>
   new TextRenderable(renderer, {
-    id: "palette-choices",
+    id: `${id}-choices`,
     content: "",
     flexGrow: 1,
     fg: palette.ink,
     selectable: true,
   })
+
+const flush = (renderer: CliRenderer, id: string, color: string): TextRenderable => {
+  const made = bar(renderer, id, color)
+  made.marginLeft = 0
+  made.marginRight = 0
+  return made
+}
+
+const headed = (renderer: CliRenderer, id: string): Omit<ModalParts, "choices"> => {
+  const box = makePalette(renderer)
+  box.id = id
+  const title = flush(renderer, `${id}-title`, palette.accent)
+  const sub = flush(renderer, `${id}-sub`, palette.muted)
+  sub.height = 0
+  const keys = flush(renderer, `${id}-keys`, palette.faint)
+  keys.marginTop = 1
+  box.add(title)
+  box.add(sub)
+  return { box, title, sub, keys }
+}
+
+const makeModal = (renderer: CliRenderer, id: string): ModalParts => {
+  const head = headed(renderer, id)
+  const choices = makeChoices(renderer, id)
+  choices.marginTop = 1
+  head.box.add(choices)
+  head.box.add(head.keys)
+  return { ...head, choices }
+}
+
+const makeAsking = (renderer: CliRenderer, id: string, placeholder?: string): AskingParts => {
+  const head = headed(renderer, id)
+  const query = asking(renderer, `${id}-query`, placeholder)
+  const choices = makeChoices(renderer, id)
+  head.box.add(prompted(renderer, id, query))
+  head.box.add(choices)
+  head.box.add(head.keys)
+  return { ...head, query, choices }
+}
+
+const makeKeysParts = (renderer: CliRenderer): KeysParts => {
+  const parts = makeAsking(renderer, "keys")
+  const legend = flush(renderer, "keys-legend", palette.faint)
+  legend.marginTop = 1
+  parts.box.remove(parts.keys)
+  parts.box.add(legend)
+  parts.box.add(parts.keys)
+  return { ...parts, legend }
+}
+
+const makeFoundParts = (renderer: CliRenderer): FoundParts => {
+  const parts = makeAsking(renderer, "found", "Type what to look for…")
+  const peek = flush(renderer, "found-peek", palette.muted)
+  peek.height = 0
+  parts.box.remove(parts.keys)
+  parts.box.add(peek)
+  parts.box.add(parts.keys)
+  return { ...parts, peek }
+}
+
+export const makeModals = (renderer: CliRenderer) => ({
+  palette: makeAsking(renderer, "palette"),
+  found: makeFoundParts(renderer),
+  keys: makeKeysParts(renderer),
+  settings: makeModal(renderer, "settings"),
+  sending: makeModal(renderer, "sending"),
+  reader: makeModal(renderer, "reader"),
+  bases: makeAsking(renderer, "base", "Type a branch, a tag or a commit…"),
+  ask: makeModal(renderer, "ask"),
+})
+
+export type Modals = ReturnType<typeof makeModals>
 
 export const makeBody = (renderer: CliRenderer): BoxRenderable =>
   new BoxRenderable(renderer, {
@@ -233,98 +333,6 @@ export const makeHome = (renderer: CliRenderer) => ({
   path: makeLanding(renderer, "landing", palette.muted, 0),
   keys: makeLanding(renderer, "landing-keys", palette.faint, 2),
 })
-
-export const makeModals = (renderer: CliRenderer) => ({
-  palette: makePaletteParts(renderer),
-  sending: makeSendingParts(renderer),
-  found: makeFoundParts(renderer),
-  keys: makeKeysParts(renderer),
-  settings: makeSettingsParts(renderer),
-  reader: makeReaderParts(renderer),
-  bases: makeBaseParts(renderer),
-  ask: makeAskParts(renderer),
-})
-
-export type BaseParts = {
-  readonly box: BoxRenderable
-  readonly title: TextRenderable
-  readonly query: TextareaRenderable
-  readonly choices: TextRenderable
-}
-
-const makeBaseParts = (renderer: CliRenderer): BaseParts => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "base-title", palette.faint)
-  const query = asking(renderer, "base-query", "Type a branch, a tag or a commit…")
-  const choices = makeChoices(renderer)
-  box.id = "base"
-  box.add(title)
-  box.add(query)
-  box.add(choices)
-  return { box, title, query, choices }
-}
-
-const makeAskParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "ask-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "ask"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeSendingParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "sending-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "sending"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeReaderParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "reader-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "reader"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeSettingsParts = (renderer: CliRenderer) => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "settings-title", palette.faint)
-  const choices = makeChoices(renderer)
-  box.id = "settings"
-  box.add(title)
-  box.add(choices)
-  return { box, title, choices }
-}
-
-const makeKeysParts = (renderer: CliRenderer): KeysParts => {
-  const parts = makePaletteParts(renderer)
-  parts.box.id = "keys"
-  const legend = bar(renderer, "keys-legend", palette.faint)
-  parts.box.add(legend)
-  return { ...parts, legend }
-}
-
-const makeFoundParts = (renderer: CliRenderer): FoundParts => {
-  const box = makePalette(renderer)
-  const title = bar(renderer, "found-title", palette.faint)
-  const query = asking(renderer, "found-query", "Type what to look for…")
-  const peek = bar(renderer, "found-peek", palette.muted)
-  const choices = makeChoices(renderer)
-  box.id = "found"
-  box.add(title)
-  box.add(query)
-  box.add(choices)
-  box.add(peek)
-  return { box, title, query, peek, choices }
-}
 
 const isFont = (name: string): name is ASCIIFontName => name in fonts
 

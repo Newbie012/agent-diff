@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-23
+- **Last updated:** 2026-09-17
 
 ## Problem Statement
 
@@ -624,6 +624,29 @@ Three screens, and the keys each answers to:
 - **The command palette opens wherever a reader is moving around**, over the diff and over the
   review list. It stays shut where a reader is typing, since a draft is not a place to run a
   command from, and on the branch list, whose three actions are already on screen.
+- **Every overlay is drawn with one grammar.** The command palette, the sheet of keys, the search,
+  the base picker, the thread reader and the settling prompt share a box, a header, a row shape and
+  a footer, so a reviewer who has read one has read them all. The title is bold in the accent
+  colour, and a count, where there is one, sits at the right edge in muted. A qualifier such as the
+  branch and its base is a muted second line under the title, never glued to it with a dash. One
+  empty row separates the title from the query, the query from the list, and the list from the keys.
+  The query row opens with `›`, so an empty query still reads as a place to type. The title, the
+  `›`, the cursor mark and the keys all stand in column 0, and every row's text begins in column 2,
+  whatever lead the row carries before its text — a key, a sha, a state. Section headings, where a list has them,
+  are bold in muted, since the accent is spent on the title and the cursor. The keys that work in
+  the overlay are listed inside it, on its last row, above the scrim rather than dimmed under it.
+  Three columns and one row of padding on every side: a cell is about twice as tall as it is wide,
+  so the two read as near enough one distance, and the empty rows between the parts do the rest. No line stands at the left edge; the box is set apart by its own
+  shade over the scrim. The cursor row is painted from the cursor mark to the box's right padding,
+  not to the end of its text. An overlay is as tall as what it lists, within the cap below, and an
+  empty list is one faint row saying what will appear there.
+- **The palette groups its commands under their category.** Each category is a bold muted headline
+  with its commands beneath it and one empty row before the next, the way the sheet of keys already
+  reads, so a reviewer scanning for a command finds the kind first and the command second. The
+  category column at the right edge goes: the headline says it once, and without it the box needs
+  no more than eighty columns, so on a wide terminal it stops there. When a query is typed the
+  matches keep their order within each group, and the groups keep the order the first match set.
+  The cursor walks the rows in the order they are drawn, one row per press.
 - **A panel is sized from the terminal it opens on.** The command palette, the sheet of every key
   and the search results are measured against the width and the height of the
   screen rather than against one fixed size. On a wide terminal a command keeps its whole title and

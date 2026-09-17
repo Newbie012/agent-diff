@@ -927,7 +927,9 @@ export const commands: ReadonlyArray<Command> = [
     category: "App",
     keys: ["return", "space"],
     screens: ["settings"],
+    hint: "toggle",
     listed: false,
+    rank: 1,
   }),
   command({
     action: "back",
@@ -935,7 +937,9 @@ export const commands: ReadonlyArray<Command> = [
     category: "App",
     keys: ["escape", "q", ","],
     screens: ["settings"],
+    hint: "back",
     listed: false,
+    rank: 9,
   }),
   command({
     action: "keys.open",

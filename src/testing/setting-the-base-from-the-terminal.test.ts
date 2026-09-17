@@ -29,7 +29,7 @@ describe("when a reviewer sets the base from the terminal", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("Base for")
+    expect(frame).toMatch(/for (over|under)-the-stack/)
     expect(frame).toContain("under-the-stack")
   })
 
@@ -106,14 +106,14 @@ describe("when a reviewer sets the base from the terminal", () => {
     await driver.screen.pressKeys(["RETURN"])
     expect(await driver.screen.getFrame()).toContain("file 1 of 1")
     await driver.screen.pressKeys(["b"])
-    expect(await driver.screen.getFrame()).toContain("Base for")
+    expect(await driver.screen.getFrame()).toContain("for one-file-changed")
 
     // ACT
     await driver.screen.pressEscape()
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).not.toContain("Base for")
+    expect(frame).not.toContain("for one-file-changed")
     expect(frame).toContain("file 1 of 1")
   })
 })

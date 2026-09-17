@@ -93,7 +93,7 @@ describe("when ctrl+c is pressed", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).not.toContain("Look for something")
+    expect(frame).not.toContain("Type what to look for")
     expect(frame).toContain("const one = 2")
   })
 

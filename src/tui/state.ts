@@ -95,18 +95,35 @@ export type PreferenceRow = {
   readonly title: string
   readonly about: string
   readonly on: boolean
+  readonly said: string
   readonly here: boolean
 }
 
+export const EDITOR_ROW = "editor"
+
+const editorRow = (state: TuiState): PreferenceRow => ({
+  name: EDITOR_ROW,
+  title: "Open lines in",
+  about: "The editor e opens a line in. Return offers the ones on your machine.",
+  on: state.editorNow.length > 0,
+  said: state.editorNow.length === 0 ? "none found" : state.editorNow,
+  here: state.settingsIndex === preferences.length,
+})
+
 export const preferenceRows = (state: TuiState): ReadonlyArray<PreferenceRow> => {
   const held = chosenNow(state)
-  return preferences.map((one, at) => ({
-    name: one.name,
-    title: one.title,
-    about: one.about,
-    on: held[one.name] ?? one.byDefault,
-    here: at === state.settingsIndex,
-  }))
+  const toggles = preferences.map((one, at) => {
+    const on = held[one.name] ?? one.byDefault
+    return {
+      name: one.name,
+      title: one.title,
+      about: one.about,
+      on,
+      said: on ? "on" : "off",
+      here: at === state.settingsIndex,
+    }
+  })
+  return [...toggles, editorRow(state)]
 }
 
 export type ForgeAnswer = "asking" | "answered" | "silent"
@@ -197,6 +214,7 @@ export type TuiState = {
   readonly railRows: number
   readonly railScroll: number
   readonly settingsIndex: number
+  readonly beneath: ScreenName
   readonly asking: Asking | undefined
   readonly askIndex: number
   readonly now: number
@@ -227,6 +245,7 @@ const nothingReviewed = {
   railRows: 12,
   railScroll: -1,
   settingsIndex: 0,
+  beneath: "review" as ScreenName,
   asking: undefined,
   askIndex: 0,
   now: 0,

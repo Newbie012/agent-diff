@@ -6,7 +6,15 @@ export const ROW_HEIGHT = 1
 
 export const GUTTER_X = 2
 
-export const MODAL_ROOM = 8
+export const MODAL_PAD = 3
+
+export const MODAL_PAD_ROWS = 1
+
+export const SHEET_PAD_ROWS = 1
+
+export const LIST_LEAD = 2
+
+export const MODAL_ROOM = MODAL_PAD * 2 + LIST_LEAD
 
 export const PALETTE_WIDTH = 76
 
@@ -47,6 +55,10 @@ export const modalWidth = (width: number, wanted: number): number =>
   Math.max(0, Math.min(wanted, width - MODAL_MARGIN))
 
 export const panelWidth = (width: number): number => modalWidth(width, shareOf(width, PALETTE_WIDTH))
+
+export const BOX_MAX = 80
+
+export const boxWidth = (width: number): number => Math.min(panelWidth(width), BOX_MAX)
 
 export const panelTop = (height: number, part: number): number => Math.max(2, Math.floor(height / part))
 

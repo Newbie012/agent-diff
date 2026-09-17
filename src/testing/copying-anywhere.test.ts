@@ -31,7 +31,7 @@ describe("when a modal is open", () => {
   })
 })
 
-const sheetPick = (line: string): boolean => line.includes("┃") && line.includes("▎")
+const sheetPick = (line: string): boolean => /▎ \S.{0,10}\s{2,}[A-Z]/.test(line)
 
 describe("when the key sheet or the palette is open", () => {
   test("then the arrows still move through the rows", async () => {

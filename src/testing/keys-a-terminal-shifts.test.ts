@@ -31,7 +31,7 @@ describe("when the terminal reports a key as shifted", () => {
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("Keys here")
+    expect(frame).toContain("Keys")
     expect(frame).not.toContain("elsewhere")
   })
 
