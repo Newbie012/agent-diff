@@ -414,6 +414,10 @@
   dir: ""
   intents:
     - a-pull-request-somebody-else-opened
+"@eliya-oss/agent-diff@0.1.0-alpha.181":
+  dir: ""
+  intents:
+    - one-grammar-for-the-overlays
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
