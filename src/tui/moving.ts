@@ -4,7 +4,7 @@ import type { Work } from "./needs.ts"
 import { atFile, atLayer, railScrolled, reduce, scrolled } from "./reduce.ts"
 import { turnedTo } from "./source.ts"
 import type { Terminal } from "./terminal.ts"
-import { type Clicked, onLayers } from "./state.ts"
+import { type Clicked, onLayers, type TuiState } from "./state.ts"
 
 export const clicked = (app: Terminal, what: Clicked): Work => {
   return Effect.gen(function* () {
@@ -33,8 +33,19 @@ export const stepped = (app: Terminal, delta: number): Work => {
   return Effect.gen(function* () {
     if (paged(app, delta)) return
     catchUp(app)
+    const held = app.state
     yield* commitSynced(app, delta > 0 ? "cursor.next" : "cursor.prev")
+    stayPut(app, held)
   })
+}
+
+const stayPut = (app: Terminal, held: TuiState): void => {
+  const state = app.state
+  if (held.scroll < 0 || state.screen !== "review" || state.patchIndex !== held.patchIndex) return
+  const span = app.screen.blockAt(state.cursor, state.stop)
+  const end = held.scroll + Math.max(1, app.screen.viewportRows())
+  if (span.rows === 0 || span.start < held.scroll || span.start + span.rows > end) return
+  app.commit({ ...state, scroll: held.scroll })
 }
 
 export const catchUp = (app: Terminal): void => {
@@ -42,9 +53,12 @@ export const catchUp = (app: Terminal): void => {
   if (state.screen !== "review" || state.focus !== "diff" || state.scroll < 0) return
   const last = state.scroll + Math.max(1, app.screen.viewportRows()) - 1
   const at = app.screen.screenRowOf(state.cursor) ?? last
-  if (at >= state.scroll && at <= last) return
-  const wanted = at < state.scroll ? state.scroll : last
   const top = app.screen.rowAtScreen(state.scroll)
+  if (at >= state.scroll && at <= last) {
+    app.commit({ ...state, top })
+    return
+  }
+  const wanted = at < state.scroll ? state.scroll : last
   app.commit({ ...state, cursor: app.screen.rowAtScreen(wanted), stop: 0, top })
 }
 
