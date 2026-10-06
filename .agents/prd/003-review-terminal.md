@@ -148,6 +148,11 @@ Three screens, and the keys each answers to:
   reading before. The cursor comes to the row the reader is looking at — the top of the pane, or the
   bottom if it was left below — and moves from there, leaving what is on screen where it is.
 
+- **An arrow pressed after a short scroll keeps the view where the wheel left it.** When the wheel
+  moved the pane but the cursor was still on screen, the next arrow put the view back where it was
+  before the wheel. The cursor moves one line and the view stays put, and it moves only when the
+  cursor walks past its top or bottom edge, one line at a time from where the wheel left it.
+
 - **A notch of the wheel is one row.** A trackpad reports many small events for one push, and
   multiplying each of them moved the diff in jumps a reader had to re-find their place after. One
   row a notch reads like every other pane in the terminal, and a fast push still travels fast
