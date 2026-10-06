@@ -418,6 +418,10 @@
   dir: ""
   intents:
     - one-grammar-for-the-overlays
+"@eliya-oss/agent-diff@0.1.0-alpha.182":
+  dir: ""
+  intents:
+    - an-arrow-within-the-wheeled-view
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
