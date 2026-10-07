@@ -74,6 +74,12 @@ a visible diff.
 - The release job checks whether the package exists on the registry before applying any version,
   and holds with a notice explaining the bootstrap when it does not. `main` is safe to merge
   before the package exists, and the hold clears itself once it does.
+- **A release that stops halfway is finished by running the workflow again.** The version on main
+  can be tagged and never published, when the registry refuses the publish, or published without
+  its GitHub release and binaries, when the registry is slow to show it. Either way the next run
+  sees that main's own version is not fully out and finishes it from its tag before cutting a new
+  one, then starts another run for any intents still waiting. Before this, the next run computed
+  the same version from the registry again, collided with the tag, and published nothing.
 - Trusted publishing binds to the **workflow filename**. Renaming `release.yml` breaks publishing
   until the trusted publisher is updated to match.
 - Provenance is not generated. npm produces it automatically under trusted publishing, but only
