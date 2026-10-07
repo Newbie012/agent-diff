@@ -99,7 +99,7 @@ describe("when a file is marked reviewed by another client while the review is o
 })
 
 describe("when a branch is added while adiff serve runs", () => {
-  test("then serve lists the new branch within a second", async () => {
+  test("then serve lists the new branch on the next request", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create({ name: "add-a-third-line" })
@@ -108,7 +108,6 @@ describe("when a branch is added while adiff serve runs", () => {
 
     // ACT
     await driver.branch.create({ name: "add-a-fourth-line" })
-    await new Promise((resolve) => setTimeout(resolve, 1100))
     const listed = await served.ask(["branch", "list", "--repo", driver.app.repoPath()])
 
     // ASSERT
