@@ -20,7 +20,7 @@ import {
 import { heldValues } from "../domain/preferences/index.ts"
 import { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
-import { answers } from "./watch.ts"
+import { answers, filings } from "./watch.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { capsLocked, keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
 import {
@@ -51,6 +51,7 @@ import {
   goBack,
   loadPulls,
   noticeAnswers,
+  noticeFiled,
   openBases,
   openBranch,
   openedOn,
@@ -313,6 +314,10 @@ export class App implements Terminal {
 
   answered(): void {
     this.dispatch(noticeAnswers(this))
+  }
+
+  filed(): void {
+    this.dispatch(noticeFiled(this))
   }
 
   ticked(): void {
@@ -769,6 +774,9 @@ const ticking = (app: App): Effect.Effect<number> =>
 const noticing = (app: App, root: string): Effect.Effect<void> =>
   Stream.runForEach(answers(root), () => Effect.sync(() => app.answered()))
 
+const noticingFiled = (app: App, root: string): Effect.Effect<void> =>
+  Stream.runForEach(filings(root), () => Effect.sync(() => app.filed()))
+
 export type LaunchOptions = {
   readonly noticeMs?: number | undefined
   readonly sessionPath?: string | undefined
@@ -817,6 +825,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   yield* Effect.forkScoped(app.consume())
   yield* Effect.forkScoped(ticking(app))
   yield* Effect.forkScoped(noticing(app, store.root))
+  yield* Effect.forkScoped(noticingFiled(app, store.root))
   yield* treeSitterFreed
   app.open(opensOn, session, options.branch !== undefined && branches.length === 1)
   return app

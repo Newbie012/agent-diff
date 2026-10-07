@@ -1,6 +1,6 @@
 import { Option } from "effect"
 import { foldReindents } from "./reindent.ts"
-import type { Hunk, Patch, Row, RowKind } from "./model.ts"
+import type { FileStatus, Hunk, Patch, Row, RowKind } from "./model.ts"
 
 const FILE_MARKER = "diff --git "
 const HUNK_MARKER = "@@"
@@ -32,9 +32,13 @@ const MADE_SAID: Readonly<Record<Made, string>> = {
   changed: NOTHING_SAID,
 }
 
-const FROM_MARKERS: ReadonlyArray<{ readonly marker: string; readonly said: string }> = [
-  { marker: "rename from ", said: "renamed from" },
-  { marker: "copy from ", said: "copied from" },
+const FROM_MARKERS: ReadonlyArray<{
+  readonly marker: string
+  readonly said: string
+  readonly status: FileStatus
+}> = [
+  { marker: "rename from ", said: "renamed from", status: "renamed" },
+  { marker: "copy from ", said: "copied from", status: "copied" },
 ]
 
 type Draft = {
@@ -45,6 +49,8 @@ type Draft = {
   notes: Array<string>
   oldMode: string
   made: Made
+  status: FileStatus
+  binary: boolean
   hunks: Array<Hunk & { rows: Array<Row> }>
   rows: Array<Row>
   added: number
@@ -63,6 +69,8 @@ const draftFrom = (line: string): Draft => {
     notes: [],
     oldMode: "",
     made: "changed",
+    status: "changed",
+    binary: false,
     hunks: [],
     rows: [],
     added: 0,
@@ -159,16 +167,19 @@ const readMeta = (draft: Draft, line: string): boolean => {
   if (readMode(draft, line)) return true
   if (line.startsWith(FILE_ADDED_MARKER) || line.startsWith(FILE_GONE_MARKER)) {
     draft.made = line.startsWith(FILE_ADDED_MARKER) ? "added" : "deleted"
+    draft.status = draft.made
     return true
   }
   const from = FROM_MARKERS.find((entry) => line.startsWith(entry.marker))
   if (from === undefined) return false
   draft.notes.push(`${from.said} ${line.slice(from.marker.length)}`)
+  draft.status = from.status
   return true
 }
 
 const readBinary = (draft: Draft, line: string): boolean => {
   if (!line.startsWith(BINARY_MARKER)) return false
+  draft.binary = true
   told(draft, draft.notes)
   openPlain(draft)
   appendRow(draft, "context", BINARY_SAID)

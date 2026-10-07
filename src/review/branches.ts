@@ -90,7 +90,7 @@ export const find = Effect.fn("Review.Branch.find")(function* (
   return (yield* basedOn(repo, yield* named(repo, branch), base)).worktree
 })
 
-export const worktreeAt = Effect.fn("Review.Branch.worktreeAt")(function* (
+export const basedAt = Effect.fn("Review.Branch.basedAt")(function* (
   worktreePath: string,
   base?: string,
 ) {
@@ -104,7 +104,14 @@ export const worktreeAt = Effect.fn("Review.Branch.worktreeAt")(function* (
     return yield* new UnknownWorktree({ worktree: asked, known: worktrees.map((entry) => entry.path) })
   }
   const repo = yield* git.repoOf(found.path)
-  return (yield* basedOn(repo, found, base)).worktree
+  return yield* basedOn(repo, found, base)
+})
+
+export const worktreeAt = Effect.fn("Review.Branch.worktreeAt")(function* (
+  worktreePath: string,
+  base?: string,
+) {
+  return (yield* basedAt(worktreePath, base)).worktree
 })
 
 export const CONTEXT = 3

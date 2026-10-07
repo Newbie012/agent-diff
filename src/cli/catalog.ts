@@ -140,6 +140,26 @@ const commands: ReadonlyArray<CommandSpec> = [
     example: "adiff review pane --repo .",
   },
   {
+    name: "patch show",
+    about:
+      "A branch's diff as rows with line numbers on both sides, read from the same parse the terminal draws. Binary and generated files are listed and flagged",
+    group: READ_A_BRANCH,
+    addresses: "review",
+    safety: "read",
+    options: [
+      ...based,
+      { name: "file", required: false, value: "path", about: "Answer for this one file only" },
+      {
+        name: "context",
+        required: false,
+        value: "lines|all",
+        about: "Unchanged lines around each change. Defaults to 3; `all` answers whole files",
+      },
+    ],
+    dataKey: "patch",
+    example: "adiff patch show --repo . --branch add-invitations --file src/api.ts --context all",
+  },
+  {
     name: "file review",
     about: "Toggle a file as reviewed. Lapses on its own when the file changes",
     group: READ_A_BRANCH,

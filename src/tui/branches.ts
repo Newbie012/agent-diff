@@ -261,6 +261,19 @@ export const noticeAnswers = (app: Terminal): Work => {
   })
 }
 
+const sameSent = (one: TuiState["sent"], other: TuiState["sent"]): boolean =>
+  JSON.stringify(one) === JSON.stringify(other)
+
+export const noticeFiled = (app: Terminal): Work => {
+  return Effect.gen(function* () {
+    const branch = selectedBranch(app.state)
+    if (branch === undefined) return
+    const sent = yield* loadSent(app, branch.branch)
+    if (sameSent(app.state.sent, sent)) return
+    app.commit({ ...app.state, sent })
+  })
+}
+
 export const noticeOnList = (app: Terminal): Work => {
   return Effect.sync(() => app.commit(withWaiting(app.state, "the agent answered · press r")))
 }

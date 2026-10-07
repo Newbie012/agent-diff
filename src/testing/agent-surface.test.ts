@@ -16,6 +16,7 @@ describe("when an agent uses adiff without reading the documentation", () => {
       "branch list",
       "review open",
       "review pane",
+      "patch show",
       "file review",
       "base set",
       "base clear",
