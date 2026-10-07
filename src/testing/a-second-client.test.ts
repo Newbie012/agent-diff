@@ -172,6 +172,56 @@ describe("when a second client lists the comments", () => {
   })
 })
 
+describe("when a second client lists the comments against a base it names", () => {
+  test("then the list answers rather than refusing the base", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.runComment({ branch: branch.name, file: "src/api.ts", start: 4, end: 4, body: "why three" })
+
+    // ACT
+    const result = await driver.app.run(["comment", "list", "--worktree", branch.worktree, "--base", "auto"])
+
+    // ASSERT
+    expect(result.code).toBe(0)
+    expect((result.envelope as { comments: ReadonlyArray<{ body: string }> }).comments.map((one) => one.body)).toEqual([
+      "why three",
+    ])
+  })
+})
+
+describe("when a second client reads when each comment was written", () => {
+  test("then each listed comment carries the time it was sent", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.run([
+      "comment",
+      "send",
+      "--worktree",
+      branch.worktree,
+      "--file",
+      "src/api.ts",
+      "--start",
+      "4",
+      "--end",
+      "4",
+      "--body",
+      "why three",
+      "--at",
+      "2026-10-07T09:00:00.000Z",
+    ])
+
+    // ACT
+    const result = await driver.app.run(["comment", "list", "--worktree", branch.worktree])
+
+    // ASSERT
+    expect((result.envelope as { comments: ReadonlyArray<{ at: string }> }).comments.map((one) => one.at)).toEqual([
+      "2026-10-07T09:00:00.000Z",
+    ])
+  })
+})
+
 describe("when a comment is filed by another client while the review is open", () => {
   test("then the review shows the comment without a key being pressed", async () => {
     // ARRANGE
