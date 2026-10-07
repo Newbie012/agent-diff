@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { series, type DriverState } from "../../state.ts"
+import { ServedAdiff } from "./served.ts"
 
 const exec = promisify(execFile)
 
@@ -84,6 +85,17 @@ export class AppTestDriver {
       const stderr = failed.stderr ?? ""
       return { code: failed.code ?? 1, stdout, stderr, envelope: parse(stderr) || parse(stdout) }
     }
+  }
+
+  serve(): ServedAdiff {
+    this.state.tracer.cannotReplay("adiff driven through serve")
+    const served = ServedAdiff.start(process.execPath, [...NODE_FLAGS, ENTRY, "serve"], {
+      ...process.env,
+      HOME: this.state.workspace,
+      ADIFF_ROOT: this.state.storeRoot,
+    })
+    this.state.onDispose(() => served.close())
+    return served
   }
 
   async rewroteDraft(options: {

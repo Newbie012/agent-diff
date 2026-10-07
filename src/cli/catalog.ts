@@ -630,6 +630,17 @@ const commands: ReadonlyArray<CommandSpec> = [
     example: "adiff upgrade --check --json --fields route,latest,current",
   },
   {
+    name: "serve",
+    about:
+      "Answer commands one JSON line at a time on stdin and stdout, and report changes to the reviews a client watches. For a program that asks adiff often, such as a review page",
+    group: SET_UP,
+    addresses: "repo",
+    safety: "read",
+    options: [],
+    dataKey: "",
+    example: 'echo \'{"id":1,"args":["comment","list","--worktree","."]}\' | adiff serve',
+  },
+  {
     name: "resume",
     about:
       "Open the review you left last in this repository. Opens the terminal, like `review open`, on the branch it was opened on most recently",
