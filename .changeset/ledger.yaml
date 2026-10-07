@@ -430,6 +430,10 @@
   dir: ""
   intents:
     - a-second-client-reads-the-same-review
+"@eliya-oss/agent-diff@0.1.0-alpha.185":
+  dir: ""
+  intents:
+    - a-stylesheet-in-colour
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
