@@ -443,6 +443,10 @@
   intents:
     - a-stylesheet-in-colour-from-homebrew
     - every-review-verb-is-a-command
+"@eliya-oss/agent-diff@0.1.0-alpha.188":
+  dir: ""
+  intents:
+    - one-adiff-serves-a-second-client
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
