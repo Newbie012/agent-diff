@@ -74,6 +74,18 @@ export const numeric = Effect.fn("Cli.numeric")(function* (options: Options, nam
     : new BadOption({ option: name, given: raw, allowed: ["a whole number of 1 or more"] })
 })
 
+const WHOLE = "all"
+
+export const around = Effect.fn("Cli.around")(function* (options: Options, name: string) {
+  const raw = options[name]
+  if (raw === undefined) return undefined
+  if (raw === WHOLE) return WHOLE
+  const parsed = Number(raw)
+  return yield* Number.isInteger(parsed) && parsed >= 0
+    ? Effect.succeed(parsed)
+    : new BadOption({ option: name, given: raw, allowed: ["a whole number of 0 or more", WHOLE] })
+})
+
 export const seconds = Effect.fn("Cli.seconds")(function* (options: Options, name: string) {
   const raw = options[name]
   if (raw === undefined) return 0

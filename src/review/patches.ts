@@ -3,12 +3,15 @@ import {
   anchorFor,
   rowsForRange,
   WHOLE_FILE,
+  type FileStatus,
+  type Hunk,
   type Patch,
+  type Row,
   type Side,
 } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { UnknownFile, UnselectableRange } from "./error.ts"
-import { patches as patchesIn } from "./branches.ts"
+import { CONTEXT, patches as patchesIn, type Based } from "./branches.ts"
 
 const findPatch = (patches: ReadonlyArray<Patch>, file: string): Option.Option<Patch> =>
   Option.fromNullishOr(patches.find((patch) => patch.path === file))
@@ -56,4 +59,92 @@ export const before = Effect.fn("Review.Diff.before")(function* (worktree: Workt
   const git = yield* Git
   const found = yield* git.blob(worktree, file)
   return Option.getOrElse(found, (): ReadonlyArray<string> => [])
+})
+
+export type ShownRow = {
+  readonly kind: "context" | "added" | "removed" | "note"
+  readonly text: string
+  readonly old?: number
+  readonly new?: number
+}
+
+export type ShownHunk = {
+  readonly header: string
+  readonly scope: string
+  readonly skipped: number
+  readonly rows: ReadonlyArray<ShownRow>
+}
+
+export type ShownFile = {
+  readonly path: string
+  readonly previousPath: string
+  readonly status: FileStatus
+  readonly binary: boolean
+  readonly generated: boolean
+  readonly added: number
+  readonly removed: number
+  readonly hunks: ReadonlyArray<ShownHunk>
+}
+
+export type ShownPatch = {
+  readonly branch: string
+  readonly base: string
+  readonly mergeBase: string
+  readonly head: string
+  readonly files: ReadonlyArray<ShownFile>
+}
+
+export type Showing = {
+  readonly file: string | undefined
+  readonly context: number | "all" | undefined
+}
+
+const linesAround = (context: Showing["context"]): number => {
+  if (context === "all") return WHOLE_FILE
+  return context ?? CONTEXT
+}
+
+const GENERATED_NAME = /\.generated\./
+
+const lineOf = (side: "old" | "new", line: Option.Option<number>): Partial<Record<"old" | "new", number>> =>
+  Option.match(line, { onNone: () => ({}), onSome: (at) => ({ [side]: at }) })
+
+const isNote = (hunk: Hunk, row: Row): boolean =>
+  hunk.marker.length === 0 || (Option.isNone(row.oldLine) && Option.isNone(row.newLine))
+
+const shownRow = (hunk: Hunk, row: Row): ShownRow =>
+  isNote(hunk, row)
+    ? { kind: "note", text: row.text }
+    : { kind: row.kind, ...lineOf("old", row.oldLine), ...lineOf("new", row.newLine), text: row.text }
+
+const shownHunk = (hunk: Hunk): ShownHunk => ({
+  header: hunk.marker,
+  scope: hunk.scope,
+  skipped: hunk.skipped,
+  rows: hunk.rows.map((row) => shownRow(hunk, row)),
+})
+
+const shownFile = (patch: Patch, generated: ReadonlySet<string>): ShownFile => ({
+  path: patch.path,
+  previousPath: patch.previousPath,
+  status: patch.status,
+  binary: patch.binary,
+  generated: generated.has(patch.path) || GENERATED_NAME.test(patch.path),
+  added: patch.added,
+  removed: patch.removed,
+  hunks: patch.hunks.map(shownHunk),
+})
+
+export const show = Effect.fn("Review.Diff.show")(function* (based: Based, showing: Showing) {
+  const git = yield* Git
+  const { worktree } = based
+  const patches = yield* patchesIn(worktree, linesAround(showing.context), showing.file)
+  const generated = yield* git.generated(worktree, patches.map((patch) => patch.path))
+  return {
+    branch: worktree.branch,
+    base: based.base,
+    mergeBase: worktree.base,
+    head: worktree.head,
+    files: patches.map((patch) => shownFile(patch, generated)),
+  } satisfies ShownPatch
 })

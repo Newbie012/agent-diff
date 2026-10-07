@@ -6,6 +6,8 @@ export type Side = "old" | "new"
 
 export type RowKind = "context" | "added" | "removed"
 
+export type FileStatus = "added" | "deleted" | "renamed" | "copied" | "changed"
+
 export type Row = {
   readonly index: number
   readonly kind: RowKind
@@ -28,6 +30,8 @@ export type Patch = {
   readonly previousPath: string
   readonly blob: string
   readonly headerLines: ReadonlyArray<string>
+  readonly status: FileStatus
+  readonly binary: boolean
   readonly hunks: ReadonlyArray<Hunk>
   readonly rows: ReadonlyArray<Row>
   readonly added: number

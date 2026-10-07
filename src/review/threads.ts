@@ -17,6 +17,7 @@ export type Thread = {
   readonly side: string
   readonly start: number
   readonly end: number
+  readonly snippet: string
   readonly body: string
   readonly state: string
   readonly stale: boolean
@@ -114,6 +115,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
     side: comment.anchor.side,
     start: sits.start,
     end: sits.end,
+    snippet: comment.anchor.snippet,
     body: comment.body,
     state: stateOf(turns, mine.at(-1)?.asks === true, settled, Object.hasOwn(conversation.removed, comment.id)),
     stale: batch.head !== conversation.head,

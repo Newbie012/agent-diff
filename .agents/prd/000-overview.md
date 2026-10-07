@@ -101,6 +101,7 @@ reached the agent that wrote the code.
 | [011](011-preferences.md) | What the review remembers between sessions, and how it is read and set | `domain/preferences` |
 | [012](012-reviewing-someone-elses-work.md) | Reviewing a branch you did not write | `service/git`, `tui` |
 | [013](013-review-remarks.md) | Reading the pull request's own review, and deciding each remark | `service/forge`, `service/store`, `tui` |
+| [014](014-a-second-client.md) | A second client reading and writing the same review: the diff as JSON, comments filed elsewhere | `cli`, `review`, `tui` |
 
 ### Cross-cutting concerns every PRD inherits
 

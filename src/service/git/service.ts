@@ -31,6 +31,10 @@ type Shape = {
     path: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
   readonly grep: (worktree: Worktree, term: string) => Effect.Effect<string>
+  readonly generated: (
+    worktree: Worktree,
+    paths: ReadonlyArray<string>,
+  ) => Effect.Effect<ReadonlySet<string>>
   readonly blob: (
     worktree: Worktree,
     path: string,
@@ -222,6 +226,30 @@ const readGrep = Effect.fn("Git.grep")(function* (worktree: Worktree, term: stri
   ])
 })
 
+const GENERATED_SAID = ": linguist-generated: "
+
+const markedGenerated = (line: string): ReadonlyArray<string> => {
+  const at = line.lastIndexOf(GENERATED_SAID)
+  if (at === -1) return []
+  const value = line.slice(at + GENERATED_SAID.length).trim()
+  return value === "unspecified" || value === "unset" || value === "false" ? [] : [line.slice(0, at)]
+}
+
+const readGenerated = Effect.fn("Git.generated")(function* (
+  worktree: Worktree,
+  paths: ReadonlyArray<string>,
+) {
+  if (paths.length === 0) return new Set<string>()
+  const raw = yield* gitOrEmpty(worktree.path, [
+    ...PLAIN_PATHS,
+    "check-attr",
+    "linguist-generated",
+    "--",
+    ...paths,
+  ])
+  return new Set(raw.split("\n").flatMap(markedGenerated))
+})
+
 const findRepo = Effect.fn("Git.repoOf")(function* (worktree: string) {
   const common = yield* gitOrEmpty(worktree, [
     "rev-parse",
@@ -341,6 +369,7 @@ const shapeWith = (caches: Caches): Shape => ({
   source: readSource,
   blob: readBlob,
   grep: readGrep,
+  generated: readGenerated,
   defaultBranch: (repo: string) => Cache.get(caches.baseName, repo),
   stackParent: (repo: string, branch: string) =>
     Cache.get(caches.baseName, repo).pipe(

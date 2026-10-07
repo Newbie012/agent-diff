@@ -4,6 +4,7 @@ import { text as readStream } from "node:stream/consumers"
 import { Cause, Effect, Layer, Option } from "effect"
 import {
   addressing,
+  around,
   catalog,
   knownIn,
   valuedIn,
@@ -38,6 +39,7 @@ import {
 import {
   Branch,
   Comment,
+  Diff,
   Draft,
   Layers,
   MalformedLayers,
@@ -291,6 +293,15 @@ const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
   yield* answer(options, { layers })
 })
 
+const patchShow = Effect.fn("Main.patchShow")(function* (options: Options) {
+  const based = yield* Branch.basedAt(yield* required(options, "worktree"), options["base"])
+  const patch = yield* Diff.show(based, {
+    file: options["file"],
+    context: yield* around(options, "context"),
+  })
+  yield* answer(options, { patch })
+})
+
 const configList = Effect.fn("Main.configList")(function* (options: Options) {
   yield* answer(options, { preferences: yield* Preference.list() })
 })
@@ -386,6 +397,7 @@ const routes = {
   "review progress": reviewStatus,
   "layers set": layersSet,
   "layers show": layersShow,
+  "patch show": patchShow,
   upgrade,
   describe,
 } as const
