@@ -71,6 +71,8 @@ agent's answer.
   refused.
 - **A file is generated when git's `linguist-generated` attribute says so, or its name contains
   `.generated.`.** A generated file is listed and flagged, never left out.
+- **`comment list` takes `--base`**, so a client reading the diff against a base it names places
+  comments against the same one. Each comment carries `at`, the time it was sent.
 - **`comment list` reports `snippet`**, the code the comment was written against, beside `start`
   and `end`, which are where that code sits now. `outside` is true when the code is no longer
   found, and the client lists such a comment rather than placing it on a line.

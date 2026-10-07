@@ -373,7 +373,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     group: FOLLOW_UP,
     addresses: "review",
     safety: "read",
-    options: [...addressing],
+    options: [...based],
     dataKey: "comments",
     example: "adiff comment list --worktree . --fields id,body,settled",
   },
