@@ -23,6 +23,7 @@ export {
   MalformedLayers,
   NoLayers,
   NoPull,
+  UnknownLayer,
   NothingDrafted,
   NothingSaid,
   PartlySent,

@@ -17,10 +17,10 @@ import type { Patch } from "../domain/patch/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
 import { isPartVouched, isVouched, partOf, vouch, vouchPart as vouchedPart } from "../domain/review/index.ts"
-import { MalformedLayers, NoLayers, UnknownFile } from "./error.ts"
+import { MalformedLayers, NoLayers, UnknownFile, UnknownLayer } from "./error.ts"
 import { submit } from "./comments.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
-import { readParts, type VouchReport } from "./vouching.ts"
+import { readParts, toggle, type VouchReport } from "./vouching.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
@@ -34,6 +34,7 @@ export type ReportedLayer = {
   readonly covered: number
   readonly partial: number
   readonly vanished: ReadonlyArray<string>
+  readonly read?: ReadonlyArray<string>
 }
 
 export type LayersReport = {
@@ -250,14 +251,40 @@ export const set = Effect.fn("Review.Layers.set")(function* (
   return reportOf(patches, layers, worktree.head)
 })
 
+type Reading = {
+  readonly patches: ReadonlyArray<Patch>
+  readonly vouches: Readonly<Record<string, string>>
+  readonly parts: ReadonlyArray<string>
+}
+
+const readInLayer = (layer: ReportedLayer, reading: Reading): ReadonlyArray<string> =>
+  layer.files.filter((path) => {
+    const blob = reading.patches.find((patch) => patch.path === path)?.blob ?? ""
+    if (isVouched(reading.vouches, path, blob)) return true
+    const spans = layer.spans.filter((span) => span.path === path)
+    return reading.parts.includes(partOf(path, spans))
+  })
+
+const withRead = (report: LayersReport, reading: Reading): LayersReport => ({
+  ...report,
+  layers: report.layers.map((layer) => ({ ...layer, read: readInLayer(layer, reading) })),
+})
+
 export const show = Effect.fn("Review.Layers.show")(function* (worktree: Worktree) {
+  const store = yield* Store
   const patches = yield* patchesIn(worktree)
   const found = yield* storedLayers(worktree)
   const layers = yield* Option.match(found, {
     onNone: () => new NoLayers({ worktree: worktree.path }),
     onSome: Effect.succeed,
   })
-  return reportOf(patches, layers, worktree.head)
+  const current = yield* store.state(worktree.path)
+  const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  return withRead(reportOf(patches, layers, worktree.head), {
+    patches,
+    vouches: current.vouches,
+    parts: readParts(current.parts, files),
+  })
 })
 
 export const read = Effect.fn("Review.Layers.read")(function* (reading: BranchReading) {
@@ -337,4 +364,21 @@ export const ask = Effect.fn("Review.Layers.ask")(function* (
     at: request.at,
   })
   return { asked: body }
+})
+
+const claims = (layer: ReportedLayer, file: string): boolean =>
+  layer.spans.some((span) => span.path === file)
+
+export const vouchIn = Effect.fn("Review.Layers.vouchIn")(function* (
+  reading: BranchReading,
+  file: string,
+  number: number,
+) {
+  const held = yield* read(reading)
+  const layer = held.layers[number - 1]
+  if (layer === undefined) return yield* new UnknownLayer({ layer: number, known: held.layers.length })
+  const holding = held.layers.filter((one) => claims(one, file)).length
+  const spans = layer.spans.filter((span) => span.path === file)
+  if (holding < 2 || spans.length === 0) return yield* toggle(reading, file)
+  return yield* vouchPart(reading, file, partOf(file, spans))
 })

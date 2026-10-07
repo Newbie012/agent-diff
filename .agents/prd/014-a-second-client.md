@@ -102,6 +102,12 @@ already read.
   does, so `unread` falls to 0 for every client.
 - **`comment resolve --read` settles every comment whose answers have all been read**, as `D` does
   in the terminal, and answers how many it settled. `--id` and `--read` are one or the other.
+- **Each layer `layers show` reports carries `read`**, the files in it already read: the whole file
+  marked reviewed, or its part in that layer when more than one layer claims it. The counts a
+  client draws ("2 of 3 files read") match the terminal's rail.
+- **`file review --layer <n>` marks a file read in layer `n` only**, counting from 1, when more than
+  one layer claims it, as `m` does on the layers rail. A file only one layer claims is marked
+  whole. A number no layer carries is refused with `UnknownLayer`.
 
 ### Deferred decisions
 
@@ -119,7 +125,8 @@ Each new command at the command boundary: `pull show` names the URL and whose pu
 refuses a branch with none; `base list` offers the stacked parent and never the branch itself;
 `branch search` finds a line in a changed file; `layers ask` files a comment the agent takes;
 `comment read` brings `unread` to 0; `comment resolve --read` settles an answered and read comment
-and leaves an unread one open.
+and leaves an unread one open; `layers show` names a reviewed file read in its layer; `file review
+--layer` marks a shared file read in one layer and not the other.
 
 At the terminal: with the review open, a comment filed through `comment send` shows in the diff
 without a key being pressed.

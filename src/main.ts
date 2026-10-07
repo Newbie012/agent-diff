@@ -305,8 +305,15 @@ const commentReopen = Effect.fn("Main.commentReopen")(function* (options: Option
   yield* answer(options, { reopened: report.unsettled })
 })
 
+const vouched = Effect.fn("Main.vouched")(function* (options: Options) {
+  const reading = yield* readingIn(options)
+  const file = yield* required(options, "file")
+  if (options["layer"] === undefined) return yield* Vouch.toggle(reading, file)
+  return yield* Layers.vouchIn(reading, file, yield* numeric(options, "layer"))
+})
+
 const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
-  const report = yield* Vouch.toggle(yield* readingIn(options), yield* required(options, "file"))
+  const report = yield* vouched(options)
   yield* answer(options, { reviewed: report.vouched, total: report.total })
 })
 

@@ -95,3 +95,8 @@ export class NoLayers extends Data.TaggedError("NoLayers")<{
 export class NoPull extends Data.TaggedError("NoPull")<{
   readonly branch: string
 }> {}
+
+export class UnknownLayer extends Data.TaggedError("UnknownLayer")<{
+  readonly layer: number
+  readonly known: number
+}> {}

@@ -196,7 +196,17 @@ const commands: ReadonlyArray<CommandSpec> = [
     group: READ_A_BRANCH,
     addresses: "review",
     safety: "write",
-    options: [...based, file],
+    options: [
+      ...based,
+      file,
+      {
+        name: "layer",
+        required: false,
+        value: "number",
+        about:
+          "Mark the file read in this layer only, counting from 1, when more than one layer claims it",
+      },
+    ],
     dataKey: "reviewed",
     example: "adiff file review --worktree . --file src/api.ts",
   },

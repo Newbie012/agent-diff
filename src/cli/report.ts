@@ -61,6 +61,11 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "No layers has been written for this worktree. Write one with `adiff layers set`.",
     retriable: false,
   },
+  UnknownLayer: {
+    exit: NOT_FOUND,
+    suggestion: "No layer carries that number. `adiff layers show` lists them, counting from 1.",
+    retriable: false,
+  },
   NoPull: {
     exit: NOT_FOUND,
     suggestion:

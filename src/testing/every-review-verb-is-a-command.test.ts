@@ -162,3 +162,58 @@ describe("when a second client settles every answer already read", () => {
     expect(listed.find((comment) => comment.id === unread)?.settled).toBe(false)
   })
 })
+
+type Shown = { readonly layers: { readonly layers: ReadonlyArray<{ readonly title: string; readonly read: ReadonlyArray<string> }> } }
+
+const readByLayer = async (driver: TestDriver, worktree: string) => {
+  const shown = (await driver.app.runLayersShow(worktree)).envelope as Shown
+  return Object.fromEntries(shown.layers.layers.map((layer) => [layer.title, layer.read]))
+}
+
+describe("when a second client reads a branch layer by layer", () => {
+  test("then layers show names the files already read in each layer", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.runLayersSet(branch.worktree, {
+      layers: [{ title: "The third line", spans: [{ path: "src/api.ts", start: 1, end: 6 }] }],
+    })
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", "src/api.ts"])
+
+    // ACT
+    const read = await readByLayer(driver, branch.worktree)
+
+    // ASSERT
+    expect(read["The third line"]).toEqual(["src/api.ts"])
+  })
+
+  test("then file review --layer marks a file two layers share read in that layer only", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.runLayersSet(branch.worktree, {
+      layers: [
+        { title: "The new constant", spans: [{ path: "src/api.ts", start: 4, end: 4 }] },
+        { title: "The new sum", spans: [{ path: "src/api.ts", start: 5, end: 5 }] },
+      ],
+    })
+
+    // ACT
+    const result = await driver.app.run([
+      "file",
+      "review",
+      "--worktree",
+      branch.worktree,
+      "--file",
+      "src/api.ts",
+      "--layer",
+      "1",
+    ])
+
+    // ASSERT
+    expect(result.code).toBe(0)
+    const read = await readByLayer(driver, branch.worktree)
+    expect(read["The new constant"]).toEqual(["src/api.ts"])
+    expect(read["The new sum"]).toEqual([])
+  })
+})
