@@ -88,13 +88,10 @@ export class ServedAdiff {
   }
 
   async settledOn(id: number, quietMs = 600): Promise<void> {
-    const heardBefore = (): number => this.heard.filter((line) => line.id === id).length
-    let count = heardBefore()
-    for (;;) {
-      await new Promise((resolve) => setTimeout(resolve, quietMs))
-      if (heardBefore() === count) return
-      count = heardBefore()
-    }
+    const count = this.heard.filter((line) => line.id === id).length
+    await new Promise((resolve) => setTimeout(resolve, quietMs))
+    if (this.heard.filter((line) => line.id === id).length === count) return
+    await this.settledOn(id, quietMs)
   }
 
   close(): void {
