@@ -131,7 +131,8 @@ Three screens, and the keys each answers to:
 - **A stylesheet is coloured like the code beside it.** The terminal library knows a `.css` file
   is CSS but carries no grammar for it, so a stylesheet read as plain text while the component next
   to it was coloured. adiff carries the CSS grammar itself, so a property and its value read in two
-  colours.
+  colours. Every install carries it: the npm package beside its bundle, and the standalone binary
+  that Homebrew installs inside itself, since that binary has no folder of its own to read from.
 
 - **Colouring a file waits on nothing the reader is doing.** A grammar is fetched the first time a
   kind of file is opened, and reading it took as long as it took while every key pressed in the
