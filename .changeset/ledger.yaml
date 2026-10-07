@@ -434,6 +434,10 @@
   dir: ""
   intents:
     - a-stylesheet-in-colour
+"@eliya-oss/agent-diff@0.1.0-alpha.186":
+  dir: ""
+  intents:
+    - comment-list-takes-a-base
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:

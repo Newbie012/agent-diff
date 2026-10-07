@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.186
+
+### Added
+
+- **CLI** — `adiff comment list` takes `--base`, and each comment it lists carries the time it was sent.
+
 ## 0.1.0-alpha.185
 
 ### Fixed
