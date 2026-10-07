@@ -97,3 +97,24 @@ describe("when a file is marked reviewed by another client while the review is o
     await expect.poll(() => driver.screen.getFrame(), { timeout: 5000 }).toContain("1 reviewed")
   })
 })
+
+describe("when a branch is added while adiff serve runs", () => {
+  test("then serve lists the new branch within a second", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    await driver.branch.create({ name: "add-a-third-line" })
+    const served = driver.app.serve()
+    await served.ask(["branch", "list", "--repo", driver.app.repoPath()])
+
+    // ACT
+    await driver.branch.create({ name: "add-a-fourth-line" })
+    await new Promise((resolve) => setTimeout(resolve, 1100))
+    const listed = await served.ask(["branch", "list", "--repo", driver.app.repoPath()])
+
+    // ASSERT
+    const names = (listed.answer as unknown as { branches: ReadonlyArray<{ branch: string }> }).branches.map(
+      (one) => one.branch,
+    )
+    expect(names).toContain("add-a-fourth-line")
+  })
+})

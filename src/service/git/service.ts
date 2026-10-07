@@ -10,6 +10,7 @@ export const AT_ONCE = 8
 const CACHE_SIZE = 256
 const NAME_TTL = "5 minutes"
 const FRESH_TTL = "3 seconds"
+const LIST_TTL = "1 second"
 const SPLIT = "\u0000"
 
 const DEFAULT_BRANCH_CANDIDATES = ["origin/master", "origin/main", "master", "main"]
@@ -100,6 +101,9 @@ type Caches = {
   readonly baseName: Cache.Cache<string, string>
   readonly mergeBase: Cache.Cache<string, string>
   readonly parent: Cache.Cache<string, string>
+  readonly listed: Cache.Cache<string, string>
+  readonly resolved: Cache.Cache<string, boolean>
+  readonly shared: Cache.Cache<string, string>
 }
 
 const toWorktree = Effect.fn("Git.toWorktree")(function* (
@@ -177,7 +181,7 @@ const seenAs = Effect.fn("Git.seenAs")(function* (
 })
 
 const listWorktrees = Effect.fn("Git.worktrees")(function* (caches: Caches, repo: string) {
-  const porcelain = yield* gitOrEmpty(repo, ["worktree", "list", "--porcelain"])
+  const porcelain = yield* Cache.get(caches.listed, repo)
   if (porcelain.trim().length === 0) return yield* new NotARepository({ path: repo })
   const base = yield* Cache.get(caches.baseName, repo)
   const entries = readEntries(porcelain)
@@ -326,16 +330,18 @@ const readRefs = Effect.fn("Git.refs")(function* (repo: string) {
     .filter((line) => line.length > 0 && !line.endsWith("/HEAD"))
 })
 
-const refResolves = Effect.fn("Git.resolves")(function* (repo: string, ref: string) {
+const readListed = Effect.fn("Git.listed")(function* (repo: string) {
+  return yield* gitOrEmpty(repo, ["worktree", "list", "--porcelain"])
+})
+
+const refResolves = Effect.fn("Git.resolves")(function* (asked: string) {
+  const [repo = "", ref = ""] = asked.split(SPLIT)
   const found = yield* gitOrEmpty(repo, ["rev-parse", "--verify", `${ref}^{commit}`])
   return found.trim().length > 0
 })
 
-const sharedCommit = Effect.fn("Git.sharedWith")(function* (
-  repo: string,
-  branch: string,
-  ref: string,
-) {
+const sharedCommit = Effect.fn("Git.sharedWith")(function* (asked: string) {
+  const [repo = "", branch = "", ref = ""] = asked.split(SPLIT)
   return (yield* gitOrEmpty(repo, ["merge-base", branch, ref])).trim()
 })
 
@@ -355,7 +361,14 @@ const makeCaches = Effect.fn("Git.caches")(function* () {
     timeToLive: FRESH_TTL,
     lookup: findParent,
   })
-  return { baseName, mergeBase, parent } satisfies Caches
+  const listed = yield* Cache.make({ capacity: CACHE_SIZE, timeToLive: LIST_TTL, lookup: readListed })
+  const resolved = yield* Cache.make({
+    capacity: CACHE_SIZE,
+    timeToLive: FRESH_TTL,
+    lookup: refResolves,
+  })
+  const shared = yield* Cache.make({ capacity: CACHE_SIZE, timeToLive: FRESH_TTL, lookup: sharedCommit })
+  return { baseName, mergeBase, parent, listed, resolved, shared } satisfies Caches
 })
 
 const shapeWith = (caches: Caches): Shape => ({
@@ -379,8 +392,9 @@ const shapeWith = (caches: Caches): Shape => ({
     ),
   refs: readRefs,
   commits: (repo: string, branch: string, most: number) => readCommits(repo, branch, most),
-  resolves: refResolves,
-  sharedWith: sharedCommit,
+  resolves: (repo: string, ref: string) => Cache.get(caches.resolved, `${repo}${SPLIT}${ref}`),
+  sharedWith: (repo: string, branch: string, ref: string) =>
+    Cache.get(caches.shared, `${repo}${SPLIT}${branch}${SPLIT}${ref}`),
 })
 
 const makeGit = Effect.fn("Git.make")(function* () {

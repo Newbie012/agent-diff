@@ -131,6 +131,9 @@ already read.
   `upgrade` and `serve` itself are refused with `NotServed`. A line that is not a request is answered
   with `BadRequest`, and the pipe stays open.
 - **`serve` ends when stdin closes**, and writes nothing on stdout but answers and events.
+- **A long-lived adiff remembers what git said for a moment.** The worktree list is kept for one
+  second, and whether a ref resolves and which commit two branches share for three seconds, as merge
+  bases already are. A branch added while `serve` runs is listed within a second.
 - **An open terminal redraws reviewed marks another process set**, as it redraws comments.
 
 ### Deferred decisions
@@ -155,7 +158,7 @@ and leaves an unread one open; `layers show` names a reviewed file read in its l
 At the terminal: with the review open, a comment filed through `comment send` shows in the diff
 without a key being pressed, and a file marked through `file review` shows marked.
 
-Through `serve`: a command's answer is the envelope it prints alone; a refusal carries its exit
+Through `serve`: a branch added while it runs is listed after a second; a command's answer is the envelope it prints alone; a refusal carries its exit
 code; `review open` is refused; a watched review reports a change when another process files a
 comment; a line that is not a request is answered and the next request still is.
 
