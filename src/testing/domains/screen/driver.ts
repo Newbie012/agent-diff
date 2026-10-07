@@ -58,6 +58,7 @@ const watchedForge = (note: () => void): Layer.Layer<Forge> =>
         return []
       }),
     openPull: () => Effect.void,
+    address: () => Effect.succeed({ number: 0, url: "" }),
     head: () => Effect.succeed(""),
     review: () => Effect.succeed({ landed: [], url: "" }),
     remarks: () => Effect.succeed([]),

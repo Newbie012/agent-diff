@@ -26,6 +26,11 @@ the same queue `comment take` reads, so the agent has one place to look.
 An open terminal shows a comment written elsewhere without a reload, the way it already shows an
 agent's answer.
 
+Everything the terminal's review does is a command too, so a second client can offer the same
+review: the pull request behind a branch, the bases worth comparing against, a search of the
+branch, asking the agent for a reading order, marking an answer read, and settling every answer
+already read.
+
 ## User Stories
 
 1. As a `reviewer`, I want a comment I write in the browser to show in the open terminal, so that
@@ -39,6 +44,8 @@ agent's answer.
 5. As a `second client`, I want to know where a comment sits after the head moved, so that I never
    re-find code myself.
 6. As an `agent`, I want every line comment in one queue, so that I answer each once.
+7. As a `reviewer` in the browser, I want every key the terminal's review answers to, so that the
+   page is the same review and not a lesser copy.
 
 ## Implementation Decisions
 
@@ -47,6 +54,8 @@ agent's answer.
 - `patch show`: a branch's diff as JSON.
 - The terminal noticing comments that another process wrote.
 - The `snippet` field of `comment list`.
+- `pull show`, `base list`, `branch search`, `layers ask`, `comment read` and `comment resolve
+  --read`: the terminal's review verbs that had no command.
 
 ### Does not own
 
@@ -78,6 +87,30 @@ agent's answer.
   found, and the client lists such a comment rather than placing it on a line.
 - **An open terminal reloads its comments when another process files one.** The terminal watches
   the review's comments as it watches the agent's answers, and redraws the threads it shows.
+- **`pull show` answers `pull: {branch, number, url, state, draft, author, theirs}`** for the
+  pull request opened from a branch. `theirs` is true when somebody else opened it, which is when
+  comments are held as drafts rather than sent. A branch with no pull request is refused with
+  `NoPull`; a forge that does not answer is refused with `ForgeUnavailable`.
+- **`base list` answers `bases: [{ref, said}]`**, the refs the terminal offers when `b` is pressed:
+  the branch's last few commits first, each saying how far back it reaches, then every other ref.
+  The branch itself is never offered.
+- **`branch search --term <text>` answers `matches`, `counted` and `left`**, the same ranked
+  matches the terminal's `/` shows: changed files first, declarations before uses.
+- **`layers ask` files the comment the terminal's `L` files**: a request to the agent, worded by
+  whether the branch has no reading order, a stale one or a current one.
+- **`comment read --id <id>` marks the answers on a thread read**, as reading them in the terminal
+  does, so `unread` falls to 0 for every client.
+- **`comment resolve --read` settles every comment whose answers have all been read**, as `D` does
+  in the terminal, and answers how many it settled. `--id` and `--read` are one or the other.
+- **Each comment `comment list` reports carries `taken`**, true once the agent has collected it
+  with `comment take`, so a client marks a waiting comment apart from one nobody has picked up, as
+  the terminal's ◎ and ○ do.
+- **Each layer `layers show` reports carries `read`**, the files in it already read: the whole file
+  marked reviewed, or its part in that layer when more than one layer claims it. The counts a
+  client draws ("2 of 3 files read") match the terminal's rail.
+- **`file review --layer <n>` marks a file read in layer `n` only**, counting from 1, when more than
+  one layer claims it, as `m` does on the layers rail. A file only one layer claims is marked
+  whole. A number no layer carries is refused with `UnknownLayer`.
 
 ### Deferred decisions
 
@@ -90,6 +123,13 @@ agent's answer.
 At the command boundary: `patch show` on a branch that adds, deletes, renames and changes files,
 with a binary and a generated file among them, reports each file's status and flags and each row's
 line numbers. `--context all` reports whole files. `comment list` carries the snippet.
+
+Each new command at the command boundary: `pull show` names the URL and whose pull it is, and
+refuses a branch with none; `base list` offers the stacked parent and never the branch itself;
+`branch search` finds a line in a changed file; `layers ask` files a comment the agent takes;
+`comment read` brings `unread` to 0; `comment resolve --read` settles an answered and read comment
+and leaves an unread one open; `layers show` names a reviewed file read in its layer; `file review
+--layer` marks a shared file read in one layer and not the other.
 
 At the terminal: with the review open, a comment filed through `comment send` shows in the diff
 without a key being pressed.

@@ -11,6 +11,11 @@ export type Pull = {
   readonly theirs: boolean
 }
 
+export type PullAddress = {
+  readonly number: number
+  readonly url: string
+}
+
 export type ForgeComment = {
   readonly path: string
   readonly start: number
@@ -48,6 +53,7 @@ export type ForgeRemark = {
 export type Shape = {
   readonly pulls: (repo: string) => Effect.Effect<ReadonlyArray<Pull>, ForgeUnavailable>
   readonly openPull: (repo: string, branch: string) => Effect.Effect<void, ForgeUnavailable>
+  readonly address: (repo: string, branch: string) => Effect.Effect<PullAddress, ForgeUnavailable>
   readonly head: (repo: string, branch: string) => Effect.Effect<string, ForgeUnavailable>
   readonly review: (
     repo: string,
@@ -501,9 +507,15 @@ const review = Effect.fn("Forge.review")(function* (
   return { landed: landedIn(said, comments), url: pull.url }
 })
 
+const address = Effect.fn("Forge.address")(function* (repo: string, branch: string) {
+  const found = yield* named(repo, branch)
+  return { number: found.number, url: found.url } satisfies PullAddress
+})
+
 export const ForgeLive: Layer.Layer<Forge> = Layer.succeed(Forge)({
   pulls,
   openPull,
+  address,
   head,
   review,
   remarks,
