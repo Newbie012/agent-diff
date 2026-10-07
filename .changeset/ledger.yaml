@@ -426,6 +426,10 @@
   dir: ""
   intents:
     - caps-lock-writes-capitals
+"@eliya-oss/agent-diff@0.1.0-alpha.184":
+  dir: ""
+  intents:
+    - a-second-client-reads-the-same-review
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
