@@ -422,6 +422,10 @@
   dir: ""
   intents:
     - an-arrow-within-the-wheeled-view
+"@eliya-oss/agent-diff@0.1.0-alpha.183":
+  dir: ""
+  intents:
+    - caps-lock-writes-capitals
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
