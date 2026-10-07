@@ -133,7 +133,8 @@ already read.
 - **`serve` ends when stdin closes**, and writes nothing on stdout but answers and events.
 - **A long-lived adiff remembers what git said for a moment.** The worktree list is kept for one
   second, and whether a ref resolves and which commit two branches share for three seconds, as merge
-  bases already are. A branch added while `serve` runs is listed within a second.
+  bases already are; the repository a worktree belongs to for five minutes. A branch added while
+  `serve` runs is listed within a second.
 - **An open terminal redraws reviewed marks another process set**, as it redraws comments.
 
 ### Deferred decisions

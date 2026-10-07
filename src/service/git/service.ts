@@ -80,14 +80,21 @@ const readEntries = (porcelain: string): ReadonlyArray<Entry> => {
   return entries
 }
 
+const verifiedIn = (repo: string, candidate: string): Effect.Effect<boolean> =>
+  Effect.map(gitOrEmpty(repo, ["rev-parse", "--verify", candidate]), (said) => said.trim().length > 0)
+
 const findDefaultBranch = Effect.fn("Git.findDefaultBranch")(function* (repo: string) {
-  const symbolic = yield* gitOrEmpty(repo, ["symbolic-ref", "refs/remotes/origin/HEAD"])
+  const [symbolic, verified] = yield* Effect.all(
+    [
+      gitOrEmpty(repo, ["symbolic-ref", "refs/remotes/origin/HEAD"]),
+      Effect.forEach(DEFAULT_BRANCH_CANDIDATES, (candidate) => verifiedIn(repo, candidate), {
+        concurrency: "unbounded",
+      }),
+    ],
+    { concurrency: 2 },
+  )
   if (symbolic.trim().length > 0) return symbolic.trim().replace("refs/remotes/", "")
-  for (const candidate of DEFAULT_BRANCH_CANDIDATES) {
-    const verified = yield* gitOrEmpty(repo, ["rev-parse", "--verify", candidate])
-    if (verified.trim().length > 0) return candidate
-  }
-  return "HEAD"
+  return DEFAULT_BRANCH_CANDIDATES.find((_, at) => verified[at] === true) ?? "HEAD"
 })
 
 const partsOf = (key: string): ReadonlyArray<string> => key.split(SPLIT)
@@ -103,6 +110,7 @@ type Caches = {
   readonly parent: Cache.Cache<string, string>
   readonly listed: Cache.Cache<string, string>
   readonly resolved: Cache.Cache<string, boolean>
+  readonly repos: Cache.Cache<string, string>
   readonly shared: Cache.Cache<string, string>
 }
 
@@ -254,7 +262,7 @@ const readGenerated = Effect.fn("Git.generated")(function* (
   return new Set(raw.split("\n").flatMap(markedGenerated))
 })
 
-const findRepo = Effect.fn("Git.repoOf")(function* (worktree: string) {
+const askRepo = Effect.fn("Git.askRepo")(function* (worktree: string) {
   const common = yield* gitOrEmpty(worktree, [
     "rev-parse",
     "--path-format=absolute",
@@ -368,12 +376,13 @@ const makeCaches = Effect.fn("Git.caches")(function* () {
     lookup: refResolves,
   })
   const shared = yield* Cache.make({ capacity: CACHE_SIZE, timeToLive: FRESH_TTL, lookup: sharedCommit })
-  return { baseName, mergeBase, parent, listed, resolved, shared } satisfies Caches
+  const repos = yield* Cache.make({ capacity: CACHE_SIZE, timeToLive: NAME_TTL, lookup: askRepo })
+  return { baseName, mergeBase, parent, listed, resolved, shared, repos } satisfies Caches
 })
 
 const shapeWith = (caches: Caches): Shape => ({
   worktrees: (repo: string) => listWorktrees(caches, repo),
-  repoOf: findRepo,
+  repoOf: (worktree: string) => Cache.get(caches.repos, worktree),
   commonDirOf: findCommonDir,
   realPathOf: settled,
   headOf: readHead,
