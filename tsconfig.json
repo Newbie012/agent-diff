@@ -26,6 +26,7 @@
     "allowUnusedLabels": false,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
+    "allowArbitraryExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "plugins": [
       {
