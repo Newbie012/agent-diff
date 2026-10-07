@@ -22,7 +22,7 @@ import { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers } from "./watch.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
-import { keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
+import { capsLocked, keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
 import {
   draggedTo,
   paletteChoice,
@@ -522,6 +522,7 @@ export class App implements Terminal {
   }
 
   private pressed(key: KeyEvent): void {
+    capsLocked(key)
     if (this.renderer.hasSelection) this.renderer.clearSelection()
     Queue.offerUnsafe(this.intents, Intent.Key({ key }))
   }
