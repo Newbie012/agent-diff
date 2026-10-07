@@ -447,6 +447,10 @@
   dir: ""
   intents:
     - one-adiff-serves-a-second-client
+"@eliya-oss/agent-diff@0.1.0-alpha.189":
+  dir: ""
+  intents:
+    - serve-asks-git-less
 "@eliya-oss/agent-diff@0.1.0-alpha.19":
   dir: ""
   intents:
