@@ -102,6 +102,9 @@ already read.
   does, so `unread` falls to 0 for every client.
 - **`comment resolve --read` settles every comment whose answers have all been read**, as `D` does
   in the terminal, and answers how many it settled. `--id` and `--read` are one or the other.
+- **Each comment `comment list` reports carries `taken`**, true once the agent has collected it
+  with `comment take`, so a client marks a waiting comment apart from one nobody has picked up, as
+  the terminal's ◎ and ○ do.
 - **Each layer `layers show` reports carries `read`**, the files in it already read: the whole file
   marked reviewed, or its part in that layer when more than one layer claims it. The counts a
   client draws ("2 of 3 files read") match the terminal's rail.

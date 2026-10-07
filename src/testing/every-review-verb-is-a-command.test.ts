@@ -217,3 +217,23 @@ describe("when a second client reads a branch layer by layer", () => {
     expect(read["The new sum"]).toEqual([])
   })
 })
+
+describe("when a second client shows whether the agent has picked a comment up", () => {
+  test("then comment list says a comment is taken once the agent collects it", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await sendOn(driver, branch.worktree, 4, "why three")
+    const before = (await driver.app.run(["comment", "list", "--worktree", branch.worktree])).envelope
+
+    // ACT
+    await driver.app.run(["comment", "take", "--worktree", branch.worktree])
+
+    // ASSERT
+    const after = (await driver.app.run(["comment", "list", "--worktree", branch.worktree])).envelope
+    const takenIn = (envelope: unknown) =>
+      (envelope as { comments: ReadonlyArray<{ taken: boolean }> }).comments.map((one) => one.taken)
+    expect(takenIn(before)).toEqual([false])
+    expect(takenIn(after)).toEqual([true])
+  })
+})

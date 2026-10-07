@@ -24,6 +24,7 @@ export type Thread = {
   readonly stale: boolean
   readonly outside: boolean
   readonly unread: number
+  readonly taken: boolean
   readonly answers: ReadonlyArray<ThreadAnswer>
   readonly turns: ReadonlyArray<ThreadTurn>
   readonly settled: boolean
@@ -68,6 +69,7 @@ type Conversation = {
   readonly shown: ReadonlySet<string>
   readonly patches: ReadonlyArray<Patch>
   readonly read: Readonly<Record<string, number>>
+  readonly taken: Readonly<Record<string, string>>
 }
 
 const placedNow = (
@@ -123,6 +125,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
     stale: batch.head !== conversation.head,
     outside: !conversation.shown.has(comment.anchor.path) || !sits.placed,
     unread: Math.max(0, mine.length - seen),
+    taken: [...ids].some((id) => Object.hasOwn(conversation.taken, id)),
     answers: mine.map(answerOf),
     turns,
     settled,
@@ -167,6 +170,7 @@ export const list = Effect.fn("Review.Thread.list")(function* (reading: BranchRe
     shown: new Set(patches.map((patch) => patch.path)),
     patches,
     read: current.read,
+    taken: current.taken ?? {},
   })
 })
 

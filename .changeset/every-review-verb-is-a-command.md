@@ -11,3 +11,5 @@ feat(CLI): `pull show`, `base list`, `branch search`, `layers ask`, `comment rea
 </details>
 
 feat(layers): `layers show` names the files already read in each layer, and `file review --layer <n>` marks a file two layers share read in one of them, as `m` does on the rail.
+
+feat(comment delivery): each comment `adiff comment list` reports says whether the agent has taken it, so another program can draw ◎ and ○ as the terminal does.
