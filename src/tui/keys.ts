@@ -45,6 +45,13 @@ const typed = (key: KeyEvent): string => {
   return LETTER.test(laid) ? laid : key.name
 }
 
+const LOWER_CASE = /^\p{Ll}$/u
+
+export const capsLocked = (key: KeyEvent): void => {
+  if (key.capsLock !== true || key.ctrl || key.meta || !LOWER_CASE.test(key.sequence)) return
+  key.sequence = key.sequence.toUpperCase()
+}
+
 export const keyName = (key: KeyEvent): string => {
   if (key.shift && (key.name === "tab" || ARROWS.has(key.name))) return `shift+${key.name}`
   const named = typed(key)

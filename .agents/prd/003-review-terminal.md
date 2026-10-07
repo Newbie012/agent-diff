@@ -98,6 +98,10 @@ Three screens, and the keys each answers to:
   the key under the letter alongside it, and that is what a binding is matched against. Typing is
   unaffected: what reaches a comment is still the letter that was typed.
 
+- **Caps lock writes capitals.** With caps lock on, a kitty terminal sends the lowercase letter of
+  the key with the caps lock flag beside it, and the terminal library typed the lowercase letter.
+  A comment, a report or a search takes the capital, and a binding still answers to its key.
+
 - **A click lands where it was aimed.** The wheel worked over every pane and a drag selected diff
   lines, but a click did nothing else: the keys stayed in whichever pane they were in, so clicking a
   file in the list and pressing `j` moved the diff instead of the list, and clicking a layer did not
