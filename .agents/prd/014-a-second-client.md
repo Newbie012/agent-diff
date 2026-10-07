@@ -163,6 +163,44 @@ Through `serve`: a branch added while it runs is listed on the next request; a c
 code; `review open` is refused; a watched review reports a change when another process files a
 comment; a line that is not a request is answered and the next request still is.
 
+## Parity with the terminal
+
+The review deck's review block is the second client this PRD was written for. What it does that the
+terminal's review does (`has`), does differently (`partial`), lacks (`missing`), or leaves to the
+browser (`N/A`):
+
+| Terminal | Key | Review deck |
+| --- | --- | --- |
+| File tree, move, next and previous file | `j` `k` `]` `[` | has |
+| Mark reviewed, and mark and go on | `m` `M` | has, through `file review` |
+| Hide read files | `f` | has |
+| Show or hide the file list | `t` | missing; the deck zooms with `z` instead |
+| Close and open a folder | `h` `l` | partial: layers only; folders open on click |
+| Layers rail, summary, read counts, stale banner | `s` | has, through `layers show` |
+| Ask for a new reading order | `L` | has, through `layers ask` |
+| Layer prose and notes in the diff | | partial: an empty layer's note shows in the rail |
+| Coverage | | partial: "not in any layer" lists what no layer claims |
+| Review panel by state, unread counts | `a` | has |
+| Settle, settle what is read, reply, remove and restore | `d` `D` `R` `X` | has, through `comment resolve`, `resolve --read`, `reply`, `remove`, `restore` |
+| Answers marked read when shown | | has, through `comment read` |
+| Read order of the panel, hide settled | `O` `f` | missing |
+| Remarks: accept, reply, dismiss, restore | `A` `R` `X` | partial: in the panel, not drawn on lines |
+| Drafts on somebody else's pull request, send | `C` | has, through `pull show` and `draft` |
+| Ask the agent, or to redraft a note | `i` | missing |
+| Base picker, automatic base | `b` `ctrl+x` | has, through `base list`, `set`, `clear` |
+| Open the pull request | `p` | has, through `pull show` |
+| Search the branch | `/` | partial: through `branch search`; opens the file, not the line |
+| Diff cursor, ends, next change, next comment | `j` `k` `g` `G` `}` `{` `n` `N` | has |
+| Select, select the change, grow, comment, send | `v` `V` `shift+↓↑` `c` `ctrl+s` | has |
+| Grow from the other end, half page | `o` `ctrl+d` `ctrl+u` | missing |
+| Wrap, more or less context, whole file | `w` `+` `-` `F` | has |
+| Scope above the diff | `S` | missing |
+| Pan sideways | `>` `<` | N/A: the browser scrolls |
+| Key sheet, back | `?` `Esc` | has |
+| Open the line in an editor, copy | `e` `y` | N/A |
+| Command palette, preferences, bug report, reload, quit | `ctrl+p` `,` `ctrl+b` `r` `q` | N/A |
+| Redraw when anything changes | | has, through `serve`'s watch |
+
 ## Out of Scope
 
 - The browser page itself. It lives in its own repository and speaks only these commands.
