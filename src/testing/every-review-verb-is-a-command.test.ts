@@ -218,6 +218,9 @@ describe("when a second client reads a branch layer by layer", () => {
   })
 })
 
+const takenIn = (envelope: unknown) =>
+  (envelope as { comments: ReadonlyArray<{ taken: boolean }> }).comments.map((one) => one.taken)
+
 describe("when a second client shows whether the agent has picked a comment up", () => {
   test("then comment list says a comment is taken once the agent collects it", async () => {
     // ARRANGE
@@ -231,8 +234,6 @@ describe("when a second client shows whether the agent has picked a comment up",
 
     // ASSERT
     const after = (await driver.app.run(["comment", "list", "--worktree", branch.worktree])).envelope
-    const takenIn = (envelope: unknown) =>
-      (envelope as { comments: ReadonlyArray<{ taken: boolean }> }).comments.map((one) => one.taken)
     expect(takenIn(before)).toEqual([false])
     expect(takenIn(after)).toEqual([true])
   })
