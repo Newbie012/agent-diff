@@ -17,7 +17,8 @@ import type { Patch } from "../domain/patch/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
 import { isPartVouched, isVouched, partOf, vouch, vouchPart as vouchedPart } from "../domain/review/index.ts"
-import { MalformedLayers, NoLayers } from "./error.ts"
+import { MalformedLayers, NoLayers, UnknownFile } from "./error.ts"
+import { submit } from "./comments.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
 import { readParts, type VouchReport } from "./vouching.ts"
 
@@ -304,4 +305,36 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
     parts: readParts(parts, files),
     total: reading.patches.length,
   } satisfies VouchReport
+})
+
+const ASK_LEAD = "About this branch, not about this line."
+
+export const askingFor = (told: { readonly count: number; readonly stale: boolean }): string => {
+  if (told.count === 0) {
+    return `${ASK_LEAD} Please write a reading order for it with \`adiff layers set\`, so the diff can be read in the order the change was made rather than by filename.`
+  }
+  if (told.stale) {
+    return `${ASK_LEAD} The reading order on it describes an older commit — please read the diff again and write a new one with \`adiff layers set\`.`
+  }
+  return `${ASK_LEAD} Please revise its reading order with \`adiff layers set\`.`
+}
+
+export const ask = Effect.fn("Review.Layers.ask")(function* (
+  reading: BranchReading,
+  request: { readonly id: string; readonly at: string },
+) {
+  const first = reading.patches[0]
+  if (first === undefined) return yield* new UnknownFile({ file: "", known: [] })
+  const told = yield* read(reading)
+  const body = askingFor({ count: told.layers.length, stale: told.stale })
+  yield* submit(reading.worktree, {
+    file: first.path,
+    side: "new",
+    start: 1,
+    end: 1,
+    body,
+    id: request.id,
+    at: request.at,
+  })
+  return { asked: body }
 })

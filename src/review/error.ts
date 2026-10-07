@@ -91,3 +91,7 @@ export class PullMoved extends Data.TaggedError("PullMoved")<{
 export class NoLayers extends Data.TaggedError("NoLayers")<{
   readonly worktree: string
 }> {}
+
+export class NoPull extends Data.TaggedError("NoPull")<{
+  readonly branch: string
+}> {}

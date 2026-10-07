@@ -43,8 +43,10 @@ import {
   Draft,
   Layers,
   MalformedLayers,
+  Pull,
   Preference,
   Remark,
+  Search,
   Thread,
   Vouch,
 } from "./review/index.ts"
@@ -237,13 +239,51 @@ const commentList = Effect.fn("Main.commentList")(function* (options: Options) {
   yield* answer(options, { comments })
 })
 
+const resolveRead = Effect.fn("Main.resolveRead")(function* (options: Options) {
+  const report = yield* Thread.settleRead(yield* worktreeIn(options), stamp(options))
+  yield* answer(options, { settled: report.settled })
+})
+
+const commentRead = Effect.fn("Main.commentRead")(function* (options: Options) {
+  const report = yield* Comment.markRead(yield* worktreeIn(options), yield* required(options, "id"))
+  yield* answer(options, { read: report.id, unread: report.unread })
+})
+
+const pullShow = Effect.fn("Main.pullShow")(function* (options: Options) {
+  const pull = yield* Pull.show(yield* required(options, "repo"), yield* required(options, "branch"))
+  yield* answer(options, { pull })
+})
+
+const baseList = Effect.fn("Main.baseList")(function* (options: Options) {
+  const repo = yield* required(options, "repo")
+  const branch = yield* required(options, "branch")
+  const [refs, recent] = yield* Effect.all([Branch.refs(repo), Branch.recentBases(repo, branch)])
+  const offered = new Set([branch, ...recent.map((one) => one.ref)])
+  const rest = refs.filter((ref) => !offered.has(ref))
+  yield* answer(options, { bases: [...recent, ...rest.map((ref) => ({ ref, said: "" }))] })
+})
+
+const branchSearch = Effect.fn("Main.branchSearch")(function* (options: Options) {
+  const found = yield* Search.files(yield* readingIn(options), yield* required(options, "term"))
+  yield* answer(options, { matches: found.matches, counted: found.counted, left: found.left })
+})
+
+const layersAsk = Effect.fn("Main.layersAsk")(function* (options: Options) {
+  const asked = yield* Layers.ask(yield* readingIn(options), {
+    id: options["id"] ?? randomUUID(),
+    at: stamp(options),
+  })
+  yield* answer(options, { asked: asked.asked })
+})
+
 const commentResolve = Effect.fn("Main.commentResolve")(function* (options: Options) {
+  if (options["read"] !== undefined) return yield* resolveRead(options)
   const report = yield* Thread.settle(
     yield* worktreeIn(options),
     yield* required(options, "id"),
     stamp(options),
   )
-  yield* answer(options, { settled: report.settled })
+  return yield* answer(options, { settled: report.settled })
 })
 
 const commentRemove = Effect.fn("Main.commentRemove")(function* (options: Options) {
@@ -387,6 +427,11 @@ const routes = {
   "draft drop": draftDrop,
   "draft send": draftSend,
   "comment resolve": commentResolve,
+  "comment read": commentRead,
+  "pull show": pullShow,
+  "base list": baseList,
+  "branch search": branchSearch,
+  "layers ask": layersAsk,
   "comment remove": commentRemove,
   "comment restore": commentRestore,
   "comment reopen": commentReopen,

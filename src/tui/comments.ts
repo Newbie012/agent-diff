@@ -14,21 +14,12 @@ import { remarkHere, threadHere } from "./notes.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { selectedBranch, selectedPatch, type StagedComment, theirPull, type TuiState } from "./state.ts"
 import { counted } from "./words.ts"
-import { Comment, type CommentRequest, Draft } from "../review/index.ts"
+import { Comment, type CommentRequest, Draft, Layers } from "../review/index.ts"
 import { staying, worktreeOf } from "./reading.ts"
 import { loadSent } from "./reading.ts"
 
-const LAYERS_ASK_LEAD = "About this branch, not about this line."
-
-const layersAsk = (state: TuiState): string => {
-  if (state.layers.length === 0) {
-    return `${LAYERS_ASK_LEAD} Please write a reading order for it with \`adiff layers set\`, so the diff can be read in the order the change was made rather than by filename.`
-  }
-  if (state.layersStale) {
-    return `${LAYERS_ASK_LEAD} The reading order on it describes an older commit — please read the diff again and write a new one with \`adiff layers set\`.`
-  }
-  return `${LAYERS_ASK_LEAD} Please revise its reading order with \`adiff layers set\`.`
-}
+const layersAsk = (state: TuiState): string =>
+  Layers.askingFor({ count: state.layers.length, stale: state.layersStale })
 
 const askedFor = (state: TuiState): string =>
   state.layers.length === 0 ? "asked for a reading order" : "asked for a new reading order"

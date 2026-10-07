@@ -61,6 +61,12 @@ const ADVICE: Readonly<Record<string, Advice>> = {
     suggestion: "No layers has been written for this worktree. Write one with `adiff layers set`.",
     retriable: false,
   },
+  NoPull: {
+    exit: NOT_FOUND,
+    suggestion:
+      "No pull request is open from this branch. Push it and open one, then ask again.",
+    retriable: false,
+  },
   UnknownComment: {
     exit: NOT_FOUND,
     suggestion:
