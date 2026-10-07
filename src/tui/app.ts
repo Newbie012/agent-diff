@@ -21,6 +21,7 @@ import { heldValues } from "../domain/preferences/index.ts"
 import { Git } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers, filings } from "./watch.ts"
+import { grammarsAdded } from "./grammars.ts"
 import { actionFor, takesText, type Action } from "./command.ts"
 import { capsLocked, keyName, keyNamed, listens, overReview, writesInto } from "./keys.ts"
 import {
@@ -789,6 +790,7 @@ export const launch = Effect.fn("Tui.launch")(function* (
   renderer: CliRenderer,
   options: LaunchOptions = {},
 ) {
+  yield* grammarsAdded
   const git = yield* Git
   const repo = yield* git.realPathOf(asked)
   const branches = yield* firstBranches(repo, options.branch, options.base)

@@ -128,6 +128,11 @@ Three screens, and the keys each answers to:
   highlighter's own patterns are written in. Ranges that merely overlap are left alone, because a
   string holding an interpolation is two facts about two stretches of code.
 
+- **A stylesheet is coloured like the code beside it.** The terminal library knows a `.css` file
+  is CSS but carries no grammar for it, so a stylesheet read as plain text while the component next
+  to it was coloured. adiff carries the CSS grammar itself, so a property and its value read in two
+  colours.
+
 - **Colouring a file waits on nothing the reader is doing.** A grammar is fetched the first time a
   kind of file is opened, and reading it took as long as it took while every key pressed in the
   meantime waited behind it. The colour pass runs beside the review instead, and the file that has
