@@ -69,6 +69,7 @@ describe("when a second client watches a review through adiff serve", () => {
     const branch = await driver.branch.create({ name: "add-a-third-line" })
     const served = driver.app.serve()
     const watching = await served.watch(["--worktree", branch.worktree])
+    await served.settledOn(watching.id)
 
     // ACT
     const changed = served.changeOn(watching.id)

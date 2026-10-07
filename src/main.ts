@@ -56,7 +56,7 @@ import {
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
-import { branchDir, storeAt, defaultRoot } from "./service/store/index.ts"
+import { branchDir, branchKeyOf, storeAt, defaultRoot } from "./service/store/index.ts"
 
 const WAIT_UNIT = 1000
 
@@ -559,7 +559,7 @@ const storeRoot = (): string => process.env["ADIFF_ROOT"] ?? defaultRoot()
 const folderOf = Effect.fn("Main.folderOf")(function* (given: Options) {
   const options = yield* addressOf("comment list", given)
   const worktree = yield* Branch.find(yield* required(options, "repo"), yield* required(options, "branch"))
-  return branchDir(storeRoot(), worktree.path)
+  return branchDir(storeRoot(), yield* branchKeyOf(worktree.path))
 })
 
 const serving = () => serve({ nameOf, run, folderOf })

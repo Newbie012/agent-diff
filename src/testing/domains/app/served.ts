@@ -87,6 +87,16 @@ export class ServedAdiff {
     return this.until((line) => line.id === id && line.event === "changed", timeoutMs)
   }
 
+  async settledOn(id: number, quietMs = 600): Promise<void> {
+    const heardBefore = (): number => this.heard.filter((line) => line.id === id).length
+    let count = heardBefore()
+    for (;;) {
+      await new Promise((resolve) => setTimeout(resolve, quietMs))
+      if (heardBefore() === count) return
+      count = heardBefore()
+    }
+  }
+
   close(): void {
     this.child.stdin.end()
     this.child.kill()
