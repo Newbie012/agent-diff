@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: write
   id-token: write
+  actions: write
 
 jobs:
   check:
@@ -63,10 +64,10 @@ jobs:
   release:
     needs: [check, tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     outputs:
       pending: ${{ steps.plan.outputs.pending }}
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.plan.outputs.version || steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -83,6 +84,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           pnpm change status || true
           NAME=$(node -p "require('./package.json').name")
@@ -91,6 +94,20 @@ jobs:
             echo "pending=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          ON_MAIN=$(node -p "require('./package.json').version")
+          if git rev-parse -q --verify "refs/tags/v$ON_MAIN" > /dev/null \
+            && ! npm view "$NAME@$ON_MAIN" version --prefer-online > /dev/null 2>&1; then
+            echo "::notice::$ON_MAIN is tagged but was never published, so this run publishes it from its tag before anything new."
+            { echo "mode=publish"; echo "version=$ON_MAIN"; echo "pending=true"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ATTACHED=$(gh release view "v$ON_MAIN" --json assets --jq '[.assets[].name | select(endswith(".tar.gz"))] | length' 2>/dev/null || echo 0)
+          if git rev-parse -q --verify "refs/tags/v$ON_MAIN" > /dev/null && [ "$ATTACHED" -lt 4 ]; then
+            echo "::notice::$ON_MAIN is published but its release carries $ATTACHED of 4 binaries, so this run finishes the release, the binaries and the formula before anything new."
+            { echo "mode=finish"; echo "version=$ON_MAIN"; echo "pending=true"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "mode=new" >> "$GITHUB_OUTPUT"
           if pnpm version -r --dry-run 2>&1 | grep -q '→'; then
             echo "pending=true" >> "$GITHUB_OUTPUT"
           else
@@ -98,10 +115,18 @@ jobs:
             echo "pending=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - if: steps.plan.outputs.pending == 'true'
+      - name: check out the version being published again
+        if: steps.plan.outputs.mode == 'publish'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          git checkout -q "v$VERSION"
+          pnpm install --frozen-lockfile
+
+      - if: steps.plan.outputs.pending == 'true' && steps.plan.outputs.mode == 'new'
         run: pnpm typecheck && pnpm lint
 
-      - if: steps.plan.outputs.pending == 'true'
+      - if: steps.plan.outputs.pending == 'true' && steps.plan.outputs.mode == 'new'
         id: version
         run: |
           git config user.name "github-actions[bot]"
@@ -116,7 +141,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: record the version on main
-        if: steps.plan.outputs.pending == 'true'
+        if: steps.plan.outputs.pending == 'true' && steps.plan.outputs.mode == 'new'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -145,21 +170,21 @@ jobs:
           echo "::error::main moved under this run five times and the release commit for $VERSION is still not on it. Nothing was published, so rerun this workflow once main is settled."
           exit 1
 
-      - if: steps.plan.outputs.pending == 'true'
+      - if: steps.plan.outputs.pending == 'true' && steps.plan.outputs.mode != 'finish'
         run: pnpm build
 
-      - if: steps.plan.outputs.pending == 'true'
+      - if: steps.plan.outputs.pending == 'true' && steps.plan.outputs.mode != 'finish'
         run: pnpm publish --tag alpha --no-git-checks
 
       - name: wait for the registry
         if: steps.plan.outputs.pending == 'true'
         id: tarball
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.plan.outputs.version || steps.version.outputs.version }}
         run: |
           NAME=$(node -p "require('./package.json').name")
-          for _ in $(seq 1 30); do
-            URL=$(npm view "$NAME@$VERSION" dist.tarball 2>/dev/null || true)
+          for _ in $(seq 1 120); do
+            URL=$(npm view "$NAME@$VERSION" dist.tarball --prefer-online 2>/dev/null || true)
             if [ -n "$URL" ]; then
               echo "name=$NAME" >> "$GITHUB_OUTPUT"
               echo "url=$URL" >> "$GITHUB_OUTPUT"
@@ -167,14 +192,14 @@ jobs:
             fi
             sleep 10
           done
-          echo "::error::$NAME@$VERSION did not appear on the registry within five minutes."
+          echo "::error::$NAME@$VERSION did not appear on the registry within twenty minutes. It may still be on its way; rerun this workflow and it finishes the release once the registry shows it."
           exit 1
 
       - name: point latest at the published version
         if: steps.plan.outputs.pending == 'true'
         env:
           NAME: ${{ steps.tarball.outputs.name }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.plan.outputs.version || steps.version.outputs.version }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set +e
@@ -235,6 +260,18 @@ jobs:
           [ "$STATUS" -eq 0 ] && settle "with an OIDC-exchanged token"
           TRIED="$TRIED; the OIDC-exchanged token ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
           give_up
+
+
+      - name: release what is still waiting
+        if: steps.plan.outputs.mode == 'publish' || steps.plan.outputs.mode == 'finish'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch -q origin main
+          if git ls-tree --name-only FETCH_HEAD .changeset/ | grep -q '\.md$'; then
+            gh workflow run release.yml --ref main
+            echo "::notice::Change intents are still waiting on main, so another run of this workflow was started to release them."
+          fi
 
   announce:
     needs: release
