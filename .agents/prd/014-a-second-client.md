@@ -24,7 +24,11 @@ The second client writes comments with the commands an agent already uses. Those
 the same queue `comment take` reads, so the agent has one place to look.
 
 An open terminal shows a comment written elsewhere without a reload, the way it already shows an
-agent's answer.
+agent's answer, and a file marked reviewed elsewhere the same way.
+
+A second client that asks often keeps one adiff running instead of starting one per question:
+`adiff serve` answers command after command over one pipe, and tells the client when a review it
+watches changes, so the client redraws when something happened rather than asking every few seconds.
 
 Everything the terminal's review does is a command too, so a second client can offer the same
 review: the pull request behind a branch, the bases worth comparing against, a search of the
@@ -56,6 +60,8 @@ already read.
 - The `snippet` field of `comment list`.
 - `pull show`, `base list`, `branch search`, `layers ask`, `comment read` and `comment resolve
   --read`: the terminal's review verbs that had no command.
+- `adiff serve`: one long-lived adiff answering commands and reporting changes to a review.
+- The terminal redrawing reviewed marks that another process set.
 
 ### Does not own
 
@@ -112,11 +118,26 @@ already read.
   one layer claims it, as `m` does on the layers rail. A file only one layer claims is marked
   whole. A number no layer carries is refused with `UnknownLayer`.
 
+- **`adiff serve` reads one JSON request per line on stdin and writes one JSON line per answer on
+  stdout.** `{"id": 7, "args": ["comment", "list", "--repo", "…", "--branch", "…"]}` is answered by
+  `{"id": 7, "exit": 0, "answer": {…}}`, where `answer` is exactly the envelope the same command
+  prints when it is run on its own, a refusal included, and `exit` is the code it would exit with.
+  Requests are answered as they finish, so a client matches answers to requests by `id`.
+- **`{"id": 8, "watch": ["--repo", "…", "--branch", "…"]}` watches a review.** It is answered once
+  with `{"ok": true, "watching": <worktree>}`, then with `{"id": 8, "event": "changed"}` each time a
+  comment, an answer, a reviewed mark, the layers or the drafts of that review change, from any
+  process. A burst of changes is one event. `{"id": 8, "unwatch": true}` stops it.
+- **`serve` refuses what does not answer in JSON**: `review open`, `review pane`, `resume`,
+  `upgrade` and `serve` itself are refused with `NotServed`. A line that is not a request is answered
+  with `BadRequest`, and the pipe stays open.
+- **`serve` ends when stdin closes**, and writes nothing on stdout but answers and events.
+- **An open terminal redraws reviewed marks another process set**, as it redraws comments.
+
 ### Deferred decisions
 
 | Decision | Trigger |
 | --- | --- |
-| A watch command that streams changes instead of a client polling `comment list` | A second client whose polling is measurably slow |
+| A watch that also reports commits to the branch, so a client stops polling for a new head | A client that still polls the head and finds it slow |
 
 ## Testing Decisions
 
@@ -132,7 +153,11 @@ and leaves an unread one open; `layers show` names a reviewed file read in its l
 --layer` marks a shared file read in one layer and not the other.
 
 At the terminal: with the review open, a comment filed through `comment send` shows in the diff
-without a key being pressed.
+without a key being pressed, and a file marked through `file review` shows marked.
+
+Through `serve`: a command's answer is the envelope it prints alone; a refusal carries its exit
+code; `review open` is refused; a watched review reports a change when another process files a
+comment; a line that is not a request is answered and the next request still is.
 
 ## Out of Scope
 

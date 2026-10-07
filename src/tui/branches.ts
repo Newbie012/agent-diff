@@ -26,10 +26,10 @@ import type { Terminal } from "./terminal.ts"
 import { refHere, sourceLineAt } from "./cursor.ts"
 import { answersSince } from "./notes.ts"
 import { hasNoPull, pullHere, selectedBranch, selectedPatch, theirPull, type TuiState } from "./state.ts"
-import { Branch, Comment, Draft, Layers, Remark, type ReportedRemark, Vouch } from "../review/index.ts"
+import { Branch, Comment, Draft, Layers, Remark, type ReportedRemark, Vouch, type VouchReport } from "../review/index.ts"
 import { heldOf } from "./drafts.ts"
 import { worktreeOf } from "./reading.ts"
-import { loadSent } from "./reading.ts"
+import { loadSent, readingOf } from "./reading.ts"
 
 const openedPull = (state: string, opened: boolean): string => {
   if (!opened) return "could not reach the pull request"
@@ -264,13 +264,17 @@ export const noticeAnswers = (app: Terminal): Work => {
 const sameSent = (one: TuiState["sent"], other: TuiState["sent"]): boolean =>
   JSON.stringify(one) === JSON.stringify(other)
 
+const sameMarks = (state: TuiState, progress: VouchReport): boolean =>
+  JSON.stringify([state.vouched, state.partsRead]) === JSON.stringify([progress.vouched, progress.parts])
+
 export const noticeFiled = (app: Terminal): Work => {
   return Effect.gen(function* () {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
-    const sent = yield* loadSent(app, branch.branch)
-    if (sameSent(app.state.sent, sent)) return
-    app.commit({ ...app.state, sent })
+    const reading = yield* readingOf(app, branch.branch)
+    const [sent, progress] = yield* Effect.all([Comment.listSent(reading), Vouch.progress(reading)])
+    if (sameSent(app.state.sent, sent) && sameMarks(app.state, progress)) return
+    app.commit(withVouched({ ...app.state, sent }, progress.vouched, progress.parts))
   })
 }
 

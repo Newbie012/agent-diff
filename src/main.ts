@@ -34,6 +34,9 @@ import {
   UnknownField,
   upgradeReport,
   willUpgrade,
+  Replies,
+  serve,
+  toStdout,
   type Options,
 } from "./cli/index.ts"
 import {
@@ -53,24 +56,20 @@ import {
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
 import { GitLive } from "./service/git/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
-import { storeAt, defaultRoot } from "./service/store/index.ts"
+import { branchDir, branchKeyOf, storeAt, defaultRoot } from "./service/store/index.ts"
 
 const WAIT_UNIT = 1000
 
-const answer = (
-  options: Options,
-  body: Record<string, unknown>,
-): Effect.Effect<void, UnknownField> => {
+const answer = Effect.fn("Main.answer")(function* (options: Options, body: Record<string, unknown>) {
   const fields = fieldsOf(options)
   const strange = strangeField(body, fields)
-  if (strange !== undefined) return Effect.fail(new UnknownField(strange))
-  return Effect.sync(() => {
-    const narrowed = Object.fromEntries(
-      Object.entries(body).map(([key, value]) => [key, narrow(value, fields)]),
-    )
-    process.stdout.write(`${JSON.stringify({ ok: true, ...narrowed })}\n`)
-  })
-}
+  if (strange !== undefined) return yield* new UnknownField(strange)
+  const narrowed = Object.fromEntries(
+    Object.entries(body).map(([key, value]) => [key, narrow(value, fields)]),
+  )
+  const replies = yield* Replies
+  return yield* replies.say(JSON.stringify({ ok: true, ...narrowed }))
+})
 
 const worktreeIn = Effect.fn("Main.worktreeIn")(function* (options: Options) {
   return yield* Branch.find(yield* required(options, "repo"), yield* required(options, "branch"))
@@ -555,6 +554,16 @@ const nameOf = (argv: ReadonlyArray<string>): string => {
   return words.length > 1 ? pair : (words[0] ?? "")
 }
 
+const storeRoot = (): string => process.env["ADIFF_ROOT"] ?? defaultRoot()
+
+const folderOf = Effect.fn("Main.folderOf")(function* (given: Options) {
+  const options = yield* addressOf("comment list", given)
+  const worktree = yield* Branch.find(yield* required(options, "repo"), yield* required(options, "branch"))
+  return branchDir(storeRoot(), yield* branchKeyOf(worktree.path))
+})
+
+const serving = () => serve({ nameOf, run, folderOf })
+
 const argv = process.argv.slice(2)
 
 const ASKS: Readonly<Record<string, () => string>> = {
@@ -590,7 +599,7 @@ if (said !== undefined) {
   process.exit(0)
 }
 
-const layer = Layer.mergeAll(ForgeLive, storeAt(process.env["ADIFF_ROOT"] ?? defaultRoot())).pipe(
+const layer = Layer.mergeAll(ForgeLive, toStdout, storeAt(storeRoot())).pipe(
   Layer.provideMerge(GitLive),
 )
 
@@ -601,11 +610,15 @@ const reportFailure = (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
     process.exitCode = reported.exit
   })
 
+const asked = opening ? "review open" : nameOf(argv)
+
+const started =
+  asked === "serve"
+    ? serving()
+    : run(asked, opening ? { repo: "." } : optionsFrom(argv, valuedIn(asked)))
+
 Effect.runFork(
-  run(
-    opening ? "review open" : nameOf(argv),
-    opening ? { repo: "." } : optionsFrom(argv, valuedIn(nameOf(argv))),
-  ).pipe(
+  started.pipe(
     Effect.provide(layer),
     Effect.catchCause(reportFailure),
   ),

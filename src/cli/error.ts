@@ -32,3 +32,11 @@ export class RegistryUnanswered extends Data.TaggedError("RegistryUnanswered")<{
   readonly url: string
   readonly reason: string
 }> {}
+
+export class NotServed extends Data.TaggedError("NotServed")<{
+  readonly command: string
+}> {}
+
+export class BadRequest extends Data.TaggedError("BadRequest")<{
+  readonly line: string
+}> {}

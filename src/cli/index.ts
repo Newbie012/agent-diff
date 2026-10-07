@@ -34,3 +34,5 @@ export {
   UnknownOption,
 } from "./error.ts"
 export type { Options } from "./parse.ts"
+export { Replies, serve, toStdout } from "./serve.ts"
+export type { Serving } from "./serve.ts"

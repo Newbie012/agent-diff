@@ -101,6 +101,18 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "That remark is already a comment on this review. `adiff comment list` reports it, and removing that comment frees the remark.",
     retriable: false,
   },
+  NotServed: {
+    exit: USAGE,
+    suggestion:
+      "serve answers only commands that answer in JSON. Run the review terminal, review pane, resume and upgrade on their own.",
+    retriable: false,
+  },
+  BadRequest: {
+    exit: USAGE,
+    suggestion:
+      "A request is one JSON object per line, such as {\"id\":1,\"args\":[\"comment\",\"list\",\"--worktree\",\".\"]} or {\"id\":2,\"watch\":[\"--worktree\",\".\"]}.",
+    retriable: false,
+  },
   UnknownField: {
     exit: USAGE,
     suggestion: "That is not a field this answer carries. The ones it does are named above.",
