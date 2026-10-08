@@ -1,5 +1,5 @@
 export { anchorFor, foundAgain, foundExactly, rowsForRange } from "./anchor.ts"
 export { parsePatches } from "./parse.ts"
-export { stickyChain } from "./sticky.ts"
+export { enclosedBy, scopeLines, stickyChain } from "./sticky.ts"
 export { lineOn, WHOLE_FILE } from "./model.ts"
 export type { Anchor, FileStatus, Hunk, Patch, Range, Row, RowKind, Side } from "./model.ts"

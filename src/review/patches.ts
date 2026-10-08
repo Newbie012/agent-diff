@@ -1,7 +1,9 @@
 import { Effect, Option } from "effect"
 import {
   anchorFor,
+  enclosedBy,
   rowsForRange,
+  scopeLines,
   WHOLE_FILE,
   type FileStatus,
   type Hunk,
@@ -84,6 +86,13 @@ export type ShownFile = {
   readonly added: number
   readonly removed: number
   readonly hunks: ReadonlyArray<ShownHunk>
+  readonly enclosedBy: ReadonlyArray<number>
+  readonly scopes: ReadonlyArray<ShownScope>
+}
+
+export type ShownScope = {
+  readonly line: number
+  readonly text: string
 }
 
 export type ShownPatch = {
@@ -124,7 +133,14 @@ const shownHunk = (hunk: Hunk): ShownHunk => ({
   rows: hunk.rows.map((row) => shownRow(hunk, row)),
 })
 
-const shownFile = (patch: Patch, generated: ReadonlySet<string>): ShownFile => ({
+const scopesOf = (lines: ReadonlyArray<string>): ReadonlyArray<ShownScope> =>
+  scopeLines(lines).map((line) => ({ line, text: lines[line - 1] ?? "" }))
+
+const shownFile = (
+  patch: Patch,
+  generated: ReadonlySet<string>,
+  lines: ReadonlyArray<string>,
+): ShownFile => ({
   path: patch.path,
   previousPath: patch.previousPath,
   status: patch.status,
@@ -133,7 +149,17 @@ const shownFile = (patch: Patch, generated: ReadonlySet<string>): ShownFile => (
   added: patch.added,
   removed: patch.removed,
   hunks: patch.hunks.map(shownHunk),
+  enclosedBy: enclosedBy(lines),
+  scopes: scopesOf(lines),
 })
+
+const sourceShown = Effect.fn("Review.Diff.sourceShown")(function* (worktree: Worktree, patch: Patch) {
+  if (patch.binary || patch.status === "deleted") return []
+  return yield* source(worktree, patch.path)
+})
+
+const fileShown = (worktree: Worktree, generated: ReadonlySet<string>) => (patch: Patch) =>
+  Effect.map(sourceShown(worktree, patch), (lines) => shownFile(patch, generated, lines))
 
 export const show = Effect.fn("Review.Diff.show")(function* (based: Based, showing: Showing) {
   const git = yield* Git
@@ -145,6 +171,6 @@ export const show = Effect.fn("Review.Diff.show")(function* (based: Based, showi
     base: based.base,
     mergeBase: worktree.base,
     head: worktree.head,
-    files: patches.map((patch) => shownFile(patch, generated)),
+    files: yield* Effect.forEach(patches, fileShown(worktree, generated), { concurrency: 16 }),
   } satisfies ShownPatch
 })

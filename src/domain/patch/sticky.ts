@@ -17,6 +17,34 @@ const limitFrom = (source: ReadonlyArray<string>, index: number): number => {
   return ahead === undefined ? 0 : indentOf(ahead)
 }
 
+const enclosing = (source: ReadonlyArray<string>): ReadonlyArray<number> => {
+  const open: Array<number> = []
+  const found: Array<number> = []
+  source.forEach((text, index) => {
+    const limit = limitFrom(source, index)
+    const outer = open.findLast((at) => indentOf(source[at] ?? "") < limit)
+    found.push(outer === undefined ? 0 : outer + 1)
+    if (!pinnable(text)) return
+    const indent = indentOf(text)
+    while (open.length > 0 && indentOf(source[open.at(-1) ?? 0] ?? "") >= indent) open.pop()
+    open.push(index)
+  })
+  return found
+}
+
+const read = new WeakMap<ReadonlyArray<string>, ReadonlyArray<number>>()
+
+export const enclosedBy = (source: ReadonlyArray<string>): ReadonlyArray<number> => {
+  const known = read.get(source)
+  if (known !== undefined) return known
+  const found = enclosing(source)
+  read.set(source, found)
+  return found
+}
+
+export const scopeLines = (source: ReadonlyArray<string>): ReadonlyArray<number> =>
+  [...new Set(enclosedBy(source).filter((line) => line > 0))].toSorted((left, right) => left - right)
+
 export const stickyChain = (
   source: ReadonlyArray<string>,
   line: number,
@@ -24,17 +52,9 @@ export const stickyChain = (
 ): ReadonlyArray<string> => {
   const index = line - 1
   if (index <= 0 || index >= source.length) return []
-  let limit = limitFrom(source, index)
+  const outer = enclosedBy(source)
   const chain: Array<string> = []
-  for (let above = index - 1; above >= 0; above -= 1) {
-    const text = source[above] ?? ""
-    if (!pinnable(text)) continue
-    const indent = indentOf(text)
-    if (indent >= limit) continue
-    chain.push(text)
-    limit = indent
-    if (indent === 0) break
-  }
+  for (let at = outer[index] ?? 0; at > 0; at = outer[at - 1] ?? 0) chain.push(source[at - 1] ?? "")
   return kept(chain.toReversed(), max)
 }
 
