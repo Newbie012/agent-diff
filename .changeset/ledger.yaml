@@ -455,6 +455,10 @@
   dir: ""
   intents:
     - lucky-eels-sin
+"@eliya-oss/agent-diff@0.1.0-alpha.190":
+  dir: ""
+  intents:
+    - patch-show-names-the-scope-of-each-line
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
