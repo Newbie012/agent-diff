@@ -10,6 +10,8 @@ type File = {
   readonly binary: boolean
   readonly generated: boolean
   readonly hunks: ReadonlyArray<{ readonly rows: ReadonlyArray<Row> }>
+  readonly enclosedBy: ReadonlyArray<number>
+  readonly scopes: ReadonlyArray<{ readonly line: number; readonly text: string }>
 }
 
 type Shown = { readonly patch: { readonly base: string; readonly head: string; readonly files: ReadonlyArray<File> } }
@@ -153,6 +155,88 @@ describe("when a second client reads a branch's diff", () => {
     // ASSERT
     expect(result.code).not.toBe(0)
     expect(result.stdout).toBe("")
+  })
+})
+
+const nested = [
+  "export class Placer {",
+  "  place(nodes: Node[]) {",
+  ...Array.from({ length: 8 }, (_, at) => `    const kept${at} = ${at}`),
+  "    for (const node of nodes) {",
+  "",
+  "      if (node.ready) {",
+  "        node.x = 1",
+  "      }",
+  "    }",
+  "  }",
+  "}",
+]
+
+const moved = nested.map((line) => line.replace("node.x = 1", "node.x = 2"))
+
+const scopeOf = (file: File | undefined, line: number): ReadonlyArray<string> => {
+  if (file === undefined) return []
+  const texts = new Map(file.scopes.map((scope) => [scope.line, scope.text]))
+  const chain: Array<string> = []
+  for (let at = file.enclosedBy[line - 1] ?? 0; at > 0; at = file.enclosedBy[at - 1] ?? 0) {
+    chain.unshift(texts.get(at) ?? "")
+  }
+  return chain
+}
+
+describe("when a second client reads the scope a changed line sits in", () => {
+  test("then the patch names the class, the method and the blocks above that line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({
+      name: "move-the-node",
+      files: [{ path: "src/placer.ts", before: nested, after: moved }],
+    })
+
+    // ACT
+    const result = await driver.app.run(["patch", "show", "--worktree", branch.worktree])
+
+    // ASSERT
+    expect(scopeOf(fileNamed(result.envelope, "src/placer.ts"), 14)).toEqual([
+      "export class Placer {",
+      "  place(nodes: Node[]) {",
+      "    for (const node of nodes) {",
+      "      if (node.ready) {",
+    ])
+  })
+
+  test("then a blank line takes the scope of the code below the blank line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({
+      name: "move-the-node",
+      files: [{ path: "src/placer.ts", before: nested, after: moved }],
+    })
+
+    // ACT
+    const result = await driver.app.run(["patch", "show", "--worktree", branch.worktree])
+
+    // ASSERT
+    expect(scopeOf(fileNamed(result.envelope, "src/placer.ts"), 12)).toEqual([
+      "export class Placer {",
+      "  place(nodes: Node[]) {",
+      "    for (const node of nodes) {",
+    ])
+  })
+
+  test("then a deleted file names no scope", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({
+      name: "drop-the-placer",
+      files: [{ path: "src/placer.ts", before: nested, after: [], gone: true }],
+    })
+
+    // ACT
+    const result = await driver.app.run(["patch", "show", "--worktree", branch.worktree])
+
+    // ASSERT
+    expect(fileNamed(result.envelope, "src/placer.ts")).toMatchObject({ enclosedBy: [], scopes: [] })
   })
 })
 

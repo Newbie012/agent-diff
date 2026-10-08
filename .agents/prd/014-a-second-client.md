@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-10-08
 
 ## Problem Statement
 
@@ -50,12 +50,14 @@ already read.
 6. As an `agent`, I want every line comment in one queue, so that I answer each once.
 7. As a `reviewer` in the browser, I want every key the terminal's review answers to, so that the
    page is the same review and not a lesser copy.
+8. As a `second client`, I want the scope each line of a file sits in, so that I pin the same class,
+   function and block above the diff that the terminal pins.
 
 ## Implementation Decisions
 
 ### Owns
 
-- `patch show`: a branch's diff as JSON.
+- `patch show`: a branch's diff as JSON, with the scope each line of the new file sits in.
 - The terminal noticing comments that another process wrote.
 - The `snippet` field of `comment list`.
 - `pull show`, `base list`, `branch search`, `layers ask`, `comment read` and `comment resolve
@@ -77,6 +79,16 @@ already read.
   `generated`, `added`, `removed` and `hunks`. Each hunk carries `header`, `scope`, `skipped` and
   `rows`; each row carries `kind` (`context`, `added`, `removed` or `note`), `text`, and `old` and
   `new` line numbers, each left out when the row has no line on that side.
+- **Each file in `patch show` carries `enclosedBy` and `scopes`, read from the file as it is in the
+  worktree.** `enclosedBy` has one number per line of the file: entry `n - 1` is the line that opens
+  the innermost scope line `n` sits in, or 0 when nothing does. That line's own entry names the
+  scope around it, so following the numbers to 0 gives the whole chain the terminal pins above the
+  diff, outermost last. `scopes` lists `{line, text}` for every line `enclosedBy` names, so a client
+  needs no rows to show them, even with `--context 0`. A scope is chosen by indentation as the
+  terminal chooses it: the nearest line above with less indentation that is not blank, a comment or
+  a closing bracket, and a blank line takes the indentation of the code below it. A deleted or
+  binary file has both empty. How many scopes to show, and how to say the dropped ones, is the
+  client's.
 - **A `note` row is something adiff says about a file rather than a line of it**: binary, renamed
   from, a mode change, an empty file. It has no line numbers and takes no comment.
 - **The diff is the one the terminal shows.** The worktree as it is now against the base:
@@ -147,7 +159,9 @@ already read.
 
 At the command boundary: `patch show` on a branch that adds, deletes, renames and changes files,
 with a binary and a generated file among them, reports each file's status and flags and each row's
-line numbers. `--context all` reports whole files. `comment list` carries the snippet.
+line numbers. `--context all` reports whole files. `comment list` carries the snippet. Following `enclosedBy` from a
+changed line in a nested file names the class, the method and the blocks above it; a blank line
+takes the scope of the code below it; a deleted file names no scope.
 
 Each new command at the command boundary: `pull show` names the URL and whose pull it is, and
 refuses a branch with none; `base list` offers the stacked parent and never the branch itself;
@@ -194,7 +208,7 @@ browser (`N/A`):
 | Select, select the change, grow, comment, send | `v` `V` `shift+↓↑` `c` `ctrl+s` | has |
 | Grow from the other end, half page | `o` `ctrl+d` `ctrl+u` | missing |
 | Wrap, more or less context, whole file | `w` `+` `-` `F` | has |
-| Scope above the diff | `S` | missing |
+| Scope above the diff | `S` | has, through `patch show`'s `enclosedBy` and `scopes` |
 | Pan sideways | `>` `<` | N/A: the browser scrolls |
 | Key sheet, back | `?` `Esc` | has |
 | Open the line in an editor, copy | `e` `y` | N/A |

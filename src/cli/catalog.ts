@@ -173,7 +173,7 @@ const commands: ReadonlyArray<CommandSpec> = [
   {
     name: "patch show",
     about:
-      "A branch's diff as rows with line numbers on both sides, read from the same parse the terminal draws. Binary and generated files are listed and flagged",
+      "A branch's diff as rows with line numbers on both sides, read from the same parse the terminal draws, with the scope each line of a file sits in. Binary and generated files are listed and flagged",
     group: READ_A_BRANCH,
     addresses: "review",
     safety: "read",
