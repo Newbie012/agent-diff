@@ -44,15 +44,55 @@ const changedLines = (hunk: Hunk): ReadonlyArray<number> =>
       }),
     )
 
-const holds = (span: Span, path: string, line: number): boolean =>
-  span.path === path && span.start <= line && span.end >= line
+type Reach = { readonly start: number; readonly end: number }
+
+type Claims = ReadonlyMap<string, ReadonlyArray<Reach>>
+
+const NOTHING: ReadonlyArray<Reach> = []
+
+const reachesOf = (spans: ReadonlyArray<Span>): ReadonlyArray<Reach> => {
+  const reaches: Array<{ start: number; end: number }> = []
+  const ordered = spans.filter((span) => span.start <= span.end).toSorted((a, b) => a.start - b.start)
+  for (const span of ordered) {
+    const open = reaches.at(-1)
+    if (open !== undefined && span.start <= open.end) open.end = Math.max(open.end, span.end)
+    else reaches.push({ start: span.start, end: span.end })
+  }
+  return reaches
+}
+
+const claimsOf = (spans: ReadonlyArray<Span>): Claims => {
+  const byPath = new Map<string, Array<Span>>()
+  for (const span of spans) {
+    const held = byPath.get(span.path)
+    if (held === undefined) byPath.set(span.path, [span])
+    else held.push(span)
+  }
+  return new Map([...byPath].map(([path, held]) => [path, reachesOf(held)]))
+}
+
+const reaching = (reaches: ReadonlyArray<Reach>, line: number): boolean => {
+  let low = 0
+  let high = reaches.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    const reach = reaches[middle]
+    if (reach === undefined || reach.start > line) high = middle
+    else low = middle + 1
+  }
+  const last = reaches[low - 1]
+  return last !== undefined && last.end >= line
+}
+
+const claimedBy = (reaches: ReadonlyArray<Reach>, changed: ReadonlyArray<number>): boolean =>
+  changed.some((line) => reaching(reaches, line))
 
 export const claimsHunk = (
   spans: ReadonlyArray<Span>,
   path: string,
   hunk: Hunk,
 ): boolean =>
-  changedLines(hunk).some((line) => spans.some((span) => holds(span, path, line)))
+  claimedBy(reachesOf(spans.filter((span) => span.path === path)), changedLines(hunk))
 
 const runsOf = (path: string, lines: ReadonlyArray<number>): ReadonlyArray<Span> => {
   const runs: Array<{ path: string; start: number; end: number }> = []
@@ -66,25 +106,30 @@ const runsOf = (path: string, lines: ReadonlyArray<number>): ReadonlyArray<Span>
 
 type Tally = { readonly covered: number; readonly partial: number; readonly missing: ReadonlyArray<Span> }
 
-const tallyOf = (patch: Patch, hunk: Hunk, claimed: ReadonlyArray<Span>): Tally => {
-  const changed = changedLines(hunk)
-  const loose = changed.filter((line) => !claimed.some((span) => holds(span, patch.path, line)))
+const tallyOf = (
+  path: string,
+  changed: ReadonlyArray<number>,
+  reaches: ReadonlyArray<Reach>,
+): Tally => {
+  const loose = changed.filter((line) => !reaching(reaches, line))
   const whole = changed.length > 0 && loose.length === 0
   const some = loose.length > 0 && loose.length < changed.length
   return {
     covered: whole ? 1 : 0,
     partial: some ? 1 : 0,
-    missing: runsOf(patch.path, loose),
+    missing: runsOf(path, loose),
   }
 }
 
+const changedHunks = (patch: Patch): ReadonlyArray<ReadonlyArray<number>> =>
+  patch.hunks.map(changedLines).filter((changed) => changed.length > 0)
+
 export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<Layer>): Coverage => {
-  const claimed = spansOf(layers)
-  const tallies = patches.flatMap((patch) =>
-    patch.hunks
-      .filter((hunk) => changedLines(hunk).length > 0)
-      .map((hunk) => tallyOf(patch, hunk, claimed)),
-  )
+  const claims = claimsOf(spansOf(layers))
+  const tallies = patches.flatMap((patch) => {
+    const reaches = claims.get(patch.path) ?? NOTHING
+    return changedHunks(patch).map((changed) => tallyOf(patch.path, changed, reaches))
+  })
   return {
     total: tallies.length,
     covered: tallies.reduce((sum, tally) => sum + tally.covered, 0),
@@ -93,20 +138,23 @@ export const coverage = (patches: ReadonlyArray<Patch>, layers: ReadonlyArray<La
   }
 }
 
+const sharedIn = (patch: Patch, claims: ReadonlyArray<Claims>): number => {
+  const held = claims.flatMap((claim) => {
+    const reaches = claim.get(patch.path)
+    return reaches === undefined ? [] : [reaches]
+  })
+  if (held.length < 2) return 0
+  return changedHunks(patch).filter(
+    (changed) => held.filter((reaches) => claimedBy(reaches, changed)).length > 1,
+  ).length
+}
+
 export const sharedHunks = (
   patches: ReadonlyArray<Patch>,
   layers: ReadonlyArray<Layer>,
 ): number => {
-  const claiming = (patch: Patch, hunk: Hunk): number =>
-    layers.filter((layer) => claimsHunk(spansOf([layer]), patch.path, hunk)).length
-  return patches.reduce(
-    (sum, patch) =>
-      sum +
-      patch.hunks.filter(
-        (hunk) => changedLines(hunk).length > 0 && claiming(patch, hunk) > 1,
-      ).length,
-    0,
-  )
+  const claims = layers.map((layer) => claimsOf(spansOf([layer])))
+  return patches.reduce((sum, patch) => sum + sharedIn(patch, claims), 0)
 }
 
 const runsSaid = (count: number): string =>
