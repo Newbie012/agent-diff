@@ -459,6 +459,10 @@
   dir: ""
   intents:
     - patch-show-names-the-scope-of-each-line
+"@eliya-oss/agent-diff@0.1.0-alpha.191":
+  dir: ""
+  intents:
+    - layers-show-on-a-large-branch
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
