@@ -82,6 +82,15 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   are in the diff.
 - **Recording a vouch merges into the existing state.** A vouch must not overwrite what the state
   file says about hand-over — see [PRD 004](004-comment-delivery.md).
+- **A mark is refused once the directory has been switched to another branch.** The store is keyed
+  by the branch the directory is on ([PRD 004](004-comment-delivery.md)), and the terminal holds the
+  branch it opened. When someone checks out another branch in that directory mid-review, a mark
+  would be written under the other branch, and the file list would then show that branch's marks:
+  a reviewer with twenty-eight files ticked saw four, and the three they had just pressed were filed
+  under a branch they had never opened. So the terminal reads the directory's HEAD before it writes,
+  refuses when it no longer names the branch under review, and the footer says
+  `nothing recorded: the directory of <branch> is on <other> now`. The marks on screen stay as they
+  were. Nothing is lost: the original marks are still under their own branch's key.
 
 ### Deferred decisions
 
@@ -104,6 +113,8 @@ Behaviors that must be covered:
 - A vouch lapses when the file's content changes, with no explicit invalidation layer.
 - Vouching a file outside the diff is refused and names the known files.
 - A vouched file the agent rewrote is named as changed, and is not once it is marked again.
+- A mark pressed after the directory was switched to another branch records nothing, the footer
+  names the branch the directory is on now, and the other branch's progress stays empty.
 
 ## Out of Scope
 

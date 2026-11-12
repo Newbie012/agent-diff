@@ -3,7 +3,7 @@ import { Effect, Option } from "effect"
 import { parsePatches, type Patch } from "../domain/patch/index.ts"
 import { AT_ONCE, Git, type Worktree } from "../service/git/index.ts"
 import { Store } from "../service/store/index.ts"
-import { UnknownBase, UnknownBranch, UnknownWorktree } from "./error.ts"
+import { BranchMoved, UnknownBase, UnknownBranch, UnknownWorktree } from "./error.ts"
 
 export const realOf = (worktree: string): Effect.Effect<string, UnknownWorktree> =>
   Effect.tryPromise({
@@ -80,6 +80,18 @@ const named = Effect.fn("Review.Branch.named")(function* (repo: string, branch: 
   return yield* found === undefined
     ? new UnknownBranch({ repo, branch, known: worktrees.map((w) => w.branch) })
     : Effect.succeed(found)
+})
+
+const SHORT = 8
+
+const onNow = (worktree: Worktree, head: string): string =>
+  worktree.detached ? `(detached ${head.slice(0, SHORT)})` : head
+
+export const stillOn = Effect.fn("Review.Branch.stillOn")(function* (worktree: Worktree) {
+  const git = yield* Git
+  const now = onNow(worktree, yield* git.headOf(worktree.path))
+  if (now === worktree.branch) return worktree
+  return yield* new BranchMoved({ branch: worktree.branch, path: worktree.path, now })
 })
 
 export const find = Effect.fn("Review.Branch.find")(function* (

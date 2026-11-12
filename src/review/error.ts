@@ -6,6 +6,12 @@ export class UnknownBranch extends Data.TaggedError("UnknownBranch")<{
   readonly known: ReadonlyArray<string>
 }> {}
 
+export class BranchMoved extends Data.TaggedError("BranchMoved")<{
+  readonly branch: string
+  readonly path: string
+  readonly now: string
+}> {}
+
 export class UnknownBase extends Data.TaggedError("UnknownBase")<{
   readonly branch: string
   readonly base: string

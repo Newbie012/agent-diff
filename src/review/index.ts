@@ -27,6 +27,7 @@ export type { Dispatched, DraftRequest, ReportedDraft, Rewrite } from "./drafts.
 export type { Match, Searched } from "./search.ts"
 export type { ReportedPull } from "./pulls.ts"
 export {
+  BranchMoved,
   MalformedLayers,
   NoLayers,
   NoPull,

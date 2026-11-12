@@ -48,6 +48,11 @@ export class BranchTestDriver {
     return stacked
   }
 
+  async switchTo(branch: CreatedBranch, name: string): Promise<void> {
+    this.state.tracer.cannotReplay("a directory switched to another branch")
+    await this.state.git(branch.worktree, ["checkout", "-q", "-b", name])
+  }
+
   async getHead(branch: CreatedBranch): Promise<string> {
     const found = await this.state.git(branch.worktree, ["rev-parse", "HEAD"])
     return found.trim()

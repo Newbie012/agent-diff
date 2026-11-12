@@ -22,12 +22,14 @@ export const worktreeFor = (app: Terminal, branch: string): Worktree | undefined
 
 export const worktreeOf = (app: Terminal, branch: string): Work<Worktree> => {
   const held = worktreeFor(app, branch)
-  return held === undefined ? Branch.find(app.repo, branch) : Effect.succeed(held)
+  return held === undefined ? Branch.find(app.repo, branch) : Branch.stillOn(held)
 }
 
 export const readingOf = (app: Terminal, branch: string): Work<BranchReading> => {
   const held = readingHeld(app, branch)
-  return held === undefined ? Branch.reading(app.repo, branch) : Effect.succeed(held)
+  return held === undefined
+    ? Branch.reading(app.repo, branch)
+    : Effect.as(Branch.stillOn(held.worktree), held)
 }
 
 export const loadSent = (app: Terminal, branch: string): Work<TuiState["sent"]> =>
