@@ -237,7 +237,7 @@ adiff layers set --worktree . --json - <<'JSON'
   "layers": [
     {
       "title": "Add the invitation data model",
-      "note": "The record every later layer leans on",
+      "note": "The record every later layer leans on.\n- `expiresAt` is required; nothing reads a missing one\n- One open invitation per email, enforced by an index",
       "spans": [{ "path": "src/db/invites.ts", "start": 1, "end": 48 }]
     },
     {
@@ -263,6 +263,12 @@ Rules that make a layers worth reading:
 - **A title is a claim, not a file name.** "Add the invitation API", never "changes to
   src/api/invites.ts".
 - **Line numbers are the new side of the diff**, the same numbers `adiff comment take` reports.
+- **A note is a lead and a few points, not a paragraph.** The first line says how to read the
+  layer or what it claims, in one clause. Then up to four lines, each starting `- `, each one
+  decision or surprise the reviewer would otherwise miss. About 220 characters in all. Put names
+  from code in backticks, and a newline between points, not semicolons. Leave out the file list
+  (the review shows it), asides in parentheses (make one its own point if it matters) and anything
+  the title already says.
 - **Cover everything.** adiff computes coverage itself and answers with the changed lines no layer
   claims; those show up for the reviewer under "not in any layer" whatever you do. A layer set that
   quietly skips a third of the diff is worse than none, so put the leftovers in a final layer and
