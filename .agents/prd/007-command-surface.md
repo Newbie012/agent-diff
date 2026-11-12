@@ -121,13 +121,16 @@ takes either.
 - **`review pane` puts the review in front of the reviewer.** An agent that finishes work can open
   the terminal in a split pane beside the conversation, so the handover ends in a review rather than
   an instruction. It splits through whichever multiplexer is running, read from the environment:
-  `TMUX`, `ZELLIJ`, `WEZTERM_PANE`, or `KITTY_LISTEN_ON`.
+  `TMUX`, `ZELLIJ`, `WEZTERM_PANE`, `KITTY_LISTEN_ON`, or Harbor (`HARBOR_SOCKET` with
+  `HARBOR_PANE_ID`), where the review opens as a child terminal under the agent's.
 - **A terminal that cannot split is not a failure.** The answer carries `opened: false` and the
   command to run, so a caller has the fallback in the same reply and needs no second code path.
   Ghostty, Terminal.app and a bare tty all land here.
 - **The pane runs the binary that launched it.** A caller reaches `review pane` through whatever
   path invoked adiff, and that path may not be on `PATH`, so the split runs the same executable
   rather than the word `adiff`. The `command` field stays friendly, because a human reads it.
+  Harbor is the exception: it runs only allowlisted programs, matched by name, so its child is
+  asked for `adiff` itself.
 - **Asking is the caller's job.** The command splits when it is run. Nothing in the surface can
   tell whether the reviewer wanted a pane, so the skill carries the rule: open one when a review was
   asked for, never because work finished.
