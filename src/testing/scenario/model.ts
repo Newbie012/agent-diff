@@ -8,6 +8,12 @@ export type Change = {
   readonly message: string
 }
 
+export type Checkout = {
+  readonly checkout: string
+}
+
+export type WorldMove = Change | Checkout
+
 export type Step = {
   readonly does: string
   readonly keys: ReadonlyArray<string>

@@ -186,8 +186,9 @@ type. The answer says what happened:
 {"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api --branch add-invitations"}
 ```
 
-`opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,
-WezTerm or kitty has nowhere to put a pane. The answer carries `command` either way, so quote that
+In Harbor the review opens as a child terminal under yours instead of a split. `opened:false` means
+nothing could be split, which is ordinary: a terminal without tmux, Zellij, WezTerm, kitty or Harbor
+has nowhere to put a pane. The answer carries `command` either way, so quote that
 line and let them run it.
 
 Open a pane when a review was asked for. Finishing work is not a reason on its own, and taking over

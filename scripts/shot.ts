@@ -105,6 +105,10 @@ const madeInTheWorld = (token: string): void => {
   const change = chosen?.changes?.[at]
   if (change === undefined) return
   const worktree = worldWorktree()
+  if ("checkout" in change) {
+    run("git", ["-C", worktree, "checkout", "-q", "-b", change.checkout])
+    return
+  }
   const file = join(worktree, change.file)
   mkdirSync(join(file, ".."), { recursive: true })
   writeFileSync(file, `${change.lines.join("\n")}\n`, "utf8")

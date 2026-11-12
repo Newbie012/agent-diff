@@ -57,6 +57,13 @@ says what happened, the driver knows how.
   because a capture is uploaded to GitHub before anyone looks at it, and a still of the wrong
   screen is believed.
 
+- **A branch switched in the middle of a test is replayed at the same point.** A test that checks
+  out another branch in the directory under review used to mark its trace unreplayable, so the
+  footer notice it was written for had no film. The driver now traces the checkout as a step of the
+  world, between the keys before it and after it, and the replay checks out the same branch in its
+  own invented repository at that moment. A file changed or committed from outside is still beyond
+  the replay.
+
 - **`--local` writes a capture and uploads nothing.** Every other route uploads before a human sees
   the frame, and an attachment cannot be deleted, so the instruction to read a still before pasting
   it could only be followed by publishing the still first. `--local` keeps the file in `shots/` and

@@ -51,18 +51,6 @@ describe("when the agent says what it is doing on a comment it took", () => {
     expect(listed?.doing?.body).toBe("Running the tests")
   })
 
-  test("then a comment nobody is working on carries no doing field", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    const { branch } = await taken(driver)
-
-    // ACT
-    const [listed] = listedOf((await driver.app.runThreads(branch.name)).envelope)
-
-    // ASSERT
-    expect(listed).not.toHaveProperty("doing")
-  })
-
   test("then the agent's answer clears the line", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -149,5 +137,19 @@ describe("when the agent says what it is doing on a comment it took", () => {
 
     // ASSERT
     expect(await changed).toMatchObject({ id: watching.id, event: "changed" })
+  })
+})
+
+describe("when the agent took a comment and has said nothing about it", () => {
+  test("then comment list carries no doing field on the comment", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const { branch } = await taken(driver)
+
+    // ACT
+    const [listed] = listedOf((await driver.app.runThreads(branch.name)).envelope)
+
+    // ASSERT
+    expect(listed).not.toHaveProperty("doing")
   })
 })

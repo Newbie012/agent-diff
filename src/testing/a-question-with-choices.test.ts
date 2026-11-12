@@ -59,20 +59,6 @@ describe("when the agent asks the reviewer something and offers choices", () => 
     expect(listed?.state).toBe("question")
   })
 
-  test("then an answer with no choices carries no choices field", async () => {
-    // ARRANGE
-    await using driver = await TestDriver.create()
-    const { branch, id } = await taken(driver)
-
-    // ACT
-    await driver.app.runAnswer({ worktree: branch.worktree, id, body: "which one?", asks: true })
-
-    // ASSERT
-    const [listed] = listedOf((await driver.app.runThreads(branch.name)).envelope)
-    expect(listed?.answers[0]).not.toHaveProperty("choices")
-    expect(listed?.turns.at(-1)).not.toHaveProperty("choices")
-  })
-
   test("then a question with only one choice is refused", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -102,5 +88,21 @@ describe("when the agent asks the reviewer something and offers choices", () => 
     // ASSERT
     expect(said.code).toBe(2)
     expect(said.envelope).toMatchObject({ ok: false, error: { type: "BadOption" } })
+  })
+})
+
+describe("when the agent asks the reviewer something without offering choices", () => {
+  test("then comment list carries no choices on the answer or its turn", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const { branch, id } = await taken(driver)
+
+    // ACT
+    await driver.app.runAnswer({ worktree: branch.worktree, id, body: "which one?", asks: true })
+
+    // ASSERT
+    const [listed] = listedOf((await driver.app.runThreads(branch.name)).envelope)
+    expect(listed?.answers[0]).not.toHaveProperty("choices")
+    expect(listed?.turns.at(-1)).not.toHaveProperty("choices")
   })
 })

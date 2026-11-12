@@ -49,7 +49,7 @@ export class BranchTestDriver {
   }
 
   async switchTo(branch: CreatedBranch, name: string): Promise<void> {
-    this.state.tracer.cannotReplay("a directory switched to another branch")
+    this.state.tracer.sawChange(`check out ${name} in the directory under review`, { checkout: name })
     await this.state.git(branch.worktree, ["checkout", "-q", "-b", name])
   }
 

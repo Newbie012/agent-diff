@@ -282,6 +282,8 @@ Behaviors that must be covered:
 - `upgrade --check` on the same install prints the command and runs nothing.
 - `upgrade` on a current install prints one line and runs nothing.
 - `upgrade --run` behaves exactly as `upgrade` does.
+- `review pane` in Harbor opens the review as a child terminal running `adiff review open`.
+- `comment answer --choice` given once, or five times, is refused.
 
 ## Out of Scope
 
