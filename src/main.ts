@@ -6,6 +6,8 @@ import {
   addressing,
   around,
   catalog,
+  choices,
+  oneLine,
   knownIn,
   valuedIn,
   failure,
@@ -190,8 +192,18 @@ const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Option
     body: yield* required(options, "body"),
     asks: options["question"] !== undefined,
     at: stamp(options),
+    choices: yield* choices(options, "choice"),
   })
   yield* answer(options, { answered: report.answered })
+})
+
+const commentDoing = Effect.fn("Main.commentDoing")(function* (options: Options) {
+  const report = yield* Thread.doing(yield* worktreeNamed(options), {
+    id: yield* required(options, "id"),
+    body: yield* oneLine(options, "body"),
+    at: stamp(options),
+  })
+  yield* answer(options, report)
 })
 
 const remarkList = Effect.fn("Main.remarkList")(function* (options: Options) {
@@ -318,7 +330,7 @@ const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
 
 const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options) {
   const report = yield* Vouch.progress(yield* readingIn(options))
-  yield* answer(options, { reviewed: report.vouched, total: report.total })
+  yield* answer(options, { reviewed: report.vouched, changed: report.changed, total: report.total })
 })
 
 const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
@@ -421,6 +433,7 @@ const routes = {
   "comment reply": commentReply,
   "comment take": commentTake,
   "comment answer": commentAnswer,
+  "comment doing": commentDoing,
   "comment list": commentList,
   "remark list": remarkList,
   "remark accept": remarkAccept,

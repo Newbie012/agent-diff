@@ -8,12 +8,22 @@ const FLAG = /^--(?<name>[^=]+)(?:=(?<value>[\s\S]*))?$/
 
 type Taken = { readonly options: Record<string, string>; readonly held: string | undefined }
 
+const REPEATED: ReadonlySet<string> = new Set(["choice"])
+
+const MANY = "\n"
+
+const withValue = (options: Record<string, string>, name: string, value: string): Record<string, string> => {
+  const before = options[name]
+  if (before === undefined || !REPEATED.has(name)) return { ...options, [name]: value }
+  return { ...options, [name]: `${before}${MANY}${value}` }
+}
+
 const flagOn = (taken: Taken, token: string, valued: ReadonlySet<string>): Taken => {
   const found = FLAG.exec(token)?.groups
   if (found === undefined) return taken
   const name = found["name"] ?? ""
-  const given = found["value"]
-  if (given !== undefined) return { options: { ...taken.options, [name]: given }, held: undefined }
+  const value = found["value"]
+  if (value !== undefined) return { options: withValue(taken.options, name, value), held: undefined }
   if (valued.has(name)) return { options: taken.options, held: name }
   return { options: { ...taken.options, [name]: "true" }, held: undefined }
 }
@@ -21,7 +31,7 @@ const flagOn = (taken: Taken, token: string, valued: ReadonlySet<string>): Taken
 const tokenOn = (taken: Taken, token: string, valued: ReadonlySet<string>): Taken =>
   taken.held === undefined
     ? flagOn(taken, token, valued)
-    : { options: { ...taken.options, [taken.held]: token }, held: undefined }
+    : { options: withValue(taken.options, taken.held, token), held: undefined }
 
 export const optionsFrom = (
   argv: ReadonlyArray<string>,
@@ -97,4 +107,33 @@ export const seconds = Effect.fn("Cli.seconds")(function* (options: Options, nam
         given: raw,
         allowed: [`a whole number of seconds from 1 to ${WAIT_MOST}`],
       })
+})
+
+export const many = (options: Options, name: string): ReadonlyArray<string> => {
+  const raw = options[name]
+  return raw === undefined ? [] : raw.split(MANY)
+}
+
+const CHOICES_FEWEST = 2
+
+const CHOICES_MOST = 4
+
+export const choices = Effect.fn("Cli.choices")(function* (options: Options, name: string) {
+  const offered = many(options, name).map((choice) => choice.trim())
+  if (offered.length === 0) return offered
+  const fits = offered.length >= CHOICES_FEWEST && offered.length <= CHOICES_MOST
+  return yield* fits && offered.every((choice) => choice.length > 0)
+    ? Effect.succeed(offered)
+    : new BadOption({
+        option: name,
+        given: offered.join(" | "),
+        allowed: [`${CHOICES_FEWEST} to ${CHOICES_MOST} choices, none of them empty`],
+      })
+})
+
+export const oneLine = Effect.fn("Cli.oneLine")(function* (options: Options, name: string) {
+  const said = (yield* required(options, name)).trim()
+  return yield* said.length > 0 && !said.includes("\n")
+    ? Effect.succeed(said)
+    : new BadOption({ option: name, given: said, allowed: ["one line of text, not empty"] })
 })

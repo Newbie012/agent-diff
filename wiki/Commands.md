@@ -108,6 +108,12 @@ A reply is short because it is the rest of a sentence, so read the thread before
 
 `comment answer` says what was done, against the id the take reported. `--question` marks the thread as
 waiting on the reviewer instead, for a decision the work stops without; it is not for checking in.
+`--choice`, given 2 to 4 times, offers the reviewer answers to pick from, and `comment list` carries them
+on that turn as `choices`. Picking one is an ordinary reply.
+
+`comment doing` says in one line what the agent is doing on a comment it took, such as `Editing
+driver.ts`. `comment list` reports the latest line as `doing`, with `body` and `at`, until an answer, a
+settle or a remove clears it.
 Settling is the reviewer's, and the agent that wrote the answer cannot close the thread.
 
 ## The take rule, and `--wait`

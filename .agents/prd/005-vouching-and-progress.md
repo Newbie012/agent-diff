@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-11-12
 
 ## Problem Statement
 
@@ -68,8 +68,16 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   file the agent changes again loses its marks like any other. A layer is read when its own runs are,
   and the file itself is read when every layer's runs of it are, which is when the file list ticks it
   and the count at the top counts it. Unmarking one layer's runs takes the file back out.
-- **Progress reports the vouched paths and the branch's total file count**, so the caller can
+- **Progress reports the vouched paths, the changed ones and the branch's total file count**, so the caller can
   render a fraction without a second call.
+- **Progress names the files that changed since they were marked.** A lapsed vouch used to vanish:
+  the file simply stopped counting, and the reviewer could not tell a file they never read from one
+  they read before the agent rewrote it. The vouch already holds the blob it was made at, so
+  `review progress` reports `changed`, the files still in the diff whose recorded blob, for the whole
+  file or for any layer's runs of it, is not the blob they have now. Marking the file again, or one
+  layer's runs of it, takes it off the list. Nothing new is stored,
+  so a vouch written by an older adiff reports the same way. The blob is the file's content on the
+  branch side, so a file whose diff changed only because the base moved is not counted as changed.
 - **Vouching a file the diff does not contain is refused**, and the refusal names the files that
   are in the diff.
 - **Recording a vouch merges into the existing state.** A vouch must not overwrite what the state
@@ -81,7 +89,6 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
 | --- | --- |
 | Vouching from the terminal rather than the command line | Reviewers finding the split absurd in practice |
 | Vouching a [hunk](CONTEXT.md#hunk) rather than a whole file | A file large enough that whole-file vouching is meaningless |
-| Telling the reviewer *which* vouches lapsed, and why | A reviewer surprised by a progress count going backwards |
 
 ## Testing Decisions
 
@@ -96,6 +103,7 @@ Behaviors that must be covered:
 - A vouch survives adiff exiting.
 - A vouch lapses when the file's content changes, with no explicit invalidation layer.
 - Vouching a file outside the diff is refused and names the known files.
+- A vouched file the agent rewrote is named as changed, and is not once it is marked again.
 
 ## Out of Scope
 

@@ -12,7 +12,14 @@ export * as Pull from "./pulls.ts"
 export type { Based, Basis, BranchReading, BranchSummary } from "./branches.ts"
 export type { Ranged, ShownFile, ShownHunk, ShownPatch, ShownRow, ShownScope, Showing } from "./patches.ts"
 export type { CommentRequest, PendingComment, ReplyRequest, Turn, Written } from "./comments.ts"
-export type { AnswerRequest, Thread as ReportedThread, ThreadAnswer, ThreadTurn } from "./threads.ts"
+export type {
+  AnswerRequest,
+  DoingRequest,
+  Thread as ReportedThread,
+  ThreadAnswer,
+  ThreadDoing,
+  ThreadTurn,
+} from "./threads.ts"
 export type { AcceptRequest, Remark as ReportedRemark, RemarkState } from "./remarks.ts"
 export type { ProgressReport, VouchReport } from "./vouching.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"

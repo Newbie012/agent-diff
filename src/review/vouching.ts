@@ -11,7 +11,27 @@ export type VouchReport = {
   readonly total: number
 }
 
-export type ProgressReport = VouchReport
+export type ProgressReport = VouchReport & {
+  readonly changed: ReadonlyArray<string>
+}
+
+type Blobbed = { readonly path: string; readonly blob: string }
+
+const pathOfMark = (mark: string): string => mark.split("@")[0] ?? ""
+
+const changedSince = (
+  marks: ReadonlyArray<Readonly<Record<string, string>>>,
+  files: ReadonlyArray<Blobbed>,
+): ReadonlyArray<string> => {
+  const recorded = marks.flatMap((held) => Object.entries(held))
+  const blobsOf = (file: Blobbed): ReadonlyArray<string> =>
+    recorded.filter(([mark]) => pathOfMark(mark) === file.path).map(([, blob]) => blob)
+  const lapsed = (file: Blobbed): boolean => {
+    const blobs = blobsOf(file)
+    return blobs.length > 0 && !blobs.includes(file.blob)
+  }
+  return files.filter(lapsed).map((file) => file.path)
+}
 
 export const readParts = (
   parts: Readonly<Record<string, string>>,
@@ -19,7 +39,7 @@ export const readParts = (
 ): ReadonlyArray<string> => {
   const blobs = new Map(files.map((file) => [file.path, file.blob]))
   return Object.entries(parts)
-    .filter(([part, blob]) => blobs.get(part.split("@")[0] ?? "") === blob)
+    .filter(([part, blob]) => blobs.get(pathOfMark(part)) === blob)
     .map(([part]) => part)
 }
 
@@ -55,6 +75,7 @@ export const progress = Effect.fn("Review.Vouch.progress")(function* (reading: B
   return {
     vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
     parts: readParts(current.parts, files),
+    changed: changedSince([current.vouches, current.parts], files),
     total: reading.patches.length,
-  } satisfies VouchReport
+  } satisfies ProgressReport
 })

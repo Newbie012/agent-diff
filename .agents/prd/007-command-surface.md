@@ -11,7 +11,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-11-12
 
 ## Problem Statement
 
@@ -61,13 +61,14 @@ takes either.
 | `branch list` | `--repo` | `{ok, branches: [...]}` |
 | `comment send` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
 | `comment take` | `<review> [--wait <seconds>]` | `{ok, comments: [...], branch}` |
-| `comment answer` | `<review> --id --body [--question]` | `{ok, answered}` |
+| `comment answer` | `<review> --id --body [--question] [--choice …]` | `{ok, answered}` |
+| `comment doing` | `<review> --id --body` | `{ok, doing}` |
 | `comment list` | `<review>` | `{ok, comments: [...]}` |
 | `comment resolve` | `<review> --id` | `{ok, settled}` |
 | `comment remove` | `<review> --id` | `{ok, removed}` |
 | `comment restore` | `<review> --id` | `{ok, restored}` |
 | `file review` | `<review> --file` | `{ok, reviewed, total}` |
-| `review progress` | `<review>` | `{ok, reviewed, total}` |
+| `review progress` | `<review>` | `{ok, reviewed, changed, total}` |
 | `layers set` | `<review> --json <file\|->` | `{ok, layers}` |
 | `layers show` | `<review>` | `{ok, layers}` |
 | `review open` | `--repo` | opens the terminal |
@@ -239,6 +240,8 @@ takes either.
 - **`comment list` reports comments, and an answer is a field on one.** A comment carries its
   answers, whether it is settled, and whether it has gone stale. There is no separate thread noun
   in the surface, because a thread is what a comment looks like once someone has replied.
+- **`--choice` is the one option that may be given more than once.** Each one is a choice offered
+  on a question, in the order given. Every other option keeps the last value it was given.
 - **`file review` is the CLI spelling of what the terminal calls marking a file reviewed.** The
   terminal says "Mark reviewed" and counts "3/7 reviewed", so the command says `review` and answers
   with `reviewed`.

@@ -40,6 +40,7 @@ export const StoredAnswer = Schema.Struct({
   head: Schema.String,
   asks: Schema.Boolean,
   at: Schema.String,
+  choices: Schema.optionalKey(Schema.Array(Schema.String)),
 })
 
 export const Batch = Schema.Struct({
@@ -52,6 +53,8 @@ export const Batch = Schema.Struct({
 const Stamps = Schema.Record(Schema.String, Schema.String)
 
 const Counts = Schema.Record(Schema.String, Schema.Int)
+
+const Doing = Schema.Record(Schema.String, Schema.Struct({ body: Schema.String, at: Schema.String }))
 
 const noStamps = Schema.withDecodingDefaultKey<typeof Stamps>(Effect.succeed({}))
 
@@ -67,6 +70,7 @@ export const BranchState = Schema.Struct({
   read: Counts.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
   dismissed: Stamps.pipe(noStamps),
   seen: Stamps.pipe(noStamps),
+  doing: Doing.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
 })
 
 const StoredSaid = Schema.Struct({

@@ -317,9 +317,36 @@ const commands: ReadonlyArray<CommandSpec> = [
         value: "flag",
         about: "The answer is a question, and the work waits for a reply",
       },
+      {
+        name: "choice",
+        required: false,
+        value: "text",
+        about:
+          "One answer the reviewer can pick. Give it 2 to 4 times, in order; it makes the answer a question",
+      },
     ],
     dataKey: "answered",
     example: 'adiff comment answer --worktree . --id c1 --body "dropped it, and the import with it"',
+  },
+  {
+    name: "comment doing",
+    about:
+      "Say in one line what you are doing on a comment you took. Replaces the last line; an answer clears it",
+    group: ANSWER_COMMENTS,
+    addresses: "review",
+    safety: "write",
+    options: [
+      ...addressing,
+      {
+        name: "id",
+        required: true,
+        value: "id",
+        about: "The comment being worked on, as `comment take` reported it",
+      },
+      { name: "body", required: true, value: "text", about: "One short line, such as Editing driver.ts" },
+    ],
+    dataKey: "doing",
+    example: 'adiff comment doing --worktree . --id c1 --body "Editing driver.ts"',
   },
   {
     name: "layers set",
