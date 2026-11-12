@@ -23,13 +23,20 @@ of its files.
 A file you marked reviewed comes back into the file list when the agent changes it. Nothing has to
 notice: the mark is against the file as it was, so new work on that file is unread again.
 
+## When the directory moves to another branch
+
+Marks are kept under the branch the directory is on. If someone checks out another branch in that
+directory while the review is open, `m` records nothing and the footer reads "nothing recorded: the
+directory of <branch> is on <other> now". Your marks stay under the branch you opened.
+
 ## From the command line
 
     adiff file review --worktree . --file src/api.ts
     adiff review progress --repo . --branch <name>
 
 `file review` marks a file and unmarks it on a second run, the same as `m`. `review progress` reports
-which files of a review are marked and how many there are.
+which files of a review are marked, which marked files changed since, as `changed`, and how many
+files there are.
 
 ## Read next
 

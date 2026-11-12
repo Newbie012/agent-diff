@@ -19,6 +19,7 @@ import {
 } from "effect"
 import { heldValues } from "../domain/preferences/index.ts"
 import { Git } from "../service/git/index.ts"
+import type { BranchMoved } from "../review/index.ts"
 import { Store } from "../service/store/index.ts"
 import { answers, filings } from "./watch.ts"
 import { grammarsAdded } from "./grammars.ts"
@@ -230,6 +231,9 @@ const EFFECTS: Effects = {
   "match.prev": (app) => walkMatches(app, -1),
 }
 
+const movedSaid = (moved: BranchMoved): string =>
+  `nothing recorded: the directory of ${moved.branch} is on ${moved.now} now`
+
 export class App implements Terminal {
   readonly renderer: CliRenderer
   readonly screen: Screen
@@ -336,6 +340,9 @@ export class App implements Terminal {
   private act(intent: Intent): Effect.Effect<void, never, Needs> {
     const began = Date.now()
     return this.answer(intent).pipe(
+      Effect.catchTag("BranchMoved", (moved) =>
+        Effect.sync(() => this.commit(withNotice(this.state, movedSaid(moved)))),
+      ),
       Effect.catchCause((cause) => Effect.sync(() => this.fail(Cause.squash(cause)))),
       Effect.ensuring(Effect.sync(() => this.timed(began))),
     )

@@ -11,7 +11,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-11-12
 
 ## Problem Statement
 
@@ -61,13 +61,14 @@ takes either.
 | `branch list` | `--repo` | `{ok, branches: [...]}` |
 | `comment send` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
 | `comment take` | `<review> [--wait <seconds>]` | `{ok, comments: [...], branch}` |
-| `comment answer` | `<review> --id --body [--question]` | `{ok, answered}` |
+| `comment answer` | `<review> --id --body [--question] [--choice …]` | `{ok, answered}` |
+| `comment doing` | `<review> --id --body` | `{ok, doing}` |
 | `comment list` | `<review>` | `{ok, comments: [...]}` |
 | `comment resolve` | `<review> --id` | `{ok, settled}` |
 | `comment remove` | `<review> --id` | `{ok, removed}` |
 | `comment restore` | `<review> --id` | `{ok, restored}` |
 | `file review` | `<review> --file` | `{ok, reviewed, total}` |
-| `review progress` | `<review>` | `{ok, reviewed, total}` |
+| `review progress` | `<review>` | `{ok, reviewed, changed, total}` |
 | `layers set` | `<review> --json <file\|->` | `{ok, layers}` |
 | `layers show` | `<review>` | `{ok, layers}` |
 | `review open` | `--repo` | opens the terminal |
@@ -120,13 +121,16 @@ takes either.
 - **`review pane` puts the review in front of the reviewer.** An agent that finishes work can open
   the terminal in a split pane beside the conversation, so the handover ends in a review rather than
   an instruction. It splits through whichever multiplexer is running, read from the environment:
-  `TMUX`, `ZELLIJ`, `WEZTERM_PANE`, or `KITTY_LISTEN_ON`.
+  `TMUX`, `ZELLIJ`, `WEZTERM_PANE`, `KITTY_LISTEN_ON`, or Harbor (`HARBOR_SOCKET` with
+  `HARBOR_PANE_ID`), where the review opens as a child terminal under the agent's.
 - **A terminal that cannot split is not a failure.** The answer carries `opened: false` and the
   command to run, so a caller has the fallback in the same reply and needs no second code path.
   Ghostty, Terminal.app and a bare tty all land here.
 - **The pane runs the binary that launched it.** A caller reaches `review pane` through whatever
   path invoked adiff, and that path may not be on `PATH`, so the split runs the same executable
   rather than the word `adiff`. The `command` field stays friendly, because a human reads it.
+  Harbor is the exception: it runs only allowlisted programs, matched by name, so its child is
+  asked for `adiff` itself.
 - **Asking is the caller's job.** The command splits when it is run. Nothing in the surface can
   tell whether the reviewer wanted a pane, so the skill carries the rule: open one when a review was
   asked for, never because work finished.
@@ -239,6 +243,8 @@ takes either.
 - **`comment list` reports comments, and an answer is a field on one.** A comment carries its
   answers, whether it is settled, and whether it has gone stale. There is no separate thread noun
   in the surface, because a thread is what a comment looks like once someone has replied.
+- **`--choice` is the one option that may be given more than once.** Each one is a choice offered
+  on a question, in the order given. Every other option keeps the last value it was given.
 - **`file review` is the CLI spelling of what the terminal calls marking a file reviewed.** The
   terminal says "Mark reviewed" and counts "3/7 reviewed", so the command says `review` and answers
   with `reviewed`.
@@ -276,6 +282,8 @@ Behaviors that must be covered:
 - `upgrade --check` on the same install prints the command and runs nothing.
 - `upgrade` on a current install prints one line and runs nothing.
 - `upgrade --run` behaves exactly as `upgrade` does.
+- `review pane` in Harbor opens the review as a child terminal running `adiff review open`.
+- `comment answer --choice` given once, or five times, is refused.
 
 ## Out of Scope
 

@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-02
+- **Last updated:** 2026-11-12
 
 ## Problem Statement
 
@@ -68,12 +68,29 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   file the agent changes again loses its marks like any other. A layer is read when its own runs are,
   and the file itself is read when every layer's runs of it are, which is when the file list ticks it
   and the count at the top counts it. Unmarking one layer's runs takes the file back out.
-- **Progress reports the vouched paths and the branch's total file count**, so the caller can
-  render a fraction without a second call.
+- **Progress reports the vouched paths, the changed ones and the branch's total file count**, so
+  the caller can render a fraction without a second call.
+- **Progress names the files that changed since they were marked.** A lapsed vouch used to vanish:
+  the file simply stopped counting, and the reviewer could not tell a file they never read from one
+  they read before the agent rewrote it. The vouch already holds the blob it was made at, so
+  `review progress` reports `changed`, the files still in the diff whose recorded blob, for the whole
+  file or for any layer's runs of it, is not the blob they have now. Marking the file again, or one
+  layer's runs of it, takes it off the list. Nothing new is stored, so a vouch written by an older
+  adiff reports the same way. The blob is the file's content on the branch side, so a file whose
+  diff changed only because the base moved is not counted as changed.
 - **Vouching a file the diff does not contain is refused**, and the refusal names the files that
   are in the diff.
 - **Recording a vouch merges into the existing state.** A vouch must not overwrite what the state
   file says about hand-over — see [PRD 004](004-comment-delivery.md).
+- **A mark is refused once the directory has been switched to another branch.** The store is keyed
+  by the branch the directory is on ([PRD 004](004-comment-delivery.md)), and the terminal holds the
+  branch it opened. When someone checks out another branch in that directory mid-review, a mark
+  would be written under the other branch, and the file list would then show that branch's marks:
+  a reviewer with twenty-eight files ticked saw four, and the three they had just pressed were filed
+  under a branch they had never opened. So the terminal reads the directory's HEAD before it writes,
+  refuses when it no longer names the branch under review, and the footer says
+  `nothing recorded: the directory of <branch> is on <other> now`. The marks on screen stay as they
+  were. Nothing is lost: the original marks are still under their own branch's key.
 
 ### Deferred decisions
 
@@ -81,7 +98,6 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
 | --- | --- |
 | Vouching from the terminal rather than the command line | Reviewers finding the split absurd in practice |
 | Vouching a [hunk](CONTEXT.md#hunk) rather than a whole file | A file large enough that whole-file vouching is meaningless |
-| Telling the reviewer *which* vouches lapsed, and why | A reviewer surprised by a progress count going backwards |
 
 ## Testing Decisions
 
@@ -96,6 +112,9 @@ Behaviors that must be covered:
 - A vouch survives adiff exiting.
 - A vouch lapses when the file's content changes, with no explicit invalidation layer.
 - Vouching a file outside the diff is refused and names the known files.
+- A vouched file the agent rewrote is named as changed, and is not once it is marked again.
+- A mark pressed after the directory was switched to another branch records nothing, the footer
+  names the branch the directory is on now, and the other branch's progress stays empty.
 
 ## Out of Scope
 

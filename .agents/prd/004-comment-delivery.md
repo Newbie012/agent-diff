@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-23
+- **Last updated:** 2026-11-12
 
 ## Problem Statement
 
@@ -128,6 +128,22 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   branch with no reading order.
 - **An answer is one line of JSON** in the outbox: the comment it answers, its body, the HEAD it
   was written against, whether it asks the reviewer something, and when. Appending never rewrites.
+- **The agent can say what it is doing on a comment it took, in one line.** Between taking a
+  comment and answering it, the reviewer saw only that the agent had picked it up, and a point that
+  takes ten minutes looked the same as one the agent had dropped. `comment doing` records a short
+  line against the thread ("Editing driver.ts") and when it was said; saying it again replaces it.
+  `comment list` reports the latest line as `doing`, with `body` and `at`. An answer, a settle or a
+  remove clears it, because each of those ends the work the line described. The line is kept in
+  `state.json` beside what was taken, so a client watching the branch's folder hears it change like
+  any other comment change. A line said on a reply belongs to the thread the reply continues. The
+  line is one line: an empty one, or one with a line break, is refused.
+- **A question can offer the reviewer two to four answers to pick from.** An agent that asks "drop
+  it, or keep it and map the error?" already knows the answers it expects, and the reviewer had to
+  type one back. `comment answer --choice` may be given two to four times; it marks the answer as a
+  question, and `comment list` carries the choices on that answer and on its turn as `choices`.
+  Fewer than two, more than four, or an empty one is refused. Picking one is an ordinary reply that
+  happens to carry the choice's words: nothing else about the thread changes, and an answer written
+  before choices existed reads as one without them.
 - **Answers are read on demand, not handed over.** The reviewer is sitting in front of a screen and
   re-reads the branch, so nothing has to remember what they have seen. What the agent is owed is
   worked out from the inbox and the outbox each time, and there is no second record to corrupt.
@@ -322,6 +338,10 @@ Behaviors that must be covered:
 - A comment on code a layer explains is handed over with that layer's title, a comment on code no
   layer claims with none, a reply carries the layer its thread sits in, and a layers rewritten after
   the comment was filed hands over the title it carries now.
+- What the agent says it is doing shows on the thread, is replaced by the next line, and clears on
+  an answer, a settle or a remove; a client watching through `serve` hears it change.
+- A question offered with choices lists them on its turn, and a question with one choice, or five,
+  is refused.
 - A vouch recorded before a take survives it. This is the regression guard for the merge rule
   above, and it is the one that would have gone unnoticed.
 

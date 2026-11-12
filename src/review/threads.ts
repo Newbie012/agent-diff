@@ -9,6 +9,12 @@ export type ThreadAnswer = {
   readonly body: string
   readonly at: string
   readonly asks: boolean
+  readonly choices?: ReadonlyArray<string>
+}
+
+export type ThreadDoing = {
+  readonly body: string
+  readonly at: string
 }
 
 export type Thread = {
@@ -28,18 +34,27 @@ export type Thread = {
   readonly answers: ReadonlyArray<ThreadAnswer>
   readonly turns: ReadonlyArray<ThreadTurn>
   readonly settled: boolean
+  readonly doing?: ThreadDoing
 }
 
 export type ThreadTurn = {
   readonly voice: "reviewer" | "agent"
   readonly body: string
   readonly at: string
+  readonly choices?: ReadonlyArray<string>
 }
 
 export type AnswerRequest = {
   readonly id: string
   readonly body: string
   readonly asks: boolean
+  readonly at: string
+  readonly choices: ReadonlyArray<string>
+}
+
+export type DoingRequest = {
+  readonly id: string
+  readonly body: string
   readonly at: string
 }
 
@@ -70,6 +85,7 @@ type Conversation = {
   readonly patches: ReadonlyArray<Patch>
   readonly read: Readonly<Record<string, number>>
   readonly taken: Readonly<Record<string, string>>
+  readonly doing: Readonly<Record<string, ThreadDoing>>
 }
 
 const placedNow = (
@@ -85,10 +101,14 @@ const placedNow = (
   })
 }
 
+const choicesOf = (entry: StoredAnswer): { readonly choices?: ReadonlyArray<string> } =>
+  entry.choices === undefined ? {} : { choices: entry.choices }
+
 const answerOf = (entry: StoredAnswer): ThreadAnswer => ({
   body: entry.body,
   at: entry.at,
   asks: entry.asks,
+  ...choicesOf(entry),
 })
 
 const turnsOf = (
@@ -101,7 +121,7 @@ const turnsOf = (
       body: held.comment.body,
       at: held.batch.at,
     })),
-    ...said.map((entry) => ({ voice: "agent" as const, body: entry.body, at: entry.at })),
+    ...said.map((entry) => ({ voice: "agent" as const, body: entry.body, at: entry.at, ...choicesOf(entry) })),
   ].toSorted((one, other) => (one.at < other.at ? -1 : one.at > other.at ? 1 : 0))
 
 const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conversation): Thread => {
@@ -112,6 +132,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
   const turns = turnsOf(replies, mine)
   const settled = Object.hasOwn(conversation.settled, comment.id)
   const sits = placedNow(conversation.patches, comment.anchor)
+  const doing = conversation.doing[comment.id]
   return {
     id: comment.id,
     file: comment.anchor.path,
@@ -129,6 +150,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
     answers: mine.map(answerOf),
     turns,
     settled,
+    ...(doing === undefined ? {} : { doing }),
   }
 }
 
@@ -144,6 +166,17 @@ const threadsIn = (batches: ReadonlyArray<Batch>, conversation: Conversation): R
 
 const idsIn = (batches: ReadonlyArray<Batch>): ReadonlyArray<string> =>
   batches.flatMap((batch) => batch.comments.map((comment) => comment.id))
+
+const rootIn = (batches: ReadonlyArray<Batch>, id: string): string | undefined => {
+  const found = batches.flatMap((batch) => batch.comments).find((comment) => comment.id === id)
+  return found === undefined ? undefined : (found.replyTo ?? found.id)
+}
+
+const rootOf = Effect.fn("Review.Thread.rootOf")(function* (worktree: Worktree, id: string) {
+  const store = yield* Store
+  const root = rootIn(yield* store.inbox(worktree.path), id)
+  return root === undefined ? yield* new UnknownComment({ id }) : root
+})
 
 const isKnown = Effect.fn("Review.Thread.isKnown")(function* (worktree: Worktree, id: string) {
   const store = yield* Store
@@ -171,7 +204,27 @@ export const list = Effect.fn("Review.Thread.list")(function* (reading: BranchRe
     patches,
     read: current.read,
     taken: current.taken ?? {},
+    doing: current.doing,
   })
+})
+
+const clearDoing = Effect.fn("Review.Thread.clearDoing")(function* (worktree: Worktree, root: string) {
+  const store = yield* Store
+  const current = yield* store.state(worktree.path)
+  if (!Object.hasOwn(current.doing, root)) return
+  yield* store.changeState(worktree.path, (was) => ({ ...was, doing: without(was.doing, root) }))
+})
+
+export const doing = Effect.fn("Review.Thread.doing")(function* (
+  worktree: Worktree,
+  request: DoingRequest,
+) {
+  const store = yield* Store
+  const root = yield* rootOf(worktree, request.id)
+  const said = { body: request.body, at: request.at }
+  yield* store.changeState(worktree.path, (was) => ({ ...was, doing: { ...was.doing, [root]: said } }))
+  yield* Effect.ignore(store.noteWatching(worktree.path, request.at))
+  return { doing: { id: root, ...said } }
 })
 
 export const answer = Effect.fn("Review.Thread.answer")(function* (
@@ -179,14 +232,17 @@ export const answer = Effect.fn("Review.Thread.answer")(function* (
   request: AnswerRequest,
 ) {
   const store = yield* Store
-  yield* known(worktree, request.id)
+  const root = yield* rootOf(worktree, request.id)
+  const offered = request.choices.length > 0
   yield* store.answer(worktree.path, {
     comment: request.id,
     body: request.body,
     head: worktree.head,
-    asks: request.asks,
+    asks: request.asks || offered,
     at: request.at,
+    ...(offered ? { choices: request.choices } : {}),
   })
+  yield* clearDoing(worktree, root)
   yield* Effect.ignore(store.noteWatching(worktree.path, request.at))
   const answers = yield* store.answers(worktree.path)
   return { answered: answers.filter((entry) => entry.comment === request.id).length }
@@ -209,11 +265,12 @@ export const settle = Effect.fn("Review.Thread.settle")(function* (
     ...was,
     settled: { ...was.settled, [id]: at },
     read: { ...was.read, [id]: replies },
+    doing: without(was.doing, id),
   }))
   return { settled: id }
 })
 
-const without = <held extends string | number>(
+const without = <held>(
   entries: Readonly<Record<string, held>>,
   id: string,
 ): Readonly<Record<string, held>> =>
@@ -244,6 +301,7 @@ export const remove = Effect.fn("Review.Thread.remove")(function* (
     ...was,
     removed: { ...was.removed, [id]: at },
     read: { ...was.read, [id]: replies },
+    doing: without(was.doing, id),
   }))
   return { removed: id }
 })

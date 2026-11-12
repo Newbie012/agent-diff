@@ -47,7 +47,9 @@ describe("when the review is opened in a pane", () => {
     await using driver = await TestDriver.create()
 
     // ACT
-    const result = await driver.app.runPane({ env: { TMUX: "", ZELLIJ: "" } })
+    const result = await driver.app.runPane({
+      env: { TMUX: "", ZELLIJ: "", HARBOR_SOCKET: "", HARBOR_PANE_ID: "" },
+    })
 
     // ASSERT
     expect(result.code).toBe(0)
@@ -73,6 +75,30 @@ describe("when the review is opened in a pane", () => {
     expect(envelope.command).toBe(`adiff review open --repo ${driver.repoPath}`)
     const asked = await readFile(join(bin, "zellij.log"), "utf8")
     expect(asked).toContain("new-pane")
+  })
+
+  test("then a Harbor terminal opens the review as a child terminal", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const bin = await fakeMultiplexer(driver, "harbor")
+
+    // ACT
+    const result = await driver.app.runPane({
+      env: {
+        TMUX: "",
+        HARBOR_SOCKET: "/tmp/harbor-1.sock",
+        HARBOR_PANE_ID: "pane",
+        PATH: `${bin}:${process.env["PATH"]}`,
+      },
+    })
+
+    // ASSERT
+    const envelope = envelopeOf(result)
+    expect(envelope.opened).toBe(true)
+    expect(envelope.pane).toBe("harbor")
+    const asked = (await readFile(join(bin, "harbor.log"), "utf8")).trim().split("\n")
+    expect(asked.slice(0, 5)).toEqual(["open", "--child", "--cwd", driver.repoPath, "--"])
+    expect(asked.slice(5, 8)).toEqual(["adiff", "review", "open"])
   })
 
   test("then the output reports the multiplexer failed", async () => {

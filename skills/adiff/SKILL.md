@@ -98,6 +98,26 @@ adiff comment answer --worktree . --id <id> --question --body "Drop it, or keep 
 That marks the thread as waiting on them rather than on you. Do not use it to check in; use it when
 the work genuinely stops without an answer.
 
+When the answers you expect are few and short, offer them with `--choice`, two to four times. The
+reviewer can pick one instead of typing it, and it reaches you as an ordinary reply carrying those
+words. `--choice` marks the answer a question on its own:
+
+```bash
+adiff comment answer --worktree . --id <id> --body "Drop it, or keep it and map the error?" --choice "Drop it" --choice "Keep it and map the error"
+```
+
+## Say what you are doing on a comment
+
+A comment that takes more than a minute looks to the reviewer exactly like one you dropped. After
+you take it, say in one short line what you are doing on it, and say it again when that changes:
+
+```bash
+adiff comment doing --worktree . --id <id> --body "Editing driver.ts"
+```
+
+The reviewer sees the latest line on the comment. Your answer clears it, so there is nothing to
+take back when you finish. Keep it to what you are doing now, not a plan.
+
 ## When the reviewer writes back
 
 A reviewer can reply to an answer, and the reply arrives through `comment take` like any other
@@ -166,8 +186,9 @@ type. The answer says what happened:
 {"ok":true,"opened":true,"pane":"tmux","command":"adiff review open --repo /work/api --branch add-invitations"}
 ```
 
-`opened:false` means nothing could be split, which is ordinary: a terminal without tmux, Zellij,
-WezTerm or kitty has nowhere to put a pane. The answer carries `command` either way, so quote that
+In Harbor the review opens as a child terminal under yours instead of a split. `opened:false` means
+nothing could be split, which is ordinary: a terminal without tmux, Zellij, WezTerm, kitty or Harbor
+has nowhere to put a pane. The answer carries `command` either way, so quote that
 line and let them run it.
 
 Open a pane when a review was asked for. Finishing work is not a reason on its own, and taking over

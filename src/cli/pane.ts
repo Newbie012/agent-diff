@@ -43,6 +43,12 @@ const splitters: ReadonlyArray<Splitter> = [
     present: () => set("KITTY_LISTEN_ON"),
     args: (repo, run) => ["@", "launch", "--type=window", "--cwd", repo, ...run],
   },
+  {
+    pane: "harbor",
+    binary: "harbor",
+    present: () => set("HARBOR_SOCKET") && set("HARBOR_PANE_ID"),
+    args: (repo, run) => ["open", "--child", "--cwd", repo, "--", "adiff", ...run.slice(run.indexOf("review"))],
+  },
 ]
 
 const named = (option: string, value: string | undefined): ReadonlyArray<string> =>

@@ -51,7 +51,9 @@ a test fails, nothing is recorded — a green run is the precondition, not a cla
 ## A recording replays keys, and nothing else
 
 The replay rebuilds the world from the trace — the branch fixture and the layers, and nothing more —
-then presses the keys. Anything a test does by another route is not there: a file changed or
+then presses the keys. The one exception is a branch checked out in the directory under review with
+`driver.branch.switchTo`: the trace keeps it as a step, and the replay checks out the same branch at
+the same moment. Anything else a test does by another route is not there: a file changed or
 committed after the world was built, a comment or an answer seeded through the store or the command
 line, a preference set from outside. A test that does any of those marks its trace unreplayable, and
 `pnpm record` skips it and says which route it took.

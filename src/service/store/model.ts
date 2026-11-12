@@ -34,4 +34,5 @@ export const emptyBranchState: BranchState = {
   read: {},
   dismissed: {},
   seen: {},
+  doing: {},
 }

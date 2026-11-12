@@ -4,7 +4,7 @@ import type { BranchTestModel } from "../domains/branch/index.ts"
 import type { LayersInput } from "../domains/app/index.ts"
 import type { ThreadOnForge } from "../domains/forge/index.ts"
 import { commands } from "../../tui/index.ts"
-import type { Change, Seat, Step } from "./model.ts"
+import type { Seat, Step, WorldMove } from "./model.ts"
 
 export type Bounds = {
   readonly fromCol: number
@@ -33,7 +33,7 @@ export type Trace = {
     readonly author?: string
   }
   readonly seat: Seat
-  readonly changes?: ReadonlyArray<Change>
+  readonly changes?: ReadonlyArray<WorldMove>
   readonly steps: ReadonlyArray<Step>
   readonly moments: ReadonlyArray<Moment>
 }
@@ -109,7 +109,7 @@ export class Tracer {
   private naming: string | undefined
   private muted = false
   private readonly beyond: Array<string> = []
-  private readonly changes: Array<Change> = []
+  private readonly changes: Array<WorldMove> = []
 
   sawWorld(branch: Partial<BranchTestModel>): void {
     this.world = { ...this.world, branch }
@@ -164,7 +164,7 @@ export class Tracer {
     this.moments.push({ kind: "step", ...step })
   }
 
-  sawChange(does: string, change: Change): void {
+  sawChange(does: string, change: WorldMove): void {
     const at = this.changes.length
     this.changes.push(change)
     const step = { does, keys: [`world:${at}`] }

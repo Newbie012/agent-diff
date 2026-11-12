@@ -28,6 +28,7 @@ describe("when an agent uses adiff without reading the documentation", () => {
       "comment reply",
       "comment take",
       "comment answer",
+      "comment doing",
       "layers set",
       "layers show",
       "layers ask",

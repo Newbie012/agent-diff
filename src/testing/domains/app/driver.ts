@@ -255,6 +255,7 @@ export class AppTestDriver {
     readonly id: string
     readonly body: string
     readonly asks?: boolean
+    readonly choices?: ReadonlyArray<string>
   }): Promise<CliResult> {
     this.state.tracer.cannotReplay("an answer sent from the command line")
     return this.run([
@@ -267,6 +268,25 @@ export class AppTestDriver {
       "--body",
       options.body,
       ...(options.asks === true ? ["--question"] : []),
+      ...(options.choices ?? []).flatMap((choice) => ["--choice", choice]),
+    ])
+  }
+
+  runDoing(options: {
+    readonly worktree: string
+    readonly id: string
+    readonly body: string
+  }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a line the agent said it was doing")
+    return this.run([
+      "comment",
+      "doing",
+      "--worktree",
+      options.worktree,
+      "--id",
+      options.id,
+      "--body",
+      options.body,
     ])
   }
 

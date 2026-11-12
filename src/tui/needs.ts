@@ -4,6 +4,7 @@ import type { Forge, ForgeUnavailable } from "../service/forge/index.ts"
 import type { FileUnreadable, Git, GitCommandFailed, NotARepository } from "../service/git/index.ts"
 import type { Store, StoreUnreadable, StoreUnwritable } from "../service/store/index.ts"
 import type {
+  BranchMoved,
   MalformedLayers,
   NoLayers,
   NothingSaid,
@@ -21,6 +22,7 @@ import type {
 export type Needs = Git | Store | Forge
 
 export type Fault =
+  | BranchMoved
   | MalformedLayers
   | MissingOption
   | NoLayers
