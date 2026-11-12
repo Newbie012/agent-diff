@@ -29,8 +29,11 @@ const tracedRun = async (): Promise<Traced> => {
   return JSON.parse(line ?? "{}") as Traced
 }
 
+const tracedBefore = process.env["ADIFF_TRACE"]
+
 afterEach(() => {
-  delete process.env["ADIFF_TRACE"]
+  if (tracedBefore === undefined) delete process.env["ADIFF_TRACE"]
+  else process.env["ADIFF_TRACE"] = tracedBefore
 })
 
 describe("when a test switches the directory under review to another branch", () => {
