@@ -20,6 +20,7 @@ describe("when an agent uses adiff without reading the documentation", () => {
       "base list",
       "branch search",
       "patch show",
+      "patch since",
       "file review",
       "base set",
       "base clear",

@@ -76,7 +76,9 @@ already read.
 
 - **`patch show` answers `patch: {branch, base, head, files}`.** Each file carries `path`,
   `previousPath`, `status` (`added`, `deleted`, `renamed`, `copied` or `changed`), `binary`,
-  `generated`, `added`, `removed` and `hunks`. Each hunk carries `header`, `scope`, `skipped` and
+  `generated`, `added`, `removed`, `blob` and `hunks`. `blob` is the [blob](CONTEXT.md#blob) of
+  the file's branch side, the one `file review --blob` takes ([PRD 005](005-vouching-and-progress.md)),
+  so a client marks the version it drew. Each hunk carries `header`, `scope`, `skipped` and
   `rows`; each row carries `kind` (`context`, `added`, `removed` or `note`), `text`, and `old` and
   `new` line numbers, each left out when the row has no line on that side.
 - **Each file in `patch show` carries `enclosedBy` and `scopes`, read from the file as it is in the

@@ -21,7 +21,7 @@ export type {
   ThreadTurn,
 } from "./threads.ts"
 export type { AcceptRequest, Remark as ReportedRemark, RemarkState } from "./remarks.ts"
-export type { ProgressReport, VouchReport } from "./vouching.ts"
+export type { Marking, ProgressReport, SinceReview, VouchReport } from "./vouching.ts"
 export type { LayersReport, ReportedLayer } from "./layers.ts"
 export type { Dispatched, DraftRequest, ReportedDraft, Rewrite } from "./drafts.ts"
 export type { Match, Searched } from "./search.ts"
@@ -34,6 +34,7 @@ export {
   UnknownLayer,
   NothingDrafted,
   NothingSaid,
+  NotVouched,
   PartlySent,
   PullMoved,
   RemarkTaken,
@@ -43,6 +44,7 @@ export {
   UnknownComment,
   UnknownDraft,
   UnknownFile,
+  VouchedVersionGone,
   UnknownPreference,
   UnknownPreferenceValue,
   UnknownRemark,

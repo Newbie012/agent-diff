@@ -68,6 +68,11 @@ export class BranchTestDriver {
     await this.write(branch.worktree, path, lines)
   }
 
+  async removeFile(branch: CreatedBranch, path: string): Promise<void> {
+    this.state.tracer.cannotReplay("a file deleted after the world was built")
+    await rm(join(branch.worktree, path), { force: true })
+  }
+
   async setOwnFile(path: string, lines: ReadonlyArray<string>): Promise<void> {
     this.state.tracer.cannotReplay("a file changed after the world was built")
     await this.write(this.state.repo, path, lines)

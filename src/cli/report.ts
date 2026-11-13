@@ -192,6 +192,18 @@ const ADVICE: Readonly<Record<string, Advice>> = {
       "The pull request has moved since these comments were written, so they name lines that may no longer be there. Nothing was sent and nothing was lost. Read the diff again and check each draft still says what you mean.",
     retriable: false,
   },
+  NotVouched: {
+    exit: NOT_FOUND,
+    suggestion:
+      "The file has no review mark, so nothing changed since one. Mark it with `adiff file review`, or read its diff against the base with `adiff patch show --file`.",
+    retriable: false,
+  },
+  VouchedVersionGone: {
+    exit: NOT_FOUND,
+    suggestion:
+      "The version marked reviewed was not kept, as with a mark made by an older adiff. Read the file's diff against the base with `adiff patch show --file` instead.",
+    retriable: false,
+  },
   UnselectableRange: {
     exit: USAGE,
     suggestion: "Those lines are not in the diff. Check --side: new is the working tree, old is the version being replaced.",

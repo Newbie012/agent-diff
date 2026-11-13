@@ -38,6 +38,22 @@ directory of <branch> is on <other> now". Your marks stay under the branch you o
 which files of a review are marked, which marked files changed since, as `changed`, and how many
 files there are.
 
+## What changed since you read it
+
+Marking a file keeps the version you marked, so when the agent changes the file afterwards adiff can
+show only the lines that changed since.
+
+    adiff review progress --repo . --branch <name>
+    adiff patch since --worktree . --file src/api.ts
+    adiff file review --worktree . --file src/api.ts --blob 3f2a9c1
+
+`review progress` names each such file under `since`, with when you marked it and how many lines
+were added and removed since, in how many places. `patch since` prints that one file's diff, with the
+version you marked on the old side. `--blob` marks the version `patch show` gave you, so a file the
+agent changes while you read it is not marked for lines you never saw. A file renamed since you
+marked it reads as deleted under its old name. A mark made before adiff kept versions may have
+nothing to compare against, and its entry in `since` carries `kept: false`.
+
 ## Read next
 
 - [Comments](Comments), for a file you read and want to say something about.

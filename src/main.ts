@@ -319,8 +319,9 @@ const commentReopen = Effect.fn("Main.commentReopen")(function* (options: Option
 const vouched = Effect.fn("Main.vouched")(function* (options: Options) {
   const reading = yield* readingIn(options)
   const file = yield* required(options, "file")
-  if (options["layer"] === undefined) return yield* Vouch.toggle(reading, file)
-  return yield* Layers.vouchIn(reading, file, yield* numeric(options, "layer"))
+  const marking = { blob: options["blob"], at: options["at"] }
+  if (options["layer"] === undefined) return yield* Vouch.toggle(reading, file, marking)
+  return yield* Layers.vouchIn(reading, file, yield* numeric(options, "layer"), marking)
 })
 
 const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
@@ -330,7 +331,12 @@ const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
 
 const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options) {
   const report = yield* Vouch.progress(yield* readingIn(options))
-  yield* answer(options, { reviewed: report.vouched, changed: report.changed, total: report.total })
+  yield* answer(options, {
+    reviewed: report.vouched,
+    changed: report.changed,
+    since: report.since,
+    total: report.total,
+  })
 })
 
 const documentAt = Effect.fn("Main.documentAt")(function* (source: string) {
@@ -358,6 +364,14 @@ const patchShow = Effect.fn("Main.patchShow")(function* (options: Options) {
     context: yield* around(options, "context"),
   })
   yield* answer(options, { patch })
+})
+
+const patchSince = Effect.fn("Main.patchSince")(function* (options: Options) {
+  const based = yield* Branch.basedAt(yield* required(options, "worktree"), options["base"])
+  const file = yield* Vouch.since(based, yield* required(options, "file"), {
+    context: yield* around(options, "context"),
+  })
+  yield* answer(options, { file })
 })
 
 const configList = Effect.fn("Main.configList")(function* (options: Options) {
@@ -462,6 +476,7 @@ const routes = {
   "layers set": layersSet,
   "layers show": layersShow,
   "patch show": patchShow,
+  "patch since": patchSince,
   upgrade,
   describe,
 } as const

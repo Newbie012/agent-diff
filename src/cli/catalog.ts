@@ -191,6 +191,26 @@ const commands: ReadonlyArray<CommandSpec> = [
     example: "adiff patch show --repo . --branch add-invitations --file src/api.ts --context all",
   },
   {
+    name: "patch since",
+    about:
+      "One file's diff from the version the reviewer marked reviewed to the file now, in the shape of one file of `patch show`. The old side counts the marked version's lines",
+    group: READ_A_BRANCH,
+    addresses: "review",
+    safety: "read",
+    options: [
+      ...based,
+      file,
+      {
+        name: "context",
+        required: false,
+        value: "lines|all",
+        about: "Unchanged lines around each change. Defaults to 3; `all` answers the whole file",
+      },
+    ],
+    dataKey: "file",
+    example: "adiff patch since --worktree . --file src/api.ts",
+  },
+  {
     name: "file review",
     about: "Toggle a file as reviewed. Lapses on its own when the file changes",
     group: READ_A_BRANCH,
@@ -205,6 +225,13 @@ const commands: ReadonlyArray<CommandSpec> = [
         value: "number",
         about:
           "Mark the file read in this layer only, counting from 1, when more than one layer claims it",
+      },
+      {
+        name: "blob",
+        required: false,
+        value: "sha",
+        about:
+          "Mark this version of the file: the `blob` patch show printed for it",
       },
     ],
     dataKey: "reviewed",
@@ -240,7 +267,8 @@ const commands: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "review progress",
-    about: "Which files of a review are marked reviewed, and how many there are",
+    about:
+      "Which files of a review are marked reviewed, which changed since they were marked and by how much, and how many files there are",
     group: READ_A_BRANCH,
     addresses: "review",
     safety: "read",
