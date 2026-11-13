@@ -469,6 +469,10 @@
     - a-branch-switched-under-the-review
     - a-comment-the-agent-is-working-on
     - a-review-in-a-harbor-child
+"@eliya-oss/agent-diff@0.1.0-alpha.193":
+  dir: ""
+  intents:
+    - a-file-changed-since-review-shows-what-changed
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
