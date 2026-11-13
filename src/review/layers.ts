@@ -20,7 +20,7 @@ import { isPartVouched, isVouched, partOf, vouch, vouchPart as vouchedPart } fro
 import { MalformedLayers, NoLayers, UnknownFile, UnknownLayer } from "./error.ts"
 import { submit } from "./comments.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
-import { readParts, toggle, type VouchReport } from "./vouching.ts"
+import { keepMarked, readParts, restamped, toggle, type Marking, type VouchReport } from "./vouching.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
@@ -314,10 +314,12 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
   reading: BranchReading,
   file: string,
   part: string,
+  marking: Marking = {},
 ) {
   const store = yield* Store
   const patch = reading.patches.find((one) => one.path === file)
-  const blob = patch?.blob ?? ""
+  const onDisk = patch?.blob ?? ""
+  const blob = marking.blob ?? onDisk
   const held = yield* read(reading)
   const wanted = partsOfFile(held.layers, file)
   const current = yield* store.state(reading.worktree.path)
@@ -325,7 +327,13 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
   const whole = wanted.length > 0 && wanted.every((one) => isPartVouched(parts, one, blob))
   const vouches =
     whole === isVouched(current.vouches, file, blob) ? current.vouches : vouch(current.vouches, file, blob)
-  yield* store.changeState(reading.worktree.path, (was) => ({ ...was, parts, vouches }))
+  const at = yield* keepMarked(reading.worktree, file, { blob, onDisk, at: marking.at })
+  yield* store.changeState(reading.worktree.path, (was) => ({
+    ...was,
+    parts,
+    vouches,
+    vouchedAt: restamped(was.vouchedAt, { ...was.vouches, ...was.parts }, { ...vouches, ...parts }, at),
+  }))
   const files = reading.patches.map((one) => ({ path: one.path, blob: one.blob }))
   return {
     vouched: files.filter((one) => isVouched(vouches, one.path, one.blob)).map((one) => one.path),
@@ -373,12 +381,13 @@ export const vouchIn = Effect.fn("Review.Layers.vouchIn")(function* (
   reading: BranchReading,
   file: string,
   number: number,
+  marking: Marking = {},
 ) {
   const held = yield* read(reading)
   const layer = held.layers[number - 1]
   if (layer === undefined) return yield* new UnknownLayer({ layer: number, known: held.layers.length })
   const holding = held.layers.filter((one) => claims(one, file)).length
   const spans = layer.spans.filter((span) => span.path === file)
-  if (holding < 2 || spans.length === 0) return yield* toggle(reading, file)
-  return yield* vouchPart(reading, file, partOf(file, spans))
+  if (holding < 2 || spans.length === 0) return yield* toggle(reading, file, marking)
+  return yield* vouchPart(reading, file, partOf(file, spans), marking)
 })

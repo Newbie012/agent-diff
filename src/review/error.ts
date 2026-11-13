@@ -23,6 +23,15 @@ export class UnknownFile extends Data.TaggedError("UnknownFile")<{
   readonly known: ReadonlyArray<string>
 }> {}
 
+export class NotVouched extends Data.TaggedError("NotVouched")<{
+  readonly file: string
+}> {}
+
+export class VouchedVersionGone extends Data.TaggedError("VouchedVersionGone")<{
+  readonly file: string
+  readonly blob: string
+}> {}
+
 export class UnknownComment extends Data.TaggedError("UnknownComment")<{
   readonly id: string
 }> {}

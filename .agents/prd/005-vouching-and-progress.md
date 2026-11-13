@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-11-12
+- **Last updated:** 2026-11-13
 
 ## Problem Statement
 
@@ -55,8 +55,20 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
 
 ### Public contract
 
-- **A vouch is a file path mapped to the blob it was vouched at.** Nothing else is recorded; a
-  timestamp would invite the question of whether a vouch expires, and it does not — it lapses.
+- **A vouch is a file path mapped to the blob it was vouched at, with the time it was made.** The
+  time does not make a vouch expire; it lapses on the blob alone. It is kept so a reviewer told a
+  file changed since they read it can tell when they read it. A vouch written by an older adiff
+  has no time, and reads the same otherwise.
+- **Marking a file keeps the version that was marked.** A lapsed vouch named the file as changed
+  but could not show what changed, because it held only the blob's id, so the reviewer re-read the
+  whole file against the base. Marking a file now writes its content into the repository's object
+  store, and `patch show` does the same for every file it answers, so a version a client drew is
+  still there when the reviewer marks it a minute later. Writing an object changes no branch, ref,
+  index or file.
+- **A mark can name the version it is for.** `file review --blob <blob>` marks that blob, not
+  whatever the file holds at that instant, so a reviewer never signs off on lines an agent wrote
+  while they read. Each file in `patch show` carries its `blob` for this. A blob that is not the
+  file's current one is recorded as asked, and the file reads as changed since review at once.
 - **A file counts as vouched when the recorded blob equals its current blob.** A file with no
   record, or with a different blob, is not vouched. There is no third state.
 - **Vouching is a toggle.** Vouching a vouched file removes the record.
@@ -78,6 +90,27 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   layer's runs of it, takes it off the list. Nothing new is stored, so a vouch written by an older
   adiff reports the same way. The blob is the file's content on the branch side, so a file whose
   diff changed only because the base moved is not counted as changed.
+- **Progress shows what changed since review.** For every file in `changed`, and every marked file
+  the agent deleted since, `review progress` prints `since`: the path, when it was marked, the
+  blob it was marked at, the lines added and removed between that version and now, the number of
+  places they fall in, and whether the marked version is still kept. A vouch written by an older
+  adiff kept no content, so unless git holds that blob anyway its entry carries `kept: false` and no
+  counts, and the client falls back to the diff against the base. A deleted file carries
+  `deleted: true`. `changed` stays as it was. Where a file has more than one lapsed mark, the
+  whole-file vouch speaks for it, else the newest layer's mark.
+- **The diff since review is one command.** `patch since --file <path>` answers the file's diff
+  from the marked version to the worktree now, in the shape of one file of `patch show`: rows with
+  line numbers on both sides, where the old side counts the marked version's lines, and the scope
+  of each line of the file as it is now. It is refused for a file that was never marked, and for a
+  mark whose version is no longer kept.
+- **A file changed back to what was marked is reviewed again.** The blob is the same, so the vouch
+  counts once more with nothing to do.
+- **A rename is not followed.** A marked file the agent renames reads as deleted under its old
+  path and unreviewed under its new one. git sees the rename only against the base, not against
+  the marked version, and following it would mean a second rename search on every read.
+- **A moved base changes nothing here.** A vouch is against the file's content on the branch side,
+  so a rebase or a new base that leaves the file's content alone leaves the vouch and `since` as
+  they were.
 - **Vouching a file the diff does not contain is refused**, and the refusal names the files that
   are in the diff.
 - **Recording a vouch merges into the existing state.** A vouch must not overwrite what the state
@@ -113,6 +146,12 @@ Behaviors that must be covered:
 - A vouch lapses when the file's content changes, with no explicit invalidation layer.
 - Vouching a file outside the diff is refused and names the known files.
 - A vouched file the agent rewrote is named as changed, and is not once it is marked again.
+- A file marked and then changed is named with when it was marked, and the lines added, removed and
+  where, since that version; its diff since review has the marked version on the old side.
+- A file marked at a named blob older than the one on disk reads as changed since review.
+- A file marked and then deleted is named as deleted since review.
+- A mark whose version is not kept is named as not kept, with no counts.
+- A file changed back to the marked content reads as reviewed and not as changed.
 - A mark pressed after the directory was switched to another branch records nothing, the footer
   names the branch the directory is on now, and the other branch's progress stays empty.
 

@@ -39,6 +39,14 @@ type Shape = {
     worktree: Worktree,
     path: string,
   ) => Effect.Effect<Option.Option<ReadonlyArray<string>>>
+  readonly keep: (worktree: Worktree, paths: ReadonlyArray<string>) => Effect.Effect<ReadonlyArray<string>>
+  readonly kept: (worktree: Worktree, blob: string) => Effect.Effect<Option.Option<string>>
+  readonly between: (
+    worktree: Worktree,
+    from: string,
+    to: string,
+    context: number,
+  ) => Effect.Effect<string>
   readonly defaultBranch: (repo: string) => Effect.Effect<string>
   readonly stackParent: (repo: string, branch: string) => Effect.Effect<string>
   readonly refs: (repo: string) => Effect.Effect<ReadonlyArray<string>>
@@ -222,6 +230,30 @@ const readBlob = Effect.fn("Git.blob")(function* (worktree: Worktree, path: stri
   return raw.length === 0 ? Option.none<ReadonlyArray<string>>() : Option.some(splitLines(raw))
 })
 
+export const NO_CONTENT = "/dev/null"
+
+const keepContent = Effect.fn("Git.keep")(function* (worktree: Worktree, paths: ReadonlyArray<string>) {
+  if (paths.length === 0) return []
+  const said = yield* gitOrEmpty(worktree.path, ["hash-object", "-w", "--", ...paths])
+  return said.split("\n").map((line) => line.trim()).filter((line) => line.length > 0)
+})
+
+const findKept = Effect.fn("Git.kept")(function* (worktree: Worktree, blob: string) {
+  if (blob.length === 0) return Option.none<string>()
+  const said = yield* gitOrEmpty(worktree.path, ["rev-parse", "--verify", "--quiet", `${blob}^{blob}`])
+  const found = said.trim()
+  return found.length === 0 ? Option.none<string>() : Option.some(found)
+})
+
+const readBetween = Effect.fn("Git.between")(function* (
+  worktree: Worktree,
+  from: string,
+  to: string,
+  context: number,
+) {
+  return yield* gitOrEmpty(worktree.path, [...PLAIN_PATHS, "diff", `-U${context}`, from, to])
+})
+
 const readGrep = Effect.fn("Git.grep")(function* (worktree: Worktree, term: string) {
   return yield* gitOrEmpty(worktree.path, [
     "grep",
@@ -383,6 +415,9 @@ const shapeWith = (caches: Caches): Shape => ({
   stat: readStat,
   source: readSource,
   blob: readBlob,
+  keep: keepContent,
+  kept: findKept,
+  between: readBetween,
   grep: readGrep,
   generated: readGenerated,
   defaultBranch: (repo: string) => Cache.get(caches.baseName, repo),

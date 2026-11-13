@@ -62,6 +62,7 @@ export const BranchState = Schema.Struct({
   taken: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   vouches: Stamps.pipe(noStamps),
   parts: Stamps.pipe(noStamps),
+  vouchedAt: Stamps.pipe(noStamps),
   openedAt: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(""))),
   consumed: Schema.Int.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   settled: Stamps.pipe(noStamps),

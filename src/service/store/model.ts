@@ -26,6 +26,7 @@ export const emptyBranchState: BranchState = {
   taken: {},
   vouches: {},
   parts: {},
+  vouchedAt: {},
   openedAt: "",
   consumed: 0,
   settled: {},

@@ -77,6 +77,12 @@ reviewer should not have made it.
 Which version of the file a line number refers to: `new` for the working tree, `old` for the
 version being replaced. A range on the new side never selects removed lines, and the reverse.
 
+### Since review
+
+What changed in a file between the version the reviewer [vouched](#vouched) for and the worktree
+now. Marking a file keeps the content of the version marked, so adiff can show this; a vouch
+written before it did may have no content to compare against.
+
 ### Thread
 
 One [comment](#comment) and everything said since: the agent's answers and the reviewer's replies,

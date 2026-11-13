@@ -85,6 +85,7 @@ export type ShownFile = {
   readonly generated: boolean
   readonly added: number
   readonly removed: number
+  readonly blob: string
   readonly hunks: ReadonlyArray<ShownHunk>
   readonly enclosedBy: ReadonlyArray<number>
   readonly scopes: ReadonlyArray<ShownScope>
@@ -108,7 +109,7 @@ export type Showing = {
   readonly context: number | "all" | undefined
 }
 
-const linesAround = (context: Showing["context"]): number => {
+export const linesAround = (context: Showing["context"]): number => {
   if (context === "all") return WHOLE_FILE
   return context ?? CONTEXT
 }
@@ -148,6 +149,7 @@ const shownFile = (
   generated: generated.has(patch.path) || GENERATED_NAME.test(patch.path),
   added: patch.added,
   removed: patch.removed,
+  blob: patch.blob,
   hunks: patch.hunks.map(shownHunk),
   enclosedBy: enclosedBy(lines),
   scopes: scopesOf(lines),
@@ -161,11 +163,22 @@ const sourceShown = Effect.fn("Review.Diff.sourceShown")(function* (worktree: Wo
 const fileShown = (worktree: Worktree, generated: ReadonlySet<string>) => (patch: Patch) =>
   Effect.map(sourceShown(worktree, patch), (lines) => shownFile(patch, generated, lines))
 
+export const shownAs = (
+  patch: Patch,
+  lines: ReadonlyArray<string>,
+): ShownFile => shownFile(patch, new Set(), lines)
+
+const onDisk = (patches: ReadonlyArray<Patch>): ReadonlyArray<string> =>
+  patches.filter((patch) => patch.status !== "deleted").map((patch) => patch.path)
+
 export const show = Effect.fn("Review.Diff.show")(function* (based: Based, showing: Showing) {
   const git = yield* Git
   const { worktree } = based
   const patches = yield* patchesIn(worktree, linesAround(showing.context), showing.file)
-  const generated = yield* git.generated(worktree, patches.map((patch) => patch.path))
+  const [generated] = yield* Effect.all(
+    [git.generated(worktree, patches.map((patch) => patch.path)), git.keep(worktree, onDisk(patches))],
+    { concurrency: 2 },
+  )
   return {
     branch: worktree.branch,
     base: based.base,
