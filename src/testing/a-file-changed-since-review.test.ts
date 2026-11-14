@@ -58,7 +58,7 @@ describe("when a file the reviewer marked reviewed is changed in two places", ()
     const [since] = sinceOf(result.envelope)
     expect(since).toMatchObject({
       path: "src/lines.ts",
-      reviewed: marked,
+      reviewed: expect.stringMatching(new RegExp(`^${marked}[0-9a-f]{${40 - marked.length}}$`)),
       added: 3,
       removed: 2,
       places: 2,
@@ -120,7 +120,7 @@ describe("when the reviewer marks the version they read after the agent changed 
     expect(marked.code).toBe(0)
     expect(result.envelope).toMatchObject({ reviewed: [], changed: ["src/lines.ts"] })
     expect(sinceOf(result.envelope)).toMatchObject([
-      { path: "src/lines.ts", reviewed: read, added: 2, removed: 2, places: 2, kept: true },
+      { path: "src/lines.ts", reviewed: expect.stringMatching(new RegExp(`^${read}`)), added: 2, removed: 2, places: 2, kept: true },
     ])
   })
 })
