@@ -20,7 +20,7 @@ import { isPartVouched, isVouched, partOf, vouch, vouchPart as vouchedPart } fro
 import { MalformedLayers, NoLayers, UnknownFile, UnknownLayer } from "./error.ts"
 import { submit } from "./comments.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
-import { keepMarked, readParts, restamped, toggle, type Marking, type VouchReport } from "./vouching.ts"
+import { fullBlob, keepMarked, readParts, restamped, toggle, type Marking, type VouchReport } from "./vouching.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
@@ -319,7 +319,9 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
   const store = yield* Store
   const patch = reading.patches.find((one) => one.path === file)
   const onDisk = patch?.blob ?? ""
-  const blob = marking.blob ?? onDisk
+  const asked = marking.blob ?? onDisk
+  const at = yield* keepMarked(reading.worktree, file, { blob: asked, onDisk, at: marking.at })
+  const blob = yield* fullBlob(reading.worktree, asked)
   const held = yield* read(reading)
   const wanted = partsOfFile(held.layers, file)
   const current = yield* store.state(reading.worktree.path)
@@ -327,7 +329,6 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
   const whole = wanted.length > 0 && wanted.every((one) => isPartVouched(parts, one, blob))
   const vouches =
     whole === isVouched(current.vouches, file, blob) ? current.vouches : vouch(current.vouches, file, blob)
-  const at = yield* keepMarked(reading.worktree, file, { blob, onDisk, at: marking.at })
   yield* store.changeState(reading.worktree.path, (was) => ({
     ...was,
     parts,

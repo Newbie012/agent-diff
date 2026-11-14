@@ -1,7 +1,16 @@
 import type { Vouches } from "./model.ts"
 
+const SHORTEST_BLOB = 7
+
+export const sameBlob = (left: string | undefined, right: string | undefined): boolean => {
+  if (left === undefined || right === undefined) return false
+  if (left === right) return true
+  if (left.length < SHORTEST_BLOB || right.length < SHORTEST_BLOB) return false
+  return left.startsWith(right) || right.startsWith(left)
+}
+
 export const isVouched = (vouches: Vouches, path: string, blob: string): boolean =>
-  vouches[path] === blob
+  sameBlob(vouches[path], blob)
 
 export const vouch = (vouches: Vouches, path: string, blob: string): Vouches => {
   if (isVouched(vouches, path, blob)) {
@@ -22,7 +31,7 @@ export const partOf = (path: string, runs: ReadonlyArray<Run>): string => {
 }
 
 export const isPartVouched = (vouches: Vouches, part: string, blob: string): boolean =>
-  vouches[part] === blob
+  sameBlob(vouches[part], blob)
 
 export const vouchPart = (vouches: Vouches, part: string, blob: string): Vouches =>
   vouch(vouches, part, blob)
