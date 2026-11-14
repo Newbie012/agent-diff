@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect"
 import { parsePatches, type Patch } from "../domain/patch/index.ts"
-import { isVouched, vouch, type Vouches } from "../domain/review/index.ts"
+import { isVouched, sameBlob, vouch, type Vouches } from "../domain/review/index.ts"
 import { Git, NO_CONTENT, type Worktree } from "../service/git/index.ts"
 import { Store, type BranchState } from "../service/store/index.ts"
 import { NotVouched, UnknownFile, VouchedVersionGone } from "./error.ts"
@@ -51,7 +51,7 @@ const changedSince = (
     recorded.filter(([mark]) => pathOfMark(mark) === file.path).map(([, blob]) => blob)
   const lapsed = (file: Blobbed): boolean => {
     const blobs = blobsOf(file)
-    return blobs.length > 0 && !blobs.includes(file.blob)
+    return blobs.length > 0 && !blobs.some((blob) => sameBlob(blob, file.blob))
   }
   return files.filter(lapsed).map((file) => file.path)
 }
@@ -62,7 +62,7 @@ export const readParts = (
 ): ReadonlyArray<string> => {
   const blobs = new Map(files.map((file) => [file.path, file.blob]))
   return Object.entries(parts)
-    .filter(([part, blob]) => blobs.get(pathOfMark(part)) === blob)
+    .filter(([part, blob]) => sameBlob(blobs.get(pathOfMark(part)), blob))
     .map(([part]) => part)
 }
 
@@ -87,8 +87,13 @@ export const keepMarked = Effect.fn("Review.Vouch.keepMarked")(function* (
   marked: { readonly blob: string; readonly onDisk: string; readonly at: string | undefined },
 ) {
   const git = yield* Git
-  if (marked.blob === marked.onDisk) yield* git.keep(worktree, [file])
+  if (sameBlob(marked.blob, marked.onDisk)) yield* git.keep(worktree, [file])
   return marked.at ?? (yield* now)
+})
+
+export const fullBlob = Effect.fn("Review.Vouch.fullBlob")(function* (worktree: Worktree, blob: string) {
+  const git = yield* Git
+  return Option.getOrElse(yield* git.kept(worktree, blob), () => blob)
 })
 
 const blobIn = Effect.fn("Review.Vouch.blobIn")(function* (reading: BranchReading, file: string) {
@@ -113,8 +118,9 @@ export const toggle = Effect.fn("Review.Vouch.toggle")(function* (
   const store = yield* Store
   const patches = reading.patches
   const onDisk = yield* blobIn(reading, file)
-  const blob = marking.blob ?? onDisk
-  const at = yield* keepMarked(reading.worktree, file, { blob, onDisk, at: marking.at })
+  const asked = marking.blob ?? onDisk
+  const at = yield* keepMarked(reading.worktree, file, { blob: asked, onDisk, at: marking.at })
+  const blob = yield* fullBlob(reading.worktree, asked)
   const current = yield* store.state(reading.worktree.path)
   const next = vouch(current.vouches, file, blob)
   yield* store.changeState(reading.worktree.path, (was) => stateAfter(was, file, blob, at))
@@ -137,7 +143,7 @@ const marksOf = (state: BranchState): ReadonlyArray<Mark> =>
 const newestFirst = (left: Mark, right: Mark): number => right.at.localeCompare(left.at)
 
 const speaking = (marks: ReadonlyArray<Mark>, path: string, blob?: string): Option.Option<Mark> => {
-  const own = marks.filter((mark) => mark.path === path && mark.blob !== blob)
+  const own = marks.filter((mark) => mark.path === path && (blob === undefined || !sameBlob(mark.blob, blob)))
   const whole = own.find((mark) => mark.key === path)
   return Option.fromNullishOr(whole ?? own.toSorted(newestFirst)[0])
 }

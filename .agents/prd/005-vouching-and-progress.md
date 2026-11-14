@@ -71,6 +71,12 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   file's current one is recorded as asked, and the file reads as changed since review at once.
 - **A file counts as vouched when the recorded blob equals its current blob.** A file with no
   record, or with a different blob, is not vouched. There is no third state.
+- **Two blobs are the same when one starts with the other.** `patch show` prints git's short form
+  of a blob, and git lengthens that form as the repository grows, so the same content printed as
+  `defbbd93c` one month prints as `defbbd93c6` the next. Comparing them as plain text read every
+  older mark as changed since review, with no line changed. Both must be at least 7 characters, the
+  shortest form git prints. A mark records the full 40-character blob, whatever form it was given
+  in, so a mark made now never depends on how long git's short form is.
 - **Vouching is a toggle.** Vouching a vouched file removes the record.
 - **On a reading order, a file is read one layer at a time.** A vouch was a path, so marking a file
   read while standing on one layer marked it read under every other layer that touches it, and a

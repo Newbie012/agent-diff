@@ -58,6 +58,11 @@ export class BranchTestDriver {
     return found.trim()
   }
 
+  async printLongerHashes(branch: CreatedBranch, length: number): Promise<void> {
+    this.state.tracer.cannotReplay("a git setting changed after the world was built")
+    await this.state.git(branch.worktree, ["config", "core.abbrev", String(length)])
+  }
+
   async commitAll(branch: CreatedBranch, message: string): Promise<void> {
     this.state.tracer.cannotReplay("a commit made after the world was built")
     await this.commit(branch, message)
