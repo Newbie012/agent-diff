@@ -1,4 +1,4 @@
-import { chmod, readdir, readFile } from "node:fs/promises"
+import { mkdir, readdir, readFile, rm } from "node:fs/promises"
 import { hostname } from "node:os"
 import { join } from "node:path"
 import { describe, expect, test } from "@effect/vitest"
@@ -110,7 +110,9 @@ describe("when a bug is reported", () => {
     await driver.agent.setStoreFile(branch.worktree, "state.json", '{"vouches":{}}')
     await driver.screen.open({ review: true })
     const filed = await readdir(join(driver.storeRoot, "branches"))
-    await chmod(join(driver.storeRoot, "branches", filed[0] ?? "", "state.json"), 0o000)
+    const state = join(driver.storeRoot, "branches", filed[0] ?? "", "state.json")
+    await rm(state)
+    await mkdir(state)
     await driver.screen.pressKeys(["m"])
 
     // ACT
