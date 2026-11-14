@@ -135,8 +135,16 @@ const decoded = <A, I>(schema: Schema.Codec<A, I>) => {
 const unwritable = (path: string) => (reason: unknown) =>
   new StoreUnwritable({ path, reason: String(reason) })
 
-const wrote = (path: string, body: string): Effect.Effect<void, StoreUnwritable> =>
-  Effect.tryPromise({ try: () => writeFile(path, body, "utf8"), catch: unwritable(path) })
+const besideOf = (path: string): string =>
+  `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`
+
+const wrote = (path: string, body: string): Effect.Effect<void, StoreUnwritable> => {
+  const beside = besideOf(path)
+  return Effect.tryPromise({ try: () => writeFile(beside, body, "utf8"), catch: unwritable(path) }).pipe(
+    Effect.andThen(Effect.tryPromise({ try: () => rename(beside, path), catch: unwritable(path) })),
+    Effect.tapError(() => Effect.promise(() => rm(beside, { force: true }))),
+  )
+}
 
 const added = (path: string, body: string): Effect.Effect<void, StoreUnwritable> =>
   Effect.tryPromise({ try: () => appendFile(path, `${body}\n`, "utf8"), catch: unwritable(path) })
@@ -526,10 +534,7 @@ const watchOps = (root: string, keyOf: KeyOf) => {
     const key = yield* keyOf(worktreePath)
     const path = watchPath(root, key)
     yield* ensureDir(branchDir(root, key))
-    yield* Effect.tryPromise({
-      try: () => writeFile(path, JSON.stringify({ lookedAt: at }), "utf8"),
-      catch: (cause) => new StoreUnwritable({ path, reason: String(cause) }),
-    })
+    yield* wrote(path, JSON.stringify({ lookedAt: at }))
   })
 
   return { watching, noteWatching }

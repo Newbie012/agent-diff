@@ -78,6 +78,10 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   key that changes shape without a migration orphans every review written before it, silently,
   which is the failure this rule exists to prevent. Adoption happens once per branch and leaves the
   contents untouched.
+- **A file the store rewrites is replaced whole.** State, layers, remarks, drafts, settings and
+  `watch.json` are written to a file beside them and renamed into place. A write over the old file
+  let a reader that came in mid-write see half of it, and a mark made at the same moment as another
+  exited with an error. A reader now sees the old file or the new one.
 - **A submission is one line of JSON** carrying its id, timestamp, the HEAD it was written
   against, and its comments. Appending never rewrites what is there.
 - **A comment says when it was written on somebody else's pull request**, and which draft it asks
