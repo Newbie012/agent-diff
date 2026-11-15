@@ -1,5 +1,6 @@
 import type { ThreadStand } from "./marks.ts"
 import type { StagedComment, TuiState } from "./state.ts"
+import { movedPast } from "./state.ts"
 import type { ReportedRemark } from "../review/index.ts"
 
 export type PanelSection =
@@ -69,7 +70,7 @@ const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
 }
 
 export const outsideOpen = (comment: StagedComment): boolean =>
-  comment.outside === true && comment.settled !== true && comment.removed !== true
+  movedPast(comment) && comment.settled !== true && comment.removed !== true
 
 const sectionOf = (comment: StagedComment): PanelSection =>
   outsideOpen(comment) ? "movedOn" : SECTION_OF[threadStand(comment)]

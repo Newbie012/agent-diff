@@ -15,6 +15,8 @@ export type StagedComment = {
   readonly settled?: boolean
   readonly removed?: boolean
   readonly outside?: boolean
+  readonly outdated?: boolean
+  readonly reworded?: boolean
   readonly stale?: boolean
   readonly asks?: boolean
   readonly answers?: ReadonlyArray<string>
@@ -339,3 +341,6 @@ export const onLayers = (state: TuiState): boolean =>
   state.rail === "layers" && state.layers.length > 0
 
 export const selectedLayer = (state: TuiState): ReportedLayer | undefined => state.layers[state.layerIndex]
+
+export const movedPast = (comment: Pick<StagedComment, "outside" | "outdated" | "reworded">): boolean =>
+  comment.outside === true || (comment.outdated === true && comment.reworded !== true)

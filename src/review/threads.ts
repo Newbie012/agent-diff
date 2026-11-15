@@ -1,9 +1,9 @@
-import { Effect, Option } from "effect"
-import { foundAgain, type Patch } from "../domain/patch/index.ts"
+import { Effect } from "effect"
 import { Store, type Batch, type StoredAnswer, type StoreUnreadable } from "../service/store/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { ThreadOpen, UnknownComment } from "./error.ts"
 import type { BranchReading } from "./branches.ts"
+import { placedAll, type Placed } from "./placing.ts"
 
 export type ThreadAnswer = {
   readonly body: string
@@ -28,6 +28,7 @@ export type Thread = {
   readonly at: string
   readonly state: string
   readonly stale: boolean
+  readonly outdated: boolean
   readonly outside: boolean
   readonly unread: number
   readonly taken: boolean
@@ -82,23 +83,10 @@ type Conversation = {
   readonly removed: Readonly<Record<string, string>>
   readonly head: string
   readonly shown: ReadonlySet<string>
-  readonly patches: ReadonlyArray<Patch>
+  readonly places: ReadonlyMap<string, Placed>
   readonly read: Readonly<Record<string, number>>
   readonly taken: Readonly<Record<string, string>>
   readonly doing: Readonly<Record<string, ThreadDoing>>
-}
-
-const placedNow = (
-  patches: ReadonlyArray<Patch>,
-  anchor: Batch["comments"][number]["anchor"],
-): { readonly start: number; readonly end: number; readonly placed: boolean } => {
-  const patch = patches.find((candidate) => candidate.path === anchor.path)
-  if (patch === undefined) return { ...anchor, placed: false }
-  if (anchor.snippet.trim().length === 0) return { ...anchor, placed: true }
-  return Option.match(foundAgain(patch, anchor), {
-    onNone: () => ({ ...anchor, placed: false }),
-    onSome: (range) => ({ ...range, placed: true }),
-  })
 }
 
 const choicesOf = (entry: StoredAnswer): { readonly choices?: ReadonlyArray<string> } =>
@@ -131,7 +119,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
   const seen = [...ids].reduce((total, id) => total + (conversation.read[id] ?? 0), 0)
   const turns = turnsOf(replies, mine)
   const settled = Object.hasOwn(conversation.settled, comment.id)
-  const sits = placedNow(conversation.patches, comment.anchor)
+  const sits = conversation.places.get(comment.id) ?? { ...comment.anchor, placed: false, outdated: false, reworded: false }
   const doing = conversation.doing[comment.id]
   return {
     id: comment.id,
@@ -144,6 +132,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
     at: batch.at,
     state: stateOf(turns, mine.at(-1)?.asks === true, settled, Object.hasOwn(conversation.removed, comment.id)),
     stale: batch.head !== conversation.head,
+    outdated: sits.placed && sits.outdated,
     outside: !conversation.shown.has(comment.anchor.path) || !sits.placed,
     unread: Math.max(0, mine.length - seen),
     taken: [...ids].some((id) => Object.hasOwn(conversation.taken, id)),
@@ -195,13 +184,17 @@ export const list = Effect.fn("Review.Thread.list")(function* (reading: BranchRe
   const store = yield* Store
   const { worktree, patches } = reading
   const current = yield* store.state(worktree.path)
-  return threadsIn(yield* store.inbox(worktree.path), {
+  const batches = yield* store.inbox(worktree.path)
+  const roots = batches.flatMap((batch) => batch.comments).filter((comment) => comment.replyTo === undefined)
+  const placed = yield* placedAll(worktree, patches, roots.map((comment) => comment.anchor))
+  const places = new Map(roots.map((comment, at) => [comment.id, placed[at] ?? { ...comment.anchor, placed: false, outdated: false, reworded: false }]))
+  return threadsIn(batches, {
     answers: yield* store.answers(worktree.path),
     settled: current.settled,
     removed: current.removed,
     head: worktree.head,
     shown: new Set(patches.map((patch) => patch.path)),
-    patches,
+    places,
     read: current.read,
     taken: current.taken ?? {},
     doing: current.doing,

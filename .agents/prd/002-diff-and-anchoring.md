@@ -63,27 +63,38 @@ Reading the diff from git ([PRD 001](001-branch-discovery.md)); drawing it
   selected rows' text, joined by newlines, without diff signs.
 - **A range with no matching rows produces no anchor.** The caller refuses; it never falls back to
   the nearest row.
-- **An anchor is read back at the lines its snippet stands on now.** A comment written at line 12
-  and pushed to line 30 by an edit above it is reported at line 30, because the snippet is the
-  anchor's identity and the line number is only where it was last seen. The match is exact, on the
-  anchor's side, and the run of lines must be contiguous, so a snippet split by a later edit is not
-  half-matched. Where the snippet appears more than once the one nearest the recorded line wins.
-  Nothing is rewritten in the store: what the reviewer wrote is a record, and where it sits is read
-  from the diff in hand.
-- **A snippet of several lines whose first line still stands is read back on that line.** The agent
-  changing the third line of a five-line selection must not cost the reviewer the whole comment, and
-  the line the selection opened on is still exactly where the point was made.
-- **A line the agent edited still takes its comment.** A snippet the diff no longer holds exactly is
-  read back on the nearest line that is nearly the same: at most one character changed per four, and
-  only where the snippet carries eight characters or more. Asking for `seed: (driver, network)` to
-  become `seed: ({ driver, network })` is the whole point of a review, and the reviewer who asked
-  loses both the comment and the answer to it if that edit moves the code out from under them. A
-  short line — a brace, a `};` — has no room for a near match and must still stand exactly, so a
-  comment never drifts onto punctuation. These two are the only partial matches.
-- **An anchor whose snippet the diff cannot show is not placed on any line.** Not the line it was
-  written at, which by then holds code it was never about — that is the failure this rule exists to
-  prevent. The thread stays in the review panel, which says it is not in the diff, and it can still
-  be read, answered, settled and removed from there.
+- **An anchor keeps the version of the file it was written on.** Sending a comment writes that
+  file's contents into git as an object, whether or not they were ever committed, so the comment can
+  later be compared with the file as it is now. A comment is usually written before the commit that
+  holds its code, and a rebase can drop that commit, so the commit the comment was made on is not
+  enough.
+- **An anchor is read back by following its lines through git's diff.** adiff diffs the version the
+  comment was written on against the file now, the way pull request forges do. A commented line
+  that diff leaves alone moves by the lines added and removed above it, exactly. A comment written
+  at line 12 and pushed to line 30 by an edit above it is reported at line 30 and is not
+  [outdated](CONTEXT.md#outdated). Nothing is rewritten in the store: what the reviewer wrote is a
+  record, and where it sits is read from the diff in hand.
+- **A comment whose lines were changed or deleted is outdated, and sits where the change is.** The
+  thread is placed at the start of the lines that replaced its code, or on the line after a
+  deletion, and `comment list` reports `outdated: true` with the snippet it was written on. It is
+  never placed on a line elsewhere that merely reads the same: a comment on a check deleted from one
+  method was once reported on a near-identical line in the method below, which put the reviewer's
+  point on code it was never about.
+- **The terminal draws an outdated thread only on a line that is still recognisably its line.** A
+  line the agent edited, at most one character changed per four and only where the snippet's first
+  line carries eight characters or more, still takes its comment in the diff, marked outdated, and
+  the review panel quotes the code it was written on. Asking for `seed: (driver, network)` to become
+  `seed: ({ driver, network })` is the whole point of a review. Any other outdated thread is listed
+  with the comments the branch moved past, with its old code quoted, rather than drawn against code
+  it was never about.
+- **An anchor whose version is lost is looked for only inside its own scope.** A comment written
+  before adiff kept versions, whose contents git no longer holds, falls back to the snippet: the
+  exact run, then its first line, then a near match, each only among the lines in the same enclosing
+  scope as the line it was written at. What is found is reported outdated, never as an exact
+  placement.
+- **An anchor that maps nowhere is not placed on any line.** A file that left the diff, or a lost
+  version whose snippet its scope no longer holds, leaves the thread in the review panel, which says
+  it is not in the diff, and it can still be read, answered, settled and removed from there.
 - **An anchor with no snippet keeps the line it was written at.** There is nothing to look for, so
   the line number is the best that anchor has, and a comment is never lost for carrying less than
   today's anchors carry.
@@ -128,6 +139,14 @@ Behaviors that must be covered:
 - A comment on a line the agent edited by a few characters is drawn against the edited line.
 - A comment whose line the agent rewrote outright is drawn against no line, and the review panel
   says it is not in the diff.
+- A comment shifted by lines added above it is listed at its new line and not outdated.
+- A comment whose lines were deleted is listed where they were, outdated, with its snippet, and
+  never on a near-identical line in another method.
+- A comment on a deleted file is listed outside the diff.
+- A comment written on uncommitted lines follows them through the commit and a later edit.
+- A comment with no version git still holds is looked for only in its own scope, and is outdated.
+- A comment on a line the agent reworded is marked outdated in the terminal, and the review panel
+  quotes the line it was written on.
 - A file in a nested directory anchors to the right path.
 - A mode-only change, a rename with no edits, and a rename with edits each say what changed.
 

@@ -9,7 +9,7 @@ import {
   type PanelSection,
   threadStand,
 } from "./panel.ts"
-import { type Clicked, theirPull, type TuiState } from "./state.ts"
+import { type Clicked, theirPull, type TuiState, movedPast } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip } from "./words.ts"
 import type { ReportedRemark } from "../review/index.ts"
@@ -63,7 +63,9 @@ export const wherePart = (state: TuiState, entry: PanelEntry): string => {
   const tail = entry.comment.rewritten === true
     ? " · rewritten by the agent"
     : entry.comment.draft === undefined ? "" : " · asks to redraft"
-  return entry.comment.outside === true ? " · not in the diff" : `:${entry.comment.end}${tail}`
+  if (movedPast(entry.comment)) return " · not in the diff"
+  const changed = entry.comment.outdated === true ? " · outdated" : ""
+  return `:${entry.comment.end}${changed}${tail}`
 }
 
 export const panelFile = (entry: PanelEntry): string => {
@@ -102,7 +104,7 @@ const lostEntry = (state: TuiState, entry: PanelEntry): boolean =>
     ? false
     : entry.kind === "remark"
     ? !entry.remark.placed && state.patches.some((patch) => patch.path === entry.remark.file)
-    : entry.comment.outside === true
+    : movedPast(entry.comment) || entry.comment.outdated === true
 
 const writtenOn = (
   state: TuiState,

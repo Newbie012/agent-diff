@@ -35,6 +35,7 @@ export type Note = {
   readonly sent: boolean
   readonly settled: boolean
   readonly stale: boolean
+  readonly outdated?: boolean
   readonly asks: boolean
   readonly answers: ReadonlyArray<string>
   readonly turns: ReadonlyArray<{
@@ -802,7 +803,7 @@ const openHead = (note: Note): string => {
 }
 
 const commentHead = (note: Note): string => {
-  const moved = note.stale ? ", the branch moved on" : ""
+  const moved = `${note.outdated === true ? " · outdated" : ""}${note.stale ? ", the branch moved on" : ""}`
   if (note.settled) return `${marks().done} settled${moved}`
   if (note.asks) return `${marks().asked} asked back${moved}`
   if (note.turns.at(-1)?.voice === "reviewer") return `${marks().waiting} replied${moved}`

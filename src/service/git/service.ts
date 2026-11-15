@@ -240,7 +240,8 @@ const keepContent = Effect.fn("Git.keep")(function* (worktree: Worktree, paths: 
 
 const findKept = Effect.fn("Git.kept")(function* (worktree: Worktree, blob: string) {
   if (blob.length === 0) return Option.none<string>()
-  const said = yield* gitOrEmpty(worktree.path, ["rev-parse", "--verify", "--quiet", `${blob}^{blob}`])
+  const named = blob.includes(":") ? blob : `${blob}^{blob}`
+  const said = yield* gitOrEmpty(worktree.path, ["rev-parse", "--verify", "--quiet", named])
   const found = said.trim()
   return found.length === 0 ? Option.none<string>() : Option.some(found)
 })

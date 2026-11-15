@@ -12,7 +12,7 @@ import {
   snippetOf,
   threadQuote,
 } from "./notes.ts"
-import { noteEditing, type StagedComment, theirPull, type TuiState } from "./state.ts"
+import { noteEditing, type StagedComment, theirPull, type TuiState, movedPast } from "./state.ts"
 import { palette } from "./theme.ts"
 import { clip, wrapped } from "./words.ts"
 
@@ -135,7 +135,7 @@ const notesOf = (
   },
 ): ReadonlyArray<Note> =>
   comments
-    .filter((entry) => entry.file === path && entry.outside !== true)
+    .filter((entry) => entry.file === path && !movedPast(entry))
     .toSorted((left, right) => (left.at ?? "").localeCompare(right.at ?? ""))
     .map((entry) => ({
       id: entry.id ?? "",
@@ -146,6 +146,7 @@ const notesOf = (
       sent,
       settled: entry.settled === true,
       stale: entry.stale === true,
+      outdated: entry.outdated === true,
       asks: entry.asks === true,
       answers: entry.answers ?? [],
       turns: entry.turns ?? [],
