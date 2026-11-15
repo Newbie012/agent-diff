@@ -28,7 +28,7 @@ export type Ranged = {
   readonly side: Side
 }
 
-export const anchor = Effect.fn("Review.Diff.anchor")(function* (worktree: Worktree, request: Ranged) {
+export const anchorWith = Effect.fn("Review.Diff.anchorWith")(function* (worktree: Worktree, request: Ranged) {
   const only = yield* patchesIn(worktree, WHOLE_FILE, request.file)
   const found = only.length > 0 ? only : yield* patchesIn(worktree, WHOLE_FILE)
   const patch = findPatch(found, request.file)
@@ -45,9 +45,12 @@ export const anchor = Effect.fn("Review.Diff.anchor")(function* (worktree: Workt
 
   return yield* Option.match(anchored, {
     onNone: () => new UnselectableRange({ file: request.file, start: request.start, end: request.end }),
-    onSome: Effect.succeed,
+    onSome: (made) => Effect.succeed({ anchor: made, patch: resolved }),
   })
 })
+
+export const anchor = (worktree: Worktree, request: Ranged) =>
+  Effect.map(anchorWith(worktree, request), (found) => found.anchor)
 
 export const list = patchesIn
 

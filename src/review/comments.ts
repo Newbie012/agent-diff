@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect"
-import { foundAgain, WHOLE_FILE, type Patch, type Side } from "../domain/patch/index.ts"
+import { WHOLE_FILE, type Side } from "../domain/patch/index.ts"
 import { Git, type Worktree } from "../service/git/index.ts"
 import { codeBlocks, type Layer } from "../domain/layers/index.ts"
 import {
@@ -10,7 +10,8 @@ import {
 } from "../service/store/index.ts"
 import { UnknownComment, type UnknownWorktree } from "./error.ts"
 import { realOf, type BranchReading } from "./branches.ts"
-import { anchor } from "./patches.ts"
+import { anchorWith } from "./patches.ts"
+import { placedAll, versionOf } from "./placing.ts"
 
 const POLL = "500 millis"
 
@@ -50,6 +51,10 @@ export type PendingComment = {
   readonly snippet: string
   readonly body: string
   readonly placed?: boolean | undefined
+  readonly outdated?: boolean | undefined
+  readonly reworded?: boolean | undefined
+  readonly version?: string | undefined
+  readonly blob?: string | undefined
   readonly replyTo?: string | undefined
   readonly layer?: string | undefined
   readonly thread?: ReadonlyArray<Turn> | undefined
@@ -123,6 +128,8 @@ const sentOf = (
     settled: Object.hasOwn(settled, comment.id),
     removed: Object.hasOwn(removed, comment.id),
     stale: comment.head !== head,
+    outdated: comment.placed !== false && comment.outdated === true,
+    reworded: comment.placed !== false && comment.reworded === true,
     outside: !shown.has(comment.file) || comment.placed === false,
     unread: Math.max(0, said.length - seen),
     asks: last?.voice === "agent" && last.asks,
@@ -133,19 +140,26 @@ const sentOf = (
   }
 }
 
-const placedNow = (
-  patches: ReadonlyArray<Patch>,
-  comment: PendingComment,
-): PendingComment => {
-  const patch = patches.find((candidate) => candidate.path === comment.file)
-  if (patch === undefined) return { ...comment, placed: false }
-  if (comment.start === WHOLE_FILE) return { ...comment, placed: false }
-  if (comment.snippet.trim().length === 0) return { ...comment, placed: true }
-  return Option.match(foundAgain(patch, comment), {
-    onNone: () => ({ ...comment, placed: false }),
-    onSome: (range) => ({ ...comment, start: range.start, end: range.end, placed: true }),
+const placedNow = Effect.fn("Review.Comment.placedNow")(function* (
+  reading: BranchReading,
+  held: ReadonlyArray<PendingComment>,
+) {
+  const anchors = held.map((comment) => ({
+    path: comment.file,
+    side: comment.side,
+    start: comment.start,
+    end: comment.end,
+    snippet: comment.snippet,
+    blob: comment.blob ?? "",
+    version: comment.version,
+  }))
+  const placed = yield* placedAll(reading.worktree, reading.patches, anchors)
+  return held.map((comment, at) => {
+    const sits = placed[at]
+    if (sits === undefined) return { ...comment, placed: false }
+    return { ...comment, start: sits.start, end: sits.end, placed: sits.placed, outdated: sits.outdated, reworded: sits.reworded }
   })
-}
+})
 
 const linesIn = (found: Option.Option<ReadonlyArray<string>>): ReadonlyArray<string> =>
   Option.getOrElse(found, (): ReadonlyArray<string> => [])
@@ -227,6 +241,8 @@ const flatten = (batches: ReadonlyArray<Batch>): ReadonlyArray<PendingComment> =
       start: comment.anchor.start,
       end: comment.anchor.end,
       snippet: comment.anchor.snippet,
+      blob: comment.anchor.blob,
+      version: comment.anchor.version,
       body: comment.body,
       replyTo: comment.replyTo,
       ...(comment.theirs === true ? { theirs: true } : {}),
@@ -240,9 +256,7 @@ export const listSent = Effect.fn("Review.Comment.listSent")(function* (reading:
   const spoken = yield* store.answers(worktree.path)
   const current = yield* store.state(worktree.path)
   const shown = new Set(reading.patches.map((patch) => patch.path))
-  const placed = flatten(yield* store.inbox(worktree.path)).map((comment) =>
-    placedNow(reading.patches, comment),
-  )
+  const placed = yield* placedNow(reading, flatten(yield* store.inbox(worktree.path)))
   const held = yield* foundOutsideTheHunks(worktree, placed, shown)
   const replies = held.filter((comment) => comment.replyTo !== undefined)
   const conversation = {
@@ -267,10 +281,11 @@ export const submitMany = Effect.fn("Review.Comment.submitMany")(function* (
 ) {
   const store = yield* Store
   const anchoring = Effect.fn("Review.Comment.anchoring")(function* (request: CommentRequest) {
-    const anchored = yield* anchor(worktree, request)
+    const { patch, anchor: anchored } = yield* anchorWith(worktree, request)
+    const version = yield* versionOf(worktree, patch, anchored.side)
     return {
       id: request.id,
-      anchor: anchored,
+      anchor: Option.match(version, { onNone: () => anchored, onSome: (kept) => ({ ...anchored, version: kept }) }),
       body: request.body,
       ...(request.remark === undefined ? {} : { remark: request.remark }),
       ...(request.theirs === true ? { theirs: true } : {}),

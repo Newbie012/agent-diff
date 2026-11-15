@@ -1,5 +1,6 @@
 import { Option } from "effect"
 import { lineOn, type Anchor, type Patch, type Range, type Row, type Side } from "./model.ts"
+import { enclosedBy } from "./sticky.ts"
 
 const sideOf = (rows: ReadonlyArray<Row>): Side =>
   rows.some((row) => Option.isSome(row.newLine)) ? "new" : "old"
@@ -92,7 +93,7 @@ const edits = (one: string, other: string): number => {
   return row[other.length] ?? 0
 }
 
-const isNear = (one: string, other: string): boolean => {
+export const isNear = (one: string, other: string): boolean => {
   const room = Math.max(one.trim().length, other.trim().length)
   return room >= SHORTEST_NEAR && edits(one, other) <= Math.floor(room / PER_EDIT)
 }
@@ -106,13 +107,13 @@ const nearestLike = (
     .filter((here) => isNear(here.text, said))
     .toSorted((one, other) => Math.abs(one.line - near) - Math.abs(other.line - near))[0]?.line
 
-export const foundExactly = (
-  patch: Patch,
-  wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
-): Option.Option<Range> => {
+type Wanted = { readonly side: Side; readonly start: number; readonly snippet: string }
+
+type Line = { readonly line: number; readonly text: string }
+
+const exactlyIn = (lines: ReadonlyArray<Line>, wanted: Wanted): Option.Option<Range> => {
   const said = wanted.snippet.split("\n")
   if (said.every((text) => text.trim().length === 0)) return Option.none()
-  const lines = sideLines(patch, wanted.side)
   const whole = nearestRun(lines, said, wanted.start)
   if (whole !== undefined) {
     return Option.some({ side: wanted.side, start: whole, end: whole + said.length - 1 })
@@ -125,20 +126,34 @@ export const foundExactly = (
     : Option.some({ side: wanted.side, start: opening, end: opening })
 }
 
-const foundAlike = (
-  patch: Patch,
-  wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
-): Option.Option<Range> => {
+const alikeIn = (lines: ReadonlyArray<Line>, wanted: Wanted): Option.Option<Range> => {
   const first = wanted.snippet.split("\n")[0] ?? ""
   if (first.trim().length === 0) return Option.none()
-  const alike = nearestLike(sideLines(patch, wanted.side), first, wanted.start)
+  const alike = nearestLike(lines, first, wanted.start)
   return alike === undefined
     ? Option.none()
     : Option.some({ side: wanted.side, start: alike, end: alike })
 }
 
-export const foundAgain = (
-  patch: Patch,
-  wanted: { readonly side: Side; readonly start: number; readonly snippet: string },
-): Option.Option<Range> =>
-  Option.orElse(foundExactly(patch, wanted), () => foundAlike(patch, wanted))
+const againIn = (lines: ReadonlyArray<Line>, wanted: Wanted): Option.Option<Range> =>
+  Option.orElse(exactlyIn(lines, wanted), () => alikeIn(lines, wanted))
+
+export const foundExactly = (patch: Patch, wanted: Wanted): Option.Option<Range> =>
+  exactlyIn(sideLines(patch, wanted.side), wanted)
+
+export const foundAgain = (patch: Patch, wanted: Wanted): Option.Option<Range> =>
+  againIn(sideLines(patch, wanted.side), wanted)
+
+const sourceLines = (source: ReadonlyArray<string>): ReadonlyArray<Line> =>
+  source.map((text, at) => ({ line: at + 1, text }))
+
+export const foundInScope = (
+  source: ReadonlyArray<string>,
+  wanted: Wanted,
+): Option.Option<Range> => {
+  const outer = enclosedBy(source)
+  const near = Math.max(1, Math.min(wanted.start, source.length))
+  const scope = outer[near - 1] ?? 0
+  const inScope = sourceLines(source).filter((here) => (outer[here.line - 1] ?? 0) === scope)
+  return againIn(inScope, wanted)
+}

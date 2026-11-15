@@ -9,6 +9,7 @@ const Anchor = Schema.Struct({
   side: Side,
   start: Schema.Int,
   end: Schema.Int,
+  version: Schema.optionalKey(Schema.String),
 })
 
 export const StoredComment = Schema.Struct({

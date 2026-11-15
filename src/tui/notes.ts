@@ -4,7 +4,7 @@ import { anchorFor } from "../domain/patch/index.ts"
 import { lineOf, lineOnSide, rowsUnder, selectedRows, selectionRange } from "./cursor.ts"
 import { readIn } from "./files.ts"
 import { louderOf, panelEntry, threadChosen, threadStand } from "./panel.ts"
-import { type Asking, heldWhere, noteEditing, selectedPatch, type StagedComment, theirPull, type TuiState } from "./state.ts"
+import { type Asking, heldWhere, noteEditing, selectedPatch, type StagedComment, theirPull, type TuiState, movedPast } from "./state.ts"
 import { counted, wrapped } from "./words.ts"
 import type { ReportedLayer, ReportedRemark } from "../review/index.ts"
 
@@ -73,7 +73,7 @@ export const askedThreads = (state: TuiState): ReadonlyArray<string> => {
   return asking.threads.flatMap((id) => {
     const thread = state.sent.find((entry) => entry.id === id)
     if (thread === undefined) return []
-    const where = thread.outside === true ? "not in the diff" : `line ${thread.end}`
+    const where = movedPast(thread) ? "not in the diff" : `line ${thread.end}`
     return [`${firstLineOf(thread.body)} · ${where}`]
   })
 }
@@ -96,7 +96,7 @@ export const markedStands = (state: TuiState): ReadonlyMap<number, ThreadStand> 
   const found = new Map<number, ThreadStand>()
   if (patch === undefined) return found
   const here = [...state.sent, ...state.held].filter(
-    (entry) => entry.file === patch.path && entry.removed !== true && entry.outside !== true,
+    (entry) => entry.file === patch.path && entry.removed !== true && !movedPast(entry),
   )
   for (const entry of here) {
     const stand = threadStand(entry)
@@ -172,7 +172,7 @@ export const commentRowsIn = (state: TuiState, fileIndex: number): ReadonlyArray
     fileIndex === state.patchIndex ? selectedPatch(state) : state.patches[fileIndex]
   if (patch === undefined) return []
   const notes = [...state.sent, ...state.held].filter(
-    (entry) => entry.file === patch.path && entry.outside !== true,
+    (entry) => entry.file === patch.path && !movedPast(entry),
   )
   const rows = patch.rows.filter((row) =>
     notes.some((note) => lineOnSide(row, note.side) === note.end),
@@ -207,7 +207,7 @@ type Shown = {
 
 const notesShown = (state: TuiState, path: string): ReadonlyArray<Shown> => [
   ...state.sent
-    .filter((one) => one.file === path && one.removed !== true && one.outside !== true)
+    .filter((one) => one.file === path && one.removed !== true && !movedPast(one))
     .map((one) => ({ id: one.id, side: one.side, end: one.end })),
   ...state.remarks
     .filter((one) => one.file === path && remarkShown(one))
@@ -223,7 +223,7 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
       entry.file === patch.path &&
       entry.id !== undefined &&
       entry.removed !== true &&
-      entry.outside !== true &&
+      !movedPast(entry) &&
       lineOnSide(here, entry.side) === entry.end,
   )
 }
@@ -324,7 +324,7 @@ export const threadAtRow = (state: TuiState, row: number): StagedComment | undef
       entry.file === patch.path &&
       entry.id !== undefined &&
       entry.removed !== true &&
-      entry.outside !== true &&
+      !movedPast(entry) &&
       lineOnSide(here, entry.side) === entry.end,
   )
 }
@@ -337,7 +337,7 @@ export const openCommentRows = (state: TuiState): ReadonlyArray<number> => {
       entry.file === patch.path &&
       entry.settled !== true &&
       entry.removed !== true &&
-      entry.outside !== true,
+      !movedPast(entry),
   )
   return patch.rows
     .filter(

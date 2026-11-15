@@ -34,8 +34,15 @@ the same person as the reviewer, but the concerns are separate.
 ### Anchor
 
 What a [comment](#comment) is attached to: [file path](#patch) + [side](#side) + line range +
-[blob](#blob) + the exact snippet that was selected. An anchor carries enough for the agent to act
-without opening the file, and enough to tell later that the code moved.
+[blob](#blob) + the exact snippet that was selected + the version of the file it was written on. An
+anchor carries enough for the agent to act without opening the file, and enough to tell later that
+the code moved.
+
+### Outdated
+
+A [thread](#thread) whose commented lines were changed or deleted after it was written. It is placed
+where that change sits now and keeps the snippet it was written on, the same word the forge uses for
+a [remark](#remark).
 
 ### Branch
 

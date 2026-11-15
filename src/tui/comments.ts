@@ -12,7 +12,7 @@ import type { Anchor } from "../domain/patch/index.ts"
 import { rowShowing, selectionRange } from "./cursor.ts"
 import { remarkHere, threadHere } from "./notes.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
-import { selectedBranch, selectedPatch, type StagedComment, theirPull, type TuiState } from "./state.ts"
+import { selectedBranch, selectedPatch, type StagedComment, theirPull, type TuiState, movedPast } from "./state.ts"
 import { counted } from "./words.ts"
 import { Comment, type CommentRequest, Draft, Layers } from "../review/index.ts"
 import { staying, worktreeOf } from "./reading.ts"
@@ -51,7 +51,7 @@ export const openPanelEntry = (app: Terminal): Work => {
     }
     yield* readRewrite(app, entry)
     const at = app.state.patches.findIndex((patch) => patch.path === entry.comment.file)
-    if (at === -1 || entry.comment.outside === true) {
+    if (at === -1 || movedPast(entry.comment)) {
       yield* openAway(app, entry, at)
       return
     }
