@@ -478,6 +478,10 @@
   intents:
     - a-mark-made-at-the-same-moment-as-another
     - a-mark-that-outlives-a-longer-hash
+"@eliya-oss/agent-diff@0.1.0-alpha.195":
+  dir: ""
+  intents:
+    - a-comment-follows-its-lines-through-the-diff
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
