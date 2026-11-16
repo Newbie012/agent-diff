@@ -12,7 +12,7 @@ export {
   willUpgrade,
 } from "./upgrade.ts"
 export type { Route, UpgradeFound, UpgradeReport } from "./upgrade.ts"
-export { around, choices, numeric, oneLine, oneOf, onlyKnown, optionsFrom, required, seconds, spot } from "./parse.ts"
+export { around, choices, numeric, oneLine, oneOf, onlyKnown, optionsFrom, required, seconds, spot, text } from "./parse.ts"
 export {
   addressing,
   catalog,

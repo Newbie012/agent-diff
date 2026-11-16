@@ -27,6 +27,7 @@ import {
   optionsFrom,
   required,
   seconds,
+  text,
   verbsUnder,
   runUpgrade,
   type UpgradeFound,
@@ -132,7 +133,7 @@ const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
   const worktree = yield* worktreeIn(options)
   const batch = yield* Comment.submit(worktree, {
     ...(yield* rangeIn(options, worktree)),
-    body: yield* required(options, "body"),
+    body: yield* text(options, "body"),
     id: options["id"] ?? randomUUID(),
     at: stamp(options),
   })
@@ -148,7 +149,7 @@ const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
   const worktree = yield* worktreeIn(options)
   const draft = yield* Draft.add(worktree, {
     ...(yield* rangeIn(options, worktree)),
-    body: yield* required(options, "body"),
+    body: yield* text(options, "body"),
     id: options["id"] ?? randomUUID(),
     at: stamp(options),
     wroteBy: "agent",
@@ -159,7 +160,7 @@ const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
 const draftEdit = Effect.fn("Main.draftEdit")(function* (options: Options) {
   const draft = yield* Draft.edit(yield* worktreeIn(options), {
     id: yield* required(options, "id"),
-    body: yield* required(options, "body"),
+    body: yield* text(options, "body"),
     at: stamp(options),
     by: "agent",
   })
@@ -179,7 +180,7 @@ const draftSend = Effect.fn("Main.draftSend")(function* (options: Options) {
 const commentReply = Effect.fn("Main.commentReply")(function* (options: Options) {
   const batch = yield* Comment.reply(yield* worktreeIn(options), {
     to: yield* required(options, "to"),
-    body: yield* required(options, "body"),
+    body: yield* text(options, "body"),
     id: options["id"] ?? randomUUID(),
     at: stamp(options),
   })
@@ -204,7 +205,7 @@ const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
 const commentAnswer = Effect.fn("Main.commentAnswer")(function* (options: Options) {
   const report = yield* Thread.answer(yield* worktreeNamed(options), {
     id: yield* required(options, "id"),
-    body: yield* required(options, "body"),
+    body: yield* text(options, "body"),
     asks: options["question"] !== undefined,
     at: stamp(options),
     choices: yield* choices(options, "choice"),
@@ -229,7 +230,7 @@ const remarkList = Effect.fn("Main.remarkList")(function* (options: Options) {
 const remarkAccept = Effect.fn("Main.remarkAccept")(function* (options: Options) {
   const report = yield* Remark.accept(yield* readingIn(options), {
     id: yield* required(options, "id"),
-    body: options["body"],
+    body: options["body"] === undefined ? undefined : yield* text(options, "body"),
     at: stamp(options),
     commentId: options["comment"] ?? randomUUID(),
   })
@@ -241,7 +242,7 @@ const remarkReply = Effect.fn("Main.remarkReply")(function* (options: Options) {
     yield* required(options, "repo"),
     yield* worktreeIn(options),
     yield* required(options, "id"),
-    yield* required(options, "body"),
+    yield* text(options, "body"),
   )
   yield* answer(options, { answered: report.answered })
 })

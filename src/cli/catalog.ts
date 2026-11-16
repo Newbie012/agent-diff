@@ -93,7 +93,7 @@ const picking: ReadonlyArray<OptionSpec> = [
       "The first row picked in the diff, as `new:12` or `old:40`. adiff chooses the side the terminal would: the new one when any picked row has a new line",
   },
   { name: "to", required: false, value: "new|old:line", about: "The last row picked, in the form of --from" },
-  { name: "body", required: true, value: "text", about: "What to tell the agent" },
+  { name: "body", required: true, value: "text", about: "What to tell the agent, or - to read it from stdin" },
   {
     name: "side",
     required: false,
@@ -310,7 +310,7 @@ const commands: ReadonlyArray<CommandSpec> = [
         value: "id",
         about: "The comment being continued, as `comment list` reports it",
       },
-      { name: "body", required: true, value: "text", about: "What to tell the agent" },
+      { name: "body", required: true, value: "text", about: "What to tell the agent, or - to read it from stdin" },
     ],
     dataKey: "batch",
     example: 'adiff comment reply --repo . --branch add-invitations --to c1 --body "the other one"',
@@ -353,7 +353,7 @@ const commands: ReadonlyArray<CommandSpec> = [
         value: "id",
         about: "The comment being answered, as `comment take` reported it",
       },
-      { name: "body", required: true, value: "text", about: "What was done, or what is being asked" },
+      { name: "body", required: true, value: "text", about: "What was done, or what is being asked, or - to read it from stdin" },
       {
         name: "question",
         required: false,
@@ -461,7 +461,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     options: [
       ...addressing,
       { name: "id", required: true, value: "id", about: "The draft, as `draft list` reports it" },
-      { name: "body", required: true, value: "text", about: "What it should say instead" },
+      { name: "body", required: true, value: "text", about: "What it should say instead, or - to read it from stdin" },
     ],
     dataKey: "draft",
     example: 'adiff draft edit --repo . --branch their-change --id d1 --body "softer"',
@@ -522,7 +522,7 @@ const commands: ReadonlyArray<CommandSpec> = [
         name: "body",
         required: false,
         value: "text",
-        about: "What to tell the agent, instead of the remark's own words",
+        about: "What to tell the agent, instead of the remark's own words, or - to read it from stdin",
       },
     ],
     dataKey: "accepted",
@@ -537,7 +537,7 @@ const commands: ReadonlyArray<CommandSpec> = [
     options: [
       ...addressing,
       { name: "id", required: true, value: "id", about: "The remark to answer" },
-      { name: "body", required: true, value: "text", about: "What to say in the thread" },
+      { name: "body", required: true, value: "text", about: "What to say in the thread, or - to read it from stdin" },
     ],
     dataKey: "answered",
     example: 'adiff remark reply --repo . --branch add-invitations --id PRRT_kw --body "fair, done"',
