@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-11-13
+- **Last updated:** 2026-11-16
 
 ## Problem Statement
 
@@ -86,14 +86,25 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   file the agent changes again loses its marks like any other. A layer is read when its own runs are,
   and the file itself is read when every layer's runs of it are, which is when the file list ticks it
   and the count at the top counts it. Unmarking one layer's runs takes the file back out.
+- **A change lapses a mark only in the layers whose lines it touched.** Every mark on a file used to
+  lapse together, since a mark is keyed by blob, so an agent that changed one layer's lines left the
+  file unread in every other layer that shares it, and opening it there showed nothing to read. A
+  layer's runs name lines of the version the reviewer marked, so adiff takes git's diff from that
+  version to the file now and follows each run through it, the way a comment follows its lines
+  ([PRD 002](002-diff-and-anchoring.md)): a run the diff touches lapses, and a run whose lines only
+  moved is still read. A whole-file mark on a file layers share counts the same way per layer. The
+  file itself is not reviewed until the changed layers are marked again. Marking one layer of a file
+  marked whole turns the whole-file mark into one mark per layer first, so unmarking that layer
+  leaves the others read. A mark whose version is not kept, or a file the agent deleted, lapses in
+  every layer.
 - **Progress reports the vouched paths, the changed ones and the branch's total file count**, so
   the caller can render a fraction without a second call.
 - **Progress names the files that changed since they were marked.** A lapsed vouch used to vanish:
   the file simply stopped counting, and the reviewer could not tell a file they never read from one
   they read before the agent rewrote it. The vouch already holds the blob it was made at, so
-  `review progress` reports `changed`, the files still in the diff whose recorded blob, for the whole
-  file or for any layer's runs of it, is not the blob they have now. Marking the file again, or one
-  layer's runs of it, takes it off the list. Nothing new is stored, so a vouch written by an older
+  `review progress` reports `changed`, the files still in the diff with a mark that lapsed: a
+  whole-file mark at another blob, or a layer's mark whose runs the change touched. Marking the file
+  again, or the layer that changed, takes it off the list. Nothing new is stored, so a vouch written by an older
   adiff reports the same way. The blob is the file's content on the branch side, so a file whose
   diff changed only because the base moved is not counted as changed.
 - **Progress shows what changed since review.** For every file in `changed`, and every marked file
@@ -102,8 +113,10 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   places they fall in, and whether the marked version is still kept. A vouch written by an older
   adiff kept no content, so unless git holds that blob anyway its entry carries `kept: false` and no
   counts, and the client falls back to the diff against the base. A deleted file carries
-  `deleted: true`. `changed` stays as it was. Where a file has more than one lapsed mark, the
-  whole-file vouch speaks for it, else the newest layer's mark.
+  `deleted: true`. For a file more than one layer shares, `layers` names the layers whose part lapsed,
+  numbered from 1 as `file review --layer` numbers them, so a client marks the file changed since
+  review only in those layers. A file no layer splits carries no `layers`. Where a file has more than
+  one lapsed mark, the whole-file vouch speaks for it, else the newest lapsed layer's mark.
 - **The diff since review is one command.** `patch since --file <path>` answers the file's diff
   from the marked version to the worktree now, in the shape of one file of `patch show`: rows with
   line numbers on both sides, where the old side counts the marked version's lines, and the scope
@@ -158,6 +171,10 @@ Behaviors that must be covered:
 - A file marked and then deleted is named as deleted since review.
 - A mark whose version is not kept is named as not kept, with no counts.
 - A file changed back to the marked content reads as reviewed and not as changed.
+- A change to one layer's lines of a shared file leaves the file read in the other layer, and
+  `since` names only the changed layer; a change in both lapses both; lines that only moved stay
+  read; a whole-file mark counts per layer the same way; a mark whose version is not kept lapses in
+  every layer; a file no layer splits carries no `layers`.
 - A mark pressed after the directory was switched to another branch records nothing, the footer
   names the branch the directory is on now, and the other branch's progress stays empty.
 
