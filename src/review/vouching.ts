@@ -1,11 +1,13 @@
 import { Effect, Option } from "effect"
-import { parsePatches, type Patch } from "../domain/patch/index.ts"
-import { isVouched, sameBlob, vouch, type Vouches } from "../domain/review/index.ts"
-import { Git, NO_CONTENT, type Worktree } from "../service/git/index.ts"
+import type { Patch } from "../domain/patch/index.ts"
+import { isVouched, pathOfPart, sameBlob, vouch, type Vouches } from "../domain/review/index.ts"
+import { Git, type Worktree } from "../service/git/index.ts"
 import { Store, type BranchState } from "../service/store/index.ts"
 import { NotVouched, UnknownFile, VouchedVersionGone } from "./error.ts"
 import { CONTEXT, patches as patchesIn, type Based, type BranchReading } from "./branches.ts"
 import { blobOf, linesAround, shownAs, type ShownFile, type Showing } from "./patches.ts"
+import { diffSince, readNow, type ReadNow } from "./carried.ts"
+import { read } from "./order.ts"
 
 export type VouchReport = {
   readonly vouched: ReadonlyArray<string>
@@ -22,6 +24,7 @@ export type SinceReview = {
   readonly places: number
   readonly kept: boolean
   readonly deleted?: true
+  readonly layers?: ReadonlyArray<number>
 }
 
 export type ProgressReport = VouchReport & {
@@ -34,37 +37,9 @@ export type Marking = {
   readonly at?: string | undefined
 }
 
-type Blobbed = { readonly path: string; readonly blob: string }
-
 type Mark = { readonly key: string; readonly path: string; readonly blob: string; readonly at: string }
 
-type Asked = { readonly mark: Mark; readonly deleted: boolean }
-
-const pathOfMark = (mark: string): string => mark.split("@")[0] ?? ""
-
-const changedSince = (
-  marks: ReadonlyArray<Readonly<Record<string, string>>>,
-  files: ReadonlyArray<Blobbed>,
-): ReadonlyArray<string> => {
-  const recorded = marks.flatMap((held) => Object.entries(held))
-  const blobsOf = (file: Blobbed): ReadonlyArray<string> =>
-    recorded.filter(([mark]) => pathOfMark(mark) === file.path).map(([, blob]) => blob)
-  const lapsed = (file: Blobbed): boolean => {
-    const blobs = blobsOf(file)
-    return blobs.length > 0 && !blobs.some((blob) => sameBlob(blob, file.blob))
-  }
-  return files.filter(lapsed).map((file) => file.path)
-}
-
-export const readParts = (
-  parts: Readonly<Record<string, string>>,
-  files: ReadonlyArray<{ readonly path: string; readonly blob: string }>,
-): ReadonlyArray<string> => {
-  const blobs = new Map(files.map((file) => [file.path, file.blob]))
-  return Object.entries(parts)
-    .filter(([part, blob]) => sameBlob(blobs.get(pathOfMark(part)), blob))
-    .map(([part]) => part)
-}
+type Asked = { readonly mark: Mark; readonly deleted: boolean; readonly layers?: ReadonlyArray<number> | undefined }
 
 export const restamped = (
   stamps: Readonly<Record<string, string>>,
@@ -116,56 +91,48 @@ export const toggle = Effect.fn("Review.Vouch.toggle")(function* (
   marking: Marking = {},
 ) {
   const store = yield* Store
-  const patches = reading.patches
   const onDisk = yield* blobIn(reading, file)
   const asked = marking.blob ?? onDisk
   const at = yield* keepMarked(reading.worktree, file, { blob: asked, onDisk, at: marking.at })
   const blob = yield* fullBlob(reading.worktree, asked)
-  const current = yield* store.state(reading.worktree.path)
-  const next = vouch(current.vouches, file, blob)
   yield* store.changeState(reading.worktree.path, (was) => stateAfter(was, file, blob, at))
-  const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  return yield* reportNow(reading)
+})
+
+const readingNow = Effect.fn("Review.Vouch.readingNow")(function* (reading: BranchReading) {
+  const store = yield* Store
+  const state = yield* store.state(reading.worktree.path)
+  const held = yield* read(reading)
+  return { state, marks: yield* readNow(reading.worktree, reading.patches, state, held.layers) }
+})
+
+export const reportNow = Effect.fn("Review.Vouch.reportNow")(function* (reading: BranchReading) {
+  const { state, marks } = yield* readingNow(reading)
   return {
-    vouched: files.filter((one) => isVouched(next, one.path, one.blob)).map((one) => one.path),
-    parts: readParts(current.parts, files),
-    total: patches.length,
+    vouched: reading.patches.filter((one) => isVouched(state.vouches, one.path, one.blob)).map((one) => one.path),
+    parts: marks.parts,
+    total: reading.patches.length,
   } satisfies VouchReport
 })
 
 const marksOf = (state: BranchState): ReadonlyArray<Mark> =>
-  [...Object.entries(state.vouches), ...Object.entries(state.parts)].map(([key, blob]) => ({
+  [
+    ...Object.entries(state.vouches).map(([key, blob]) => ({ key, path: key, blob })),
+    ...Object.entries(state.parts).map(([key, blob]) => ({ key, path: pathOfPart(key), blob })),
+  ].map(({ key, path, blob }) => ({
     key,
-    path: pathOfMark(key),
+    path,
     blob,
     at: state.vouchedAt[key] ?? "",
   }))
 
 const newestFirst = (left: Mark, right: Mark): number => right.at.localeCompare(left.at)
 
-const speaking = (marks: ReadonlyArray<Mark>, path: string, blob?: string): Option.Option<Mark> => {
-  const own = marks.filter((mark) => mark.path === path && (blob === undefined || !sameBlob(mark.blob, blob)))
+const speaking = (marks: ReadonlyArray<Mark>, path: string): Option.Option<Mark> => {
+  const own = marks.filter((mark) => mark.path === path)
   const whole = own.find((mark) => mark.key === path)
   return Option.fromNullishOr(whole ?? own.toSorted(newestFirst)[0])
 }
-
-const contentNow = Effect.fn("Review.Vouch.contentNow")(function* (worktree: Worktree, file: string) {
-  const git = yield* Git
-  const [found] = yield* git.keep(worktree, [file])
-  if (found !== undefined) return found
-  const [nothing] = yield* git.keep(worktree, [NO_CONTENT])
-  return nothing ?? ""
-})
-
-const diffSince = Effect.fn("Review.Vouch.diffSince")(function* (
-  worktree: Worktree,
-  file: string,
-  kept: string,
-  context: number,
-) {
-  const git = yield* Git
-  const raw = yield* git.between(worktree, kept, yield* contentNow(worktree, file), context)
-  return Option.fromNullishOr(parsePatches(raw)[0])
-})
 
 const placesIn = (patch: Patch): number => patch.hunks.filter((hunk) => hunk.marker.length > 0).length
 
@@ -183,6 +150,7 @@ const reportSince = Effect.fn("Review.Vouch.reportSince")(function* (worktree: W
     at: mark.at,
     reviewed: mark.blob,
     ...(asked.deleted ? { deleted: true as const } : {}),
+    ...(asked.layers === undefined ? {} : { layers: asked.layers }),
   }
   const kept = yield* git.kept(worktree, mark.blob)
   if (Option.isNone(kept)) return { ...told, added: 0, removed: 0, places: 0, kept: false }
@@ -206,44 +174,41 @@ const goneSince = Effect.fn("Review.Vouch.goneSince")(function* (
   return gone.flatMap((path) => Option.toArray(speaking(marks, path)))
 })
 
-const lapsedIn = (
-  patches: ReadonlyArray<Patch>,
-  marks: ReadonlyArray<Mark>,
-  changed: ReadonlyArray<string>,
-): ReadonlyArray<Asked> =>
-  patches
-    .filter((patch) => changed.includes(patch.path))
+const lapsedIn = (patches: ReadonlyArray<Patch>, marks: ReadonlyArray<Mark>, judged: ReadNow): ReadonlyArray<Asked> => {
+  const lapsed = marks.filter((mark) => judged.lapsedKeys.includes(mark.key))
+  return patches
+    .filter((patch) => judged.changed.includes(patch.path))
     .flatMap((patch) =>
-      Option.toArray(speaking(marks, patch.path, patch.blob)).map((mark) => ({
+      Option.toArray(speaking(lapsed, patch.path)).map((mark) => ({
         mark,
         deleted: patch.status === "deleted",
+        layers: judged.lapsedLayers.get(patch.path),
       })),
     )
+}
 
 const sinceReview = Effect.fn("Review.Vouch.sinceReview")(function* (
   reading: BranchReading,
   state: BranchState,
-  changed: ReadonlyArray<string>,
+  judged: ReadNow,
 ) {
   const marks = marksOf(state)
   const gone = yield* goneSince(reading.worktree, marks, reading.patches)
   const asked = [
-    ...lapsedIn(reading.patches, marks, changed),
+    ...lapsedIn(reading.patches, marks, judged),
     ...gone.map((mark) => ({ mark, deleted: true })),
   ]
   return yield* Effect.forEach(asked, (one) => reportSince(reading.worktree, one), { concurrency: 8 })
 })
 
 export const progress = Effect.fn("Review.Vouch.progress")(function* (reading: BranchReading) {
-  const store = yield* Store
-  const current = yield* store.state(reading.worktree.path)
-  const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
-  const changed = changedSince([current.vouches, current.parts], files)
+  const { state, marks } = yield* readingNow(reading)
+  const files = reading.patches
   return {
-    vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
-    parts: readParts(current.parts, files),
-    changed,
-    since: yield* sinceReview(reading, current, changed),
+    vouched: files.filter((file) => isVouched(state.vouches, file.path, file.blob)).map((f) => f.path),
+    parts: marks.parts,
+    changed: marks.changed,
+    since: yield* sinceReview(reading, state, marks),
     total: reading.patches.length,
   } satisfies ProgressReport
 })
