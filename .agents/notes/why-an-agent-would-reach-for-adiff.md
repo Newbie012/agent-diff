@@ -142,7 +142,7 @@ duplicating text.
 The text wants to be short:
 
 > Review of work in this repository happens in adiff. Before you say you are done, run
-> `adiff comment take --worktree . --wait 300` in the background and handle what arrives. Answer
+> `adiff comment take --worktree . --new --wait 6900` in the background and handle what arrives. Answer
 > with `adiff comment answer`. `adiff describe` lists the rest.
 
 Legitimate under conditions that are not negotiable: it shows the exact text, it asks, it appends

@@ -82,6 +82,7 @@ type Shape = {
   readonly take: (
     worktreePath: string,
     at: string,
+    handing?: Handing,
   ) => Effect.Effect<ReadonlyArray<Batch>, StoreUnreadable | StoreUnwritable>
   readonly owed: (
     worktreePath: string,
@@ -241,23 +242,29 @@ const takes =
     taken: { ...Object.fromEntries(ids.map((id) => [id, at])), ...was.taken },
   })
 
+export type Handing = "owed" | "new"
+
 const cursorOps = (state: Reader, inbox: Inbox, spoken: Spoken, changeState: Changer) => {
-  const owedIn = Effect.fn("Store.owedIn")(function* (worktreePath: string) {
+  const handedIn = Effect.fn("Store.handedIn")(function* (worktreePath: string, handing: Handing) {
     const batches = yield* inbox(worktreePath)
     const current = yield* state(worktreePath)
     const answered = new Set((yield* spoken(worktreePath)).map((entry) => entry.comment))
+    const taken = current.taken ?? {}
     const owed = (comment: StoredComment): boolean =>
       !answered.has(comment.id) &&
       !Object.hasOwn(current.settled, comment.id) &&
-      !Object.hasOwn(current.removed, comment.id)
+      !Object.hasOwn(current.removed, comment.id) &&
+      (handing === "owed" || !Object.hasOwn(taken, comment.id))
     return batches.flatMap((batch) => {
       const comments = batch.comments.filter(owed)
       return comments.length === 0 ? [] : [{ id: batch.id, at: batch.at, head: batch.head, comments }]
     })
   })
 
-  const take = Effect.fn("Store.take")(function* (worktreePath: string, at: string) {
-    const batches = yield* owedIn(worktreePath)
+  const owedIn = (worktreePath: string) => handedIn(worktreePath, "owed")
+
+  const take = Effect.fn("Store.take")(function* (worktreePath: string, at: string, handing: Handing = "owed") {
+    const batches = yield* handedIn(worktreePath, handing)
     const ids = idsIn(batches)
     if (ids.length > 0) yield* changeState(worktreePath, takes(ids, at))
     return batches

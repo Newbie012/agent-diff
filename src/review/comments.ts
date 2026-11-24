@@ -5,6 +5,7 @@ import { codeBlocks, type Layer } from "../domain/layers/index.ts"
 import {
   Store,
   type Batch,
+  type Handing,
   type StoreUnreadable,
   type StoreUnwritable,
 } from "../service/store/index.ts"
@@ -386,12 +387,15 @@ const layersOn = Effect.fn("Review.Comment.layersOn")(function* (worktree: strin
   })
 })
 
-export const take = Effect.fn("Review.Comment.take")(function* (worktreePath: string) {
+export const take = Effect.fn("Review.Comment.take")(function* (
+  worktreePath: string,
+  handing: Handing = "owed",
+) {
   const store = yield* Store
   const resolved = yield* realOf(worktreePath)
   const at = new Date().toISOString()
   yield* Effect.ignore(store.noteWatching(resolved, at))
-  const owed = flatten(yield* store.take(resolved, at))
+  const owed = flatten(yield* store.take(resolved, at, handing))
   if (owed.length === 0) return owed
   const layers = yield* layersOn(resolved)
   const under = (one: PendingComment): PendingComment => {
@@ -409,16 +413,17 @@ export const take = Effect.fn("Review.Comment.take")(function* (worktreePath: st
 export const awaitTaken = (
   worktreePath: string,
   deadline: number,
+  handing: Handing = "owed",
 ): Effect.Effect<
   ReadonlyArray<PendingComment>,
   StoreUnreadable | StoreUnwritable | UnknownWorktree,
   Store
 > =>
-  take(worktreePath).pipe(
+  take(worktreePath, handing).pipe(
     Effect.flatMap((comments) =>
       comments.length > 0 || Date.now() >= deadline
         ? Effect.succeed(comments)
-        : Effect.sleep(POLL).pipe(Effect.flatMap(() => awaitTaken(worktreePath, deadline))),
+        : Effect.sleep(POLL).pipe(Effect.flatMap(() => awaitTaken(worktreePath, deadline, handing))),
     ),
   )
 

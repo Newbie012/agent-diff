@@ -278,6 +278,7 @@ export const unsettle = Effect.fn("Review.Thread.unsettle")(function* (worktree:
     ...was,
     settled: without(was.settled, id),
     read: without(was.read, id),
+    taken: without(was.taken ?? {}, id),
   }))
   return { unsettled: id }
 })
@@ -305,6 +306,7 @@ export const restore = Effect.fn("Review.Thread.restore")(function* (worktree: W
   yield* store.changeState(worktree.path, (was) => ({
     ...was,
     removed: without(was.removed, id),
+    taken: without(was.taken ?? {}, id),
   }))
   return { restored: id }
 })

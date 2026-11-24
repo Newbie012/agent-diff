@@ -320,9 +320,15 @@ const commands: ReadonlyArray<CommandSpec> = [
         value: "seconds",
         about: `Block until a comment arrives or the timeout elapses. A whole number of seconds from 1 to ${WAIT_MOST}; anything else is refused`,
       },
+      {
+        name: "new",
+        required: false,
+        value: "flag",
+        about: "Hand over only comments this review has not handed over before, so a wait ends on something new",
+      },
     ],
     dataKey: "comments",
-    example: "adiff comment take --worktree . --wait 300",
+    example: "adiff comment take --worktree . --new --wait 6900",
   },
   {
     name: "comment answer",

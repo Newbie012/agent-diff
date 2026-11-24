@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-11-12
+- **Last updated:** 2026-11-24
 
 ## Problem Statement
 
@@ -92,6 +92,15 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   it until one exists. Taking with nothing owed returns an empty list and a zero exit. What taking
   writes is the time each comment was first picked up, which is how the review screen says a comment
   is waiting on the agent; taking again hands the same comments over and leaves that time alone.
+- **`--new` hands over only what this review has not handed over before.** An agent listening in
+  the background re-arms its wait after each comment, and a wait that hands back every owed comment
+  ends at once on the comment the agent is already working on, so the agent was woken over and over
+  by work it had. `comment take --new` returns only the owed comments with no recorded take time, and
+  with `--wait` it keeps waiting through owed comments that were taken, so the wait ends on something
+  new or runs out with an empty list. A reply is a comment with its own id, so it is new. Reopening a
+  settled thread clears the take time of the comment that started it, because the reviewer saying a
+  point is open again is something the agent has not heard. Without `--new`, taking is unchanged: the
+  first take of a session collects everything still owed.
 - **An answer is what retires a comment, not the act of reading it.** A cursor that advanced on read
   made delivery at-most-once: an agent that took five comments and answered three — because it ran
   out of room, was interrupted, or simply lost track — left two that nothing would hand over again
@@ -331,6 +340,9 @@ Behaviors that must be covered:
 
 - A comment written by the reviewer is handed to the agent with its anchor intact.
 - A comment with no answer is handed over again on the next take, and stops once it has one.
+- A wait for new comments runs out empty while the only owed comment was already taken, and ends on a
+  comment written during the wait, on a reply, on a settled comment the reviewer reopened, and on a removed one they restored; a
+  plain take still hands over every owed comment.
 - A comment written after the agent caught up is handed over on the next take.
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.

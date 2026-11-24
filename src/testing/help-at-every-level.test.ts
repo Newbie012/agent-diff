@@ -27,7 +27,7 @@ describe("when a command is asked what it does", () => {
     const reply = await driver.app.run(["comment", "answer", "--help"])
 
     // ASSERT
-    expect(take.stdout).toContain("adiff comment take --worktree . --wait 300")
+    expect(take.stdout).toContain("adiff comment take --worktree . --new --wait 6900")
     expect(take.stdout).toContain("--fields")
     expect(reply.stdout).toContain("--id <id>")
     expect(reply.stdout).toContain("(required)")

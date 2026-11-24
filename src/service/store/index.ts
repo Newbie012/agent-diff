@@ -1,4 +1,4 @@
-export { branchKeyOf, Store, storeAt } from "./service.ts"
+export { branchKeyOf, Store, storeAt, type Handing } from "./service.ts"
 export { StoreUnreadable, StoreUnwritable } from "./error.ts"
 export { branchDir, defaultRoot, inboxPath, outboxPath, reportPath, draftsPath, reportsDir, watchPath, settingsPath, slugOf, statePath, layersPath, remarksPath, upgradePath } from "./paths.ts"
 export { emptyBranchState } from "./model.ts"
