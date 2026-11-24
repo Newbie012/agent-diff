@@ -37,7 +37,9 @@ export type ReportedLayer = {
   readonly added: number
   readonly removed: number
   readonly vanished: ReadonlyArray<string>
+  readonly unclaimed: boolean
   readonly read?: ReadonlyArray<string>
+  readonly done?: boolean
 }
 
 export type LayersReport = {
@@ -186,7 +188,7 @@ const toStored = (layers: Layers): StoredLayers => ({
 
 const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): ReadonlyArray<ReportedLayer> => {
   const present = new Set(patches.map((patch) => patch.path))
-  return withFullCoverage(patches, layers).layers.map((layer) => {
+  return withFullCoverage(patches, layers).layers.map((layer, at) => {
     const named = unique(spansOfLayer(layer).map((span) => span.path))
     const gap = coverage(patches, [layer])
     const lines = linesClaimed(patches, layer)
@@ -201,6 +203,7 @@ const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): Readonly
       added: lines.added,
       removed: lines.removed,
       vanished: named.filter((path) => !present.has(path)),
+      unclaimed: at >= layers.layers.length,
     }
   })
 }
@@ -273,7 +276,10 @@ const readInLayer = (layer: ReportedLayer, reading: Reading): ReadonlyArray<stri
 
 const withRead = (report: LayersReport, reading: Reading): LayersReport => ({
   ...report,
-  layers: report.layers.map((layer) => ({ ...layer, read: readInLayer(layer, reading) })),
+  layers: report.layers.map((layer) => {
+    const read = readInLayer(layer, reading)
+    return Object.assign({}, layer, { read, done: layer.files.length > 0 && read.length === layer.files.length })
+  }),
 })
 
 export const show = Effect.fn("Review.Layers.show")(function* (worktree: Worktree) {

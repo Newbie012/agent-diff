@@ -80,6 +80,10 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   diff of every file a layer touches counted a file three layers share in full three times, so a
   layer of 88 lines read as 2,600. A line two layers both claim counts in each, because each of them
   shows it. The `not in any layer` layer counts the lines no layer claims.
+- **The `not in any layer` layer is marked as such.** Every layer `layers set` and `layers show`
+  report carries `unclaimed`, true only for the layer adiff adds for the lines no layer claims. A
+  client that found it by its title would take an agent's layer of the same name for it, and would
+  lose it the day the title is reworded.
 - **Coverage counts changed lines, not overlap.** A span earns a hunk only by holding every line
   that changed in it; unchanged context inside a span counts for nothing, and a span reaching past
   the diff adds nothing. `uncovered` names contiguous runs of changed lines, so it reads as the
@@ -241,6 +245,7 @@ surface in `src/testing/layers.test.ts`, the terminal in `src/testing/layers-rai
 - Each layer reports the added and removed lines inside its own spans, a removed line counted by
   its old line number, and a line two layers claim counted in both.
 - The rail's count line for a layer carries its added and removed line counts.
+- Only the layer adiff adds for unclaimed lines is reported as `unclaimed`.
 
 ## Out of Scope
 

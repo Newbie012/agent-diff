@@ -163,11 +163,23 @@ describe("when a second client settles every answer already read", () => {
   })
 })
 
-type Shown = { readonly layers: { readonly layers: ReadonlyArray<{ readonly title: string; readonly read: ReadonlyArray<string> }> } }
+type ShownLayer = {
+  readonly title: string
+  readonly read: ReadonlyArray<string>
+  readonly done: boolean
+  readonly unclaimed: boolean
+}
+
+type Shown = { readonly layers: { readonly layers: ReadonlyArray<ShownLayer> } }
 
 const readByLayer = async (driver: TestDriver, worktree: string) => {
   const shown = (await driver.app.runLayersShow(worktree)).envelope as Shown
   return Object.fromEntries(shown.layers.layers.map((layer) => [layer.title, layer.read]))
+}
+
+const shownBy = async <A>(driver: TestDriver, worktree: string, pick: (layer: ShownLayer) => A) => {
+  const shown = (await driver.app.runLayersShow(worktree)).envelope as Shown
+  return Object.fromEntries(shown.layers.layers.map((layer) => [layer.title, pick(layer)]))
 }
 
 describe("when a second client reads a branch layer by layer", () => {
@@ -215,6 +227,41 @@ describe("when a second client reads a branch layer by layer", () => {
     const read = await readByLayer(driver, branch.worktree)
     expect(read["The new constant"]).toEqual(["src/api.ts"])
     expect(read["The new sum"]).toEqual([])
+  })
+
+  test("then layers show calls a layer done once every file in that layer is read", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.runLayersSet(branch.worktree, {
+      layers: [
+        { title: "The new constant", spans: [{ path: "src/api.ts", start: 4, end: 4 }] },
+        { title: "The new sum", spans: [{ path: "src/api.ts", start: 5, end: 5 }] },
+      ],
+    })
+
+    // ACT
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", "src/api.ts", "--layer", "1"])
+
+    // ASSERT
+    const done = await shownBy(driver, branch.worktree, (layer) => layer.done)
+    expect(done["The new constant"]).toBe(true)
+    expect(done["The new sum"]).toBe(false)
+  })
+
+  test("then layers show marks only the not-in-any-layer layer as unclaimed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+
+    // ACT
+    await driver.app.runLayersSet(branch.worktree, {
+      layers: [{ title: "The new constant", spans: [{ path: "src/api.ts", start: 4, end: 4 }] }],
+    })
+
+    // ASSERT
+    const unclaimed = await shownBy(driver, branch.worktree, (layer) => layer.unclaimed)
+    expect(unclaimed).toEqual({ "The new constant": false, "not in any layer": true })
   })
 })
 
