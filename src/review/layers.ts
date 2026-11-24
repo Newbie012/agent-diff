@@ -2,6 +2,7 @@ import { Effect, Option } from "effect"
 import {
   codeBlocks,
   coverage,
+  linesClaimed,
   noteOf,
   proseAnchors,
   sharedHunks,
@@ -33,6 +34,8 @@ export type ReportedLayer = {
   readonly prose: ReadonlyArray<ProseAnchor>
   readonly covered: number
   readonly partial: number
+  readonly added: number
+  readonly removed: number
   readonly vanished: ReadonlyArray<string>
   readonly read?: ReadonlyArray<string>
 }
@@ -186,6 +189,7 @@ const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): Readonly
   return withFullCoverage(patches, layers).layers.map((layer) => {
     const named = unique(spansOfLayer(layer).map((span) => span.path))
     const gap = coverage(patches, [layer])
+    const lines = linesClaimed(patches, layer)
     return {
       title: layer.title,
       note: noteOf(layer),
@@ -194,6 +198,8 @@ const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): Readonly
       prose: proseAnchors(layer).filter((anchor) => present.has(anchor.path)),
       covered: gap.covered,
       partial: gap.partial,
+      added: lines.added,
+      removed: lines.removed,
       vanished: named.filter((path) => !present.has(path)),
     }
   })
