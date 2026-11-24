@@ -482,6 +482,10 @@
   dir: ""
   intents:
     - a-comment-follows-its-lines-through-the-diff
+"@eliya-oss/agent-diff@0.1.0-alpha.196":
+  dir: ""
+  intents:
+    - a-wait-that-ends-only-on-a-new-comment
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
