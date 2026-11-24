@@ -306,6 +306,7 @@ export const restore = Effect.fn("Review.Thread.restore")(function* (worktree: W
   yield* store.changeState(worktree.path, (was) => ({
     ...was,
     removed: without(was.removed, id),
+    taken: without(was.taken ?? {}, id),
   }))
   return { restored: id }
 })

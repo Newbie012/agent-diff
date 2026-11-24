@@ -85,6 +85,23 @@ describe("when the agent listens for new comments while one it took is still owe
     expect(bodiesOf(waited)).toEqual(["settled too early"])
   })
 
+  test("then a comment the reviewer removed and restored ends the wait", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create()
+    await driver.app.runComment({ branch: branch.name, ...commentOn(4, "removed too early") })
+    const taken = await driver.app.runTake(branch.worktree)
+    const id = idFor(taken, "removed too early")
+    await driver.app.runRemove({ branch: branch.name, id })
+
+    // ACT
+    await driver.app.runRestore({ branch: branch.name, id })
+    const waited = await driver.app.runTakeNew(branch.worktree, 30)
+
+    // ASSERT
+    expect(bodiesOf(waited)).toEqual(["removed too early"])
+  })
+
   test("then a plain take still hands over every comment owed an answer", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()

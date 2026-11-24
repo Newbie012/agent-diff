@@ -56,7 +56,7 @@ adiff comment take --worktree . --new --wait 6900
 ```
 
 `--new` hands back only comments this review has not handed you before: a new comment, a reply to
-one of your answers, or a comment the reviewer reopened after settling it. Comments you already took
+one of your answers, or a comment the reviewer reopened or restored. Comments you already took
 and are still working on never end the wait, so it wakes you only for something new. It blocks until
 such a comment arrives or the timeout in seconds elapses, then returns the same envelope.
 

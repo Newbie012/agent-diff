@@ -341,7 +341,7 @@ Behaviors that must be covered:
 - A comment written by the reviewer is handed to the agent with its anchor intact.
 - A comment with no answer is handed over again on the next take, and stops once it has one.
 - A wait for new comments runs out empty while the only owed comment was already taken, and ends on a
-  comment written during the wait, on a reply, and on a settled comment the reviewer reopened; a
+  comment written during the wait, on a reply, on a settled comment the reviewer reopened, and on a removed one they restored; a
   plain take still hands over every owed comment.
 - A comment written after the agent caught up is handed over on the next take.
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
