@@ -410,6 +410,26 @@ export class AppTestDriver {
     return this.run(wait === undefined ? args : [...args, "--wait", String(wait)])
   }
 
+  runTakeNew(worktree: string, wait?: number): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a hand-over of new comments taken from the command line")
+    const args = ["comment", "take", "--worktree", worktree, "--new"]
+    return this.run(wait === undefined ? args : [...args, "--wait", String(wait)])
+  }
+
+  runReopen(options: { readonly branch: string; readonly id: string }): Promise<CliResult> {
+    this.state.tracer.cannotReplay("a thread reopened from the command line")
+    return this.run([
+      "comment",
+      "reopen",
+      "--repo",
+      this.state.repo,
+      "--branch",
+      options.branch,
+      "--id",
+      options.id,
+    ])
+  }
+
   runBranches(fields?: ReadonlyArray<string>): Promise<CliResult> {
     return this.run(["branch", "list", "--repo", this.state.repo, ...(fields ?? [])])
   }

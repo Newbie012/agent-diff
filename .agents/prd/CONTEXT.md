@@ -173,6 +173,7 @@ Where review state lives on disk: the [inbox](#inbox), the agent's answers, the
 
 The agent's act of collecting every comment it still owes an answer. A comment comes back on every
 take until it is retired: answered by the agent, or [settled](#settle) or removed by the reviewer.
+A take with `--new` collects only the owed comments no earlier take handed over.
 
 ---
 

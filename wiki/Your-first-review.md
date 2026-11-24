@@ -95,19 +95,21 @@ file you marked reviewed comes back into the file list when the agent changes it
 
 ## Tell the agent
 
-Telling the agent you left a comment works. Better, ask it to keep `adiff comment take --wait 300`
+Telling the agent you left a comment works. Better, ask it to keep `adiff comment take --new --wait 6900`
 running: each comment then reaches it as it lands, instead of on the next time you ask.
 
 ## Read the answer
 
-The agent runs two commands from inside the branch:
+The agent runs these from inside the branch:
 
-    adiff comment take --worktree . --wait 300
+    adiff comment take --worktree .
+    adiff comment take --worktree . --new --wait 6900
     adiff comment answer --worktree . --id <id> --body "what you did about it"
 
-`--wait` blocks for up to that many seconds and returns the moment a comment arrives, which is why the
-skill has the agent run it in the background and arm it again after each comment. A comment comes back
-on every take until it is answered, settled or removed.
+The first take collects every comment still owed an answer. A comment comes back on every plain take
+until it is answered, settled or removed. `--new --wait` then blocks for up to that many seconds and
+returns the moment a comment it has not handed over before arrives, which is why the skill has the agent
+run it in the background and arm it again after each comment.
 [Commands](Commands) covers the third command, `review pane`.
 
 ![A thread under the code it was written on, the comment and then the agent's answer, with the review panel beside it listing every thread on the branch](https://github.com/user-attachments/assets/ddecba63-1f9c-4dc5-a3f5-dec057908b8f)

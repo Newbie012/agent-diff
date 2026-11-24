@@ -29,8 +29,8 @@ revision has it. The code the layer describes is about to change under your hand
 stale the moment you act on the comment: write a new revision with `adiff layers set` before you
 answer, and say in the answer that you did.
 
-A comment keeps coming back until it is answered. A second `take` returns it again, so answer what
-you take. Settling or removing it also retires it: those are the reviewer saying they no longer
+A comment keeps coming back until it is answered. A second plain `take` returns it again, so answer
+what you take. Settling or removing it also retires it: those are the reviewer saying they no longer
 need one.
 
 ## A remark is context, a comment is work
@@ -43,12 +43,35 @@ one. Never act on a remark that has not been accepted, and never accept one your
 
 ## Wait for the next one
 
+Start a session with a plain take, which collects everything still owed an answer:
+
 ```bash
-adiff comment take --worktree . --wait 300
+adiff comment take --worktree .
 ```
 
-Blocks until a comment arrives or the timeout in seconds elapses, then returns the same envelope.
-An empty `comments` array means the wait expired with nothing new — that is not an error.
+Then listen for what comes next:
+
+```bash
+adiff comment take --worktree . --new --wait 6900
+```
+
+`--new` hands back only comments this review has not handed you before: a new comment, a reply to
+one of your answers, or a comment the reviewer reopened after settling it. Comments you already took
+and are still working on never end the wait, so it wakes you only for something new. It blocks until
+such a comment arrives or the timeout in seconds elapses, then returns the same envelope.
+
+An empty `comments` array means only that the wait ran out. It is not an error and not news: run the
+same wait again and say nothing to the user about it.
+
+Run it in the background, never in the foreground. In Claude Code that is the Bash tool with
+`run_in_background` and a `timeout` of 7200000. 6900 seconds keeps the wait under the harness's
+two-hour limit on a background command, so it ends with an empty answer rather than being killed. A
+foreground wait holds the turn, so you cannot do anything else and the person you are working with
+cannot talk to you. Backgrounded, the harness brings you back the moment a comment lands.
+
+Do not run it under a Monitor, do not re-arm a short wait on a timer, and do not schedule wakeups to
+check on it. Each of those wakes you for nothing; the background wait already brings you back when a
+comment arrives.
 
 `--wait` takes a whole number of seconds from 1 to 86400. A value outside that is refused on
 stderr with exit 2, because an instant empty answer would read exactly like a wait that expired:
@@ -58,21 +81,17 @@ Arm the wait as the first thing you do in a turn, before the work. A turn that i
 half-way then still leaves a listener running, and a wait armed at the end of a turn is a wait that
 often never gets armed.
 
-Run the wait in the background, not in the foreground. A foreground wait holds the turn, so you
-cannot do anything else and the person you are working with cannot talk to you. Backgrounded, the
-harness brings you back the moment a comment lands.
+Keep one wait per worktree. Two waits running at once hand the same comment to both, which is two of
+you answering one comment. Before starting one, check whether one is already running.
 
-Keep one wait per worktree. A second wait returns the same comments as the first, so two of them
-running at once is two of you answering the same comment. Before starting one, check whether one is
-already running.
-
-Re-arm it after each comment you handle, and keep it running while you work. A reviewer reads at
-their own pace, so comments arrive minutes apart, and the whole point is that they reach you as
-events rather than by you asking. When you finish a piece of work, say you are still listening.
+Re-arm it as soon as it returns, before you handle what it returned, and keep it running while you
+work. A reviewer reads at their own pace, so comments arrive minutes apart, and the whole point is
+that they reach you as events rather than by you asking. When you finish a piece of work, say you are
+still listening.
 
 A backgrounded wait that is killed rather than expiring is not the reviewer going quiet, and not a
-reason to stop listening. A kill loses whatever the wait would have handed you, so take once
-without `--wait` to collect what landed, then arm a new wait.
+reason to stop listening. A kill loses nothing: taking is what records a comment as handed over, so a
+comment that arrived after the kill is still new to the next `--new` wait. Arm a new one.
 
 ## Answering a comment
 
@@ -149,7 +168,8 @@ answer as many comments as it addresses. When a comment is a question rather tha
 it with `adiff comment answer` too; an answer written into a commit message never reaches the
 reviewer's screen.
 
-Handle every comment in the batch before taking again.
+Handle every comment in the batch. The `--new` wait you re-armed does not hand them back, so a
+comment you skip waits for your next plain take.
 
 ## Failure
 
@@ -168,8 +188,9 @@ about, because the reviewer has not opened it; report that rather than looping.
 ## Handing work over
 
 Finishing is not a reason to publish anything. Say the work is ready, put the review in front of
-them if they asked for one, and say how to read it. That is the whole handover. A reading order is
-extra work you do on request, and it has its own section further down.
+them if they asked for one, and say how to read it. That is the whole handover. A first reading order
+is extra work you do on request, and it has its own section further down. A reading order that
+already exists is different: keep it current before you say the work is ready, without being asked.
 
 ## Put the review in front of them
 
@@ -209,13 +230,15 @@ the branch in a list. `--branch` takes the name `branch list` reports; without i
 on the worktree list.
 
 Say what you want looked at hardest, and where you are unsure. A reviewer who knows which part you
-doubt spends their attention there. Offer a reading order rather than writing one: if the change is
-long enough that the order matters, say you can publish one and let them decide.
+doubt spends their attention there. When the branch has no reading order, offer one rather than
+writing one: if the change is long enough that the order matters, say you can publish one and let
+them decide.
 
 ## Publishing a reading order, when you are asked for one
 
-Only when the reviewer asks. A reading order is a real piece of work, it can be wrong, and one
-nobody wanted spends their attention on your summary rather than on the code.
+Write a first reading order only when the reviewer asks. A reading order is a real piece of work, it
+can be wrong, and one nobody wanted spends their attention on your summary rather than on the code.
+Once one exists, keeping it current is not a new ask: see the next section.
 
 The ask often arrives as a comment. Pressing `L` in the review sends you one of these:
 
@@ -319,12 +342,30 @@ each claim their own run. Done means `uncovered` is empty **and** `shared` is ze
 
 Setting layers again supersedes the previous set and bumps `version`; the set records the commit it
 was written for, and adiff reports it as `stale` once the branch moves past that commit. Once a
-reviewer has a reading order, keep it true: write it again after you address their comments.
+reviewer has a reading order, keep it true, as the next section says.
 
 When you have published one, tell them the sidebar now holds it: `s` swaps between the layers and
 the files, each layer shows the files it covers with the ones already reviewed ticked off, and `]`
 and `[` walk those files in the order you put them in — from the last file of one layer into the
 first of the next.
+
+## Keep an existing reading order current, unasked
+
+Once a branch has layers, check them after each change you make (a commit, an answered comment, a
+rebase) and before you say the work is ready:
+
+```bash
+adiff layers show --worktree . --fields stale,uncovered,shared,vanished
+```
+
+If `uncovered` is not empty, `stale` is true or `vanished` names a path, write a new revision with
+`adiff layers set` right away. Put new runs into the layer whose claim they serve, and add a final
+layer only for lines that serve none. When the base moved, read the diff again rather than patching
+line numbers. Done means `uncovered` is empty and `shared` is zero.
+
+Do it silently: it is upkeep, not news, so do not ask first and do not report it unless the reviewer
+asks. `NoLayers` (exit 3) means the branch has no reading order, and then you write one only when
+asked.
 
 ## Helping draft a review of somebody else's pull request
 

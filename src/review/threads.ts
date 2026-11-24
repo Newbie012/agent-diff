@@ -278,6 +278,7 @@ export const unsettle = Effect.fn("Review.Thread.unsettle")(function* (worktree:
     ...was,
     settled: without(was.settled, id),
     read: without(was.read, id),
+    taken: without(was.taken ?? {}, id),
   }))
   return { unsettled: id }
 })

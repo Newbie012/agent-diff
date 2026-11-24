@@ -83,15 +83,17 @@ withdraw and reinstate one by id.
 
 ## The loop an agent runs
 
-Three commands are the whole loop for the agent working in the branch. The skill installed by
+Four commands are the whole loop for the agent working in the branch. The skill installed by
 `npx skills add Newbie012/agent-diff --skill adiff -g` teaches it these, so an agent that has the skill
 needs nothing from this page. Read on if you are wiring an agent in yourself.
 
-    adiff comment take --worktree . --wait 300
+    adiff comment take --worktree .
+    adiff comment take --worktree . --new --wait 6900
     adiff comment answer --worktree . --id <id> --body "what you did about it"
     adiff review pane --repo <repo> --branch <branch>
 
-`comment take` collects the comments this branch is still owed an answer on:
+`comment take` collects the comments this branch is still owed an answer on. The first take of a session
+collects all of them; after that, the agent listens with `--new`:
 
     {"ok":true,"comments":[{"id":"1c43cb55","file":"src/api/invitations.ts","side":"new",
      "start":12,"end":13,"head":"63c11ce3",
@@ -116,16 +118,23 @@ on that turn as `choices`. Picking one is an ordinary reply.
 driver.ts`. `comment list` reports the latest line as `doing`, with `body` and `at`, until an answer, a
 settle or a remove clears it.
 
-## The take rule, and `--wait`
+## The take rule, `--new` and `--wait`
 
 `--wait` blocks until a comment arrives or that many seconds elapse, and takes a whole number from 1 to
 86400. Anything else is refused on stderr with exit `2`, because an instant empty answer reads exactly
 like a wait that expired. An empty `comments` array means the wait ran out with nothing new, which is
 not a failure.
 
-The skill has the agent run the wait in the background and arm it again after each comment, so a comment
-reaches it as an event rather than when somebody thinks to ask. Two waits on one branch return the same
-comments, which is two agents answering one comment, so keep one.
+`--new` hands over only comments this review has not handed over before. A reply to an answer is a new
+comment, and so is a comment the reviewer settled and then reopened. Without it, a wait ends at once
+while any comment is still owed an answer, so an agent working on one comment would be woken by that
+same comment over and over. With it, the wait ends only on something new.
+
+The skill has the agent run `--new --wait 6900` in the background and arm it again after each comment,
+so a comment reaches it as an event rather than when somebody thinks to ask. 6900 seconds keeps the wait
+under a two-hour limit on background commands, so it ends with an empty answer instead of being killed.
+Two waits on one branch return the same comments, which is two agents answering one comment, so keep
+one.
 
 A comment comes back on every take until it is retired, and three things retire it: the agent answers
 it, the reviewer settles it, or the reviewer removes it. So a take that runs twice hands the same comment

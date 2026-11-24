@@ -173,15 +173,16 @@ const commentReply = Effect.fn("Main.commentReply")(function* (options: Options)
 })
 
 const NOTHING_WAITING =
-  "No comment is waiting. Pass --wait <seconds> to block until one arrives, and answer what you collect with `adiff comment answer --worktree . --id <id> --body '…'`."
+  "No comment is waiting. Pass --new --wait <seconds> to block until a new one arrives, and answer what you collect with `adiff comment answer --worktree . --id <id> --body '…'`."
 
 const commentTake = Effect.fn("Main.commentTake")(function* (options: Options) {
   const worktree = yield* required(options, "worktree")
   const wait = yield* seconds(options, "wait")
+  const handing = options["new"] === undefined ? "owed" : "new"
   const comments =
     wait > 0
-      ? yield* Comment.awaitTaken(worktree, Date.now() + wait * WAIT_UNIT)
-      : yield* Comment.take(worktree)
+      ? yield* Comment.awaitTaken(worktree, Date.now() + wait * WAIT_UNIT, handing)
+      : yield* Comment.take(worktree, handing)
   const hint = comments.length === 0 ? { hint: NOTHING_WAITING } : {}
   yield* answer(options, { comments, branch: yield* Branch.nameAt(worktree), ...hint })
 })

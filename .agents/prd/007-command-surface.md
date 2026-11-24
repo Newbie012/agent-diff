@@ -60,7 +60,7 @@ takes either.
 | --- | --- | --- |
 | `branch list` | `--repo` | `{ok, branches: [...]}` |
 | `comment send` | `<review> --file --start --end --body [--side] [--id] [--at]` | `{ok, batch}` |
-| `comment take` | `<review> [--wait <seconds>]` | `{ok, comments: [...], branch}` |
+| `comment take` | `<review> [--new] [--wait <seconds>]` | `{ok, comments: [...], branch}` |
 | `comment answer` | `<review> --id --body [--question] [--choice …]` | `{ok, answered}` |
 | `comment doing` | `<review> --id --body` | `{ok, doing}` |
 | `comment list` | `<review>` | `{ok, comments: [...]}` |
@@ -141,8 +141,8 @@ takes either.
   question, so bare `adiff` carries the sequence and points at `describe --command <name>` for one
   command's options, which costs a caller a tenth of the whole catalog.
 - **An empty answer carries a hint.** `comment take` on a worktree with nothing waiting is where a
-  confused caller lands, so that answer names the two things it does not yet know: `--wait` blocks
-  until a comment arrives, and `comment answer` sends a reply back. The field appears only when the
+  confused caller lands, so that answer names the two things it does not yet know: `--new --wait` blocks
+  until a new comment arrives, and `comment answer` sends a reply back. The field appears only when the
   array is empty, so a caller with comments pays nothing for it.
 - **`upgrade` upgrades.** It is an imperative, and a person who types it has already decided. So it
   works out how this copy was installed and runs the command that replaces it, for the routes it
