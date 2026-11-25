@@ -84,6 +84,17 @@ export const numeric = Effect.fn("Cli.numeric")(function* (options: Options, nam
     : new BadOption({ option: name, given: raw, allowed: ["a whole number of 1 or more"] })
 })
 
+const SPOT = /^(?<side>new|old):(?<line>[1-9]\d*)$/
+
+export const spot = Effect.fn("Cli.spot")(function* (options: Options, name: string) {
+  const raw = yield* required(options, name)
+  const found = SPOT.exec(raw)?.groups
+  const side = found?.["side"] === "old" ? "old" : "new"
+  return yield* found === undefined
+    ? new BadOption({ option: name, given: raw, allowed: ["new:<line>", "old:<line>"] })
+    : Effect.succeed({ side, line: Number(found["line"]) } as const)
+})
+
 const WHOLE = "all"
 
 export const around = Effect.fn("Cli.around")(function* (options: Options, name: string) {

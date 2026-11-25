@@ -278,11 +278,32 @@ const commands: ReadonlyArray<CommandSpec> = [
   },
   {
     name: "comment send",
-    about: "Send one comment against a line range, straight to the agent",
+    about:
+      "Send one comment against a line range, straight to the agent. Name the range with --start and --end, or with the rows a reader picked, --from and --to",
     group: WRITE_COMMENTS,
     addresses: "review",
     safety: "write",
-    options: [...addressing, ...range],
+    options: [
+      ...addressing,
+      file,
+      { name: "start", required: false, value: "line", about: "First line of the range, with --end" },
+      { name: "end", required: false, value: "line", about: "Last line of the range, with --start" },
+      {
+        name: "from",
+        required: false,
+        value: "new|old:line",
+        about:
+          "The first row picked in the diff, as `new:12` or `old:40`. adiff chooses the side the terminal would: the new one when any picked row has a new line",
+      },
+      { name: "to", required: false, value: "new|old:line", about: "The last row picked, in the form of --from" },
+      { name: "body", required: true, value: "text", about: "What to tell the agent" },
+      {
+        name: "side",
+        required: false,
+        value: "new|old",
+        about: "Which version --start and --end count on. Defaults to new",
+      },
+    ],
     dataKey: "batch",
     example:
       'adiff comment send --repo . --branch add-invitations --file src/api.ts --start 4 --end 5 --body "why"',

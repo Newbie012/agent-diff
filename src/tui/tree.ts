@@ -1,3 +1,5 @@
+import { compareEntries } from "../domain/patch/index.ts"
+
 export type TreeNode = {
   readonly id: number
   readonly name: string
@@ -55,8 +57,7 @@ const compare = (tree: Tree, left: number, right: number): number => {
   const a = tree.nodes[left]
   const b = tree.nodes[right]
   if (a === undefined || b === undefined) return 0
-  if (a.kind !== b.kind) return a.kind === "directory" ? -1 : 1
-  return a.name.localeCompare(b.name)
+  return compareEntries(a, b)
 }
 
 export const buildTree = (paths: ReadonlyArray<string>): Tree => {

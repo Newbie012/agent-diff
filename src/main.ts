@@ -21,6 +21,7 @@ import {
   strangeField,
   nearestCommand,
   numeric,
+  spot,
   oneOf,
   onlyKnown,
   optionsFrom,
@@ -56,7 +57,7 @@ import {
   Vouch,
 } from "./review/index.ts"
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
-import { GitLive } from "./service/git/index.ts"
+import { GitLive, type Worktree } from "./service/git/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
 import { branchDir, branchKeyOf, storeAt, defaultRoot } from "./service/store/index.ts"
 
@@ -110,13 +111,28 @@ const baseClear = Effect.fn("Main.baseClear")(function* (options: Options) {
   yield* answer(options, { base: report })
 })
 
-const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
-  const batch = yield* Comment.submit(yield* worktreeIn(options), {
-    file: yield* required(options, "file"),
+const rangeIn = Effect.fn("Main.rangeIn")(function* (options: Options, worktree: Worktree) {
+  const file = yield* required(options, "file")
+  if (options["from"] !== undefined || options["to"] !== undefined) {
+    return yield* Diff.picked(worktree, {
+      file,
+      from: yield* spot(options, "from"),
+      to: yield* spot(options, options["to"] === undefined ? "from" : "to"),
+    })
+  }
+  return {
+    file,
     start: yield* numeric(options, "start"),
     end: yield* numeric(options, "end"),
-    body: yield* required(options, "body"),
     side: yield* oneOf(options, "side", ["old", "new"] as const, "new"),
+  }
+})
+
+const commentSend = Effect.fn("Main.commentSend")(function* (options: Options) {
+  const worktree = yield* worktreeIn(options)
+  const batch = yield* Comment.submit(worktree, {
+    ...(yield* rangeIn(options, worktree)),
+    body: yield* required(options, "body"),
     id: options["id"] ?? randomUUID(),
     at: stamp(options),
   })
@@ -247,7 +263,8 @@ const remarkRestore = Effect.fn("Main.remarkRestore")(function* (options: Option
 })
 
 const commentList = Effect.fn("Main.commentList")(function* (options: Options) {
-  const comments = yield* Thread.list(yield* readingIn(options))
+  const reading = yield* readingIn(options)
+  const comments = yield* Layers.placeThreads(reading, yield* Thread.list(reading))
   yield* answer(options, { comments })
 })
 
@@ -327,11 +344,17 @@ const vouched = Effect.fn("Main.vouched")(function* (options: Options) {
 
 const fileReview = Effect.fn("Main.fileReview")(function* (options: Options) {
   const report = yield* vouched(options)
-  yield* answer(options, { reviewed: report.vouched, total: report.total })
+  const layers = yield* Layers.view(yield* readingIn(options))
+  yield* answer(options, {
+    reviewed: report.vouched,
+    total: report.total,
+    ...Option.match(layers, { onNone: () => ({}), onSome: (found) => ({ layers: found }) }),
+  })
 })
 
 const reviewStatus = Effect.fn("Main.reviewStatus")(function* (options: Options) {
-  const report = yield* Vouch.progress(yield* readingIn(options))
+  const reading = yield* readingIn(options)
+  const report = yield* Vouch.progress(reading, yield* Layers.spansIn(reading))
   yield* answer(options, {
     reviewed: report.vouched,
     changed: report.changed,
@@ -360,10 +383,11 @@ const layersShow = Effect.fn("Main.layersShow")(function* (options: Options) {
 
 const patchShow = Effect.fn("Main.patchShow")(function* (options: Options) {
   const based = yield* Branch.basedAt(yield* required(options, "worktree"), options["base"])
-  const patch = yield* Diff.show(based, {
+  const shown = yield* Diff.show(based, {
     file: options["file"],
     context: yield* around(options, "context"),
   })
+  const patch = yield* Layers.tagRows(based.worktree, shown)
   yield* answer(options, { patch })
 })
 

@@ -1,5 +1,6 @@
 export { anchorFor, foundAgain, foundExactly, foundInScope, isNear, rowsForRange } from "./anchor.ts"
 export { followed, type Followed } from "./follow.ts"
+export { compareEntries, treeOrder } from "./order.ts"
 export { parsePatches } from "./parse.ts"
 export { enclosedBy, scopeLines, stickyChain } from "./sticky.ts"
 export { lineOn, WHOLE_FILE } from "./model.ts"

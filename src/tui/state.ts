@@ -1,4 +1,5 @@
 import { preferences } from "../domain/preferences/index.ts"
+import { isMovedPast } from "../domain/review/index.ts"
 import type { BranchSummary, Match, ReportedLayer, ReportedRemark } from "../review/index.ts"
 
 export type Focus = "tree" | "diff" | "review"
@@ -343,4 +344,8 @@ export const onLayers = (state: TuiState): boolean =>
 export const selectedLayer = (state: TuiState): ReportedLayer | undefined => state.layers[state.layerIndex]
 
 export const movedPast = (comment: Pick<StagedComment, "outside" | "outdated" | "reworded">): boolean =>
-  comment.outside === true || (comment.outdated === true && comment.reworded !== true)
+  isMovedPast({
+    outside: comment.outside === true,
+    outdated: comment.outdated === true,
+    reworded: comment.reworded === true,
+  })

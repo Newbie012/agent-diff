@@ -1,5 +1,6 @@
 import { Effect, Option } from "effect"
 import { parsePatches, type Patch } from "../domain/patch/index.ts"
+import type { Span } from "../domain/layers/index.ts"
 import { isVouched, sameBlob, vouch, type Vouches } from "../domain/review/index.ts"
 import { Git, NO_CONTENT, type Worktree } from "../service/git/index.ts"
 import { Store, type BranchState } from "../service/store/index.ts"
@@ -21,6 +22,7 @@ export type SinceReview = {
   readonly removed: number
   readonly places: number
   readonly kept: boolean
+  readonly layers: ReadonlyArray<number>
   readonly deleted?: true
 }
 
@@ -175,7 +177,36 @@ const counted = (patch: Option.Option<Patch>) =>
     onSome: (found) => ({ added: found.added, removed: found.removed, places: placesIn(found) }),
   })
 
-const reportSince = Effect.fn("Review.Vouch.reportSince")(function* (worktree: Worktree, asked: Asked) {
+type LayerSpans = ReadonlyArray<ReadonlyArray<Span>>
+
+const nearestNew = (rows: ReadonlyArray<Patch["rows"][number]>, at: number): ReadonlyArray<number> => {
+  const near = [...rows.slice(at + 1), ...rows.slice(0, at).toReversed()].find((row) =>
+    Option.isSome(row.newLine),
+  )
+  return near === undefined ? [] : Option.toArray(near.newLine)
+}
+
+const touchedIn = (rows: ReadonlyArray<Patch["rows"][number]>): ReadonlyArray<number> =>
+  rows.flatMap((row, at) => {
+    if (row.kind === "context") return []
+    return Option.isSome(row.newLine) ? [row.newLine.value] : nearestNew(rows, at)
+  })
+
+const touchedLines = (patch: Patch): ReadonlyArray<number> => patch.hunks.flatMap((hunk) => touchedIn(hunk.rows))
+
+const holdsAny = (own: ReadonlyArray<Span>, path: string, lines: ReadonlyArray<number>): boolean =>
+  own.some((span) => span.path === path && lines.some((line) => line >= span.start && line <= span.end))
+
+const layersTouched = (spans: LayerSpans, path: string, patch: Option.Option<Patch>): ReadonlyArray<number> => {
+  const lines = Option.match(patch, { onNone: (): ReadonlyArray<number> => [], onSome: touchedLines })
+  return spans.flatMap((own, at) => (holdsAny(own, path, lines) ? [at + 1] : []))
+}
+
+const reportSince = Effect.fn("Review.Vouch.reportSince")(function* (
+  worktree: Worktree,
+  asked: Asked,
+  spans: LayerSpans,
+) {
   const git = yield* Git
   const { mark } = asked
   const told = {
@@ -185,9 +216,14 @@ const reportSince = Effect.fn("Review.Vouch.reportSince")(function* (worktree: W
     ...(asked.deleted ? { deleted: true as const } : {}),
   }
   const kept = yield* git.kept(worktree, mark.blob)
-  if (Option.isNone(kept)) return { ...told, added: 0, removed: 0, places: 0, kept: false }
+  if (Option.isNone(kept)) return { ...told, added: 0, removed: 0, places: 0, kept: false, layers: [] }
   const patch = yield* diffSince(worktree, mark.path, kept.value, CONTEXT)
-  return { ...told, ...counted(patch), kept: true } satisfies SinceReview
+  return {
+    ...told,
+    ...counted(patch),
+    kept: true,
+    layers: layersTouched(spans, mark.path, patch),
+  } satisfies SinceReview
 })
 
 const isGone = Effect.fn("Review.Vouch.isGone")(function* (worktree: Worktree, path: string) {
@@ -224,6 +260,7 @@ const sinceReview = Effect.fn("Review.Vouch.sinceReview")(function* (
   reading: BranchReading,
   state: BranchState,
   changed: ReadonlyArray<string>,
+  spans: LayerSpans,
 ) {
   const marks = marksOf(state)
   const gone = yield* goneSince(reading.worktree, marks, reading.patches)
@@ -231,10 +268,13 @@ const sinceReview = Effect.fn("Review.Vouch.sinceReview")(function* (
     ...lapsedIn(reading.patches, marks, changed),
     ...gone.map((mark) => ({ mark, deleted: true })),
   ]
-  return yield* Effect.forEach(asked, (one) => reportSince(reading.worktree, one), { concurrency: 8 })
+  return yield* Effect.forEach(asked, (one) => reportSince(reading.worktree, one, spans), { concurrency: 8 })
 })
 
-export const progress = Effect.fn("Review.Vouch.progress")(function* (reading: BranchReading) {
+export const progress = Effect.fn("Review.Vouch.progress")(function* (
+  reading: BranchReading,
+  spans: LayerSpans = [],
+) {
   const store = yield* Store
   const current = yield* store.state(reading.worktree.path)
   const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
@@ -243,7 +283,7 @@ export const progress = Effect.fn("Review.Vouch.progress")(function* (reading: B
     vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
     parts: readParts(current.parts, files),
     changed,
-    since: yield* sinceReview(reading, current, changed),
+    since: yield* sinceReview(reading, current, changed, spans),
     total: reading.patches.length,
   } satisfies ProgressReport
 })

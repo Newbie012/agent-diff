@@ -1,6 +1,7 @@
 import type { ThreadStand } from "./marks.ts"
 import type { StagedComment, TuiState } from "./state.ts"
 import { movedPast } from "./state.ts"
+import { louderOf, sectionOf as sectionFor, STAND_WEIGHT, standOf } from "../domain/review/index.ts"
 import type { ReportedRemark } from "../review/index.ts"
 
 export type PanelSection =
@@ -60,20 +61,11 @@ const newerOf = (state: TuiState, comment: StagedComment): StagedComment => {
 export const lastVoice = (comment: StagedComment): "reviewer" | "agent" | undefined =>
   comment.turns?.at(-1)?.voice
 
-const SECTION_OF: Readonly<Record<ThreadStand, PanelSection>> = {
-  filed: "filed",
-  gone: "removed",
-  settled: "settled",
-  asked: "asked",
-  answered: "answered",
-  waiting: "with",
-}
-
 export const outsideOpen = (comment: StagedComment): boolean =>
   movedPast(comment) && comment.settled !== true && comment.removed !== true
 
 const sectionOf = (comment: StagedComment): PanelSection =>
-  outsideOpen(comment) ? "movedOn" : SECTION_OF[threadStand(comment)]
+  sectionFor(threadStand(comment), movedPast(comment))
 
 const sentEntry = (state: TuiState, comment: StagedComment): PanelEntry => {
   const newer = newerOf(state, comment)
@@ -157,22 +149,13 @@ export const agoText = (at: string, now = Date.now()): string => {
   return `${Math.floor(gap / DAY)}d ago`
 }
 
-export const threadStand = (thread: StagedComment): ThreadStand => {
-  if (thread.removed === true) return "gone"
-  if (thread.settled === true) return "settled"
-  if (thread.asks === true) return "asked"
-  if (lastVoice(thread) === "agent" && answersIn(thread) > 0) return "answered"
-  return thread.takenAt === undefined ? "filed" : "waiting"
-}
+export const threadStand = (thread: StagedComment): ThreadStand =>
+  standOf({
+    removed: thread.removed === true,
+    settled: thread.settled === true,
+    asks: thread.asks === true,
+    answeredLast: lastVoice(thread) === "agent" && answersIn(thread) > 0,
+    taken: thread.takenAt !== undefined,
+  })
 
-export const STAND_WEIGHT: Readonly<Record<ThreadStand, number>> = {
-  gone: 0,
-  settled: 1,
-  filed: 2,
-  waiting: 2,
-  answered: 3,
-  asked: 4,
-}
-
-export const louderOf = (one: ThreadStand, other: ThreadStand): ThreadStand =>
-  STAND_WEIGHT[one] > STAND_WEIGHT[other] ? one : other
+export { louderOf, STAND_WEIGHT }
