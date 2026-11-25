@@ -516,6 +516,11 @@
     - a-moved-past-comment-marks-no-file
     - a-second-ask-for-a-reading-order-joins-the-first
     - comment-list-counts-questions-and-answers-to-read
+"@eliya-oss/agent-diff@0.1.0-alpha.202":
+  dir: ""
+  intents:
+    - a-short-run-another-layer-claims
+    - homebrew-on-apple-silicon-only
 "@eliya-oss/agent-diff@0.1.0-alpha.21":
   dir: ""
   intents:
