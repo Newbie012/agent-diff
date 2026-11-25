@@ -395,7 +395,9 @@ const landingOn = (state: TuiState, patchIndex: number): number => {
   const hidden = gapRowSet(drawn)
   const shows = (row: Row): boolean => !hidden.has(row.index) && carriesLine(row)
   const changed = onLayers(held)
-    ? drawn.patch.rows.findIndex((row) => shows(row) && row.kind !== "context")
+    ? drawn.patch.rows.findIndex(
+        (row) => shows(row) && row.kind !== "context" && !drawn.quiet.has(row.index),
+      )
     : -1
   if (changed !== -1) return changed
   const at = drawn.patch.rows.findIndex(shows)

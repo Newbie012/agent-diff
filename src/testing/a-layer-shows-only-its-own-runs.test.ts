@@ -1,4 +1,5 @@
 import { describe, expect, test } from "@effect/vitest"
+import { syntaxTheme } from "../tui/index.ts"
 import { TestDriver } from "./index.ts"
 
 const before = Array.from({ length: 40 }, (_, at) => `const keep${at + 1} = ${at + 1}`)
@@ -154,20 +155,84 @@ const twoInOneHunk = {
   ],
 }
 
+const inOneHunk = async (driver: TestDriver) => {
+  const branch = await driver.branch.create(shoulder)
+  await driver.app.runLayersSet(branch.worktree, twoInOneHunk)
+  await driver.screen.open({ width: 150, height: 30, review: true })
+}
+
 describe("when two layers claim different lines of one hunk", () => {
-  test("then the first layer shows its own line and not the line the second claims", async () => {
+  test("then the first layer shows the line the second claims in its place below its own", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
-    const branch = await driver.branch.create(shoulder)
-    await driver.app.runLayersSet(branch.worktree, twoInOneHunk)
+
+    // ACT
+    await inOneHunk(driver)
+
+    // ASSERT
+    const frame = await driver.screen.getFrame()
+    expect(frame.indexOf("const mine = 'mine'")).toBeGreaterThan(-1)
+    expect(frame.indexOf("const yours = 'yours'")).toBeGreaterThan(frame.indexOf("const mine = 'mine'"))
+    expect(frame).not.toContain("layer 2 explains them")
+  })
+
+  test("then the line the second layer claims is drawn without the colours of code", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    await inOneHunk(driver)
+
+    // ASSERT
+    const strings = (await driver.screen.findForeground(syntaxTheme.string.fg)).join("\n")
+    expect(await driver.screen.getFrame()).toContain("const yours = 'yours'")
+    expect(strings).toContain("const mine = 'mine'")
+    expect(strings).not.toContain("const yours = 'yours'")
+  })
+})
+
+const LONG_BEFORE = Array.from({ length: 30 }, (_, at) => `const kept${at + 1} = ${at + 1}`)
+
+const LONG_RUN = Array.from({ length: 8 }, (_, at) => `const theirs${at + 1} = 'theirs'`)
+
+const LONG_AFTER = [...LONG_BEFORE.slice(0, 5), "const ours = 'ours'", ...LONG_RUN, ...LONG_BEFORE.slice(5)]
+
+const longRunLayers = {
+  summary: "One line, then eight another layer explains",
+  layers: [
+    {
+      title: "Our line",
+      blocks: [
+        { kind: "prose" as const, markdown: "This layer claims one line." },
+        { kind: "code" as const, path: "src/long.ts", start: 6, end: 6 },
+      ],
+    },
+    {
+      title: "Their eight lines",
+      blocks: [
+        { kind: "prose" as const, markdown: "This layer claims the eight lines below it." },
+        { kind: "code" as const, path: "src/long.ts", start: 7, end: 14 },
+      ],
+    },
+  ],
+}
+
+describe("when another layer claims eight lines in a row inside the hunk a layer shows", () => {
+  test("then the eight lines fold to one line naming the layer that explains them", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({
+      files: [{ path: "src/long.ts", before: LONG_BEFORE, after: LONG_AFTER }],
+    })
+    await driver.app.runLayersSet(branch.worktree, longRunLayers)
 
     // ACT
     await driver.screen.open({ width: 150, height: 30, review: true })
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("const mine = 'mine'")
-    expect(frame).not.toContain("const yours = 'yours'")
-    expect(frame).toContain("layer 2 explains them")
+    expect(frame).toContain("const ours = 'ours'")
+    expect(frame).toContain("8 changed lines · layer 2 explains them")
+    expect(frame).not.toContain("const theirs1 = 'theirs'")
   })
 })

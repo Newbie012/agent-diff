@@ -203,6 +203,12 @@ An agent-authored reading order over the same diff — a beginning, a middle, an
 alphabetical file order. Optional, versioned, and pinned to a commit, so a reader can tell when the
 layers describes code that has since changed.
 
+### Quiet line
+
+A changed [row](#row) inside a [hunk](#hunk) the open layer shows, which another layer claims. It
+stays in place, in faint ink with no wash, so the hunk still reads as code. A run of 8 or more such
+rows folds to one line instead — see [PRD 006](006-narrative-review.md).
+
 ### Coverage
 
 How much of a [branch](#branch)'s rows a [layers](#layers) accounts for. A layers that skips half the

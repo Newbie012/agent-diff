@@ -53,7 +53,7 @@ export type Note = {
 type Placed = { readonly text: string; readonly row: number; readonly stop: number }
 
 type PaneLine = Data.TaggedEnum<{
-  Code: Placed
+  Code: Placed & { readonly quiet: boolean }
   Gap: Placed
   Comment: Placed & { readonly sent: boolean }
   Label: Placed
@@ -318,19 +318,16 @@ export class DiffView {
     patch: Patch,
     notes: ReadonlyArray<Note>,
     gaps: ReadonlySet<number>,
-    under: { readonly prose: ReadonlyArray<Prose>; readonly draft: Draft | undefined } = {
-      prose: [],
-      draft: undefined,
-    },
+    under: Under = { prose: [], draft: undefined, quiet: new Set() },
   ): void {
-    const { prose, draft } = under
+    const { prose, draft, quiet } = under
     const room = notes.length === 0 && prose.length === 0 ? NOTE_MIN : this.noteRoom()
     const key = keyOf(room, notes, prose, draft)
     if (patch === this.shown && key === this.noted) return
     this.unpin()
     this.shown = patch
     this.noted = key
-    this.display = layout({ patch, notes, room, gaps, prose, fresh: freshLines(patch), draft })
+    this.display = layout({ patch, notes, room, gaps, quiet, prose, fresh: freshLines(patch), draft })
     const at = this.display.findIndex(isDraft)
     this.draftLine = at === -1 ? undefined : at
     this.starts = startsOf(this.display)
@@ -650,7 +647,7 @@ const keyOf = (
   ].join("\u0000")
 
 const groupOf = $match({
-  Code: () => undefined,
+  Code: (line) => (line.quiet ? "gap" : undefined),
   Gap: () => "gap",
   Comment: (line) => (line.sent ? "note.sent" : "note"),
   Label: () => "note.label",
@@ -880,6 +877,12 @@ const proseRows = (entry: Prose, row: number, room: number): ReadonlyArray<PaneL
     ProseLine({ text: line.length === 0 ? marks().rule : `${marks().rule} ${line}`, row, stop: 0 }),
   )
 
+export type Under = {
+  readonly prose: ReadonlyArray<Prose>
+  readonly draft: Draft | undefined
+  readonly quiet: ReadonlySet<number>
+}
+
 export type Draft = {
   readonly row: number
   readonly rows: number
@@ -892,6 +895,7 @@ type Plan = {
   readonly notes: ReadonlyArray<Note>
   readonly room: number
   readonly gaps: ReadonlySet<number>
+  readonly quiet: ReadonlySet<number>
   readonly prose: ReadonlyArray<Prose>
   readonly fresh: ReadonlySet<number>
   readonly draft: Draft | undefined
@@ -937,7 +941,7 @@ const shownText = (row: Row): string => {
 
 const codeRow = (plan: Plan, row: Row): PaneLine => {
   const placed = { text: shownText(row), row: row.index, stop: 0 }
-  return plan.gaps.has(row.index) ? Gap(placed) : Code(placed)
+  return plan.gaps.has(row.index) ? Gap(placed) : Code({ ...placed, quiet: plan.quiet.has(row.index) })
 }
 
 type Around = { readonly lead: ReadonlyArray<Prose>; readonly own: boolean }
@@ -1003,7 +1007,8 @@ const signFor = (entry: PaneLine, rows: ReadonlyMap<number, Row>): Sign => {
   if (isNote(entry)) return BARE_SIGN
   const row = rows.get(entry.row)
   const sign = row === undefined ? undefined : SIGNS[row.kind]
-  return sign === undefined ? BARE_SIGN : { after: sign.text, afterColor: sign.color }
+  if (sign === undefined) return BARE_SIGN
+  return { after: sign.text, afterColor: isCode(entry) && entry.quiet ? palette.faint : sign.color }
 }
 
 const lineSigns = (patch: Patch, display: ReadonlyArray<PaneLine>): Map<number, Sign> => {

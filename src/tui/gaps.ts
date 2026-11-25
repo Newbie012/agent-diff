@@ -5,6 +5,8 @@ import type { TuiState } from "./state.ts"
 
 export const GAP_CHUNK = 10
 
+const FOLDS_FROM = 8
+
 export type Gap = {
   readonly index: number
   readonly hidden: number
@@ -14,6 +16,7 @@ export type Gap = {
 export type Shown = {
   readonly patch: Patch
   readonly gaps: ReadonlyArray<Gap>
+  readonly quiet: ReadonlySet<number>
 }
 
 export type Reveal = {
@@ -42,6 +45,7 @@ type Made = {
   readonly rows: Array<Row>
   readonly hunks: Array<Hunk>
   readonly gaps: Array<Gap>
+  readonly quiet: Set<number>
 }
 
 const sourceLength = (source: ReadonlyArray<string>): number =>
@@ -131,10 +135,19 @@ const markElsewhere = (made: Made, lines: number, said: string): void => {
   })
 }
 
-type Run = { readonly lines: number; readonly said: string }
+type Run = { readonly rows: ReadonlyArray<Row>; readonly said: string }
+
+const keepQuiet = (made: Made, rows: ReadonlyArray<Row>): void => {
+  for (const row of rows) {
+    made.quiet.add(made.rows.length)
+    push(made, row)
+  }
+}
 
 const flushed = (made: Made, run: Run | undefined): undefined => {
-  if (run !== undefined) markElsewhere(made, run.lines, run.said)
+  if (run === undefined) return undefined
+  if (run.rows.length < FOLDS_FROM) keepQuiet(made, run.rows)
+  else markElsewhere(made, run.rows.length, run.said)
   return undefined
 }
 
@@ -146,7 +159,7 @@ const someRows = (made: Made, hunk: Hunk, claim: Claim): void => {
       push(made, row)
       continue
     }
-    run = { lines: (run?.lines ?? 0) + 1, said: run?.said ?? claim.said(row) }
+    run = { rows: [...(run?.rows ?? []), row], said: run?.said ?? claim.said(row) }
   }
   flushed(made, run)
 }
@@ -158,7 +171,7 @@ const firstChanged = (hunk: Hunk): Row | undefined =>
   hunk.rows.find((row) => row.kind !== "context")
 
 const makeRows = (build: Build): Made => {
-  const made: Made = { rows: [], hunks: [], gaps: [] }
+  const made: Made = { rows: [], hunks: [], gaps: [], quiet: new Set() }
   for (const [index, hunk] of build.base.hunks.entries()) {
     const left = openAbove(made, build, index)
     const claim = build.claim
@@ -183,7 +196,11 @@ const makeRows = (build: Build): Made => {
 
 const compose = (build: Build): Shown => {
   const made = makeRows(build)
-  return { patch: { ...build.base, rows: made.rows, hunks: made.hunks }, gaps: made.gaps }
+  return {
+    patch: { ...build.base, rows: made.rows, hunks: made.hunks },
+    gaps: made.gaps,
+    quiet: made.quiet,
+  }
 }
 
 const cache = new WeakMap<Patch, Map<string, Shown>>()

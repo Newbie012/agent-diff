@@ -828,6 +828,7 @@ export class Screen {
     this.view.show(patch, notesFor(state, patch.path), gapRowSet(shown), {
       prose: proseFor(state, patch.path),
       draft,
+      quiet: shown.quiet,
     })
     this.view.pick(state.picked)
     if (!takesText(state.screen)) {
@@ -1077,6 +1078,7 @@ export class Screen {
     const shown = shownOf(state)
     const rows = shown?.patch.rows ?? []
     const gaps = shown === undefined ? new Set<number>() : gapRowSet(shown)
+    const quiet = shown?.quiet ?? new Set<number>()
     return (row) => {
       const kind = rows[row]?.kind
       if (kind === undefined) return undefined
@@ -1084,6 +1086,7 @@ export class Screen {
         cursor: row === state.cursor,
         selected: selecting && row >= from && row <= to,
         gap: gaps.has(row),
+        quiet: quiet.has(row),
       })
     }
   }
