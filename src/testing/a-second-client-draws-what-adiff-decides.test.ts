@@ -120,16 +120,19 @@ describe("when a file holds one answered comment and one the agent has not picke
 })
 
 describe("when a second client lists a request for a reading order", () => {
-  test("then comment list says the request is about the whole branch", async () => {
+  test("then comment list says the request is about the whole branch and in no layer", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, { summary: "The whole file", layers: [{ title: "All of it", spans: [{ path: TALL, start: 1, end: 99 }] }] })
 
     // ACT
     await driver.app.run(["layers", "ask", "--worktree", branch.worktree])
 
     // ASSERT
-    expect((await commentsOf(driver, branch.worktree)).map((comment) => comment.about)).toEqual(["branch"])
+    const [asked] = await commentsOf(driver, branch.worktree)
+    expect(asked).toMatchObject({ about: "branch", layers: [] })
+    expect((await layersOf(driver, branch.worktree))[0]).toMatchObject({ open: 0 })
   })
 })
 

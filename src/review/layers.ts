@@ -320,7 +320,7 @@ const withRead = (report: LayersReport, reading: Reading): LayersReport => ({
   }),
 })
 
-type Placing = Pick<Thread, "file" | "side" | "start" | "end">
+type Placing = Pick<Thread, "file" | "side" | "start" | "end" | "about">
 
 const coversThread = (layer: ReportedLayer, thread: Placing): boolean =>
   thread.side === "new" &&
@@ -332,6 +332,7 @@ const lastHolding = (layers: ReadonlyArray<ReportedLayer>, file: string, at: num
   layers.every((other, index) => index === at || !claims(other, file) || readsFile(other, file))
 
 export const layersHolding = (layers: ReadonlyArray<ReportedLayer>, thread: Placing): ReadonlyArray<number> => {
+  if (thread.about === "branch") return []
   const covering = layers.flatMap((layer, at) => (coversThread(layer, thread) ? [at + 1] : []))
   if (covering.length > 0) return covering
   return layers.flatMap((layer, at) =>

@@ -412,6 +412,6 @@ const fileThreads = (path: string, threads: ReadonlyArray<Thread>): FileThreads 
 }
 
 export const byFile = (threads: ReadonlyArray<Thread>): ReadonlyArray<FileThreads> => {
-  const open = threads.filter((thread) => isOpen(thread.stand) && thread.about === "line" && !thread.movedPast)
+  const open = threads.filter((thread) => isOpen(thread.stand) && thread.about === "line")
   return [...new Set(open.map((thread) => thread.file))].map((path) => fileThreads(path, open))
 }

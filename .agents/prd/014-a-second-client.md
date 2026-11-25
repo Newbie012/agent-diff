@@ -157,10 +157,11 @@ already read.
   it has answers and all of them are read, which is what `comment resolve --read` settles.
 - **`comment list` answers `files` beside `comments`**: each file with open comments drawn on its
   lines, with how many are `open` and the loudest `stand` among them, the mark the terminal's file
-  tree shows. A request about the branch and a comment moved past mark no file.
+  tree shows, a comment moved past included. A request about the branch marks no file.
 - **Each comment `comment list` reports carries `layers`**, the layers it is read in, counting from
   1: those whose spans hold its lines, or, when none does, the last layer holding its file that is
-  not yet read there. A branch with no layers gives every comment an empty list.
+  not yet read there. A request about the branch is in no layer, and a branch with no layers gives
+  every comment an empty list.
 - **Each layer `layers show` reports carries `open` and `stand`**, its open comments and the loudest
   of their marks, and **`parts`**, one per file it names: `path`, the `added` and `removed` lines of
   that file inside the layer's spans, whether the part is `read`, and its own `open` and `stand`. A
