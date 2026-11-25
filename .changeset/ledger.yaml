@@ -486,6 +486,10 @@
   dir: ""
   intents:
     - a-wait-that-ends-only-on-a-new-comment
+"@eliya-oss/agent-diff@0.1.0-alpha.197":
+  dir: ""
+  intents:
+    - a-layer-counts-its-own-lines
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:

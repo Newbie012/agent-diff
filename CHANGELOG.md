@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-alpha.197
+
+### Added
+
+- **Layers** — `layers show` and `layers set` give every layer `added` and `removed`, the changed lines inside its own spans.
+
+- **Layers rail** — a folded layer's count line carries the lines it adds and removes, next to how many of its files are read.
+
+- **Layers** — `layers show` says which layer is `done` and which one is the `unclaimed` layer of lines no layer claims.
+
 ## 0.1.0-alpha.196
 
 ### Added
