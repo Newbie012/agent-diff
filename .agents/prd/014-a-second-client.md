@@ -74,7 +74,7 @@ already read.
 - The terminal redrawing reviewed marks that another process set.
 - The fields that carry the terminal's decisions to a client: a comment's `stand`, `section`,
   `movedPast`, `about`, `settleable` and `layers`; `comment list`'s `files` and `lines`; a layer's
-  `parts`, `open` and `stand`; `patch show`'s `order` and row `layers`; `since[].layers`; the layers
+  `parts`, `open` and `stand`; `patch show`'s `order`, row `layers` and row `quietIn`; `since[].layers`; the layers
   `file review` answers with; and `comment send --from --to`.
 
 ### Does not own
@@ -191,6 +191,12 @@ already read.
   them: folders before files, each level by name. Each row a layer's spans hold carries `layers`,
   the layers holding it, counting from 1, so a client shows a layer's part of a file and names the
   layer that explains the rest without reading spans itself.
+- **Each changed row `patch show` answers carries `quietIn`, the layers that keep it in place.** It
+  lists every layer that, when open, draws the row as a [quiet line](CONTEXT.md#quiet-line) rather
+  than folding it ([PRD 006](006-narrative-review.md)), counting from 1, and is left out when there
+  are none. A client folds a changed row the open layer does not claim unless `quietIn` names that
+  layer, so the page and the terminal fold the same runs. adiff decides it on the hunks the terminal
+  draws, whatever `--context` asked for.
 - **Each file `review progress` lists under `since` carries `layers`**, the layers whose lines
   changed since the reviewer marked it, so a client marks only those layers changed.
 - **A file marked reviewed whole stays read in every layer whose lines did not change since.** Its

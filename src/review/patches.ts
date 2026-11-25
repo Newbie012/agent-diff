@@ -97,6 +97,7 @@ export type ShownRow = {
   readonly old?: number
   readonly new?: number
   readonly layers?: ReadonlyArray<number>
+  readonly quietIn?: ReadonlyArray<number>
 }
 
 export type ShownHunk = {

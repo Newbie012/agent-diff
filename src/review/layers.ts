@@ -5,6 +5,8 @@ import {
   linesClaimed,
   noteOf,
   proseAnchors,
+  quietKey,
+  quietLayers,
   sharedHunks,
   statusOf,
   withFullCoverage,
@@ -460,10 +462,34 @@ export const tagSince = Effect.fn("Review.Layers.tagSince")(function* (worktree:
   return spans.length === 0 ? shown : taggedFile(spans, shown, true)
 })
 
+const quietRow = (quiet: ReadonlyMap<string, ReadonlyArray<number>>, row: ShownRow): ShownRow => {
+  const line = row.new ?? row.old
+  const quietIn = line === undefined ? undefined : quiet.get(quietKey(row.kind, line))
+  return quietIn === undefined ? row : { ...row, quietIn }
+}
+
+const quietFile = (
+  spans: ReadonlyArray<ReadonlyArray<Span>>,
+  patches: ReadonlyArray<Patch>,
+  file: ShownFile,
+): ShownFile => {
+  const patch = patches.find((one) => one.path === file.path)
+  if (patch === undefined) return file
+  const quiet = quietLayers(patch, spans)
+  if (quiet.size === 0) return file
+  return Object.assign({}, file, {
+    hunks: file.hunks.map((hunk) => Object.assign({}, hunk, { rows: hunk.rows.map((row) => quietRow(quiet, row)) })),
+  })
+}
+
 export const tagRows = Effect.fn("Review.Layers.tagRows")(function* (worktree: Worktree, shown: ShownPatch) {
-  const spans = yield* spansIn({ worktree, patches: yield* patchesIn(worktree) })
+  const patches = yield* patchesIn(worktree)
+  const spans = yield* spansIn({ worktree, patches })
   if (spans.length === 0) return shown
-  return { ...shown, files: shown.files.map((file) => taggedFile(spans, file)) } satisfies ShownPatch
+  return {
+    ...shown,
+    files: shown.files.map((file) => quietFile(spans, patches, taggedFile(spans, file))),
+  } satisfies ShownPatch
 })
 
 export const read = Effect.fn("Review.Layers.read")(function* (reading: BranchReading) {

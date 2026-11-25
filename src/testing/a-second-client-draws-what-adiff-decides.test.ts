@@ -427,3 +427,49 @@ describe("when a second client reads a file's change since review on a branch wi
     expect(rows.find((row) => row.kind === "removed")).toMatchObject({ layers: [2] })
   })
 })
+
+const SPLIT_BEFORE = Array.from({ length: 30 }, (_, at) => `const kept${at + 1} = ${at + 1}`)
+
+const SPLIT_AFTER = [
+  ...SPLIT_BEFORE.slice(0, 5),
+  "const ours = 'ours'",
+  "const yours = 'yours'",
+  "const ours2 = 'ours'",
+  ...Array.from({ length: 8 }, (_, at) => `const theirs${at + 1} = 'theirs'`),
+  ...SPLIT_BEFORE.slice(5),
+]
+
+const SPLIT = "src/split.ts"
+
+const splitLayers: LayersInput = {
+  summary: "Two layers inside one hunk",
+  layers: [
+    { title: "Ours", spans: [{ path: SPLIT, start: 6, end: 6 }, { path: SPLIT, start: 8, end: 8 }] },
+    { title: "Theirs", spans: [{ path: SPLIT, start: 7, end: 7 }, { path: SPLIT, start: 9, end: 16 }] },
+  ],
+}
+
+type QuietRow = Row & { readonly quietIn?: ReadonlyArray<number> }
+
+describe("when two layers split one hunk into a short run and a long one", () => {
+  test("then patch show names the layers that keep each changed row in place", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ files: [{ path: SPLIT, before: SPLIT_BEFORE, after: SPLIT_AFTER }] })
+    await driver.app.runLayersSet(branch.worktree, splitLayers)
+
+    // ACT
+    const shown = await driver.app.run(["patch", "show", "--worktree", branch.worktree, "--context", "0"])
+
+    // ASSERT
+    const rows = (shown.envelope as { patch: { files: ReadonlyArray<{ hunks: ReadonlyArray<{ rows: ReadonlyArray<QuietRow> }> }> } })
+      .patch.files[0]?.hunks.flatMap((hunk) => hunk.rows) ?? []
+    const quiet = rows.map((row) => ({ at: row.new, quietIn: row.quietIn ?? [] }))
+    expect(quiet).toEqual([
+      { at: 6, quietIn: [2] },
+      { at: 7, quietIn: [1] },
+      { at: 8, quietIn: [2] },
+      ...Array.from({ length: 8 }, (_, at) => ({ at: 9 + at, quietIn: [] })),
+    ])
+  })
+})
