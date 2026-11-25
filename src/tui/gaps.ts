@@ -1,11 +1,9 @@
 import { Option } from "effect"
-import { REMAINDER_TITLE, type Span as Span2 } from "../domain/layers/index.ts"
+import { REMAINDER_TITLE, quietRows, type Span as Span2 } from "../domain/layers/index.ts"
 import type { Hunk, Patch, Row } from "../domain/patch/index.ts"
 import type { TuiState } from "./state.ts"
 
 export const GAP_CHUNK = 10
-
-const FOLDS_FROM = 8
 
 export type Gap = {
   readonly index: number
@@ -135,31 +133,31 @@ const markElsewhere = (made: Made, lines: number, said: string): void => {
   })
 }
 
-type Run = { readonly rows: ReadonlyArray<Row>; readonly said: string }
-
-const keepQuiet = (made: Made, rows: ReadonlyArray<Row>): void => {
-  for (const row of rows) {
-    made.quiet.add(made.rows.length)
-    push(made, row)
-  }
-}
+type Run = { readonly lines: number; readonly said: string }
 
 const flushed = (made: Made, run: Run | undefined): undefined => {
-  if (run === undefined) return undefined
-  if (run.rows.length < FOLDS_FROM) keepQuiet(made, run.rows)
-  else markElsewhere(made, run.rows.length, run.said)
+  if (run !== undefined) markElsewhere(made, run.lines, run.said)
   return undefined
 }
 
+const stays = (row: Row, claim: Claim, quiet: ReadonlySet<Row>): boolean =>
+  row.kind === "context" || claim.mine(row) || quiet.has(row)
+
+const keep = (made: Made, row: Row, quiet: ReadonlySet<Row>): void => {
+  if (quiet.has(row)) made.quiet.add(made.rows.length)
+  push(made, row)
+}
+
 const someRows = (made: Made, hunk: Hunk, claim: Claim): void => {
+  const quiet = quietRows(hunk, claim.mine)
   let run: Run | undefined
   for (const row of hunk.rows) {
-    if (row.kind === "context" || claim.mine(row)) {
+    if (stays(row, claim, quiet)) {
       run = flushed(made, run)
-      push(made, row)
+      keep(made, row, quiet)
       continue
     }
-    run = { rows: [...(run?.rows ?? []), row], said: run?.said ?? claim.said(row) }
+    run = { lines: (run?.lines ?? 0) + 1, said: run?.said ?? claim.said(row) }
   }
   flushed(made, run)
 }
