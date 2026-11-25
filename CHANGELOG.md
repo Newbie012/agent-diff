@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.203
+
+### Added
+
+- **CLI** — `patch show` tags each changed row with `quietIn`, the layers that keep it in place, quiet, rather than fold it.
+
 ## 0.1.0-alpha.202
 
 ### Breaking

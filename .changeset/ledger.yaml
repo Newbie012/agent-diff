@@ -521,6 +521,10 @@
   intents:
     - a-short-run-another-layer-claims
     - homebrew-on-apple-silicon-only
+"@eliya-oss/agent-diff@0.1.0-alpha.203":
+  dir: ""
+  intents:
+    - patch-show-names-the-quiet-layers
 "@eliya-oss/agent-diff@0.1.0-alpha.21":
   dir: ""
   intents:
