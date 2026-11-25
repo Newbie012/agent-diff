@@ -192,7 +192,10 @@ already read.
 - **`{"id": 8, "watch": ["--repo", "…", "--branch", "…"]}` watches a review.** It is answered once
   with `{"ok": true, "watching": <worktree>}`, then with `{"id": 8, "event": "changed"}` each time a
   comment, an answer, a reviewed mark, the layers or the drafts of that review change, from any
-  process. A burst of changes is one event. `{"id": 8, "unwatch": true}` stops it.
+  process. A burst of changes is one event. The event names `what` changed, so a client re-reads
+  only that: `comments` (a comment or an answer), `state` (a reviewed mark, a read, a settle),
+  `layers`, `watch` (an agent looking for comments, every half second while it waits) and `other`.
+  `{"id": 8, "unwatch": true}` stops it.
 - **`serve` refuses what does not answer in JSON**: `review open`, `review pane`, `resume`,
   `upgrade` and `serve` itself are refused with `NotServed`. A line that is not a request is answered
   with `BadRequest`, and the pipe stays open.

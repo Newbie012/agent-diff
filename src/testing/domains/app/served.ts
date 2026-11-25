@@ -6,6 +6,7 @@ export type Served = {
   readonly exit?: number
   readonly answer?: { readonly ok: boolean } & Record<string, unknown>
   readonly event?: string
+  readonly what?: ReadonlyArray<string>
 }
 
 type Waiter = {

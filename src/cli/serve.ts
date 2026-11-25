@@ -54,12 +54,29 @@ const answering = <E, R>(serving: Serving<E, R>, args: ReadonlyArray<string>) =>
   )
 }
 
-const settled = (folder: string, tell: () => void): FSWatcher => {
+const KIND_OF: Readonly<Record<string, string>> = {
+  "inbox.jsonl": "comments",
+  "outbox.jsonl": "comments",
+  "state.json": "state",
+  "layers.json": "layers",
+  "watch.json": "watch",
+}
+
+const kindOf = (name: string | null): string => (name === null ? "other" : (KIND_OF[name] ?? "other"))
+
+const settled = (folder: string, tell: (what: ReadonlyArray<string>) => void): FSWatcher => {
   mkdirSync(folder, { recursive: true })
   let timer: NodeJS.Timeout | undefined
-  const watcher = watch(folder, () => {
+  const seen = new Set<string>()
+  const told = (): void => {
+    const what = [...seen].toSorted()
+    seen.clear()
+    tell(what)
+  }
+  const watcher = watch(folder, (_event, name) => {
+    seen.add(kindOf(name))
     if (timer !== undefined) clearTimeout(timer)
-    timer = setTimeout(tell, SETTLE_MS)
+    timer = setTimeout(told, SETTLE_MS)
   })
   watcher.on("error", () => undefined)
   return watcher
@@ -73,7 +90,7 @@ const watching = <E, R>(
   serving.folderOf(optionsFrom(request.watch ?? [], valuedIn("comment list"))).pipe(
     Effect.map((folder): Answered => {
       watchers.get(request.id)?.close()
-      watchers.set(request.id, settled(folder, () => write({ id: request.id, event: "changed" })))
+      watchers.set(request.id, settled(folder, (what) => write({ id: request.id, event: "changed", what })))
       return { exit: 0, answer: { ok: true, watching: folder } }
     }),
     Effect.catchCause((cause) => Effect.succeed(refused(Cause.squash(cause)))),
