@@ -157,7 +157,9 @@ already read.
   it has answers and all of them are read, which is what `comment resolve --read` settles.
 - **`comment list` answers `files` beside `comments`**: each file with comments drawn on its lines,
   with how many are `open`, how many are `settled`, and the loudest `stand` among the open ones, the
-  mark the terminal's file tree shows, a comment moved past included. A file whose threads are all
+  mark the terminal's file tree shows. A comment moved past marks no file: the mark promises a thread
+  the reader can find in that file's diff, and no line draws one moved past, so it is read in the
+  review panel and nowhere else. A file whose threads are all
   settled is listed with `open` at 0 and `stand` `settled`, so every entry has the same shape; the
   file tree marks a file only while `open` is above 0. `settled` is what the file's header counts. A
   request about the branch marks no file.
@@ -173,6 +175,8 @@ already read.
 - **Each layer `layers show` reports carries `open` and `stand`**, its open comments and the loudest
   of their marks, and **`parts`**, one per file it names: `path`, the `added` and `removed` lines of
   that file inside the layer's spans, whether the part is `read`, and its own `open` and `stand`. A
+  comment moved past counts in no layer's or part's `open`, for the reason it marks no file; its own
+  `layers` still names where it was read, so a client can open that layer beside it. A
   file three layers share is three parts, each with its own numbers. `layers set` gives `parts`
   with the line counts alone.
 - **`patch show` answers `order`**, every file's path in the order the terminal's file tree lists

@@ -48,7 +48,8 @@ a [remark](#remark).
 
 A [thread](#thread) whose code is no longer in the diff, or was changed rather than only reworded.
 The review panel lists it under "The branch moved past these" and no line draws it, in the terminal and in any second
-client, because adiff answers `movedPast` and both draw from that.
+client, because adiff answers `movedPast` and both draw from that. No file or layer part counts it among its open
+threads, so neither carries a mark for a thread the reader could not find there.
 
 ### Part
 
