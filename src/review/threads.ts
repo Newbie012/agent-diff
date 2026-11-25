@@ -4,7 +4,7 @@ import type { Worktree } from "../service/git/index.ts"
 import { ThreadOpen, UnknownComment } from "./error.ts"
 import type { BranchReading } from "./branches.ts"
 import { placedAll, type Placed } from "./placing.ts"
-import { isMovedPast, sectionOf, standOf, type ThreadSection, type ThreadStand } from "../domain/review/index.ts"
+import { isMovedPast, isOpen, louderOf, sectionOf, standOf, type ThreadSection, type ThreadStand } from "../domain/review/index.ts"
 
 export const ASK_LEAD = "About this branch, not about this line."
 
@@ -403,3 +403,15 @@ export const settleRead = Effect.fn("Review.Thread.settleRead")(function* (
   }))
   return { settled: ripe.length }
 })
+
+export type FileThreads = { readonly path: string; readonly open: number; readonly stand: ThreadStand }
+
+const fileThreads = (path: string, threads: ReadonlyArray<Thread>): FileThreads => {
+  const here = threads.filter((thread) => thread.file === path)
+  return { path, open: here.length, stand: here.reduce<ThreadStand>((stand, one) => louderOf(stand, one.stand), "gone") }
+}
+
+export const byFile = (threads: ReadonlyArray<Thread>): ReadonlyArray<FileThreads> => {
+  const open = threads.filter((thread) => isOpen(thread.stand) && thread.about === "line" && !thread.movedPast)
+  return [...new Set(open.map((thread) => thread.file))].map((path) => fileThreads(path, open))
+}

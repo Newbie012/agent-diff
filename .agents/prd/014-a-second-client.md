@@ -155,6 +155,9 @@ already read.
   `with`, `answered`, `movedOn`, `settled` or `removed`. `about` is `branch` for a request about the
   whole branch, such as the one `layers ask` files, and `line` otherwise. `settleable` is true when
   it has answers and all of them are read, which is what `comment resolve --read` settles.
+- **`comment list` answers `files` beside `comments`**: each file with open comments drawn on its
+  lines, with how many are `open` and the loudest `stand` among them, the mark the terminal's file
+  tree shows. A request about the branch and a comment moved past mark no file.
 - **Each comment `comment list` reports carries `layers`**, the layers it is read in, counting from
   1: those whose spans hold its lines, or, when none does, the last layer holding its file that is
   not yet read there. A branch with no layers gives every comment an empty list.

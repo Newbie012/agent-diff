@@ -2,7 +2,7 @@
 "@eliya-oss/agent-diff": patch
 ---
 
-feat(CLI): `comment list` gives every comment its mark (`stand`), its review panel `section`, `movedPast`, `about` for a request about the whole branch, `settleable`, and the `layers` it is read in.
+feat(CLI): `comment list` gives every comment its mark (`stand`), its review panel `section`, `movedPast`, `about` for a request about the whole branch, `settleable` and the `layers` it is read in, and each file its loudest open mark.
 
 feat(layers): `layers show` gives every layer its open comments and loudest mark, and a `parts` list with each file's own added and removed lines, read mark and open comments in that layer.
 

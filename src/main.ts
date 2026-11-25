@@ -265,7 +265,7 @@ const remarkRestore = Effect.fn("Main.remarkRestore")(function* (options: Option
 const commentList = Effect.fn("Main.commentList")(function* (options: Options) {
   const reading = yield* readingIn(options)
   const comments = yield* Layers.placeThreads(reading, yield* Thread.list(reading))
-  yield* answer(options, { comments })
+  yield* answer(options, { comments, files: Thread.byFile(comments) })
 })
 
 const resolveRead = Effect.fn("Main.resolveRead")(function* (options: Options) {

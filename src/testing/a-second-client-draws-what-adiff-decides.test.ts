@@ -102,6 +102,23 @@ describe("when a second client lists a comment the agent answered", () => {
   })
 })
 
+describe("when a file holds one answered comment and one the agent has not picked up", () => {
+  test("then comment list marks the file with the louder answered mark", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    const answered = await commentOn(driver, branch.worktree, 3, "why this name")
+    await commentOn(driver, branch.worktree, 11, "two at once")
+
+    // ACT
+    await driver.app.run(["comment", "answer", "--worktree", branch.worktree, "--id", answered.id, "--body", "renamed it"])
+
+    // ASSERT
+    const listed = await driver.app.run(["comment", "list", "--worktree", branch.worktree])
+    expect((listed.envelope as { files: unknown }).files).toEqual([{ path: TALL, open: 2, stand: "answered" }])
+  })
+})
+
 describe("when a second client lists a request for a reading order", () => {
   test("then comment list says the request is about the whole branch", async () => {
     // ARRANGE
