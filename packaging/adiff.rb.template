@@ -1,19 +1,13 @@
 class Adiff < Formula
   desc "Review agent work in a git worktree and hand the comments back to the agent"
   homepage "https://github.com/Newbie012/agent-diff"
+  url "__ARM_URL__"
   version "__VERSION__"
+  sha256 "__ARM_SHA__"
   license "MIT"
 
-  on_macos do
-    on_arm do
-      url "__ARM_URL__"
-      sha256 "__ARM_SHA__"
-    end
-    on_intel do
-      url "__INTEL_URL__"
-      sha256 "__INTEL_SHA__"
-    end
-  end
+  depends_on arch: :arm64
+  depends_on :macos
 
   def install
     bin.install Dir["adiff-*"].first => "adiff"

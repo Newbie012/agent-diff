@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 
 const TEMPLATE = fileURLToPath(new URL("../packaging/adiff.rb.template", import.meta.url))
 
-const FIELDS = ["VERSION", "ARM_URL", "ARM_SHA", "INTEL_URL", "INTEL_SHA"] as const
+const FIELDS = ["VERSION", "ARM_URL", "ARM_SHA"] as const
 
 const valueOf = (field: (typeof FIELDS)[number]): string => {
   const found = process.env[field]

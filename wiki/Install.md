@@ -5,7 +5,8 @@ comments. Pick one route below for the tool, then install the skill.
 
     brew install Newbie012/tap/adiff
 
-The formula installs one compiled binary, which draws the terminal itself and needs no Node at all.
+The formula installs one compiled binary for Apple silicon, which draws the terminal itself and needs
+no Node at all. On an Intel Mac, install with npm.
 
 ## npm
 
