@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -57,7 +57,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm vitest run --shard=${{ matrix.shard }}/3
+      - run: pnpm vitest run --shard=${{ matrix.shard }}/8
         env:
           NODE_OPTIONS: --experimental-ffi
 
@@ -176,11 +176,39 @@ jobs:
       - if: steps.plan.outputs.pending == 'true' && steps.plan.outputs.mode != 'finish'
         run: pnpm publish --tag alpha --no-git-checks
 
+      - name: release what is still waiting
+        if: steps.plan.outputs.mode == 'publish' || steps.plan.outputs.mode == 'finish'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch -q origin main
+          if git ls-tree --name-only FETCH_HEAD .changeset/ | grep -q '\.md$'; then
+            gh workflow run release.yml --ref main
+            echo "::notice::Change intents are still waiting on main, so another run of this workflow was started to release them."
+          fi
+
+  registry:
+    needs: release
+    if: needs.release.outputs.pending == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+
       - name: wait for the registry
-        if: steps.plan.outputs.pending == 'true'
         id: tarball
         env:
-          VERSION: ${{ steps.plan.outputs.version || steps.version.outputs.version }}
+          VERSION: ${{ needs.release.outputs.version }}
         run: |
           NAME=$(node -p "require('./package.json').name")
           for _ in $(seq 1 120); do
@@ -196,10 +224,9 @@ jobs:
           exit 1
 
       - name: point latest at the published version
-        if: steps.plan.outputs.pending == 'true'
         env:
           NAME: ${{ steps.tarball.outputs.name }}
-          VERSION: ${{ steps.plan.outputs.version || steps.version.outputs.version }}
+          VERSION: ${{ needs.release.outputs.version }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set +e
@@ -224,10 +251,9 @@ jobs:
             exit 0
           }
 
-          # The publish step a few lines up authenticated somehow. Try the same way first:
-          # whatever credential it used is already on this runner.
-          OUT=$(npm dist-tag add "$NAME@$VERSION" latest 2>&1) && settle "the way the publish was"
-          TRIED="$TRIED the credential the publish used ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
+          # Try whatever credential setup-node left on this runner first.
+          OUT=$(npm dist-tag add "$NAME@$VERSION" latest 2>&1) && settle "with the runner's own credential"
+          TRIED="$TRIED the runner's own credential ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
 
           if [ -n "$NPM_TOKEN" ]; then
             RC=$(mktemp)
@@ -260,18 +286,6 @@ jobs:
           [ "$STATUS" -eq 0 ] && settle "with an OIDC-exchanged token"
           TRIED="$TRIED; the OIDC-exchanged token ($(printf '%s' "$OUT" | head -c 120 | tr '\n' ' '))"
           give_up
-
-
-      - name: release what is still waiting
-        if: steps.plan.outputs.mode == 'publish' || steps.plan.outputs.mode == 'finish'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git fetch -q origin main
-          if git ls-tree --name-only FETCH_HEAD .changeset/ | grep -q '\.md$'; then
-            gh workflow run release.yml --ref main
-            echo "::notice::Change intents are still waiting on main, so another run of this workflow was started to release them."
-          fi
 
   announce:
     needs: release
