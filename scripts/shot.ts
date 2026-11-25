@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { join, relative } from "node:path"
 import { argv, exit, stderr, stdout } from "node:process"
 import { traceNamed } from "./scenario.ts"
 import { narrate } from "./lib/narrate.ts"
@@ -42,7 +42,6 @@ const against = value("against")
 const wanted = value("wait-for") ?? "BRANCH"
 const filming = argv.includes("--video")
 const local = argv.includes("--local")
-const keeping = argv.includes("--keep") || local
 
 const run = (command: string, args: ReadonlyArray<string>): string =>
   execFileSync(command, [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] }).trim()
@@ -284,19 +283,15 @@ const atBase = (commit: string, name: string): string => {
   }
 }
 
-const uploaded = (path: string): string => {
-  const said = run("gh", ["image", "--repo", run("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]), path])
-  const found = /\((?<url>https:\/\/github\.com\/user-attachments\/assets\/[^)]+)\)/.exec(said)
-  if (found?.groups?.["url"] === undefined) {
-    stderr.write(
-      `gh image did not return a user-attachments URL. It said:\n${said}\nRun \`gh image check-token\`, and install it with \`gh extension install drogers0/gh-image\` if it is missing.\n`,
-    )
-    exit(1)
-  }
-  return found.groups["url"]
-}
-
 const here = git("rev-parse", "--show-toplevel")
+
+const attachable = (path: string): string => `./${relative(here, path)}`
+
+const toAttach = (paths: ReadonlyArray<string>): void => {
+  stderr.write(
+    `Upload with gh's own --attach, from ${here}: gh pr edit --body-file <body> ${paths.map((path) => `--attach ${attachable(path)}`).join(" ")}\n`,
+  )
+}
 
 if (filming) {
   const film = filmAt(here, slug)
@@ -304,8 +299,8 @@ if (filming) {
     stdout.write(`\n${film}\n`)
     exit(0)
   }
-  stdout.write(`\n${uploaded(film)}\n`)
-  if (!keeping) rmSync(film, { force: true })
+  stdout.write(`\n![${label}](${attachable(film)})\n`)
+  toAttach([film])
   exit(0)
 }
 
@@ -316,8 +311,8 @@ if (against === undefined) {
     stdout.write(`\n${after}\n`)
     exit(0)
   }
-  stdout.write(`\n![${label}](${uploaded(after)})\n`)
-  if (!keeping) rmSync(after, { force: true })
+  stdout.write(`\n![${label}](${attachable(after)})\n`)
+  toAttach([after])
   exit(0)
 }
 
@@ -327,10 +322,8 @@ if (readFileSync(before).equals(readFileSync(after))) {
   stderr.write(
     `The screen at the merge base is pixel-identical to the one here, so these keys do not reach what this branch changed. Press the keys that get to it, or leave the before and after out.\n`,
   )
-  if (!keeping) {
-    rmSync(before, { force: true })
-    rmSync(after, { force: true })
-  }
+  rmSync(before, { force: true })
+  rmSync(after, { force: true })
   exit(1)
 }
 
@@ -342,18 +335,10 @@ if (local) {
 stdout.write(
   [
     "",
-    "<table>",
-    "<tr><th>Before</th><th>After</th></tr>",
-    "<tr>",
-    `<td><img src="${uploaded(before)}" alt="before"></td>`,
-    `<td><img src="${uploaded(after)}" alt="after"></td>`,
-    "</tr>",
-    "</table>",
+    "| Before | After |",
+    "| --- | --- |",
+    `| ![before](${attachable(before)}) | ![after](${attachable(after)}) |`,
     "",
   ].join("\n"),
 )
-
-if (!keeping) {
-  rmSync(before, { force: true })
-  rmSync(after, { force: true })
-}
+toAttach([before, after])

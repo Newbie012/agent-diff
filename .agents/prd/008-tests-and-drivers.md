@@ -4,7 +4,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-08-23
+- **Last updated:** 2026-11-25
 
 ## Problem Statement
 
@@ -54,8 +54,7 @@ says what happened, the driver knows how.
   Every run appends to `ADIFF_TRACE`, so running the same test twice into one file leaves two
   traces under one name, and `pnpm shot --trace` read the first — it captured the earlier run. It
   now takes the last. A trace carrying `cannotReplay` is refused by name instead of replayed,
-  because a capture is uploaded to GitHub before anyone looks at it, and a still of the wrong
-  screen is believed.
+  because a still of the wrong screen is believed once it is on a pull request.
 
 - **A branch switched in the middle of a test is replayed at the same point.** A test that checks
   out another branch in the directory under review used to mark its trace unreplayable, so the
@@ -64,11 +63,16 @@ says what happened, the driver knows how.
   own invented repository at that moment. A file changed or committed from outside is still beyond
   the replay.
 
-- **`--local` writes a capture and uploads nothing.** Every other route uploads before a human sees
-  the frame, and an attachment cannot be deleted, so the instruction to read a still before pasting
-  it could only be followed by publishing the still first. `--local` keeps the file in `shots/` and
-  prints its path in place of the markdown, so a frame is read at no cost and published on a second
-  run. It keeps the file the way `--keep` does, and the before-and-after pair prints both paths.
+- **A capture uploads nothing; `gh --attach` does.** A capture used to upload through a gh extension
+  that read the GitHub session out of a browser's cookies, which fails wherever the browser's store
+  cannot be read, and it published each frame before anyone had seen it. Now `pnpm shot` and `pnpm
+  record` keep every still and film in `shots/` and print markdown that points at it,
+  `![label](./shots/<slug>.png)`, with the `--attach` flags that upload it. `gh pr create` and `gh pr
+  edit` with `--attach` (gh 2.99 or later) upload each file with gh's own sign-in and rewrite the
+  reference in place: an image stays an image, and a film becomes the bare attachment URL GitHub
+  draws a player around. A before-and-after pair prints as a two-column markdown table, because gh
+  rewrites markdown images and not HTML ones. `--local` prints only the paths, for reading a frame
+  without writing a body.
 
 
 - **A branch has shapes, and the properties are checked against all of them.** Every defect the
