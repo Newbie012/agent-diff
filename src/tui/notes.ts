@@ -105,6 +105,28 @@ export const markedStands = (state: TuiState): ReadonlyMap<number, ThreadStand> 
   return found
 }
 
+const settledShown = (state: TuiState): ReadonlyArray<StagedComment> => {
+  const patch = selectedPatch(state)
+  if (patch === undefined) return []
+  return state.sent.filter(
+    (entry) =>
+      entry.file === patch.path && entry.settled === true && entry.removed !== true && !movedPast(entry),
+  )
+}
+
+export const settledInFile = (state: TuiState): number => settledShown(state).length
+
+export const settledAtRow = (state: TuiState, row: number): ReadonlyArray<string> => {
+  const here = selectedPatch(state)?.rows[row]
+  if (here === undefined) return []
+  return settledShown(state).flatMap((entry) =>
+    entry.id !== undefined && lineOnSide(here, entry.side) === entry.end ? [entry.id] : [],
+  )
+}
+
+export const foldedAtRow = (state: TuiState, row: number): ReadonlyArray<string> =>
+  settledAtRow(state, row).filter((id) => !state.opened.includes(id))
+
 export const snippetOf = (state: TuiState, limit: number): ReadonlyArray<string> =>
   selectedRows(state)
     .slice(0, limit)
@@ -223,6 +245,7 @@ export const threadsAtRow = (state: TuiState, row: number): ReadonlyArray<Staged
       entry.file === patch.path &&
       entry.id !== undefined &&
       entry.removed !== true &&
+      (entry.settled !== true || state.opened.includes(entry.id)) &&
       !movedPast(entry) &&
       lineOnSide(here, entry.side) === entry.end,
   )

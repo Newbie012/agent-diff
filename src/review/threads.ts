@@ -404,14 +404,62 @@ export const settleRead = Effect.fn("Review.Thread.settleRead")(function* (
   return { settled: ripe.length }
 })
 
-export type FileThreads = { readonly path: string; readonly open: number; readonly stand: ThreadStand }
+export type FileThreads = {
+  readonly path: string
+  readonly open: number
+  readonly settled: number
+  readonly stand: ThreadStand
+}
+
+export type LineThreads = {
+  readonly path: string
+  readonly side: string
+  readonly line: number
+  readonly open: number
+  readonly settled: number
+  readonly stand: ThreadStand
+}
+
+const loudestOf = (threads: ReadonlyArray<Thread>): ThreadStand =>
+  threads.reduce<ThreadStand>((stand, one) => louderOf(stand, one.stand), "gone")
+
+const settledOnALine = (thread: Thread): boolean => thread.stand === "settled" && !thread.movedPast
 
 const fileThreads = (path: string, threads: ReadonlyArray<Thread>): FileThreads => {
   const here = threads.filter((thread) => thread.file === path)
-  return { path, open: here.length, stand: here.reduce<ThreadStand>((stand, one) => louderOf(stand, one.stand), "gone") }
+  const open = here.filter((thread) => isOpen(thread.stand))
+  return {
+    path,
+    open: open.length,
+    settled: here.filter(settledOnALine).length,
+    stand: open.length > 0 ? loudestOf(open) : "settled",
+  }
 }
 
 export const byFile = (threads: ReadonlyArray<Thread>): ReadonlyArray<FileThreads> => {
-  const open = threads.filter((thread) => isOpen(thread.stand) && thread.about === "line")
-  return [...new Set(open.map((thread) => thread.file))].map((path) => fileThreads(path, open))
+  const counted = threads.filter(
+    (thread) => thread.about === "line" && (isOpen(thread.stand) || settledOnALine(thread)),
+  )
+  return [...new Set(counted.map((thread) => thread.file))].map((path) => fileThreads(path, counted))
+}
+
+const drawnOnALine = (thread: Thread): boolean =>
+  thread.about === "line" && !thread.movedPast && thread.stand !== "gone"
+
+const lineThreads = (here: ReadonlyArray<Thread>, first: Thread): LineThreads => ({
+  path: first.file,
+  side: first.side,
+  line: first.end,
+  open: here.filter((thread) => isOpen(thread.stand)).length,
+  settled: here.filter((thread) => thread.stand === "settled").length,
+  stand: loudestOf(here),
+})
+
+export const byLine = (threads: ReadonlyArray<Thread>): ReadonlyArray<LineThreads> => {
+  const lines = new Map<string, Array<Thread>>()
+  for (const thread of threads.filter(drawnOnALine)) {
+    const key = [thread.file, thread.side, thread.end].join("\u0000")
+    lines.set(key, [...(lines.get(key) ?? []), thread])
+  }
+  return [...lines.values()].flatMap((here) => (here[0] === undefined ? [] : [lineThreads(here, here[0])]))
 }

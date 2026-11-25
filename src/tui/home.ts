@@ -3,6 +3,7 @@ import { hiddenLines } from "./cursor.ts"
 import { filePlace, reviewedCount } from "./files.ts"
 import { FRAME_PAD, WHOLE_FILE } from "./layout.ts"
 import { marks } from "./marks.ts"
+import { settledInFile } from "./notes.ts"
 import { clipMiddle } from "./notespane.ts"
 import { authorHere, pullHere, selectedPatch, type TuiState } from "./state.ts"
 import { palette } from "./theme.ts"
@@ -172,6 +173,7 @@ export const headerParts = (
   state.patches.length === 0 ? "nothing to read" : placeLabel(state),
   pullLabel(state),
   state.vouched.length === 0 ? "" : reviewedCount(state),
+  settledInFile(state) === 0 ? "" : `${marks().done} ${settledInFile(state)} settled`,
   contextLabel(state.context),
   state.layersStale ? "layers stale · L for a new one" : "",
   hiddenLines(state) === 0 ? "" : `⋯ ${hiddenLines(state)} ${hiddenLines(state) === 1 ? "line" : "lines"} hidden`,

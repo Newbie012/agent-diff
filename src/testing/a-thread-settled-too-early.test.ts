@@ -27,14 +27,14 @@ const settledHere = async (driver: TestDriver): Promise<void> => {
 }
 
 describe("when the reviewer settled a thread too early", () => {
-  test("then pressing the settle key again takes the thread back", async () => {
+  test("then l and the settle key on the opened thread take the thread back", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await settledHere(driver)
     expect(await driver.screen.getFrame()).toContain("settled")
 
     // ACT
-    await driver.screen.pressKeys(["d"])
+    await driver.screen.pressKeys(["l", "j", "d"])
 
     // ASSERT
     const frame = await driver.screen.getFrame()
@@ -48,10 +48,10 @@ describe("when the reviewer settled a thread too early", () => {
     await settledHere(driver)
 
     // ACT
-    const frame = await driver.screen.getFrame()
+    await driver.screen.pressKeys(["l", "j"])
 
     // ASSERT
-    expect(frame).toContain("d unsettle")
+    expect(await driver.screen.getFrame()).toContain("d unsettle")
   })
 
   test("then the agent is owed the comment again", async () => {
@@ -65,7 +65,7 @@ describe("when the reviewer settled a thread too early", () => {
     expect(handedOf((await driver.app.runTake(branch.worktree)).envelope)).toHaveLength(0)
 
     // ACT
-    await driver.screen.pressKeys(["d"])
+    await driver.screen.pressKeys(["l", "j", "d"])
 
     // ASSERT
     const taken = await driver.app.runTake(branch.worktree)
@@ -148,21 +148,21 @@ describe("when the answer on a settled thread was never read", () => {
 })
 
 describe("when the cursor is on the code rather than the thread", () => {
-  test("then the settle key says to stand on the thread", async () => {
+  test("then the settle key says l opens the settled thread first", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
     await driver.screen.open({ width: 150, height: 30, review: true })
     await driver.screen.pressKeys(["j"])
     await driver.screen.writeComment("this reads as a count")
-    await driver.screen.pressKeys(["j", "d", "k"])
+    await driver.screen.pressKeys(["j", "d"])
 
     // ACT
     await driver.screen.pressKeys(["d"])
 
     // ASSERT
     const frame = await driver.screen.getFrame()
-    expect(frame).toContain("stand on the thread to take it back")
+    expect(frame).toContain("l opens the settled thread, then d on it takes it back")
     expect(frame).not.toContain("unsettled")
   })
 })

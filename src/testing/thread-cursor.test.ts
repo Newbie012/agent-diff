@@ -63,7 +63,7 @@ describe("when the cursor stands on a thread", () => {
 })
 
 describe("when a thread is settled", () => {
-  test("then the thread folds to a row saying how to open it", async () => {
+  test("then the settled thread leaves the diff and the footer offers l to open it", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -78,8 +78,8 @@ describe("when a thread is settled", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).not.toContain("a point worth closing")
-    expect(frame).toContain("settled")
-    expect(frame).toContain("press l")
+    expect(frame).toContain("1 settled")
+    expect(frame).toContain("open 1 settled")
   })
 
   test("then l opens the thread again", async () => {
@@ -124,7 +124,7 @@ describe("when a thread is settled", () => {
 })
 
 describe("when the branch is read again with settled threads on it", () => {
-  test("then a settled thread stays folded", async () => {
+  test("then a settled thread stays out of the diff", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
     await driver.branch.create(oneFile)
@@ -140,7 +140,7 @@ describe("when the branch is read again with settled threads on it", () => {
     // ASSERT
     const frame = await driver.screen.getFrame()
     expect(frame).not.toContain("closed a while ago")
-    expect(frame).toContain("press l")
+    expect(frame).toContain("1 settled")
   })
 
   test("then an open point stays in full view", async () => {

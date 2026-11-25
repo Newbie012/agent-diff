@@ -73,9 +73,9 @@ already read.
 - `adiff serve`: one long-lived adiff answering commands and reporting changes to a review.
 - The terminal redrawing reviewed marks that another process set.
 - The fields that carry the terminal's decisions to a client: a comment's `stand`, `section`,
-  `movedPast`, `about`, `settleable` and `layers`; a layer's `parts`, `open` and `stand`; `patch
-  show`'s `order` and row `layers`; `since[].layers`; the layers `file review` answers with; and
-  `comment send --from --to`.
+  `movedPast`, `about`, `settleable` and `layers`; `comment list`'s `files` and `lines`; a layer's
+  `parts`, `open` and `stand`; `patch show`'s `order` and row `layers`; `since[].layers`; the layers
+  `file review` answers with; and `comment send --from --to`.
 
 ### Does not own
 
@@ -155,9 +155,17 @@ already read.
   `with`, `answered`, `movedOn`, `settled` or `removed`. `about` is `branch` for a request about the
   whole branch, such as the one `layers ask` files, and `line` otherwise. `settleable` is true when
   it has answers and all of them are read, which is what `comment resolve --read` settles.
-- **`comment list` answers `files` beside `comments`**: each file with open comments drawn on its
-  lines, with how many are `open` and the loudest `stand` among them, the mark the terminal's file
-  tree shows, a comment moved past included. A request about the branch marks no file.
+- **`comment list` answers `files` beside `comments`**: each file with comments drawn on its lines,
+  with how many are `open`, how many are `settled`, and the loudest `stand` among the open ones, the
+  mark the terminal's file tree shows, a comment moved past included. A file whose threads are all
+  settled is listed with `open` at 0 and `stand` `settled`, so every entry has the same shape; the
+  file tree marks a file only while `open` is above 0. `settled` is what the file's header counts. A
+  request about the branch marks no file.
+- **`comment list` answers `lines` beside `files`**: one entry per line that a thread is drawn on,
+  with `path`, `side`, `line`, how many threads there are `open` and `settled`, and the `stand` the
+  gutter shows, the loudest among all of them, settled counting least. A client draws the gutter
+  from `lines` and never picks between overlapping threads itself. A comment moved past, or removed,
+  is on no line.
 - **Each comment `comment list` reports carries `layers`**, the layers it is read in, counting from
   1: those whose spans hold its lines, or, when none does, the last layer holding its file that is
   not yet read there. A request about the branch is in no layer, and a branch with no layers gives
@@ -236,9 +244,11 @@ and leaves an unread one open; `layers show` names a reviewed file read in its l
 layer `done` once all of its files are read; `file review
 --layer` marks a shared file read in one layer and not the other.
 
-What the terminal decides, at the command boundary: a comment carries its mark, panel section and
-`movedPast`, and a request from `layers ask` is `about` the branch; a comment on a layer's lines names
-that layer; a layer's `parts` count a shared file's lines in each layer apart; `patch show` lists
+What the terminal decides, at the command boundary: a line with an open and two settled threads
+answers the open one's mark with both counts, and a file whose threads are all settled is listed
+with `open` at 0, `stand` `settled` and its settled count; a comment carries its mark, panel section and `movedPast`, and a
+request from `layers ask` is `about` the branch; a comment on a layer's lines names that layer; a
+layer's `parts` count a shared file's lines in each layer apart; `patch show` lists
 files in tree order and tags the rows a layer holds; a file changed since review names the layer
 whose lines changed; `file review` answers with the layer it finished; `comment send --from --to`
 over a removed and an added row files on the new side.

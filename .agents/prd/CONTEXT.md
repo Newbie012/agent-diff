@@ -58,7 +58,8 @@ with its own line counts, comments and read mark.
 ### Stand
 
 The mark a [thread](#thread) carries: ○ filed, ◎ waiting on the agent, ● answered, ◉ asked, ✓
-settled. A file or a layer shows the loudest stand among its open threads.
+settled. A file or a layer shows the loudest stand among its open threads. A line shows the loudest
+among all of its threads, so a line whose threads are all settled shows ✓.
 
 ### Branch
 
@@ -90,9 +91,9 @@ A set of comments submitted together as one hand-over to the agent.
 ### Settle
 
 The reviewer's act of closing a [thread](#thread), because the point was addressed and needs nothing
-more. Settling folds the thread on screen and retires the comment, so the agent stops being handed
-it. Only the reviewer settles: an agent can answer, and can say its answer asks something, but it
-cannot close the point it was answering. Removing a comment retires it the same way, and says the
+more. Settling takes the thread out of the diff, leaving ✓ on its line, and retires the comment, so
+the agent stops being handed it. Only the reviewer settles: an agent can answer, and can say its
+answer asks something, but it cannot close the point it was answering. Removing a comment retires it the same way, and says the
 reviewer should not have made it.
 
 ### Side

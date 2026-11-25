@@ -110,6 +110,7 @@ export type Command = {
   readonly whenPull: boolean
   readonly whenHeld: boolean
   readonly whenTheirs: boolean
+  readonly whenSettledHere: boolean
   readonly panes: ReadonlyArray<Pane>
   readonly rank: number
 }
@@ -138,6 +139,7 @@ export type Offered = {
   readonly onRemark: boolean
   readonly onDismissed: boolean
   readonly rewording: boolean
+  readonly settledHere: number
 }
 
 const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "keys" | "screens">): Command => ({
@@ -157,6 +159,7 @@ const command = (input: Partial<Command> & Pick<Command, "action" | "title" | "k
   whenPull: false,
   whenHeld: false,
   whenTheirs: false,
+  whenSettledHere: false,
   panes: EVERY_PANE,
   rank: 0,
   ...input,
@@ -724,6 +727,8 @@ export const commands: ReadonlyArray<Command> = [
     category: "Files",
     keys: ["l"],
     screens: ["review"],
+    hint: "open settled",
+    whenSettledHere: true,
   }),
   command({
     action: "file.vouch",
@@ -1050,6 +1055,7 @@ const SWAPPED: Readonly<Record<string, (offered: Offered) => string>> = {
   "panel.winnow": (offered) => (offered.hidingSettled ? "show settled" : "hide settled"),
   "thread.remove": (offered) => heldOrRemoved(offered),
   "thread.settle": (offered) => (offered.onSettled ? "unsettle" : "settle"),
+  "tree.expand": (offered) => `open ${offered.settledHere} settled`,
   "held.send": (offered) =>
     offered.theirs ? `send ${offered.held} to the pull request` : `send ${offered.held}`,
   "send.go": (offered) => `send ${offered.held} to the pull request`,
@@ -1081,6 +1087,7 @@ export const hintsFor = (
     .filter((entry) => !entry.whenPull || offered.pull)
     .filter((entry) => !entry.whenHeld || offered.held > 0)
     .filter((entry) => !entry.whenTheirs || offered.theirs)
+    .filter((entry) => !entry.whenSettledHere || offered.settledHere > 0)
     .filter((entry) => entry.panes.includes(offered.pane))
     .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({
