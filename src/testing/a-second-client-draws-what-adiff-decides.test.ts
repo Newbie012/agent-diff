@@ -151,6 +151,41 @@ describe("when the code under a comment is removed from the branch", () => {
   })
 })
 
+describe("when the only open comment on a file is one the branch moved past", () => {
+  test("then comment list marks no file, since no line in the diff draws that comment", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await commentOn(driver, branch.worktree, 3, "why this name")
+
+    // ACT
+    await driver.branch.setFile(branch, TALL, before.slice(0, 2).concat(before.slice(3)))
+
+    // ASSERT
+    const listed = await driver.app.run(["comment", "list", "--worktree", branch.worktree])
+    expect((listed.envelope as { files: unknown }).files).toEqual([])
+  })
+
+  test("then layers show counts no open comment in the part that held its line", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await commentOn(driver, branch.worktree, 11, "two at once")
+
+    // ACT
+    await driver.branch.setFile(branch, TALL, before)
+
+    // ASSERT
+    const [comment] = await commentsOf(driver, branch.worktree)
+    expect(comment).toMatchObject({ movedPast: true, layers: [2] })
+    for (const layer of await layersOf(driver, branch.worktree)) {
+      expect(layer).toMatchObject({ open: 0 })
+      for (const part of layer.parts) expect(part).toMatchObject({ open: 0 })
+    }
+  })
+})
+
 describe("when two layers split one file and a comment sits in the second", () => {
   test("then comment list names the second layer as the comment's layer", async () => {
     // ARRANGE

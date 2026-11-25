@@ -29,6 +29,19 @@ const seed = async (driver: TestDriver): Promise<void> => {
 }
 
 describe("when the branch has moved past the code a comment was written on", () => {
+  test("then the file list shows no open-comment mark beside the file", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+
+    // ACT
+    await seed(driver)
+
+    // ASSERT
+    const listed = (await driver.screen.getFrame()).split("\n").filter((row) => row.includes("total.ts"))
+    expect(listed.length).toBeGreaterThan(0)
+    for (const row of listed) expect(row).not.toMatch(/\d[○◎●◉]/)
+  })
+
   test("then the section counts the comments and not the row that folds them", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
