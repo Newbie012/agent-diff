@@ -36,7 +36,7 @@ export const settleHere = (app: Terminal): Work => {
   if (thread?.settled !== true) return changeSettled(app, id, false)
   if (!cursorOnThread(app.state)) {
     return Effect.sync(() =>
-      app.commit(withNotice(app.state, "stand on the thread to take it back")),
+      app.commit(withNotice(app.state, "l opens the settled thread, then d on it takes it back")),
     )
   }
   return changeSettled(app, id, true)
@@ -53,7 +53,8 @@ export const changeSettled = (app: Terminal, id: string, back: boolean): Work =>
     const opened = app.state.opened.filter((one) => one !== id)
     const held = withSent({ ...app.state, opened }, sent)
     const where = back ? following(held, id, was) : staying(held, was)
-    app.commit(withNotice(where, back ? "unsettled" : "settled"))
+    const landed = !back && where.focus === "diff" ? { ...where, stop: 0 } : where
+    app.commit(withNotice(landed, back ? "unsettled" : "settled"))
   })
 }
 

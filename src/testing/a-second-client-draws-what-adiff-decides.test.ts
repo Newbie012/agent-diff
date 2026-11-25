@@ -115,7 +115,7 @@ describe("when a file holds one answered comment and one the agent has not picke
 
     // ASSERT
     const listed = await driver.app.run(["comment", "list", "--worktree", branch.worktree])
-    expect((listed.envelope as { files: unknown }).files).toEqual([{ path: TALL, open: 2, stand: "answered" }])
+    expect((listed.envelope as { files: unknown }).files).toEqual([{ path: TALL, open: 2, settled: 0, stand: "answered" }])
   })
 })
 

@@ -3,7 +3,7 @@ import { type Command, displayKey, type Offered } from "./command.ts"
 import { ANSWER_MARK, REPLY_MARK } from "./diffview.ts"
 import { reviewedCountIn } from "./files.ts"
 import { marks, type MarkSet } from "./marks.ts"
-import { askedRows, cursorOnThread, threadHere } from "./notes.ts"
+import { askedRows, cursorOnThread, foldedAtRow, threadHere } from "./notes.ts"
 import { standingOnDismissed, standingOnRemark } from "./notespane.ts"
 import { panelEntry, type PanelEntry } from "./panel.ts"
 import { lostCode, panelFile, REMARK_MARK, wherePart } from "./panelpane.ts"
@@ -339,6 +339,7 @@ export const offeredIn = (state: TuiState): Offered => ({
   onHeld: onHeldEntry(state),
   theirs: theirPull(state),
   rewording: state.editing !== undefined,
+  settledHere: state.focus === "diff" && state.stop === 0 ? foldedAtRow(state, state.cursor).length : 0,
 })
 
 const onHeldEntry = (state: TuiState): boolean =>

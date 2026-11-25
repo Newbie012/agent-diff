@@ -33,8 +33,8 @@ import {
   filesWithComments,
   needingRowsIn,
   openCommentRows,
+  settledAtRow,
   stopsAtRow,
-  threadAtStop,
 } from "./notes.ts"
 import { panelEntries, panelEntry } from "./panel.ts"
 import {
@@ -350,9 +350,9 @@ const foldLayer = (state: TuiState, shut: boolean): TuiState => {
   return { ...state, openLayers: shut ? open : [...open, state.layerIndex] }
 }
 
-const foldThread = (state: TuiState, shut: boolean, id: string): TuiState => {
-  const rest = state.opened.filter((held) => held !== id)
-  return { ...state, opened: shut ? rest : [...rest, id] }
+const foldThreads = (state: TuiState, shut: boolean, ids: ReadonlyArray<string>): TuiState => {
+  const rest = state.opened.filter((held) => !ids.includes(held))
+  return shut ? { ...state, opened: rest, stop: 0 } : { ...state, opened: [...rest, ...ids] }
 }
 
 const foldMoved = (state: TuiState, shut: boolean): TuiState =>
@@ -372,13 +372,14 @@ const readingThread = (state: TuiState): TuiState => ({
 const overThread = (state: TuiState): boolean =>
   state.focus === "review" && panelEntry(state) !== undefined
 
+const settledOnLine = (state: TuiState): ReadonlyArray<string> =>
+  state.focus === "diff" ? settledAtRow(state, state.cursor) : []
+
 const fold = (state: TuiState, shut: boolean): TuiState => {
   if (overFold(state)) return foldMoved(state, shut)
   if (!shut && overThread(state)) return readingThread(state)
-  const thread = threadAtStop(state)
-  if (thread?.id !== undefined && thread.settled === true) {
-    return foldThread(state, shut, thread.id)
-  }
+  const settled = settledOnLine(state)
+  if (settled.length > 0) return foldThreads(state, shut, settled)
   return onLayers(state) ? foldLayer(state, shut) : foldDirectory(state, shut)
 }
 

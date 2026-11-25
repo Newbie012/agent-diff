@@ -47,6 +47,7 @@ export type Note = {
   readonly now?: number
   readonly waiting?: "author" | "rewritten" | undefined
   readonly redrafts?: boolean | undefined
+  readonly beside?: number
 }
 
 type Placed = { readonly text: string; readonly row: number; readonly stop: number }
@@ -629,6 +630,7 @@ export const noteKey = (note: Note): string =>
     `${note.side}${note.line}:${note.folded ? "-" : "+"}${note.body}`,
     note.sent ? "sent" : "held",
     note.settled ? "settled" : note.asks ? "asked" : "open",
+    `beside${note.beside ?? 0}`,
     ...(note.turns.length > 0
       ? note.turns.map((turn) => `${turn.voice[0] ?? ""}:${turn.body}`)
       : note.answers.map((body) => `a:${body}`)),
@@ -802,8 +804,11 @@ const openHead = (note: Note): string => {
     : `${marks().waiting} picked up ${agoText(note.takenAt, note.now)}`
 }
 
+const besideOf = (note: Note): string =>
+  note.beside === undefined || note.beside === 0 ? "" : ` · ${note.beside} settled here`
+
 const commentHead = (note: Note): string => {
-  const moved = `${note.outdated === true ? " · outdated" : ""}${note.stale ? ", the branch moved on" : ""}`
+  const moved = `${note.outdated === true ? " · outdated" : ""}${note.stale ? ", the branch moved on" : ""}${besideOf(note)}`
   if (note.settled) return `${marks().done} settled${moved}`
   if (note.asks) return `${marks().asked} asked back${moved}`
   if (note.turns.at(-1)?.voice === "reviewer") return `${marks().waiting} replied${moved}`

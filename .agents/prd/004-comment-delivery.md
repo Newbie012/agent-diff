@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-11-24
+- **Last updated:** 2026-11-25
 
 ## Problem Statement
 
@@ -115,7 +115,8 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   settle. Settling marks every answer on the thread read, so taking it back marks them unread
   again: a thread the reviewer has reopened is one they have not finished reading. Only a thread
   the cursor is standing on can be taken back, because the key also reaches a thread from the code
-  line above it, where the reviewer can see no thread to be reversing. Settling from the panel still
+  line above it, where the reviewer can see no thread to be reversing. A settled thread is out of the
+  diff, so `l` opens it first; the key pressed on its line says so. Settling from the panel still
   brings the next thread to the cursor, so a pass through a review is one key per thread; taking one
   back keeps the cursor on the thread it reopened, since the reviewer is looking at that thread
   rather than sweeping. Two presses in a row therefore settle two threads, and the footer says which
@@ -218,10 +219,17 @@ State lives under a root — `~/.adiff` by default, `ADIFF_ROOT` to override:
   code, so starting a selection from a thread begins on the line that thread belongs to.
 - **Walking comments stops on the open ones.** A reviewer moving through a review wants what still
   needs them, so a settled thread is stepped over.
-- **A settled thread folds to one row.** A review carrying a dozen of them buries the diff. The row
-  that remains says a settled thread is there and how to open it, because a comment that vanishes
-  entirely leaves a reviewer wondering whether they wrote one. Settling folds the thread as it
-  settles, which is the point of settling it.
+- **A settled thread takes no row in the diff; the line it was written on carries a mark.** A
+  settled thread used to fold to one row, and four of them settled on one line put four rows between
+  a function's name and its parameters: rows about code nobody was discussing any more, adding up
+  with every settle. Now the line carries ✓ in the gutter and the file's header says how many threads
+  in it are settled, because a comment that vanishes without a trace leaves a reviewer wondering
+  whether they wrote one. `l` on that line opens its settled threads under it, and `h` puts them
+  back. Settling a thread moves it into the gutter as it settles, which is the point of settling it;
+  reopening it, or replying to it, puts it back in the diff.
+- **A line shows the loudest mark among its threads.** When an open thread and settled ones share a
+  line, the gutter shows the open thread's mark, because that thread still needs the reviewer, and
+  the open thread's head says how many settled threads sit beside it.
 - **A thread is stale when its comment was written against an older HEAD**, the same rule
   [layers](006-narrative-review.md) use. The code under discussion has moved; the answer may no
   longer describe it.
@@ -347,6 +355,9 @@ Behaviors that must be covered:
 - An answer written by the agent reaches the reviewer against the comment it belongs to.
 - A settled thread reads as settled to both sides, and an agent cannot settle one.
 - A settled thread taken back is owed to the agent again, and reads as open to the reviewer.
+- A settled thread leaves the diff and marks its line, `l` on that line opens it and `h` puts it
+  back, the file's header counts it, and a line holding an open thread too shows the open one's
+  mark.
 - Taking a thread back from the panel leaves the cursor on the thread that came back.
 - Reopening a thread that is not settled is refused.
 - A removed comment leaves the reviewer's view, still reads as removed to the agent, leaves the

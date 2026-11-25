@@ -125,6 +125,17 @@ const waitingOf = (entry: StagedComment, author: boolean): Note["waiting"] => {
   return author ? "author" : undefined
 }
 
+const settledBeside = (comments: ReadonlyArray<StagedComment>, open: StagedComment): number =>
+  comments.filter(
+    (entry) =>
+      entry.settled === true &&
+      entry.removed !== true &&
+      !movedPast(entry) &&
+      entry.file === open.file &&
+      entry.side === open.side &&
+      entry.end === open.end,
+  ).length
+
 const notesOf = (
   comments: ReadonlyArray<StagedComment>,
   path: string,
@@ -135,11 +146,13 @@ const notesOf = (
   },
 ): ReadonlyArray<Note> =>
   comments
-    .filter((entry) => entry.file === path && !movedPast(entry))
+    .filter((entry) => entry.file === path && !movedPast(entry) && entry.removed !== true)
+    .filter((entry) => entry.settled !== true || (entry.id !== undefined && shown.opened.includes(entry.id)))
     .toSorted((left, right) => (left.at ?? "").localeCompare(right.at ?? ""))
     .map((entry) => ({
       id: entry.id ?? "",
-      folded: entry.settled === true && !(entry.id !== undefined && shown.opened.includes(entry.id)),
+      folded: false,
+      beside: entry.settled === true ? 0 : settledBeside(comments, entry),
       side: entry.side,
       line: entry.end,
       body: entry.body,
