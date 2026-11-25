@@ -494,6 +494,10 @@
   dir: ""
   intents:
     - a-second-client-draws-what-adiff-decides
+"@eliya-oss/agent-diff@0.1.0-alpha.199":
+  dir: ""
+  intents:
+    - a-watched-review-names-a-file-written-in-two-steps
 "@eliya-oss/agent-diff@0.1.0-alpha.2":
   dir: ""
   intents:
