@@ -147,10 +147,17 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   layers over one file drew that file's whole diff eleven times, with the layer's prose landing in a
   different place each time and the reviewer left to work out which part they were meant to be
   reading. Changed lines a shown file holds that this layer does not claim are drawn as one line
-  saying how many there are and which layer explains them, whether they sit in another run entirely
-  or in the middle of the run this layer is showing — a reading order written one layer to a commit
-  splits a long run between layers, and a layer that shows the whole run because it claims one line
-  of it is the same file over again.
+  saying how many there are and which layer explains them, when they sit in a hunk this layer
+  claims nothing of, or when they make a run of 8 lines or more inside a hunk it does — a reading
+  order written one layer to a commit splits a long run between layers, and a layer that shows the
+  whole run because it claims one line of it is the same file over again.
+
+- **A short run another layer claims stays where it is, drawn quiet.** Inside a hunk this layer
+  shows, a run of fewer than 8 changed lines another layer claims keeps its place, its line numbers
+  and its sign, in faint ink with no wash and no syntax colour. Folding every such run turned a
+  three-line `import { … } from` into one line, a fold, and two lines, and a new file split between
+  four layers into a fold every few lines; the hunk could no longer be read as code. The faint ink
+  keeps this layer's lines the ones that stand out.
 
 - **Moving to a layer puts the cursor on the first line that layer claims.** A layer whose runs sit
   at line 1,600 opened at line 800 and left the reviewer to find it, which is the work the reading
