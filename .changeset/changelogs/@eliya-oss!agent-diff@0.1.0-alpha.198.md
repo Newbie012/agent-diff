@@ -1,0 +1,21 @@
+## 0.1.0-alpha.198
+
+### Patch Changes
+
+- feat(CLI): `comment list` gives every comment its mark (`stand`), its review panel `section`, `movedPast`, `about` for a request about the whole branch, `settleable` and the `layers` it is read in, and each file its loudest open mark.
+
+  feat(layers): `layers show` gives every layer its open comments and loudest mark, and a `parts` list with each file's own added and removed lines, read mark and open comments in that layer.
+
+  feat(CLI): `patch show` lists files in the terminal's tree order as `order`, and tags each row a layer holds with that layer.
+
+  feat(CLI): `review progress` names the layers whose lines changed since a file was marked reviewed.
+
+  feat(CLI): `file review` answers with the layers as they stand after the mark.
+
+  fix(layers rail): a file marked reviewed stays read in every layer whose lines did not change since, so a change in one layer's lines asks for a re-read only there.
+
+  feat(CLI): `comment send --from new:12 --to old:14` and `draft add` with the same options file a comment on the rows a reader picked, choosing the side as the terminal does.
+
+  feat(CLI): `patch since` tags each row with the layer that holds it, as `patch show` does.
+
+  feat(CLI): a review `adiff serve` watches names what changed (`comments`, `state`, `layers`, `watch`), so a second client re-reads only that instead of the whole review on every change, and never on an agent's half-second look for comments.
