@@ -183,7 +183,9 @@ already read.
 - **`comment send --from <side:line> --to <side:line>` files a comment on the rows a reader picked**,
   each named as `new:12` or `old:40`. adiff chooses the side and lines as the terminal does for a
   selection: the new side when any picked row has a new line. `--start`, `--end` and `--side` still
-  name a range directly.
+  name a range directly. `draft add` takes the same options.
+- **`patch since` tags each row with a line in the file now with the layers holding it**, as `patch
+  show` does; a row removed since review has no line in the file now and carries none.
 - **`file review --layer <n>` marks a file read in layer `n` only**, counting from 1, when more than
   one layer claims it, as `m` does on the layers rail. A file only one layer claims is marked
   whole. A number no layer carries is refused with `UnknownLayer`.

@@ -145,12 +145,10 @@ const draftList = Effect.fn("Main.draftList")(function* (options: Options) {
 })
 
 const draftAdd = Effect.fn("Main.draftAdd")(function* (options: Options) {
-  const draft = yield* Draft.add(yield* worktreeIn(options), {
-    file: yield* required(options, "file"),
-    start: yield* numeric(options, "start"),
-    end: yield* numeric(options, "end"),
+  const worktree = yield* worktreeIn(options)
+  const draft = yield* Draft.add(worktree, {
+    ...(yield* rangeIn(options, worktree)),
     body: yield* required(options, "body"),
-    side: yield* oneOf(options, "side", ["old", "new"] as const, "new"),
     id: options["id"] ?? randomUUID(),
     at: stamp(options),
     wroteBy: "agent",
@@ -393,9 +391,10 @@ const patchShow = Effect.fn("Main.patchShow")(function* (options: Options) {
 
 const patchSince = Effect.fn("Main.patchSince")(function* (options: Options) {
   const based = yield* Branch.basedAt(yield* required(options, "worktree"), options["base"])
-  const file = yield* Vouch.since(based, yield* required(options, "file"), {
+  const shown = yield* Vouch.since(based, yield* required(options, "file"), {
     context: yield* around(options, "context"),
   })
+  const file = yield* Layers.tagSince(based.worktree, shown)
   yield* answer(options, { file })
 })
 

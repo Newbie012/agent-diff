@@ -423,18 +423,32 @@ const layersAt = (spans: ReadonlyArray<ReadonlyArray<Span>>, path: string, line:
     own.some((span) => span.path === path && span.start <= line && span.end >= line) ? [at + 1] : [],
   )
 
-const taggedRow = (spans: ReadonlyArray<ReadonlyArray<Span>>, path: string, row: ShownRow): ShownRow => {
-  const line = row.new ?? row.old
+const taggedRow = (
+  spans: ReadonlyArray<ReadonlyArray<Span>>,
+  path: string,
+  row: ShownRow,
+  newOnly = false,
+): ShownRow => {
+  const line = newOnly ? row.new : (row.new ?? row.old)
   if (row.kind === "note" || line === undefined) return row
   const layers = layersAt(spans, path, line)
   return layers.length === 0 ? row : { ...row, layers }
 }
 
-const taggedHunk = (spans: ReadonlyArray<ReadonlyArray<Span>>, path: string, hunk: ShownHunk): ShownHunk =>
-  Object.assign({}, hunk, { rows: hunk.rows.map((row) => taggedRow(spans, path, row)) })
+const taggedHunk = (
+  spans: ReadonlyArray<ReadonlyArray<Span>>,
+  path: string,
+  hunk: ShownHunk,
+  newOnly = false,
+): ShownHunk => Object.assign({}, hunk, { rows: hunk.rows.map((row) => taggedRow(spans, path, row, newOnly)) })
 
-const taggedFile = (spans: ReadonlyArray<ReadonlyArray<Span>>, file: ShownFile): ShownFile =>
-  Object.assign({}, file, { hunks: file.hunks.map((hunk) => taggedHunk(spans, file.path, hunk)) })
+const taggedFile = (spans: ReadonlyArray<ReadonlyArray<Span>>, file: ShownFile, newOnly = false): ShownFile =>
+  Object.assign({}, file, { hunks: file.hunks.map((hunk) => taggedHunk(spans, file.path, hunk, newOnly)) })
+
+export const tagSince = Effect.fn("Review.Layers.tagSince")(function* (worktree: Worktree, shown: ShownFile) {
+  const spans = yield* spansIn({ worktree, patches: yield* patchesIn(worktree) })
+  return spans.length === 0 ? shown : taggedFile(spans, shown, true)
+})
 
 export const tagRows = Effect.fn("Review.Layers.tagRows")(function* (worktree: Worktree, shown: ShownPatch) {
   const spans = yield* spansIn({ worktree, patches: yield* patchesIn(worktree) })

@@ -309,3 +309,48 @@ describe("when a file read whole changes only in the second layer's lines", () =
     expect(second).toMatchObject({ done: false, parts: [{ path: TALL, read: false }] })
   })
 })
+
+describe("when a second client holds a draft on a removed row and the added row below it", () => {
+  test("then draft add --from --to holds the draft on the new side, as the terminal would", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+
+    // ACT
+    const held = await driver.app.run([
+      "draft",
+      "add",
+      "--worktree",
+      branch.worktree,
+      "--file",
+      TALL,
+      "--from",
+      "old:3",
+      "--to",
+      "new:3",
+      "--body",
+      "renamed",
+    ])
+
+    // ASSERT
+    expect((held.envelope as { draft: unknown }).draft).toMatchObject({ side: "new", start: 3, end: 3 })
+  })
+})
+
+describe("when a second client reads a file's change since review on a branch with layers", () => {
+  test("then patch since tags each row on the file now with the layer that holds it", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL])
+    await driver.branch.setFile(branch, TALL, after.map((line, at) => (at === 10 ? "const added1 = 'again'" : line)))
+
+    // ACT
+    const since = await driver.app.run(["patch", "since", "--worktree", branch.worktree, "--file", TALL, "--context", "0"])
+
+    // ASSERT
+    const rows = (since.envelope as { file: Shown["files"][number] }).file.hunks.flatMap((hunk) => hunk.rows)
+    expect(rows.find((row) => row.kind === "added")).toMatchObject({ new: 11, layers: [2] })
+  })
+})
