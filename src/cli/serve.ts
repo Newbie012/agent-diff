@@ -62,7 +62,11 @@ const KIND_OF: Readonly<Record<string, string>> = {
   "watch.json": "watch",
 }
 
-const kindOf = (name: string | null): string => (name === null ? "other" : (KIND_OF[name] ?? "other"))
+const kindOf = (name: string | null): string => {
+  if (name === null) return "other"
+  const file = Object.keys(KIND_OF).find((known) => name === known || name.startsWith(`${known}.`))
+  return file === undefined ? "other" : (KIND_OF[file] ?? "other")
+}
 
 const settled = (folder: string, tell: (what: ReadonlyArray<string>) => void): FSWatcher => {
   mkdirSync(folder, { recursive: true })
