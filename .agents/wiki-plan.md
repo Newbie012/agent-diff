@@ -288,15 +288,11 @@ How capture works here, read out of `origin/main`'s `scripts/shot.ts`, `scripts/
   every image is of the synthetic repository: invented invitation code, invented branch names, and
   seeded comments, answers and drafts of its own. No real code reaches the screen on any capture path,
   `--against` included.
-- **Every capture uploads, to whatever `gh repo view` names in the directory you run it from, and
-  nothing checks which repository that is.** Run captures from an adiff checkout and nowhere else. The
-  upload happens before a human sees the frame, and an attachment cannot be deleted afterwards.
-  **`--local` writes the frame and uploads nothing**, which is the flag to take a capture with while you
-  are still deciding whether it shows the behaviour. Run it again without `--local` once the frame is
-  right, and only then does it upload. `--keep` leaves a local copy and does not hold the upload back,
-  so `--keep` alone is not a dry run. Either way the file lands at `shots/<slug>-after.png`, the slug
-  being the label lowercased with each run of non-alphanumerics turned into a dash, so
-  `--label "the branch list"` leaves `shots/the-branch-list-after.png`.
+- **A capture uploads nothing.** It writes the frame to `shots/<slug>-after.png`, the slug being the
+  label lowercased with each run of non-alphanumerics turned into a dash, so `--label "the branch
+  list"` leaves `shots/the-branch-list-after.png`, and prints markdown pointing at that path. The
+  upload is `gh --attach`, on a pull request or a comment, to the repository gh names there, and an
+  attachment cannot be deleted afterwards, so read the frame first. `--local` prints only the path.
 - **`--against` is for a pull request, not for the wiki.** It captures a second frame at the merge base
   and uploads that too, so a wiki image taken with it doubles the attachments for no gain.
 - **Give every key its own `--keys` flag.** A `--keys` value is split on spaces only when it does not
@@ -345,7 +341,7 @@ How capture works here, read out of `origin/main`'s `scripts/shot.ts`, `scripts/
   that name and refuses a trace a capture cannot replay. Print the trace path you generated rather
   than assuming one: BSD `mktemp` substitutes only trailing X's, so `mktemp /tmp/x-XXXX.jsonl` creates
   that literal name.
-- Both need `termctrl` and the `gh image` extension installed.
+- Both need `termctrl`. Uploading needs gh 2.99 or later, for `--attach`.
 
 ### Images
 

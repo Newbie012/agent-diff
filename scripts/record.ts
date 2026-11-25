@@ -78,7 +78,7 @@ if (held.length === 0) {
   rmSync(where, { recursive: true, force: true })
   exit(0)
 }
-const filmed: Array<{ readonly test: string; readonly url: string }> = []
+const filmed: Array<{ readonly test: string; readonly film: string }> = []
 
 for (const one of held) {
   stderr.write(`  ${one.test}\n`)
@@ -91,8 +91,8 @@ for (const one of held) {
     one.test,
     "--video",
   ])
-  const found = /(?<url>https:\/\/github\.com\/user-attachments\/assets\/[^\s)]+)/.exec(said)
-  if (found?.groups?.["url"] !== undefined) filmed.push({ test: one.test, url: found.groups["url"] })
+  const found = /\]\((?<film>\.\/shots\/[^)]+)\)/.exec(said)
+  if (found?.groups?.["film"] !== undefined) filmed.push({ test: one.test, film: found.groups["film"] })
 }
 
 rmSync(where, { recursive: true, force: true })
@@ -104,7 +104,7 @@ if (filmed.length === 0) {
 
 const splitOn = " > "
 
-const blockFor = (one: { readonly test: string; readonly url: string }): string => {
+const blockFor = (one: { readonly test: string; readonly film: string }): string => {
   const at = one.test.lastIndexOf(splitOn)
   const when = at === -1 ? one.test : one.test.slice(0, at)
   const then = at === -1 ? "" : one.test.slice(at + splitOn.length)
@@ -114,7 +114,7 @@ const blockFor = (one: { readonly test: string; readonly url: string }): string 
     `  <details>`,
     `  <summary><code>${then}</code></summary>`,
     "",
-    `  ${one.url}`,
+    `  ![${then}](${one.film})`,
     "",
     `  </details>`,
   ].join("\n")
@@ -136,3 +136,6 @@ const grouped = (): string =>
     .join("\n\n")
 
 stdout.write(`## Recorded tests\n\n${grouped()}\n`)
+stderr.write(
+  `\nThe films are in shots/. Upload them with gh's own --attach, from the repository root:\ngh pr edit --body-file <body> ${filmed.map((one) => `--attach ${one.film}`).join(" ")}\n`,
+)

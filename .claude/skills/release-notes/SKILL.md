@@ -265,12 +265,14 @@ user-attachments, so a leak is permanent.
 ### Showing a screen
 
 adiff is a terminal, so a screenshot is a real PNG of a real terminal, captured with
-[terminal-control](https://github.com/anomalyco/terminal-control) and uploaded to GitHub's
-attachment store.
+[terminal-control](https://github.com/anomalyco/terminal-control) into `shots/`. A capture uploads
+nothing: it prints markdown pointing at the file and the `--attach` flag, and `gh pr create` or `gh
+pr edit` with `--attach` (gh 2.99 or later) uploads it to GitHub's attachment store with gh's own
+sign-in, rewriting the reference in place.
 
 ```bash
 cargo install --locked terminal-control          # once
-gh extension install drogers0/gh-image           # once, then `gh image check-token`
+gh --version                                     # 2.99 or later, for --attach
 ```
 
 **Something new** gets one image:
@@ -287,8 +289,8 @@ pnpm shot --keys "enter text:l" --label "the layers rail" --against origin/main
 ```
 
 `--against` builds a worktree at the merge base, captures the same keystrokes on the code as it was,
-and prints the finished `<table>` with both images uploaded. Paste it under the section it belongs
-to. If the two frames come out identical the script says so and stops — those keys do not reach the
+and prints a two-column markdown table of both frames. Paste it under the section it belongs to, and
+pass both `--attach` flags it prints. If the two frames come out identical the script says so and stops — those keys do not reach the
 screen you changed.
 
 **Something about motion** — scroll feel, focus moving, a gap opening ten lines at a time — gets a
@@ -298,12 +300,12 @@ recording, because a still frame cannot show it:
 pnpm shot --keys "enter text:l text:l text:l" --label "the gap opening" --video
 ```
 
-That prints a bare URL. Leave it bare: GitHub wraps a player around a user-attachments URL on its
-own line, and `![…](…)` image markdown around a video renders nothing.
+That prints `![…](./shots/….mp4)`. Paste it as it is: `--attach` rewrites it to the bare
+user-attachments URL, which GitHub wraps in a player on its own line.
 
 Keys are termctrl's: `enter`, `escape`, `tab`, `up`, `down`, `page-up`, `ctrl-a` through `ctrl-z`,
-and `text:<value>` for anything typed, including single letters like `text:l`. Add `--keep` to leave
-the files in `shots/` instead of deleting them after upload.
+and `text:<value>` for anything typed, including single letters like `text:l`. Every capture stays
+in `shots/` until you delete it.
 
 ## Before you open the PR
 

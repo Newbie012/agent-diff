@@ -19,8 +19,10 @@ pnpm record
 
 It reads the test files this branch changed against `origin/main`, runs them with tracing on, and for
 each test builds its world into a real repository, boots adiff in a real terminal, replays the keys
-the test pressed, encodes an mp4 and uploads it. It prints a finished `## Recorded tests` section.
-Paste that under the body.
+the test pressed, and encodes an mp4 into `shots/`. It uploads nothing. It prints a finished
+`## Recorded tests` section whose films point at their local paths, and the `--attach` flags that
+upload them. Paste the section under the body and pass the flags to `gh pr create` or `gh pr edit`
+(see **Upload**).
 
 `pnpm record --test <path>` records one file instead of the whole branch. `pnpm record --base
 <branch>` reads the branch against something other than `origin/main`, which is what a PR stacked on
@@ -70,9 +72,8 @@ So a test that needs one of those things has two honest endings, and no third:
 pnpm shot --trace <trace.jsonl> --test-name "<when> > <then>" --local
 ```
 
-`--local` writes the frame to `shots/` and uploads nothing, so reading it first publishes nothing.
-Leave `--local` off once the frame is the one you meant, and the capture uploads and prints the
-markdown to paste.
+`--local` writes the frame to `shots/` and prints its path. Nothing a capture makes is published
+until `gh --attach` uploads it, so read every still and film before it goes on a pull request.
 
 The still is the last frame of the film. If it does not show the behavior the test names, the film
 does not either — and a film that shows the wrong screen is worse than no film, because a reviewer
@@ -81,7 +82,7 @@ output; to keep one, run the tests yourself with `ADIFF_TRACE=<path>` set.
 
 A run appends to that file rather than replacing it, so running the same test into it twice leaves
 two traces under one name. The capture takes the newest, so a re-run shows the re-run. A trace the
-test marked unreplayable is refused, naming the route the test took, so nothing is uploaded from it.
+test marked unreplayable is refused, naming the route the test took, so nothing is made from it.
 
 ## What gets recorded
 
@@ -101,18 +102,39 @@ test. Do not invent keystrokes to make one.
   <details>
   <summary><code>then the keys are already on the comments</code></summary>
 
-  <bare user-attachments URL>
+  ![then the keys are already on the comments](./shots/when-the-review-panel-is-opened-then-the-keys-are-already-on-the-comments.mp4)
 
   </details>
 ```
 
 The `describe` is the plain-text list item and the `test` is the summary of a `<details>` nested
 under it, indented two spaces so it stays inside the item. Two tests under one `when` share the list
-item.
+item. The summary is the test title only — no duration, no dimensions, no file size.
 
-Leave the URL bare. GitHub wraps a player around a user-attachments URL on its own line; image
-markdown (`![…](…)`) around a video renders nothing. The summary is the test title only — no
-duration, no dimensions, no file size.
+## Upload
+
+gh uploads the films itself, with its own sign-in: no extension and no browser cookie. From the
+repository root, so the paths in the body and in the flags match:
+
+```bash
+gh pr create --base main --title "…" --body-file body.md \
+  --attach ./shots/<one>.mp4 --attach ./shots/<two>.mp4
+gh pr edit <n> --body-file body.md --attach ./shots/<one>.mp4    # a PR that already exists
+```
+
+gh uploads each file and rewrites its `![…](./shots/…)` reference in place. A film becomes the bare
+user-attachments URL on its own line, which GitHub wraps in a player; an image stays an image. A file
+named in `--attach` that the body never references is appended to the end instead. Pass one
+`--attach` per file, each its own word: zsh does not split an unquoted variable, so flags built into
+one string reach gh as one bad argument.
+
+Check the render rather than the markdown, since nesting inside a list is where the player is lost:
+
+```bash
+gh api repos/Newbie012/agent-diff/pulls/<n> -H "Accept: application/vnd.github.html+json" --jq .body_html | grep -c "<video"
+```
+
+The count must equal the number of films.
 
 ## Where it goes
 
@@ -158,7 +180,7 @@ An attachment cannot be deleted once uploaded.
 
 ```bash
 cargo install --locked terminal-control     # once
-gh extension install drogers0/gh-image      # once, then `gh image check-token`
+gh --version                                # 2.99 or later, for --attach
 ```
 
 `termctrl` lives in `~/.cargo/bin`, which is not always on the PATH of a non-interactive shell.
