@@ -32,6 +32,11 @@ export type ProseAnchor = {
   readonly after: boolean
 }
 
+export type LineCount = {
+  readonly added: number
+  readonly removed: number
+}
+
 export type Coverage = {
   readonly total: number
   readonly covered: number

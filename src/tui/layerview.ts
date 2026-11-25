@@ -114,14 +114,6 @@ export type LayerRoom = {
   readonly file: number
 }
 
-const countRow = (state: TuiState, index: number, room: number): ReadonlyArray<LayerRow> => {
-  const read = layerRead(state, index)
-  if (read.all === 0) return []
-  const one = read.all === 1 ? "file" : "files"
-  const said = `${read.done} of ${read.all} ${one} read`
-  return [{ index, kind: "count", text: clip(said, room), lead: false }]
-}
-
 const NOTHING_LEFT = "nothing in this diff"
 
 const textRows = (
@@ -131,6 +123,23 @@ const textRows = (
   kind: "count" | "note",
 ): ReadonlyArray<LayerRow> =>
   wrapped(text, room).map((line) => ({ index, kind, text: line, lead: false }))
+
+const linesSaid = (layer: { readonly added: number; readonly removed: number } | undefined): string => {
+  if (layer === undefined) return ""
+  const signs = [
+    ...(layer.added > 0 ? [`+${layer.added}`] : []),
+    ...(layer.removed > 0 ? [`−${layer.removed}`] : []),
+  ]
+  return signs.length === 0 ? "" : ` · ${signs.join(" ")}`
+}
+
+const countRow = (state: TuiState, index: number, room: number): ReadonlyArray<LayerRow> => {
+  const read = layerRead(state, index)
+  if (read.all === 0) return []
+  const one = read.all === 1 ? "file" : "files"
+  const said = `${read.done} of ${read.all} ${one} read${linesSaid(state.layers[index])}`
+  return textRows(index, said, room, "count")
+}
 
 const emptyRows = (state: TuiState, index: number, room: number): ReadonlyArray<LayerRow> => {
   const layer = state.layers[index]

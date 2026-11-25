@@ -5,7 +5,7 @@
 - **Status:** `active` — an agent writes a layers on the command surface, a reviewer walks it in the
   terminal
 - **Owner:** TBD
-- **Last updated:** 2026-08-04
+- **Last updated:** 2026-11-24
 
 ## Problem Statement
 
@@ -73,6 +73,17 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   for those a layer explains only some of, the `uncovered` runs of changed lines no layer claims,
   and the `vanished` paths a layer points at that the branch does not change. A layers cannot be
   written without being told what it skipped.
+- **Each layer counts the lines it adds and removes.** `layers set` and `layers show` give every
+  layer `added`, the added lines of the branch's diff that sit inside its spans, and `removed`, the
+  removed lines its spans hold by their old line numbers, the same rule that decides which lines a
+  layer claims for coverage and which lines the terminal shows in it. A client that summed the whole
+  diff of every file a layer touches counted a file three layers share in full three times, so a
+  layer of 88 lines read as 2,600. A line two layers both claim counts in each, because each of them
+  shows it. The `not in any layer` layer counts the lines no layer claims.
+- **The `not in any layer` layer is marked as such.** Every layer `layers set` and `layers show`
+  report carries `unclaimed`, true only for the layer adiff adds for the lines no layer claims. A
+  client that found it by its title would take an agent's layer of the same name for it, and would
+  lose it the day the title is reworded.
 - **Coverage counts changed lines, not overlap.** A span earns a hunk only by holding every line
   that changed in it; unchanged context inside a span counts for nothing, and a span reaching past
   the diff adds nothing. `uncovered` names contiguous runs of changed lines, so it reads as the
@@ -95,7 +106,9 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
   of the next, because a layers is a reading order and the order runs through it.
 
 - **A card says how much of it has been read.** Every layer shows how many of its files are marked
-  reviewed against how many it covers, and each file says whether it is one of them. A reading
+  reviewed against how many it covers, and each file says whether it is one of them. The same line
+  carries the layer's added and removed line counts, so the reviewer sees how much reading is left in
+  it, not only how many files. A reading
   order that cannot show progress through itself is a table of contents, not a plan.
 
 - **The rail always says where the reviewer is.** Exactly one row of the rail carries the cursor:
@@ -229,6 +242,10 @@ surface in `src/testing/layers.test.ts`, the terminal in `src/testing/layers-rai
 - A file two layers both claim counts as two stops of the walk, and only the layer being read is
   marked.
 - A layer whose spans name nothing in the diff says so in the rail and shows its note.
+- Each layer reports the added and removed lines inside its own spans, a removed line counted by
+  its old line number, and a line two layers claim counted in both.
+- The rail's count line for a layer carries its added and removed line counts.
+- Only the layer adiff adds for unclaimed lines is reported as `unclaimed`.
 
 ## Out of Scope
 

@@ -301,11 +301,14 @@ Rules that make a layers worth reading:
 The answer to `layers set` is the honest report — check it before you claim to be done:
 
 ```json
-{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"partial":1,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"],"covered":1,"partial":0,"vanished":[]}]}}
+{"ok":true,"layers":{"version":1,"stale":false,"covered":7,"partial":1,"total":9,"uncovered":[{"path":"src/api/router.ts","start":40,"end":52}],"vanished":[],"layers":[{"title":"Add the invitation data model","files":["src/db/invites.ts"],"covered":1,"partial":0,"added":42,"removed":3,"vanished":[]}]}}
 
 `covered`, `partial` and `vanished` appear per layer as well as for the document, so you can tell
 which of your own layers is the thin one. `vanished` on a layer names paths it claims that are not
 in the diff — usually a typo or a file that moved.
+
+`added` and `removed` on a layer count the changed lines inside its own spans, a removed line by its
+old line number. A line two layers both claim counts in each.
 
 `layers set` refuses a document it cannot use and says which layer is wrong and why: a span that
 ends before it starts, a span starting below line 1, a start or end that is not a whole number, a

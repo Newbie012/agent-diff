@@ -1,8 +1,9 @@
 import { Option } from "effect"
-import type { Hunk, Patch } from "../patch/index.ts"
+import type { Hunk, Patch, Row } from "../patch/index.ts"
 import {
   REMAINDER_TITLE,
   type Coverage,
+  type LineCount,
   type Span,
   type Layer,
   type Layers,
@@ -86,6 +87,28 @@ const reaching = (reaches: ReadonlyArray<Reach>, line: number): boolean => {
 
 const claimedBy = (reaches: ReadonlyArray<Reach>, changed: ReadonlyArray<number>): boolean =>
   changed.some((line) => reaching(reaches, line))
+
+const claimedRow = (reaches: ReadonlyArray<Reach>, row: Row): boolean =>
+  row.kind !== "context" &&
+  Option.match(Option.orElse(row.newLine, () => row.oldLine), {
+    onNone: () => false,
+    onSome: (line) => reaching(reaches, line),
+  })
+
+const claimedRows = (claims: Claims, patch: Patch): ReadonlyArray<Row> => {
+  const reaches = claims.get(patch.path) ?? NOTHING
+  if (reaches.length === 0) return []
+  return patch.hunks.flatMap((hunk) => hunk.rows).filter((row) => claimedRow(reaches, row))
+}
+
+export const linesClaimed = (patches: ReadonlyArray<Patch>, layer: Layer): LineCount => {
+  const claims = claimsOf(spansOf([layer]))
+  const rows = patches.flatMap((patch) => claimedRows(claims, patch))
+  return {
+    added: rows.filter((row) => row.kind === "added").length,
+    removed: rows.filter((row) => row.kind === "removed").length,
+  }
+}
 
 export const claimsHunk = (
   spans: ReadonlyArray<Span>,
