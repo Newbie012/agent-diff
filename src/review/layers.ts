@@ -28,7 +28,7 @@ import {
   type ThreadStand,
 } from "../domain/review/index.ts"
 import { MalformedLayers, NoLayers, UnknownFile, UnknownLayer } from "./error.ts"
-import { submit } from "./comments.ts"
+import { reply, submit } from "./comments.ts"
 import { ASK_LEAD, list as threadsOn, type Thread } from "./threads.ts"
 import type { ShownFile, ShownHunk, ShownPatch, ShownRow } from "./patches.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
@@ -532,6 +532,46 @@ export const askingFor = (told: { readonly count: number; readonly stale: boolea
   return `${ASK_LEAD} Please revise its reading order with \`adiff layers set\`.`
 }
 
+type AskSeen = {
+  readonly id?: string
+  readonly body: string
+  readonly settled?: boolean
+  readonly removed?: boolean
+}
+
+export const openAskOf = (comments: ReadonlyArray<AskSeen>): string | undefined =>
+  comments.find((one) => one.body.startsWith(ASK_LEAD) && one.settled !== true && one.removed !== true)?.id
+
+export type Asking = {
+  readonly file: string
+  readonly body: string
+  readonly id: string
+  readonly at: string
+  readonly open: string | undefined
+}
+
+export const askIn = Effect.fn("Review.Layers.askIn")(function* (worktree: Worktree, asking: Asking) {
+  if (asking.open !== undefined) {
+    return yield* reply(worktree, { to: asking.open, body: asking.body, id: asking.id, at: asking.at })
+  }
+  return yield* submit(worktree, {
+    file: asking.file,
+    side: "new",
+    start: 1,
+    end: 1,
+    body: asking.body,
+    id: asking.id,
+    at: asking.at,
+  })
+})
+
+const seenOf = (thread: Thread): AskSeen => ({
+  id: thread.id,
+  body: thread.body,
+  settled: thread.settled,
+  removed: thread.stand === "gone",
+})
+
 export const ask = Effect.fn("Review.Layers.ask")(function* (
   reading: BranchReading,
   request: { readonly id: string; readonly at: string },
@@ -540,15 +580,8 @@ export const ask = Effect.fn("Review.Layers.ask")(function* (
   if (first === undefined) return yield* new UnknownFile({ file: "", known: [] })
   const told = yield* read(reading)
   const body = askingFor({ count: told.layers.length, stale: told.stale })
-  yield* submit(reading.worktree, {
-    file: first.path,
-    side: "new",
-    start: 1,
-    end: 1,
-    body,
-    id: request.id,
-    at: request.at,
-  })
+  const open = openAskOf((yield* threadsOn(reading)).map(seenOf))
+  yield* askIn(reading.worktree, { file: first.path, body, id: request.id, at: request.at, open })
   return { asked: body }
 })
 

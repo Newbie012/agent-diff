@@ -129,7 +129,10 @@ already read.
 - **`branch search --term <text>` answers `matches`, `counted` and `left`**, the same ranked
   matches the terminal's `/` shows: changed files first, declarations before uses.
 - **`layers ask` files the comment the terminal's `L` files**: a request to the agent, worded by
-  whether the branch has no reading order, a stale one or a current one.
+  whether the branch has no reading order, a stale one or a current one. While an earlier request
+  is still open, asking again is a reply on it, in the terminal and here alike, so the review holds
+  one request about the branch at a time and the panel never lists the same ask twice. A request
+  already settled or removed is left alone, and the next ask starts a new one.
 - **`comment read --id <id>` marks the answers on a thread read**, as reading them in the terminal
   does, so `unread` falls to 0 for every client.
 - **`comment resolve --read` settles every comment whose answers have all been read**, as `D` does

@@ -343,14 +343,12 @@ export const askForLayers = (app: Terminal): Work => {
     const patch = app.state.patches[0]
     const branch = selectedBranch(app.state)
     if (patch === undefined || branch === undefined) return
-    yield* Comment.submit(yield* worktreeOf(app, branch.branch), {
+    yield* Layers.askIn(yield* worktreeOf(app, branch.branch), {
       file: patch.path,
-      side: "new",
-      start: 1,
-      end: 1,
       body: layersAsk(app.state),
       id: randomUUID(),
       at: new Date().toISOString(),
+      open: Layers.openAskOf(app.state.sent),
     })
     const sent = yield* loadSent(app, branch.branch)
     app.commit(withNotice(withSent(app.state, sent), askedFor(app.state)))
