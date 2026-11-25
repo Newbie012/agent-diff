@@ -506,6 +506,10 @@
   dir: ""
   intents:
     - itchy-frogs-hammer
+"@eliya-oss/agent-diff@0.1.0-alpha.200":
+  dir: ""
+  intents:
+    - a-settled-thread-leaves-only-a-mark-on-its-line
 "@eliya-oss/agent-diff@0.1.0-alpha.21":
   dir: ""
   intents:
