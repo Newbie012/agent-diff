@@ -173,6 +173,10 @@ already read.
   layer that explains the rest without reading spans itself.
 - **Each file `review progress` lists under `since` carries `layers`**, the layers whose lines
   changed since the reviewer marked it, so a client marks only those layers changed.
+- **A file marked reviewed whole stays read in every layer whose lines did not change since.** Its
+  whole-file mark lapses when the file changes, but `review progress` `parts`, `layers show` `read`
+  and the terminal's rail still count its part read in each layer the change left alone, so the
+  reviewer re-reads only the layer that changed.
 - **`file review` answers with the layers as they stand after the mark**, as `layers show` gives
   them, when the branch has layers. A client draws a layer read, and says so, from that answer
   rather than from its own guess before it.

@@ -74,7 +74,7 @@ export const readBranch = (app: Terminal, name: string): Work<TuiState> => {
     yield* Branch.markOpened(reading.worktree, new Date().toISOString())
     const [progress, layers, sent, remarks, drafts] = yield* Effect.all(
       [
-        Vouch.progress(reading),
+        Effect.flatMap(Layers.spansIn(reading), (spans) => Vouch.progress(reading, spans)),
         Layers.read(reading),
         Comment.listSent(reading),
         app.state.remarksOn
@@ -272,7 +272,7 @@ export const noticeFiled = (app: Terminal): Work => {
     const branch = selectedBranch(app.state)
     if (branch === undefined) return
     const reading = yield* readingOf(app, branch.branch)
-    const [sent, progress] = yield* Effect.all([Comment.listSent(reading), Vouch.progress(reading)])
+    const [sent, progress] = yield* Effect.all([Comment.listSent(reading), Effect.flatMap(Layers.spansIn(reading), (spans) => Vouch.progress(reading, spans))])
     if (sameSent(app.state.sent, sent) && sameMarks(app.state, progress)) return
     app.commit(withVouched({ ...app.state, sent }, progress.vouched, progress.parts))
   })

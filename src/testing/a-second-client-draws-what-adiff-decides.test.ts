@@ -291,3 +291,21 @@ describe("when a second client sends a comment on a removed row and the added ro
     expect((await commentsOf(driver, branch.worktree))[0]).toMatchObject({ side: "new", start: 3, end: 3 })
   })
 })
+
+describe("when a file read whole changes only in the second layer's lines", () => {
+  test("then layers show keeps the file read in the first layer and unread in the second", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL])
+
+    // ACT
+    await driver.branch.setFile(branch, TALL, after.map((line, at) => (at === 10 ? "const added1 = 'again'" : line)))
+
+    // ASSERT
+    const [first, second] = await layersOf(driver, branch.worktree)
+    expect(first).toMatchObject({ done: true, parts: [{ path: TALL, read: true }] })
+    expect(second).toMatchObject({ done: false, parts: [{ path: TALL, read: false }] })
+  })
+})

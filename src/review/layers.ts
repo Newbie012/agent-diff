@@ -32,7 +32,7 @@ import { submit } from "./comments.ts"
 import { ASK_LEAD, list as threadsOn, type Thread } from "./threads.ts"
 import type { ShownFile, ShownHunk, ShownPatch, ShownRow } from "./patches.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
-import { fullBlob, keepMarked, readParts, restamped, toggle, type Marking, type VouchReport } from "./vouching.ts"
+import { fullBlob, keepMarked, readParts, restamped, stillRead, toggle, type Marking, type VouchReport } from "./vouching.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
@@ -371,11 +371,13 @@ const readReport = Effect.fn("Review.Layers.readReport")(function* (reading: Bra
   if (Option.isNone(found)) return Option.none<LayersReport>()
   const current = yield* store.state(reading.worktree.path)
   const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  const report = reportOf(reading.patches, found.value, reading.worktree.head)
+  const spans = report.layers.map((layer) => layer.spans)
   return Option.some(
-    withRead(reportOf(reading.patches, found.value, reading.worktree.head), {
+    withRead(report, {
       patches: reading.patches,
       vouches: current.vouches,
-      parts: readParts(current.parts, files),
+      parts: [...readParts(current.parts, files), ...(yield* stillRead(reading, current.vouches, spans))],
     }),
   )
 })
