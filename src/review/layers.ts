@@ -427,20 +427,30 @@ const taggedRow = (
   spans: ReadonlyArray<ReadonlyArray<Span>>,
   path: string,
   row: ShownRow,
-  newOnly = false,
+  line: number | undefined,
 ): ShownRow => {
-  const line = newOnly ? row.new : (row.new ?? row.old)
   if (row.kind === "note" || line === undefined) return row
   const layers = layersAt(spans, path, line)
   return layers.length === 0 ? row : { ...row, layers }
 }
+
+const nearestNew = (rows: ReadonlyArray<ShownRow>, at: number): number | undefined =>
+  [...rows.slice(at + 1), ...rows.slice(0, at).toReversed()].find((row) => row.new !== undefined)?.new
+
+const lineNow = (rows: ReadonlyArray<ShownRow>, row: ShownRow, at: number): number | undefined =>
+  row.new ?? (row.kind === "removed" ? nearestNew(rows, at) : undefined)
 
 const taggedHunk = (
   spans: ReadonlyArray<ReadonlyArray<Span>>,
   path: string,
   hunk: ShownHunk,
   newOnly = false,
-): ShownHunk => Object.assign({}, hunk, { rows: hunk.rows.map((row) => taggedRow(spans, path, row, newOnly)) })
+): ShownHunk =>
+  Object.assign({}, hunk, {
+    rows: hunk.rows.map((row, at) =>
+      taggedRow(spans, path, row, newOnly ? lineNow(hunk.rows, row, at) : (row.new ?? row.old)),
+    ),
+  })
 
 const taggedFile = (spans: ReadonlyArray<ReadonlyArray<Span>>, file: ShownFile, newOnly = false): ShownFile =>
   Object.assign({}, file, { hunks: file.hunks.map((hunk) => taggedHunk(spans, file.path, hunk, newOnly)) })

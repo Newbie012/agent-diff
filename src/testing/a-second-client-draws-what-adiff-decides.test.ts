@@ -352,5 +352,6 @@ describe("when a second client reads a file's change since review on a branch wi
     // ASSERT
     const rows = (since.envelope as { file: Shown["files"][number] }).file.hunks.flatMap((hunk) => hunk.rows)
     expect(rows.find((row) => row.kind === "added")).toMatchObject({ new: 11, layers: [2] })
+    expect(rows.find((row) => row.kind === "removed")).toMatchObject({ layers: [2] })
   })
 })
