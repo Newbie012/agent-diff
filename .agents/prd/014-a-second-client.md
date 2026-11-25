@@ -163,6 +163,11 @@ already read.
   settled is listed with `open` at 0 and `stand` `settled`, so every entry has the same shape; the
   file tree marks a file only while `open` is above 0. `settled` is what the file's header counts. A
   request about the branch marks no file.
+- **`comment list` answers `counts` beside `comments`**: `asked`, the comments waiting on the
+  reviewer's answer, and `unread`, the other open comments holding an answer the reviewer has not
+  read, in any section, the ones the branch moved past included. A client's headline names both and
+  never adds them up: a question holds the agent up, and an unread answer does not. A client counts
+  neither itself, so the headline and every other client agree on which comments count.
 - **`comment list` answers `lines` beside `files`**: one entry per line that a thread is drawn on,
   with `path`, `side`, `line`, how many threads there are `open` and `settled`, and the `stand` the
   gutter shows, the loudest among all of them, settled counting least. A client draws the gutter
