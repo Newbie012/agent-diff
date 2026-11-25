@@ -59,9 +59,6 @@ jobs:
           - runner: macos-15
             target: bun-darwin-arm64
             asset: adiff-darwin-arm64
-          - runner: macos-15-intel
-            target: bun-darwin-x64
-            asset: adiff-darwin-x64
           - runner: ubuntu-latest
             target: bun-linux-x64
             asset: adiff-linux-x64

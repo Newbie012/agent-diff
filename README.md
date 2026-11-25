@@ -31,8 +31,8 @@ point stays open until you settle it.
 
 ## Requirements
 
-The Homebrew formula installs one compiled binary, which draws the terminal itself and needs no Node
-at all. A global npm install runs on Node 22 or newer, and the terminal there needs Node 26: adiff
+The Homebrew formula installs one compiled binary for Apple silicon, which draws the terminal itself
+and needs no Node at all. On an Intel Mac, install with npm. A global npm install runs on Node 22 or newer, and the terminal there needs Node 26: adiff
 finds one among your fnm, nvm, asdf, volta and Homebrew installs and runs the terminal on that, and
 says so when there is none, while every other command runs where you are.
 

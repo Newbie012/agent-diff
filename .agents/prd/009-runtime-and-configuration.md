@@ -106,6 +106,11 @@ The store's internal layout ([PRD 004](004-comment-delivery.md)); command option
   compressed one: a quarter of the bytes over the wire, the same binary on disk. The raw asset stays
   because installs made before this still ask for it by name.
 
+- **The binary is built for Apple silicon and Linux, not Intel Macs.** Apple stopped selling Intel
+  Macs in 2023, and the Intel build was the slowest job on every pull request and every release,
+  because it needs an Intel runner to prove the binary starts. Homebrew refuses the formula on an
+  Intel Mac and says it needs Apple silicon; npm still installs adiff there, on Node.
+
 - **TypeScript runs by type-stripping, not compilation.** There is no build layer and no bundler.
   Syntax that requires emit does not run, whatever `tsc` and vitest accept — see
   [ADR-002](../adr/ADR-002-effect-v4-and-module-boundaries.md).

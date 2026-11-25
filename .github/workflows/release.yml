@@ -325,9 +325,6 @@ jobs:
           - runner: macos-15
             target: bun-darwin-arm64
             asset: adiff-darwin-arm64
-          - runner: macos-15-intel
-            target: bun-darwin-x64
-            asset: adiff-darwin-x64
           - runner: ubuntu-latest
             target: bun-linux-x64
             asset: adiff-linux-x64
@@ -429,7 +426,6 @@ jobs:
           }
 
           fetch "$BASE/adiff-darwin-arm64.tar.gz" "$RUNNER_TEMP/arm"
-          fetch "$BASE/adiff-darwin-x64.tar.gz" "$RUNNER_TEMP/intel"
 
           TAP="$RUNNER_TEMP/tap"
           git clone --depth 1 "https://x-access-token:$TAP_TOKEN@github.com/Newbie012/homebrew-tap.git" "$TAP"
@@ -437,8 +433,6 @@ jobs:
           VERSION="$VERSION" \
           ARM_URL="$BASE/adiff-darwin-arm64.tar.gz" \
           ARM_SHA="$(sha256sum "$RUNNER_TEMP/arm" | cut -d ' ' -f 1)" \
-          INTEL_URL="$BASE/adiff-darwin-x64.tar.gz" \
-          INTEL_SHA="$(sha256sum "$RUNNER_TEMP/intel" | cut -d ' ' -f 1)" \
           node scripts/formula.ts "$TAP/Formula/adiff.rb"
 
           git -C "$TAP" config user.name "github-actions[bot]"
