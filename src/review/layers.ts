@@ -17,14 +17,34 @@ import {
 import type { Patch } from "../domain/patch/index.ts"
 import type { Worktree } from "../service/git/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
-import { isPartVouched, isVouched, partOf, vouch, vouchPart as vouchedPart } from "../domain/review/index.ts"
+import {
+  isOpen,
+  isPartVouched,
+  isVouched,
+  louderOf,
+  partOf,
+  vouch,
+  vouchPart as vouchedPart,
+  type ThreadStand,
+} from "../domain/review/index.ts"
 import { MalformedLayers, NoLayers, UnknownFile, UnknownLayer } from "./error.ts"
 import { submit } from "./comments.ts"
+import { ASK_LEAD, list as threadsOn, type Thread } from "./threads.ts"
+import type { ShownFile, ShownHunk, ShownPatch, ShownRow } from "./patches.ts"
 import { patches as patchesIn, type BranchReading } from "./branches.ts"
-import { fullBlob, keepMarked, readParts, restamped, toggle, type Marking, type VouchReport } from "./vouching.ts"
+import { fullBlob, keepMarked, readParts, restamped, stillRead, toggle, type Marking, type VouchReport } from "./vouching.ts"
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
+
+export type ReportedPart = {
+  readonly path: string
+  readonly added: number
+  readonly removed: number
+  readonly read?: boolean
+  readonly open?: number
+  readonly stand?: ThreadStand
+}
 
 export type ReportedLayer = {
   readonly title: string
@@ -38,8 +58,11 @@ export type ReportedLayer = {
   readonly removed: number
   readonly vanished: ReadonlyArray<string>
   readonly unclaimed: boolean
+  readonly parts: ReadonlyArray<ReportedPart>
   readonly read?: ReadonlyArray<string>
   readonly done?: boolean
+  readonly open?: number
+  readonly stand?: ThreadStand
 }
 
 export type LayersReport = {
@@ -186,16 +209,26 @@ const toStored = (layers: Layers): StoredLayers => ({
   parent: Option.getOrUndefined(layers.parent),
 })
 
+const partIn = (patches: ReadonlyArray<Patch>, layer: Layer, path: string): ReportedPart =>
+  Object.assign(
+    { path },
+    linesClaimed(
+      patches.filter((patch) => patch.path === path),
+      layer,
+    ),
+  )
+
 const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): ReadonlyArray<ReportedLayer> => {
   const present = new Set(patches.map((patch) => patch.path))
   return withFullCoverage(patches, layers).layers.map((layer, at) => {
     const named = unique(spansOfLayer(layer).map((span) => span.path))
     const gap = coverage(patches, [layer])
     const lines = linesClaimed(patches, layer)
+    const files = named.filter((path) => present.has(path))
     return {
       title: layer.title,
       note: noteOf(layer),
-      files: named.filter((path) => present.has(path)),
+      files,
       spans: spansOfLayer(layer),
       prose: proseAnchors(layer).filter((anchor) => present.has(anchor.path)),
       covered: gap.covered,
@@ -204,6 +237,7 @@ const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): Readonly
       removed: lines.removed,
       vanished: named.filter((path) => !present.has(path)),
       unclaimed: at >= layers.layers.length,
+      parts: files.map((path) => partIn(patches, layer, path)),
     }
   })
 }
@@ -278,25 +312,158 @@ const withRead = (report: LayersReport, reading: Reading): LayersReport => ({
   ...report,
   layers: report.layers.map((layer) => {
     const read = readInLayer(layer, reading)
-    return Object.assign({}, layer, { read, done: layer.files.length > 0 && read.length === layer.files.length })
+    return Object.assign({}, layer, {
+      read,
+      done: layer.files.length > 0 && read.length === layer.files.length,
+      parts: layer.parts.map((part) => ({ ...part, read: read.includes(part.path) })),
+    })
   }),
 })
 
-export const show = Effect.fn("Review.Layers.show")(function* (worktree: Worktree) {
+type Placing = Pick<Thread, "file" | "side" | "start" | "end" | "about">
+
+const coversThread = (layer: ReportedLayer, thread: Placing): boolean =>
+  thread.side === "new" &&
+  layer.spans.some((span) => span.path === thread.file && thread.start <= span.end && thread.end >= span.start)
+
+const readsFile = (layer: ReportedLayer, file: string): boolean => layer.read?.includes(file) === true
+
+const lastHolding = (layers: ReadonlyArray<ReportedLayer>, file: string, at: number): boolean =>
+  layers.every((other, index) => index === at || !claims(other, file) || readsFile(other, file))
+
+export const layersHolding = (layers: ReadonlyArray<ReportedLayer>, thread: Placing): ReadonlyArray<number> => {
+  if (thread.about === "branch") return []
+  const covering = layers.flatMap((layer, at) => (coversThread(layer, thread) ? [at + 1] : []))
+  if (covering.length > 0) return covering
+  return layers.flatMap((layer, at) =>
+    claims(layer, thread.file) && lastHolding(layers, thread.file, at) ? [at + 1] : [],
+  )
+}
+
+const loudest = (threads: ReadonlyArray<Thread>): ThreadStand =>
+  threads.reduce<ThreadStand>((stand, thread) => louderOf(stand, thread.stand), "gone")
+
+const partWithThreads = (part: ReportedPart, threads: ReadonlyArray<Thread>): ReportedPart => {
+  const here = threads.filter((thread) => thread.file === part.path)
+  return Object.assign({}, part, { open: here.length, stand: loudest(here) })
+}
+
+const withThreads = (report: LayersReport, threads: ReadonlyArray<Thread>): LayersReport => {
+  const open = threads
+    .filter((thread) => isOpen(thread.stand))
+    .map((thread) => ({ thread, layers: layersHolding(report.layers, thread) }))
+  return {
+    ...report,
+    layers: report.layers.map((layer, at) => {
+      const mine = open.filter((one) => one.layers.includes(at + 1)).map((one) => one.thread)
+      return Object.assign({}, layer, {
+        open: mine.length,
+        stand: loudest(mine),
+        parts: layer.parts.map((part) => partWithThreads(part, mine)),
+      })
+    }),
+  }
+}
+
+const readReport = Effect.fn("Review.Layers.readReport")(function* (reading: BranchReading) {
   const store = yield* Store
-  const patches = yield* patchesIn(worktree)
-  const found = yield* storedLayers(worktree)
-  const layers = yield* Option.match(found, {
+  const found = yield* storedLayers(reading.worktree)
+  if (Option.isNone(found)) return Option.none<LayersReport>()
+  const current = yield* store.state(reading.worktree.path)
+  const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
+  const report = reportOf(reading.patches, found.value, reading.worktree.head)
+  const spans = report.layers.map((layer) => layer.spans)
+  return Option.some(
+    withRead(report, {
+      patches: reading.patches,
+      vouches: current.vouches,
+      parts: [...readParts(current.parts, files), ...(yield* stillRead(reading, current.vouches, spans))],
+    }),
+  )
+})
+
+export const view = Effect.fn("Review.Layers.view")(function* (reading: BranchReading) {
+  const found = yield* readReport(reading)
+  if (Option.isNone(found)) return Option.none<LayersReport>()
+  return Option.some(withThreads(found.value, yield* threadsOn(reading)))
+})
+
+export const show = Effect.fn("Review.Layers.show")(function* (worktree: Worktree) {
+  const found = yield* view({ worktree, patches: yield* patchesIn(worktree) })
+  return yield* Option.match(found, {
     onNone: () => new NoLayers({ worktree: worktree.path }),
     onSome: Effect.succeed,
   })
-  const current = yield* store.state(worktree.path)
-  const files = patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
-  return withRead(reportOf(patches, layers, worktree.head), {
-    patches,
-    vouches: current.vouches,
-    parts: readParts(current.parts, files),
+})
+
+export const placeThreads = Effect.fn("Review.Layers.placeThreads")(function* (
+  reading: BranchReading,
+  threads: ReadonlyArray<Thread>,
+) {
+  const found = yield* readReport(reading)
+  return threads.map((thread) => ({
+    ...thread,
+    layers: Option.match(found, {
+      onNone: (): ReadonlyArray<number> => [],
+      onSome: (report) => layersHolding(report.layers, thread),
+    }),
+  }))
+})
+
+export const spansIn = Effect.fn("Review.Layers.spansIn")(function* (reading: BranchReading) {
+  const found = yield* storedLayers(reading.worktree)
+  return Option.match(found, {
+    onNone: (): ReadonlyArray<ReadonlyArray<Span>> => [],
+    onSome: (layers) => reportedLayers(reading.patches, layers).map((layer) => layer.spans),
   })
+})
+
+const layersAt = (spans: ReadonlyArray<ReadonlyArray<Span>>, path: string, line: number): ReadonlyArray<number> =>
+  spans.flatMap((own, at) =>
+    own.some((span) => span.path === path && span.start <= line && span.end >= line) ? [at + 1] : [],
+  )
+
+const taggedRow = (
+  spans: ReadonlyArray<ReadonlyArray<Span>>,
+  path: string,
+  row: ShownRow,
+  line: number | undefined,
+): ShownRow => {
+  if (row.kind === "note" || line === undefined) return row
+  const layers = layersAt(spans, path, line)
+  return layers.length === 0 ? row : { ...row, layers }
+}
+
+const nearestNew = (rows: ReadonlyArray<ShownRow>, at: number): number | undefined =>
+  [...rows.slice(at + 1), ...rows.slice(0, at).toReversed()].find((row) => row.new !== undefined)?.new
+
+const lineNow = (rows: ReadonlyArray<ShownRow>, row: ShownRow, at: number): number | undefined =>
+  row.new ?? (row.kind === "removed" ? nearestNew(rows, at) : undefined)
+
+const taggedHunk = (
+  spans: ReadonlyArray<ReadonlyArray<Span>>,
+  path: string,
+  hunk: ShownHunk,
+  newOnly = false,
+): ShownHunk =>
+  Object.assign({}, hunk, {
+    rows: hunk.rows.map((row, at) =>
+      taggedRow(spans, path, row, newOnly ? lineNow(hunk.rows, row, at) : (row.new ?? row.old)),
+    ),
+  })
+
+const taggedFile = (spans: ReadonlyArray<ReadonlyArray<Span>>, file: ShownFile, newOnly = false): ShownFile =>
+  Object.assign({}, file, { hunks: file.hunks.map((hunk) => taggedHunk(spans, file.path, hunk, newOnly)) })
+
+export const tagSince = Effect.fn("Review.Layers.tagSince")(function* (worktree: Worktree, shown: ShownFile) {
+  const spans = yield* spansIn({ worktree, patches: yield* patchesIn(worktree) })
+  return spans.length === 0 ? shown : taggedFile(spans, shown, true)
+})
+
+export const tagRows = Effect.fn("Review.Layers.tagRows")(function* (worktree: Worktree, shown: ShownPatch) {
+  const spans = yield* spansIn({ worktree, patches: yield* patchesIn(worktree) })
+  if (spans.length === 0) return shown
+  return { ...shown, files: shown.files.map((file) => taggedFile(spans, file)) } satisfies ShownPatch
 })
 
 export const read = Effect.fn("Review.Layers.read")(function* (reading: BranchReading) {
@@ -354,8 +521,6 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
     total: reading.patches.length,
   } satisfies VouchReport
 })
-
-const ASK_LEAD = "About this branch, not about this line."
 
 export const askingFor = (told: { readonly count: number; readonly stale: boolean }): string => {
   if (told.count === 0) {

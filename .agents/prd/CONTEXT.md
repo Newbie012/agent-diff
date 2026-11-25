@@ -44,6 +44,22 @@ A [thread](#thread) whose commented lines were changed or deleted after it was w
 where that change sits now and keeps the snippet it was written on, the same word the forge uses for
 a [remark](#remark).
 
+### Moved past
+
+A [thread](#thread) whose code is no longer in the diff, or was changed rather than only reworded.
+The review panel lists it under "The branch moved past these" and no line draws it, in the terminal and in any second
+client, because adiff answers `movedPast` and both draw from that.
+
+### Part
+
+The lines of one file that one layer's spans hold. A file three layers share has three parts, each
+with its own line counts, comments and read mark.
+
+### Stand
+
+The mark a [thread](#thread) carries: ○ filed, ◎ waiting on the agent, ● answered, ◉ asked, ✓
+settled. A file or a layer shows the loudest stand among its open threads.
+
 ### Branch
 
 A git worktree and the ticket branch checked out in it. The unit of review. adiff never says

@@ -5,7 +5,7 @@
 
 - **Status:** `accepted`
 - **Owner:** TBD
-- **Last updated:** 2026-11-24
+- **Last updated:** 2026-11-25
 
 ## Problem Statement
 
@@ -30,6 +30,11 @@ A second client that asks often keeps one adiff running instead of starting one 
 `adiff serve` answers command after command over one pipe, and tells the client when a review it
 watches changes, so the client redraws when something happened rather than asking every few seconds.
 
+A second client draws answers, not rules. Every number, state, order and placement the terminal
+works out is a field adiff answers, so a client that only draws them shows what the terminal shows,
+and cannot drift from it when a rule changes. What a client keeps is how things look, where its own
+cursor is, and the mark it shows before adiff's answer to a write arrives.
+
 Everything the terminal's review does is a command too, so a second client can offer the same
 review: the pull request behind a branch, the bases worth comparing against, a search of the
 branch, asking the agent for a reading order, marking an answer read, and settling every answer
@@ -52,6 +57,9 @@ already read.
    page is the same review and not a lesser copy.
 8. As a `second client`, I want the scope each line of a file sits in, so that I pin the same class,
    function and block above the diff that the terminal pins.
+9. As a `second client`, I want every mark, count, order and placement the terminal draws as a
+   field, so that I draw it rather than work it out, and stay in step when the terminal's rule
+   changes.
 
 ## Implementation Decisions
 
@@ -64,6 +72,10 @@ already read.
   --read`: the terminal's review verbs that had no command.
 - `adiff serve`: one long-lived adiff answering commands and reporting changes to a review.
 - The terminal redrawing reviewed marks that another process set.
+- The fields that carry the terminal's decisions to a client: a comment's `stand`, `section`,
+  `movedPast`, `about`, `settleable` and `layers`; a layer's `parts`, `open` and `stand`; `patch
+  show`'s `order` and row `layers`; `since[].layers`; the layers `file review` answers with; and
+  `comment send --from --to`.
 
 ### Does not own
 
@@ -135,6 +147,47 @@ already read.
   layer's own spans and `unclaimed` marks the `not in any layer` layer ([PRD
   006](006-narrative-review.md)). Summing the whole diff of every file a layer names counts a file
   that three layers share three times.
+- **Each comment `comment list` reports carries what the terminal decides about it.** `stand` is its
+  mark: `filed` (○), `waiting` (◎), `answered` (●), `asked` (◉), `settled` (✓) or `gone`, for a
+  removed one. `movedPast` is true when the code it was written on is gone from the diff, or changed
+  without being only reworded, and `reworded` says the code was only reworded; a comment moved past
+  is listed, never drawn on a line. `section` is where the review panel lists it: `asked`, `filed`,
+  `with`, `answered`, `movedOn`, `settled` or `removed`. `about` is `branch` for a request about the
+  whole branch, such as the one `layers ask` files, and `line` otherwise. `settleable` is true when
+  it has answers and all of them are read, which is what `comment resolve --read` settles.
+- **`comment list` answers `files` beside `comments`**: each file with open comments drawn on its
+  lines, with how many are `open` and the loudest `stand` among them, the mark the terminal's file
+  tree shows, a comment moved past included. A request about the branch marks no file.
+- **Each comment `comment list` reports carries `layers`**, the layers it is read in, counting from
+  1: those whose spans hold its lines, or, when none does, the last layer holding its file that is
+  not yet read there. A request about the branch is in no layer, and a branch with no layers gives
+  every comment an empty list.
+- **Each layer `layers show` reports carries `open` and `stand`**, its open comments and the loudest
+  of their marks, and **`parts`**, one per file it names: `path`, the `added` and `removed` lines of
+  that file inside the layer's spans, whether the part is `read`, and its own `open` and `stand`. A
+  file three layers share is three parts, each with its own numbers. `layers set` gives `parts`
+  with the line counts alone.
+- **`patch show` answers `order`**, every file's path in the order the terminal's file tree lists
+  them: folders before files, each level by name. Each row a layer's spans hold carries `layers`,
+  the layers holding it, counting from 1, so a client shows a layer's part of a file and names the
+  layer that explains the rest without reading spans itself.
+- **Each file `review progress` lists under `since` carries `layers`**, the layers whose lines
+  changed since the reviewer marked it, so a client marks only those layers changed.
+- **A file marked reviewed whole stays read in every layer whose lines did not change since.** Its
+  whole-file mark lapses when the file changes, but `review progress` `parts`, `layers show` `read`
+  and the terminal's rail still count its part read in each layer the change left alone, so the
+  reviewer re-reads only the layer that changed.
+- **`file review` answers with the layers as they stand after the mark**, as `layers show` gives
+  them, when the branch has layers. A client draws a layer read, and says so, from that answer
+  rather than from its own guess before it.
+- **`comment send --from <side:line> --to <side:line>` files a comment on the rows a reader picked**,
+  each named as `new:12` or `old:40`. adiff chooses the side and lines as the terminal does for a
+  selection: the new side when any picked row has a new line. `--start`, `--end` and `--side` still
+  name a range directly. `draft add` takes the same options.
+- **`patch since` tags each row with the layers holding it in the file now**, as `patch show` does. A
+  row removed since review has no line in the file now, so it takes the layers of the nearest line
+  that is, the same rule that names the layers in `since[].layers`, and folds with the change it
+  belongs to rather than away from it.
 - **`file review --layer <n>` marks a file read in layer `n` only**, counting from 1, when more than
   one layer claims it, as `m` does on the layers rail. A file only one layer claims is marked
   whole. A number no layer carries is refused with `UnknownLayer`.
@@ -147,7 +200,10 @@ already read.
 - **`{"id": 8, "watch": ["--repo", "…", "--branch", "…"]}` watches a review.** It is answered once
   with `{"ok": true, "watching": <worktree>}`, then with `{"id": 8, "event": "changed"}` each time a
   comment, an answer, a reviewed mark, the layers or the drafts of that review change, from any
-  process. A burst of changes is one event. `{"id": 8, "unwatch": true}` stops it.
+  process. A burst of changes is one event. The event names `what` changed, so a client re-reads
+  only that: `comments` (a comment or an answer), `state` (a reviewed mark, a read, a settle),
+  `layers`, `watch` (an agent looking for comments, every half second while it waits) and `other`.
+  `{"id": 8, "unwatch": true}` stops it.
 - **`serve` refuses what does not answer in JSON**: `review open`, `review pane`, `resume`,
   `upgrade` and `serve` itself are refused with `NotServed`. A line that is not a request is answered
   with `BadRequest`, and the pipe stays open.
@@ -179,6 +235,13 @@ refuses a branch with none; `base list` offers the stacked parent and never the 
 and leaves an unread one open; `layers show` names a reviewed file read in its layer, and calls a
 layer `done` once all of its files are read; `file review
 --layer` marks a shared file read in one layer and not the other.
+
+What the terminal decides, at the command boundary: a comment carries its mark, panel section and
+`movedPast`, and a request from `layers ask` is `about` the branch; a comment on a layer's lines names
+that layer; a layer's `parts` count a shared file's lines in each layer apart; `patch show` lists
+files in tree order and tags the rows a layer holds; a file changed since review names the layer
+whose lines changed; `file review` answers with the layer it finished; `comment send --from --to`
+over a removed and an added row files on the new side.
 
 At the terminal: with the review open, a comment filed through `comment send` shows in the diff
 without a key being pressed, and a file marked through `file review` shows marked.

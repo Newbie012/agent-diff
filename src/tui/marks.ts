@@ -1,4 +1,6 @@
-export type ThreadStand = "filed" | "waiting" | "answered" | "asked" | "settled" | "gone"
+import type { ThreadStand } from "../domain/review/index.ts"
+
+export type { ThreadStand }
 
 export type MarkSet = {
   readonly filed: string

@@ -4,6 +4,9 @@ import type { Worktree } from "../service/git/index.ts"
 import { ThreadOpen, UnknownComment } from "./error.ts"
 import type { BranchReading } from "./branches.ts"
 import { placedAll, type Placed } from "./placing.ts"
+import { isMovedPast, isOpen, louderOf, sectionOf, standOf, type ThreadSection, type ThreadStand } from "../domain/review/index.ts"
+
+export const ASK_LEAD = "About this branch, not about this line."
 
 export type ThreadAnswer = {
   readonly body: string
@@ -30,11 +33,18 @@ export type Thread = {
   readonly stale: boolean
   readonly outdated: boolean
   readonly outside: boolean
+  readonly reworded: boolean
+  readonly movedPast: boolean
+  readonly stand: ThreadStand
+  readonly section: ThreadSection
+  readonly about: "branch" | "line"
+  readonly settleable: boolean
   readonly unread: number
   readonly taken: boolean
   readonly answers: ReadonlyArray<ThreadAnswer>
   readonly turns: ReadonlyArray<ThreadTurn>
   readonly settled: boolean
+  readonly layers?: ReadonlyArray<number>
   readonly doing?: ThreadDoing
 }
 
@@ -112,6 +122,59 @@ const turnsOf = (
     ...said.map((entry) => ({ voice: "agent" as const, body: entry.body, at: entry.at, ...choicesOf(entry) })),
   ].toSorted((one, other) => (one.at < other.at ? -1 : one.at > other.at ? 1 : 0))
 
+type Judged = Pick<Thread, "state" | "outside" | "outdated" | "reworded" | "taken" | "unread" | "settled"> & {
+  readonly asks: boolean
+  readonly answers: number
+  readonly agentLast: boolean
+}
+
+const judged = (facts: Judged) => {
+  const removed = facts.state === "removed"
+  const stand = standOf({
+    removed,
+    settled: facts.settled,
+    asks: facts.asks,
+    answeredLast: facts.agentLast && facts.answers > 0,
+    taken: facts.taken,
+  })
+  const movedPast = isMovedPast(facts)
+  return {
+    movedPast,
+    stand,
+    section: sectionOf(stand, movedPast),
+    settleable: facts.answers > 0 && facts.unread === 0 && !facts.settled && !removed,
+  }
+}
+
+type Gathered = {
+  readonly held: Held
+  readonly ids: ReadonlySet<string>
+  readonly mine: ReadonlyArray<StoredAnswer>
+  readonly turns: ReadonlyArray<ThreadTurn>
+  readonly sits: Placed
+  readonly settled: boolean
+  readonly seen: number
+}
+
+const factsOf = (gathered: Gathered, conversation: Conversation) => {
+  const { held, ids, mine, turns, sits, settled, seen } = gathered
+  const path = held.comment.anchor.path
+  const agentLast = turns.at(-1)?.voice === "agent"
+  const asked = mine.at(-1)?.asks === true
+  return {
+    state: stateOf(turns, asked, settled, Object.hasOwn(conversation.removed, held.comment.id)),
+    outdated: sits.placed && sits.outdated,
+    outside: !conversation.shown.has(path) || !sits.placed,
+    reworded: sits.placed && sits.reworded,
+    unread: Math.max(0, mine.length - seen),
+    taken: [...ids].some((id) => Object.hasOwn(conversation.taken, id)),
+    settled,
+    asks: agentLast && asked,
+    answers: mine.length,
+    agentLast,
+  }
+}
+
 const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conversation): Thread => {
   const { comment, batch } = held
   const ids = new Set([comment.id, ...replies.map((one) => one.comment.id)])
@@ -121,6 +184,7 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
   const settled = Object.hasOwn(conversation.settled, comment.id)
   const sits = conversation.places.get(comment.id) ?? { ...comment.anchor, placed: false, outdated: false, reworded: false }
   const doing = conversation.doing[comment.id]
+  const facts = factsOf({ held, ids, mine, turns, sits, settled, seen }, conversation)
   return {
     id: comment.id,
     file: comment.anchor.path,
@@ -130,12 +194,15 @@ const threadOf = (held: Held, replies: ReadonlyArray<Held>, conversation: Conver
     snippet: comment.anchor.snippet,
     body: comment.body,
     at: batch.at,
-    state: stateOf(turns, mine.at(-1)?.asks === true, settled, Object.hasOwn(conversation.removed, comment.id)),
+    state: facts.state,
     stale: batch.head !== conversation.head,
-    outdated: sits.placed && sits.outdated,
-    outside: !conversation.shown.has(comment.anchor.path) || !sits.placed,
-    unread: Math.max(0, mine.length - seen),
-    taken: [...ids].some((id) => Object.hasOwn(conversation.taken, id)),
+    outdated: facts.outdated,
+    outside: facts.outside,
+    reworded: facts.reworded,
+    ...judged(facts),
+    about: comment.body.startsWith(ASK_LEAD) ? "branch" : "line",
+    unread: facts.unread,
+    taken: facts.taken,
     answers: mine.map(answerOf),
     turns,
     settled,
@@ -336,3 +403,15 @@ export const settleRead = Effect.fn("Review.Thread.settleRead")(function* (
   }))
   return { settled: ripe.length }
 })
+
+export type FileThreads = { readonly path: string; readonly open: number; readonly stand: ThreadStand }
+
+const fileThreads = (path: string, threads: ReadonlyArray<Thread>): FileThreads => {
+  const here = threads.filter((thread) => thread.file === path)
+  return { path, open: here.length, stand: here.reduce<ThreadStand>((stand, one) => louderOf(stand, one.stand), "gone") }
+}
+
+export const byFile = (threads: ReadonlyArray<Thread>): ReadonlyArray<FileThreads> => {
+  const open = threads.filter((thread) => isOpen(thread.stand) && thread.about === "line")
+  return [...new Set(open.map((thread) => thread.file))].map((path) => fileThreads(path, open))
+}

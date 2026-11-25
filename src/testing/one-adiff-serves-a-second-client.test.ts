@@ -79,6 +79,42 @@ describe("when a second client watches a review through adiff serve", () => {
     expect(watching.answer.answer).toMatchObject({ ok: true })
     expect(await changed).toMatchObject({ id: watching.id, event: "changed" })
   })
+
+  test("then the change names the comments as what changed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    const served = driver.app.serve()
+    const watching = await served.watch(["--worktree", branch.worktree])
+    await served.settledOn(watching.id)
+
+    // ACT
+    const changed = served.changeOn(watching.id)
+    await driver.app.runComment({ branch: branch.name, file: "src/api.ts", start: 4, end: 4, body: "why three" })
+
+    // ASSERT
+    expect((await changed).what).toContain("comments")
+  })
+
+  test("then a new reading order names the layers as what changed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    const served = driver.app.serve()
+    const watching = await served.watch(["--worktree", branch.worktree])
+    await served.settledOn(watching.id)
+
+    // ACT
+    const changed = served.changeOn(watching.id)
+    await driver.app.runLayersSet(branch.worktree, {
+      layers: [{ title: "The new constant", spans: [{ path: "src/api.ts", start: 4, end: 4 }] }],
+    })
+
+    // ASSERT
+    const what = (await changed).what
+    expect(what).toContain("layers")
+    expect(what).not.toContain("comments")
+  })
 })
 
 describe("when a file is marked reviewed by another client while the review is open", () => {

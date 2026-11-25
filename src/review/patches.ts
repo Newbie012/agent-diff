@@ -2,8 +2,10 @@ import { Effect, Option } from "effect"
 import {
   anchorFor,
   enclosedBy,
+  lineOn,
   rowsForRange,
   scopeLines,
+  treeOrder,
   WHOLE_FILE,
   type FileStatus,
   type Hunk,
@@ -28,16 +30,39 @@ export type Ranged = {
   readonly side: Side
 }
 
-export const anchorWith = Effect.fn("Review.Diff.anchorWith")(function* (worktree: Worktree, request: Ranged) {
-  const only = yield* patchesIn(worktree, WHOLE_FILE, request.file)
+const wholeFile = Effect.fn("Review.Diff.wholeFile")(function* (worktree: Worktree, file: string) {
+  const only = yield* patchesIn(worktree, WHOLE_FILE, file)
   const found = only.length > 0 ? only : yield* patchesIn(worktree, WHOLE_FILE)
-  const patch = findPatch(found, request.file)
-
-  const resolved = yield* Option.match(patch, {
-    onNone: () =>
-      new UnknownFile({ file: request.file, known: found.map((candidate) => candidate.path) }),
+  return yield* Option.match(findPatch(found, file), {
+    onNone: () => new UnknownFile({ file, known: found.map((candidate) => candidate.path) }),
     onSome: Effect.succeed,
   })
+})
+
+export type Spot = { readonly side: Side; readonly line: number }
+
+export type Picked = { readonly file: string; readonly from: Spot; readonly to: Spot }
+
+const rowAt = (patch: Patch, spot: Spot): number =>
+  patch.rows.findIndex((row) =>
+    Option.match(lineOn(row, spot.side), { onNone: () => false, onSome: (line) => line === spot.line }),
+  )
+
+export const picked = Effect.fn("Review.Diff.picked")(function* (worktree: Worktree, request: Picked) {
+  const resolved = yield* wholeFile(worktree, request.file)
+  const first = rowAt(resolved, request.from)
+  const last = rowAt(resolved, request.to)
+  const anchored = first === -1 || last === -1 ? Option.none() : anchorFor(resolved, first, last)
+  return yield* Option.match(anchored, {
+    onNone: () =>
+      new UnselectableRange({ file: request.file, start: request.from.line, end: request.to.line }),
+    onSome: (made) =>
+      Effect.succeed({ file: request.file, side: made.side, start: made.start, end: made.end } satisfies Ranged),
+  })
+})
+
+export const anchorWith = Effect.fn("Review.Diff.anchorWith")(function* (worktree: Worktree, request: Ranged) {
+  const resolved = yield* wholeFile(worktree, request.file)
 
   const anchored = Option.flatMap(rowsForRange(resolved, request), ([first, last]) =>
     anchorFor(resolved, first, last, request.side),
@@ -71,6 +96,7 @@ export type ShownRow = {
   readonly text: string
   readonly old?: number
   readonly new?: number
+  readonly layers?: ReadonlyArray<number>
 }
 
 export type ShownHunk = {
@@ -105,6 +131,7 @@ export type ShownPatch = {
   readonly mergeBase: string
   readonly head: string
   readonly files: ReadonlyArray<ShownFile>
+  readonly order: ReadonlyArray<string>
 }
 
 export type Showing = {
@@ -188,5 +215,6 @@ export const show = Effect.fn("Review.Diff.show")(function* (based: Based, showi
     mergeBase: worktree.base,
     head: worktree.head,
     files: yield* Effect.forEach(patches, fileShown(worktree, generated), { concurrency: 16 }),
+    order: treeOrder(patches.map((patch) => patch.path)),
   } satisfies ShownPatch
 })
