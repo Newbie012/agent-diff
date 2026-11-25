@@ -96,6 +96,38 @@ describe("when a second client watches a review through adiff serve", () => {
     expect((await changed).what).toContain("comments")
   })
 
+  test("then an agent looking for comments names only the watch as what changed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    const served = driver.app.serve()
+    const watching = await served.watch(["--worktree", branch.worktree])
+    await served.settledOn(watching.id)
+
+    // ACT
+    const changed = served.changeOn(watching.id)
+    await driver.app.runTake(branch.worktree)
+
+    // ASSERT
+    expect((await changed).what).toEqual(["watch"])
+  })
+
+  test("then a file marked reviewed names only the state as what changed", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    const served = driver.app.serve()
+    const watching = await served.watch(["--worktree", branch.worktree])
+    await served.settledOn(watching.id)
+
+    // ACT
+    const changed = served.changeOn(watching.id)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", "src/api.ts"])
+
+    // ASSERT
+    expect((await changed).what).toEqual(["state"])
+  })
+
   test("then a new reading order names the layers as what changed", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
@@ -111,9 +143,7 @@ describe("when a second client watches a review through adiff serve", () => {
     })
 
     // ASSERT
-    const what = (await changed).what
-    expect(what).toContain("layers")
-    expect(what).not.toContain("comments")
+    expect((await changed).what).toEqual(["layers"])
   })
 })
 
