@@ -404,6 +404,16 @@ export const settleRead = Effect.fn("Review.Thread.settleRead")(function* (
   return { settled: ripe.length }
 })
 
+export type ThreadCounts = {
+  readonly asked: number
+  readonly unread: number
+}
+
+export const countsOf = (threads: ReadonlyArray<Thread>): ThreadCounts => ({
+  asked: threads.filter((thread) => thread.stand === "asked").length,
+  unread: threads.filter((thread) => isOpen(thread.stand) && thread.stand !== "asked" && thread.unread > 0).length,
+})
+
 export type FileThreads = {
   readonly path: string
   readonly open: number

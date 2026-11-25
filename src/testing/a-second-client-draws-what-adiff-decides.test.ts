@@ -119,6 +119,43 @@ describe("when a file holds one answered comment and one the agent has not picke
   })
 })
 
+describe("when the agent asks one comment back and answers two others", () => {
+  test("then comment list counts one question and two comments with an answer to read", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    const asked = await commentOn(driver, branch.worktree, 3, "why this name")
+    const first = await commentOn(driver, branch.worktree, 11, "two at once")
+    const second = await commentOn(driver, branch.worktree, 12, "and this one")
+
+    // ACT
+    await driver.app.run(["comment", "answer", "--worktree", branch.worktree, "--id", asked.id, "--body", "keep it or rename it?", "--question"])
+    await driver.app.run(["comment", "answer", "--worktree", branch.worktree, "--id", first.id, "--body", "split them"])
+    await driver.app.run(["comment", "answer", "--worktree", branch.worktree, "--id", second.id, "--body", "dropped it"])
+
+    // ASSERT
+    const listed = await driver.app.run(["comment", "list", "--worktree", branch.worktree])
+    expect((listed.envelope as { counts: unknown }).counts).toEqual({ asked: 1, unread: 2 })
+  })
+
+  test("then comment list stops counting an answer once the reviewer has read it", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    const first = await commentOn(driver, branch.worktree, 11, "two at once")
+    const second = await commentOn(driver, branch.worktree, 12, "and this one")
+    await driver.app.run(["comment", "answer", "--worktree", branch.worktree, "--id", first.id, "--body", "split them"])
+    await driver.app.run(["comment", "answer", "--worktree", branch.worktree, "--id", second.id, "--body", "dropped it"])
+
+    // ACT
+    await driver.app.run(["comment", "read", "--worktree", branch.worktree, "--id", first.id])
+
+    // ASSERT
+    const listed = await driver.app.run(["comment", "list", "--worktree", branch.worktree])
+    expect((listed.envelope as { counts: unknown }).counts).toEqual({ asked: 0, unread: 1 })
+  })
+})
+
 describe("when a second client lists a request for a reading order", () => {
   test("then comment list says the request is about the whole branch and in no layer", async () => {
     // ARRANGE
