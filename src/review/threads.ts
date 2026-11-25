@@ -423,6 +423,9 @@ export type LineThreads = {
 const loudestOf = (threads: ReadonlyArray<Thread>): ThreadStand =>
   threads.reduce<ThreadStand>((stand, one) => louderOf(stand, one.stand), "gone")
 
+const drawnOnALine = (thread: Thread): boolean =>
+  thread.about === "line" && !thread.movedPast && thread.stand !== "gone"
+
 const settledOnALine = (thread: Thread): boolean => thread.stand === "settled" && !thread.movedPast
 
 const fileThreads = (path: string, threads: ReadonlyArray<Thread>): FileThreads => {
@@ -438,13 +441,10 @@ const fileThreads = (path: string, threads: ReadonlyArray<Thread>): FileThreads 
 
 export const byFile = (threads: ReadonlyArray<Thread>): ReadonlyArray<FileThreads> => {
   const counted = threads.filter(
-    (thread) => thread.about === "line" && (isOpen(thread.stand) || settledOnALine(thread)),
+    (thread) => drawnOnALine(thread) && (isOpen(thread.stand) || thread.stand === "settled"),
   )
   return [...new Set(counted.map((thread) => thread.file))].map((path) => fileThreads(path, counted))
 }
-
-const drawnOnALine = (thread: Thread): boolean =>
-  thread.about === "line" && !thread.movedPast && thread.stand !== "gone"
 
 const lineThreads = (here: ReadonlyArray<Thread>, first: Thread): LineThreads => ({
   path: first.file,

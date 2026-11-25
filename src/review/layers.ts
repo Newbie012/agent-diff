@@ -350,7 +350,7 @@ const partWithThreads = (part: ReportedPart, threads: ReadonlyArray<Thread>): Re
 
 const withThreads = (report: LayersReport, threads: ReadonlyArray<Thread>): LayersReport => {
   const open = threads
-    .filter((thread) => isOpen(thread.stand))
+    .filter((thread) => isOpen(thread.stand) && !thread.movedPast)
     .map((thread) => ({ thread, layers: layersHolding(report.layers, thread) }))
   return {
     ...report,

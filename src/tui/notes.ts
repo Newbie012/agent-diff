@@ -18,7 +18,10 @@ export const threadsOn = (state: TuiState, fileIndex: number): OpenThreads => {
       : state.sent
           .filter(
             (entry) =>
-              entry.file === patch.path && entry.removed !== true && entry.settled !== true,
+              entry.file === patch.path &&
+              entry.removed !== true &&
+              entry.settled !== true &&
+              !movedPast(entry),
           )
           .map((entry) => threadStand(entry))
   return { open: stands.length, stand: stands.reduce(louderOf, "gone") }
