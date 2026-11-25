@@ -76,10 +76,13 @@ a visible diff.
   before the package exists, and the hold clears itself once it does.
 - **A release that stops halfway is finished by running the workflow again.** The version on main
   can be tagged and never published, when the registry refuses the publish, or published without
-  its GitHub release and binaries, when the registry is slow to show it. Either way the next run
+  its GitHub release and binaries, when a job after the publish fails. Either way the next run
   sees that main's own version is not fully out and finishes it from its tag before cutting a new
   one, then starts another run for any intents still waiting. Before this, the next run computed
   the same version from the registry again, collided with the tag, and published nothing.
+- **The binaries do not wait for the registry.** They build from the tag, so the GitHub release,
+  the binaries and the formula run beside the job that waits for npm to show the version and moves
+  `latest`. That wait took over two minutes of an eight-minute release when it sat in front of them.
 - Trusted publishing binds to the **workflow filename**. Renaming `release.yml` breaks publishing
   until the trusted publisher is updated to match.
 - Provenance is not generated. npm produces it automatically under trusted publishing, but only
