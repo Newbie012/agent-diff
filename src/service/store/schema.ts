@@ -136,6 +136,15 @@ const Code = Schema.Struct({
   path: Schema.String,
   start: Schema.Int,
   end: Schema.Int,
+  text: Schema.optionalKey(Schema.String),
+})
+
+const Split = Schema.Struct({
+  path: Schema.String,
+  name: Schema.String,
+  start: Schema.Int,
+  end: Schema.Int,
+  layers: Schema.Array(Schema.Int),
 })
 
 const StoredLayer = Schema.Struct({
@@ -151,4 +160,6 @@ export const StoredLayers = Schema.Struct({
   written: Schema.String,
   summary: Schema.String,
   layers: Schema.Array(StoredLayer),
+  blobs: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+  split: Schema.optionalKey(Schema.Array(Split)),
 })

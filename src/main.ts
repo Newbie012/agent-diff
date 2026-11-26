@@ -59,6 +59,7 @@ import {
 } from "./review/index.ts"
 import { banner, help, helpFor, helpUnder, usageOf, version } from "./cli/help.ts"
 import { GitLive, type Worktree } from "./service/git/index.ts"
+import { SyntaxLive } from "./service/syntax/index.ts"
 import { ForgeLive } from "./service/forge/index.ts"
 import { branchDir, branchKeyOf, storeAt, defaultRoot } from "./service/store/index.ts"
 
@@ -657,7 +658,7 @@ if (said !== undefined) {
   process.exit(0)
 }
 
-const layer = Layer.mergeAll(ForgeLive, toStdout, storeAt(storeRoot())).pipe(
+const layer = Layer.mergeAll(ForgeLive, toStdout, storeAt(storeRoot()), SyntaxLive).pipe(
   Layer.provideMerge(GitLive),
 )
 

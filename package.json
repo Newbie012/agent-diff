@@ -15,7 +15,8 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@opentui/core": "^0.4.5"
+    "@opentui/core": "^0.4.5",
+    "web-tree-sitter": "0.25.10"
   },
   "scripts": {
     "check": "pnpm run typecheck && pnpm run lint && pnpm run build && pnpm test",

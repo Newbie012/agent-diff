@@ -56,7 +56,22 @@ inside one ([PRD 002](002-diff-and-anchoring.md)).
 - **A layers is pinned to a commit and carries a version.** A new version supersedes its parent
   rather than replacing it.
 - **Status is derived, never stored.** A layers is current when its commit matches, superseded when
-  a later version exists, and stale when the commit has moved on. Nothing writes a status field.
+  a later version exists, and stale when the commit has moved on or the code under a span has
+  changed. Nothing writes a status field.
+- **A layers goes stale when the code under a span changes, not only when the commit moves.**
+  `layers set` records what each span's lines read, and `layers show` answers `outdated`: every
+  span whose lines read differently now, with its layer, its path and its lines. `stale` is true
+  while any span is outdated. An agent that edited a file after writing its layers, without
+  committing, was told the layers were current while their spans pointed at other code, because only
+  the commit was compared.
+- **`layers set` names every TypeScript function a layer boundary cuts through.** In a `.ts` or
+  `.tsx` file two or more layers share, a function, a method or a constant holding a function whose
+  changed lines more than one layer claims is a [split](CONTEXT.md#split). `layers set` answers
+  `split` with each one's path, name, lines and layers, and `layers show` gives back what the last
+  `layers set` found. An agent set spans counted on the committed text against a file it had since
+  rewritten, coverage came back complete, and one function was read half in layer 2 and half in
+  layer 11. The layers are still written; a split is a warning, not a refusal. Other languages are
+  not checked yet.
 - **Coverage is the fraction of the branch's rows a layers's spans account for.** A layers can be
   reported as covering the whole diff, and one that does not says so.
 - **A comment on code a layer explains names that layer in the hand-over.** A layers goes stale as
@@ -229,6 +244,10 @@ surface in `src/testing/layers.test.ts`, the terminal in `src/testing/layers-rai
 - A layer claiming only unchanged context covers nothing.
 - Writing a layers again supersedes the previous version and records its parent.
 - A layers is reported stale once the branch moves past the commit it describes.
+- A layers is reported stale, with the span named as outdated, once the code under that span
+  changes in the working tree, and a change under one layer's span leaves the other spans current.
+- Writing layers that cut a TypeScript or TSX function between two layers names the function, its
+  lines and both layers as a split, and layers that keep every function whole name none.
 - A layer pointing at a path the branch does not change is reported as vanished.
 - Reading a branch with no layers fails as `NoLayers` rather than answering with an empty one.
 - The terminal lists numbered layers with file counts instead of the file tree, scopes the diff to
