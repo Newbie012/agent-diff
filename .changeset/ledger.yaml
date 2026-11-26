@@ -530,6 +530,10 @@
   intents:
     - a-body-of-dash-reads-stdin
     - a-layer-read-stays-read-when-another-layer-changes
+"@eliya-oss/agent-diff@0.1.0-alpha.205":
+  dir: ""
+  intents:
+    - a-reading-order-checked-against-its-code
 "@eliya-oss/agent-diff@0.1.0-alpha.21":
   dir: ""
   intents:
