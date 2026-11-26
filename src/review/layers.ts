@@ -379,7 +379,7 @@ const readReport = Effect.fn("Review.Layers.readReport")(function* (reading: Bra
     withRead(report, {
       patches: reading.patches,
       vouches: current.vouches,
-      parts: [...readParts(current.parts, files), ...(yield* stillRead(reading, current.vouches, spans))],
+      parts: [...readParts(current.parts, files), ...(yield* stillRead(reading, current, spans))],
     }),
   )
 })
@@ -528,24 +528,70 @@ export const vouchPart = Effect.fn("Review.Layers.vouchPart")(function* (
   const at = yield* keepMarked(reading.worktree, file, { blob: asked, onDisk, at: marking.at })
   const blob = yield* fullBlob(reading.worktree, asked)
   const held = yield* read(reading)
-  const wanted = partsOfFile(held.layers, file)
+  const spans = held.layers.map((layer) => layer.spans)
   const current = yield* store.state(reading.worktree.path)
-  const parts = vouchedPart(current.parts, part, blob)
-  const whole = wanted.length > 0 && wanted.every((one) => isPartVouched(parts, one, blob))
-  const vouches =
-    whole === isVouched(current.vouches, file, blob) ? current.vouches : vouch(current.vouches, file, blob)
+  const readBefore = yield* stillRead(reading, current, spans)
+  const next =
+    readBefore.includes(part) && !isPartVouched(current.parts, part, blob)
+      ? unmarkedPart(current, file, part, readBefore)
+      : yield* markedPart(reading, current, { file, part, blob, wanted: partsOfFile(held.layers, file), spans })
   yield* store.changeState(reading.worktree.path, (was) => ({
     ...was,
-    parts,
-    vouches,
-    vouchedAt: restamped(was.vouchedAt, { ...was.vouches, ...was.parts }, { ...vouches, ...parts }, at),
+    parts: next.parts,
+    vouches: next.vouches,
+    vouchedAt: {
+      ...restamped(was.vouchedAt, { ...was.vouches, ...was.parts }, { ...next.vouches, ...next.parts }, at),
+      ...carriedStamps(next.carried, was.vouchedAt[file] ?? at),
+    },
   }))
   const files = reading.patches.map((one) => ({ path: one.path, blob: one.blob }))
+  const readAfter = yield* stillRead(reading, next, spans)
   return {
-    vouched: files.filter((one) => isVouched(vouches, one.path, one.blob)).map((one) => one.path),
-    parts: readParts(parts, files),
+    vouched: files.filter((one) => isVouched(next.vouches, one.path, one.blob)).map((one) => one.path),
+    parts: [...new Set([...readParts(next.parts, files), ...readAfter])],
     total: reading.patches.length,
   } satisfies VouchReport
+})
+
+const carriedStamps = (carried: ReadonlyArray<string>, at: string): Readonly<Record<string, string>> =>
+  Object.fromEntries(carried.map((key) => [key, at]))
+
+type Marks = {
+  readonly vouches: Readonly<Record<string, string>>
+  readonly parts: Readonly<Record<string, string>>
+  readonly carried: ReadonlyArray<string>
+}
+
+const unmarkedPart = (current: Omit<Marks, "carried">, file: string, part: string, readBefore: ReadonlyArray<string>): Marks => {
+  const { [part]: _unmarked, ...parts } = current.parts
+  const lapsed = current.vouches[file]
+  if (lapsed === undefined) return { vouches: current.vouches, parts, carried: [] }
+  const { [file]: _whole, ...vouches } = current.vouches
+  const carried = readBefore.filter((one) => one !== part && one.startsWith(`${file}@`) && !Object.hasOwn(parts, one))
+  return { vouches, parts: { ...parts, ...Object.fromEntries(carried.map((one) => [one, lapsed])) }, carried }
+}
+
+type Pressed = {
+  readonly file: string
+  readonly part: string
+  readonly blob: string
+  readonly wanted: ReadonlyArray<string>
+  readonly spans: ReadonlyArray<ReadonlyArray<Span>>
+}
+
+const markedPart = Effect.fn("Review.Layers.markedPart")(function* (
+  reading: BranchReading,
+  current: Omit<Marks, "carried">,
+  pressed: Pressed,
+) {
+  const { file, blob } = pressed
+  const parts = vouchedPart(current.parts, pressed.part, blob)
+  const kept = yield* stillRead(reading, { vouches: current.vouches, parts }, pressed.spans)
+  const whole =
+    pressed.wanted.length > 0 && pressed.wanted.every((one) => isPartVouched(parts, one, blob) || kept.includes(one))
+  const vouches =
+    whole === isVouched(current.vouches, file, blob) ? current.vouches : vouch(current.vouches, file, blob)
+  return { vouches, parts, carried: [] } satisfies Marks
 })
 
 export const askingFor = (told: { readonly count: number; readonly stale: boolean }): string => {

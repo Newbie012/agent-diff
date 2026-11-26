@@ -82,8 +82,12 @@ Where the record is written ([PRD 004](004-comment-delivery.md)); the blob itsel
   read while standing on one layer marked it read under every other layer that touches it, and a
   reviewer who read ten lines of a forty-line file was shown a reading order with every layer ticked.
   Where more than one layer claims a file, the mark records the layer's own runs of that file — the
-  path with the runs it covers, stamped with the same blob a whole-file vouch is stamped with, so a
-  file the agent changes again loses its marks like any other. A layer is read when its own runs are,
+  path with the runs it covers, stamped with the same blob a whole-file vouch is stamped with. When
+  the agent changes the file again, a layer whose own runs the change left alone stays read, and only
+  the layers whose lines changed lose their mark. A reviewer who read layer 5 of a file was asked to
+  read layer 5 again after the agent renamed a method in layer 7, with nothing new in layer 5 to
+  read. A whole-file vouch already kept its untouched layers; a layer's own mark now does the same.
+  A layer is read when its own runs are,
   and the file itself is read when every layer's runs of it are, which is when the file list ticks it
   and the count at the top counts it. Unmarking one layer's runs takes the file back out.
 - **Progress reports the vouched paths, the changed ones and the branch's total file count**, so
@@ -158,6 +162,9 @@ Behaviors that must be covered:
 - A file marked and then deleted is named as deleted since review.
 - A mark whose version is not kept is named as not kept, with no counts.
 - A file changed back to the marked content reads as reviewed and not as changed.
+- A layer marked read on its own stays read when the file changes only in another layer's lines,
+  and marking that other layer afterwards counts the whole file read. Marking a layer kept read
+  that way takes it back out, as marking any read layer does.
 - A mark pressed after the directory was switched to another branch records nothing, the footer
   names the branch the directory is on now, and the other branch's progress stays empty.
 
