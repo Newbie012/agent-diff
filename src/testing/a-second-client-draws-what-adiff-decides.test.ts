@@ -382,6 +382,74 @@ describe("when a file read whole changes only in the second layer's lines", () =
   })
 })
 
+describe("when a file read in its first layer only changes in the second layer's lines", () => {
+  test("then layers show keeps the file read in the first layer", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL, "--layer", "1"])
+
+    // ACT
+    await driver.branch.setFile(branch, TALL, after.map((line, at) => (at === 10 ? "const added1 = 'again'" : line)))
+
+    // ASSERT
+    const [first, second] = await layersOf(driver, branch.worktree)
+    expect(first).toMatchObject({ done: true, parts: [{ path: TALL, read: true }] })
+    expect(second).toMatchObject({ done: false, parts: [{ path: TALL, read: false }] })
+  })
+
+  test("then marking the second layer read afterwards makes review progress count the file read", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL, "--layer", "1"])
+    await driver.branch.setFile(branch, TALL, after.map((line, at) => (at === 10 ? "const added1 = 'again'" : line)))
+
+    // ACT
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL, "--layer", "2"])
+
+    // ASSERT
+    const progress = await driver.app.run(["review", "progress", "--worktree", branch.worktree])
+    expect((progress.envelope as { reviewed: ReadonlyArray<string> }).reviewed).toEqual([TALL])
+  })
+})
+
+describe("when a layer kept read through a change in another layer is marked again", () => {
+  test("then layers show takes the first layer of a file read one layer at a time back out", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL, "--layer", "1"])
+    await driver.branch.setFile(branch, TALL, after.map((line, at) => (at === 10 ? "const added1 = 'again'" : line)))
+
+    // ACT
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL, "--layer", "1"])
+
+    // ASSERT
+    const [first] = await layersOf(driver, branch.worktree)
+    expect(first).toMatchObject({ done: false, parts: [{ path: TALL, read: false }] })
+  })
+
+  test("then layers show takes the first layer of a file read whole back out", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create(oneFile)
+    await driver.app.runLayersSet(branch.worktree, twoLayers)
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL])
+    await driver.branch.setFile(branch, TALL, after.map((line, at) => (at === 10 ? "const added1 = 'again'" : line)))
+
+    // ACT
+    await driver.app.run(["file", "review", "--worktree", branch.worktree, "--file", TALL, "--layer", "1"])
+
+    // ASSERT
+    const [first] = await layersOf(driver, branch.worktree)
+    expect(first).toMatchObject({ done: false, parts: [{ path: TALL, read: false }] })
+  })
+})
+
 describe("when a second client holds a draft on a removed row and the added row below it", () => {
   test("then draft add --from --to holds the draft on the new side, as the terminal would", async () => {
     // ARRANGE

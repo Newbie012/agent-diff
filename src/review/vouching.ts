@@ -221,21 +221,33 @@ const partsStillRead = Effect.fn("Review.Vouch.partsStillRead")(function* (
   return untouchedParts(spans, patch.path, layersTouched(spans, patch.path, since))
 })
 
+type Lapsed = { readonly patch: Patch; readonly blob: string; readonly keys: ReadonlyArray<string> }
+
+const lapsedMarks = (patches: ReadonlyArray<Patch>, marks: Vouches): ReadonlyArray<Lapsed> => {
+  const grouped = new Map<string, Lapsed>()
+  for (const [key, blob] of Object.entries(marks)) {
+    const patch = patches.find((one) => one.path === pathOfMark(key))
+    if (patch === undefined || sameBlob(blob, patch.blob)) continue
+    const held = grouped.get(`${patch.path}|${blob}`)
+    grouped.set(`${patch.path}|${blob}`, { patch, blob, keys: [...(held?.keys ?? []), key] })
+  }
+  return [...grouped.values()]
+}
+
+const keptOf = (lapsed: Lapsed, untouched: ReadonlyArray<string>): ReadonlyArray<string> =>
+  lapsed.keys.includes(lapsed.patch.path) ? untouched : untouched.filter((part) => lapsed.keys.includes(part))
+
 export const stillRead = Effect.fn("Review.Vouch.stillRead")(function* (
   reading: BranchReading,
-  vouches: Vouches,
+  marks: Pick<BranchState, "vouches" | "parts">,
   spans: LayerSpans,
 ) {
   if (spans.length === 0) return []
-  const lapsed = reading.patches.filter(
-    (patch) => Object.hasOwn(vouches, patch.path) && !isVouched(vouches, patch.path, patch.blob),
-  )
-  const found = yield* Effect.forEach(
-    lapsed,
-    (patch) => partsStillRead(reading.worktree, patch, vouches[patch.path] ?? "", spans),
-    { concurrency: 8 },
-  )
-  return found.flat()
+  const lapsed = lapsedMarks(reading.patches, { ...marks.vouches, ...marks.parts })
+  const keptIn = (one: Lapsed) =>
+    Effect.map(partsStillRead(reading.worktree, one.patch, one.blob, spans), (untouched) => keptOf(one, untouched))
+  const found = yield* Effect.forEach(lapsed, keptIn, { concurrency: 8 })
+  return [...new Set(found.flat())]
 })
 
 const reportSince = Effect.fn("Review.Vouch.reportSince")(function* (
@@ -317,7 +329,7 @@ export const progress = Effect.fn("Review.Vouch.progress")(function* (
   const changed = changedSince([current.vouches, current.parts], files)
   return {
     vouched: files.filter((file) => isVouched(current.vouches, file.path, file.blob)).map((f) => f.path),
-    parts: [...readParts(current.parts, files), ...(yield* stillRead(reading, current.vouches, spans))],
+    parts: [...readParts(current.parts, files), ...(yield* stillRead(reading, current, spans))],
     changed,
     since: yield* sinceReview(reading, current, changed, spans),
     total: reading.patches.length,
