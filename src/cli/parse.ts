@@ -1,3 +1,4 @@
+import { text as readStream } from "node:stream/consumers"
 import { Effect, Option } from "effect"
 import { WAIT_MOST } from "./catalog.ts"
 import { BadOption, MissingOption, UnknownOption } from "./error.ts"
@@ -76,6 +77,16 @@ export const required = Effect.fn("Cli.required")(function* (options: Options, n
   })
 })
 
+const STDIN = "-"
+
+export const text = Effect.fn("Cli.text")(function* (options: Options, name: string) {
+  const given = yield* required(options, name)
+  const said = given === STDIN ? yield* Effect.promise(() => readStream(process.stdin)) : given
+  return yield* said.trim().length > 0
+    ? Effect.succeed(given === STDIN ? said.trimEnd() : said)
+    : new BadOption({ option: name, given, allowed: ["text, or - with the text on stdin"] })
+})
+
 export const numeric = Effect.fn("Cli.numeric")(function* (options: Options, name: string) {
   const raw = yield* required(options, name)
   const parsed = Number(raw)
@@ -143,8 +154,8 @@ export const choices = Effect.fn("Cli.choices")(function* (options: Options, nam
 })
 
 export const oneLine = Effect.fn("Cli.oneLine")(function* (options: Options, name: string) {
-  const said = (yield* required(options, name)).trim()
-  return yield* said.length > 0 && !said.includes("\n")
+  const said = (yield* text(options, name)).trim()
+  return yield* !said.includes("\n")
     ? Effect.succeed(said)
     : new BadOption({ option: name, given: said, allowed: ["one line of text, not empty"] })
 })

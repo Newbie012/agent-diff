@@ -118,6 +118,10 @@ export class AppTestDriver {
     ])
   }
 
+  runPiped(args: ReadonlyArray<string>, input: string): Promise<CliResult> {
+    return this.runWith(args, input)
+  }
+
   private runWith(args: ReadonlyArray<string>, input: string): Promise<CliResult> {
     const env = {
       ...process.env,

@@ -94,6 +94,52 @@ describe("when an agent names the review it is standing in", () => {
     expect(found?.state).toBe("question")
   })
 
+  test("then an answer piped on stdin with --body - reads back whole", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.runComment({ branch: branch.name, file: "src/api.ts", start: 1, end: 1, body: "what is it" })
+    const taken = await driver.app.runTake(branch.worktree)
+    const id = (taken.envelope as Listed).comments[0]?.id ?? ""
+    const said = 'The fence\'s "message", kept whole:\n\n- one\n- two'
+
+    // ACT
+    await driver.app.runPiped(
+      ["comment", "answer", "--worktree", branch.worktree, "--id", id, "--body", "-"],
+      `${said}\n`,
+    )
+    const listed = await driver.app.runThreads(branch.name)
+
+    // ASSERT
+    const found = (listed.envelope as {
+      comments: ReadonlyArray<{ readonly answers: ReadonlyArray<{ readonly body: string }> }>
+    }).comments[0]
+    expect(found?.answers.map((entry) => entry.body)).toEqual([said])
+  })
+
+  test("then an answer of --body - with nothing on stdin is refused", async () => {
+    // ARRANGE
+    await using driver = await TestDriver.create()
+    const branch = await driver.branch.create({ name: "add-a-third-line" })
+    await driver.app.runComment({ branch: branch.name, file: "src/api.ts", start: 1, end: 1, body: "what is it" })
+    const taken = await driver.app.runTake(branch.worktree)
+    const id = (taken.envelope as Listed).comments[0]?.id ?? ""
+
+    // ACT
+    const result = await driver.app.runPiped(
+      ["comment", "answer", "--worktree", branch.worktree, "--id", id, "--body", "-"],
+      "",
+    )
+    const listed = await driver.app.runThreads(branch.name)
+
+    // ASSERT
+    expect(result.code).not.toBe(0)
+    const found = (listed.envelope as {
+      comments: ReadonlyArray<{ readonly answers: ReadonlyArray<unknown> }>
+    }).comments[0]
+    expect(found?.answers).toEqual([])
+  })
+
   test("then adiff refuses with neither spelling and names both", async () => {
     // ARRANGE
     await using driver = await TestDriver.create()
