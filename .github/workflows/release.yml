@@ -101,9 +101,10 @@ jobs:
             { echo "mode=publish"; echo "version=$ON_MAIN"; echo "pending=true"; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          BUILT=$(sed -n '/^  binaries:/,/^  [a-z]/p' .github/workflows/release.yml | grep -c '^ *asset: ')
           ATTACHED=$(gh release view "v$ON_MAIN" --json assets --jq '[.assets[].name | select(endswith(".tar.gz"))] | length' 2>/dev/null || echo 0)
-          if git rev-parse -q --verify "refs/tags/v$ON_MAIN" > /dev/null && [ "$ATTACHED" -lt 4 ]; then
-            echo "::notice::$ON_MAIN is published but its release carries $ATTACHED of 4 binaries, so this run finishes the release, the binaries and the formula before anything new."
+          if git rev-parse -q --verify "refs/tags/v$ON_MAIN" > /dev/null && [ "$ATTACHED" -lt "$BUILT" ]; then
+            echo "::notice::$ON_MAIN is published but its release carries $ATTACHED of $BUILT binaries, so this run finishes the release, the binaries and the formula before anything new."
             { echo "mode=finish"; echo "version=$ON_MAIN"; echo "pending=true"; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
