@@ -23,7 +23,7 @@ How to make a change here, in order. `AGENTS.md` is the short version; this is w
    lines still wrap the next time adiff opens". A screen shows, lists, marks or counts; the CLI
    prints, names or exits. `adiff/test-title` checks the shape and the subject slot. For the voice,
    CLAUDE.md points at the `plain-english` skill.
-6. **Write the code.** Then `pnpm check`.
+6. **Write the code.** Then `pnpm typecheck && pnpm lint && pnpm build`, and push: CI runs the tests.
 7. **Write the change intent**, if a reviewer would notice the difference. One entry per thing that
    changed, in the shape `.claude/skills/release-notes/SKILL.md` describes. A refactor, a test or a
    doc gets none, and so ships no release.
@@ -64,8 +64,11 @@ These are enforced, not advised. Each exists because the alternative already cau
 ## Before saying it is done
 
 ```bash
-pnpm check
+pnpm typecheck && pnpm lint && pnpm build
 ```
 
-Typecheck, lint, style rules, and the full suite. Report what actually happened: if a test fails,
-say so with the output; if part of the slice was skipped, say which part and why.
+Typecheck, lint and style rules locally. **The tests run in CI, never the whole suite locally**: the
+`check` workflow shards them eight ways on every pull request, so open or push the pull request and
+read its checks. Locally, run only the test being written, to watch it fail for the right reason and
+then pass. A change is done when CI is green. Report what actually happened: if a check fails, say
+so with the output; if part of the slice was skipped, say which part and why.

@@ -17,7 +17,11 @@ Talk tachles: be concise, direct, and practical.
    `describe("when …")` and `test("then …")`, each naming its subject rather than leaning on "it",
    "them" or "that way": the title is read on a PR page and on a recording's title card, with
    nothing beside it. `adiff/test-title` enforces it.
-4. Then the code. Then `pnpm check`.
+4. Then the code. Then `pnpm typecheck && pnpm lint && pnpm build`, push, and let CI run the tests.
+
+**Tests run in CI, never the whole suite locally.** The suite is sharded eight ways on every pull
+request. Locally, run only the test you are writing, to watch it fail and then pass. A change is done
+when CI is green on its pull request, and a failure there is reported with its output.
 
 `.agents/prd/` holds behavior contracts, `.agents/adr/` durable decisions, GitHub issues the work.
 
@@ -25,7 +29,8 @@ Talk tachles: be concise, direct, and practical.
 
 ```bash
 pnpm install        # needs pnpm 12: npm i -g --allow-scripts=pnpm pnpm@next-12
-pnpm check          # typecheck, lint, build, tests — run before saying it is done
+pnpm typecheck && pnpm lint && pnpm build   # before pushing; CI runs the tests
+NODE_OPTIONS=--experimental-ffi pnpm vitest run <file> -t "<title>"   # only the test you are writing
 pnpm review         # the terminal, on this repo
 pnpm simulate       # the terminal, on a synthetic repo (--probe for headless)
 pnpm pr-summary     # the `## What changed` block for this branch
