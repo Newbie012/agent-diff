@@ -525,6 +525,11 @@
   dir: ""
   intents:
     - patch-show-names-the-quiet-layers
+"@eliya-oss/agent-diff@0.1.0-alpha.204":
+  dir: ""
+  intents:
+    - a-body-of-dash-reads-stdin
+    - a-layer-read-stays-read-when-another-layer-changes
 "@eliya-oss/agent-diff@0.1.0-alpha.21":
   dir: ""
   intents:
