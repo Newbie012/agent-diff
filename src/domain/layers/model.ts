@@ -2,7 +2,13 @@ import type { Option } from "effect"
 
 export type LayerBlock =
   | { readonly kind: "prose"; readonly markdown: string }
-  | { readonly kind: "code"; readonly path: string; readonly start: number; readonly end: number }
+  | {
+      readonly kind: "code"
+      readonly path: string
+      readonly start: number
+      readonly end: number
+      readonly text?: string
+    }
 
 export type Layer = {
   readonly title: string
@@ -17,6 +23,29 @@ export type Layers = {
   readonly written: string
   readonly summary: string
   readonly layers: ReadonlyArray<Layer>
+  readonly blobs?: Readonly<Record<string, string>>
+  readonly split?: ReadonlyArray<Split>
+}
+
+export type Split = {
+  readonly path: string
+  readonly name: string
+  readonly start: number
+  readonly end: number
+  readonly layers: ReadonlyArray<number>
+}
+
+export type OutdatedSpan = {
+  readonly layer: number
+  readonly path: string
+  readonly start: number
+  readonly end: number
+}
+
+export type Declaration = {
+  readonly name: string
+  readonly start: number
+  readonly end: number
 }
 
 export type Span = {

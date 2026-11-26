@@ -134,6 +134,9 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+      web-tree-sitter:
+        specifier: 0.25.10
+        version: 0.25.10
     devDependencies:
       '@effect/tsgo':
         specifier: ^0.31.0

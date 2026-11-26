@@ -209,6 +209,12 @@ A changed [row](#row) inside a [hunk](#hunk) the open layer shows, which another
 stays in place, in faint ink with no wash, so the hunk still reads as code. A run of 8 or more such
 rows folds to one line instead — see [PRD 006](006-narrative-review.md).
 
+### Split
+
+A function, a method or a constant holding a function whose changed lines more than one layer
+claims, so the reviewer reads half of it in one layer and the rest in another. adiff finds them in
+TypeScript and TSX — see [PRD 006](006-narrative-review.md).
+
 ### Coverage
 
 How much of a [branch](#branch)'s rows a [layers](#layers) accounts for. A layers that skips half the

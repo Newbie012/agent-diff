@@ -343,8 +343,15 @@ reviewer asks for another.
 reading order whose layers each claim the whole diff reports the same `covered` as one whose layers
 each claim their own run. Done means `uncovered` is empty **and** `shared` is zero.
 
+`split` in the answer names each TypeScript or TSX function, method or function-valued constant
+whose changed lines your layers cut between two or more layers, with its lines and those layers. A
+reviewer reads half of it in one layer and the rest in another, so move the boundary until `split`
+is empty. Count spans on the file as it is on disk now, never on a committed copy you have since
+edited: spans counted on other text cover the right number of lines and still cut the wrong code.
+
 Setting layers again supersedes the previous set and bumps `version`; the set records the commit it
-was written for, and adiff reports it as `stale` once the branch moves past that commit. Once a
+was written for and the text each span held, and adiff reports it as `stale` once the branch moves
+past that commit or the code under a span changes. `outdated` names each span whose lines changed. Once a
 reviewer has a reading order, keep it true, as the next section says.
 
 When you have published one, tell them the sidebar now holds it: `s` swaps between the layers and
@@ -358,13 +365,14 @@ Once a branch has layers, check them after each change you make (a commit, an an
 rebase) and before you say the work is ready:
 
 ```bash
-adiff layers show --worktree . --fields stale,uncovered,shared,vanished
+adiff layers show --worktree . --fields stale,uncovered,shared,vanished,outdated,split
 ```
 
-If `uncovered` is not empty, `stale` is true or `vanished` names a path, write a new revision with
+If `uncovered` is not empty, `stale` is true, `vanished` names a path, `outdated` names a span or
+`split` names a function, write a new revision with
 `adiff layers set` right away. Put new runs into the layer whose claim they serve, and add a final
 layer only for lines that serve none. When the base moved, read the diff again rather than patching
-line numbers. Done means `uncovered` is empty and `shared` is zero.
+line numbers. Done means `uncovered` is empty, `shared` is zero and `split` is empty.
 
 Do it silently: it is upkeep, not news, so do not ask first and do not report it unless the reviewer
 asks. `NoLayers` (exit 3) means the branch has no reading order, and then you write one only when

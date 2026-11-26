@@ -4,20 +4,27 @@ import {
   coverage,
   linesClaimed,
   noteOf,
+  outdatedSpans,
   proseAnchors,
   quietKey,
   quietLayers,
   sharedHunks,
+  sharedPaths,
+  splitsIn,
+  stamped,
   statusOf,
   withFullCoverage,
+  type OutdatedSpan,
   type Span,
+  type Split,
   type Layer,
   type Layers,
   type LayerBlock,
   type ProseAnchor,
 } from "../domain/layers/index.ts"
 import type { Patch } from "../domain/patch/index.ts"
-import type { Worktree } from "../service/git/index.ts"
+import { AT_ONCE, Git, type Worktree } from "../service/git/index.ts"
+import { Syntax } from "../service/syntax/index.ts"
 import { Store, type StoredLayers } from "../service/store/index.ts"
 import {
   isOpen,
@@ -25,6 +32,7 @@ import {
   isVouched,
   louderOf,
   partOf,
+  sameBlob,
   vouch,
   vouchPart as vouchedPart,
   type ThreadStand,
@@ -38,6 +46,9 @@ import { fullBlob, keepMarked, readParts, restamped, stillRead, toggle, type Mar
 
 const STALE_ADVICE =
   "These layers describe an older commit. Read the diff again and write a new revision with layers set."
+
+const OUTDATED_ADVICE =
+  "The code under the outdated spans changed after these layers were written. Read those lines again and write a new revision with layers set."
 
 export type ReportedPart = {
   readonly path: string
@@ -81,7 +92,9 @@ export type LayersReport = {
   readonly total: number
   readonly uncovered: ReadonlyArray<Span>
   readonly shared: number
+  readonly split: ReadonlyArray<Split>
   readonly vanished: ReadonlyArray<string>
+  readonly outdated: ReadonlyArray<OutdatedSpan>
   readonly layers: ReadonlyArray<ReportedLayer>
 }
 
@@ -244,10 +257,16 @@ const reportedLayers = (patches: ReadonlyArray<Patch>, layers: Layers): Readonly
   })
 }
 
+const adviceOf = (moved: boolean, outdated: ReadonlyArray<OutdatedSpan>): { readonly advice?: string } => {
+  if (moved) return { advice: STALE_ADVICE }
+  return outdated.length > 0 ? { advice: OUTDATED_ADVICE } : {}
+}
+
 const reportOf = (
   patches: ReadonlyArray<Patch>,
   layers: Layers,
   branchHead: string,
+  outdated: ReadonlyArray<OutdatedSpan> = [],
 ): LayersReport => {
   const status = statusOf(patches, layers, branchHead)
   return {
@@ -255,8 +274,8 @@ const reportOf = (
     parent: Option.getOrUndefined(status.parent),
     head: status.layersHead,
     branchHead: status.branchHead,
-    stale: status.stale,
-    ...(status.stale ? { advice: STALE_ADVICE } : {}),
+    stale: status.stale || outdated.length > 0,
+    ...adviceOf(status.stale, outdated),
     written: layers.written,
     summary: layers.summary,
     covered: status.covered,
@@ -264,10 +283,56 @@ const reportOf = (
     total: status.total,
     uncovered: status.uncovered,
     shared: sharedHunks(patches, layers.layers),
+    split: layers.split ?? [],
     vanished: status.vanished,
+    outdated,
     layers: reportedLayers(patches, layers),
   }
 }
+
+const pathsOfLayer = (layer: Layer): ReadonlyArray<string> => codeBlocks(layer).map((block) => block.path)
+
+const sourcesOf = Effect.fn("Review.Layers.sourcesOf")(function* (
+  worktree: Worktree,
+  paths: ReadonlyArray<string>,
+) {
+  const git = yield* Git
+  const read = Effect.fn("Review.Layers.sourceOf")(function* (path: string) {
+    const lines = yield* git.source(worktree, path)
+    return [path, Option.getOrUndefined(lines) ?? []] as const
+  })
+  return new Map(yield* Effect.forEach(paths, read, { concurrency: AT_ONCE }))
+})
+
+const changedSinceWritten = (patches: ReadonlyArray<Patch>, layers: Layers): ReadonlyArray<string> =>
+  Object.entries(layers.blobs ?? {})
+    .filter(([path, blob]) => {
+      const now = patches.find((patch) => patch.path === path)
+      return now !== undefined && !sameBlob(now.blob, blob)
+    })
+    .map(([path]) => path)
+
+const outdatedIn = Effect.fn("Review.Layers.outdatedIn")(function* (
+  worktree: Worktree,
+  patches: ReadonlyArray<Patch>,
+  layers: Layers,
+) {
+  const changed = changedSinceWritten(patches, layers)
+  if (changed.length === 0) return []
+  return outdatedSpans(layers.layers, yield* sourcesOf(worktree, changed))
+})
+
+const splitsFound = Effect.fn("Review.Layers.splitsFound")(function* (
+  patches: ReadonlyArray<Patch>,
+  layers: ReadonlyArray<Layer>,
+  sources: ReadonlyMap<string, ReadonlyArray<string>>,
+) {
+  const syntax = yield* Syntax
+  const shared = new Set(sharedPaths(layers))
+  const splitIn = (patch: Patch) =>
+    Effect.map(syntax.functions(patch.path, sources.get(patch.path) ?? []), (found) => splitsIn(layers, patch, found))
+  return (yield* Effect.forEach(patches.filter((patch) => shared.has(patch.path)), splitIn)).flat()
+})
 
 const storedLayers = Effect.fn("Review.Layers.storedLayers")(function* (worktree: Worktree) {
   const store = yield* Store
@@ -283,6 +348,8 @@ export const set = Effect.fn("Review.Layers.set")(function* (
   const input = yield* readLayers(text)
   const patches = yield* patchesIn(worktree)
   const previous = yield* storedLayers(worktree)
+  const paths = unique(input.layers.flatMap(pathsOfLayer))
+  const sources = yield* sourcesOf(worktree, paths)
   const layers: Layers = {
     version: Option.match(previous, { onNone: () => 1, onSome: (old) => old.version + 1 }),
     parent: Option.map(previous, (old) => old.version),
@@ -290,7 +357,9 @@ export const set = Effect.fn("Review.Layers.set")(function* (
     base: worktree.base,
     written,
     summary: input.summary,
-    layers: input.layers,
+    layers: stamped(input.layers, sources),
+    blobs: Object.fromEntries(patches.filter((patch) => sources.has(patch.path)).map((patch) => [patch.path, patch.blob])),
+    split: yield* splitsFound(patches, input.layers, sources),
   }
   yield* store.saveLayers(worktree.path, toStored(layers))
   return reportOf(patches, layers, worktree.head)
@@ -373,7 +442,8 @@ const readReport = Effect.fn("Review.Layers.readReport")(function* (reading: Bra
   if (Option.isNone(found)) return Option.none<LayersReport>()
   const current = yield* store.state(reading.worktree.path)
   const files = reading.patches.map((patch) => ({ path: patch.path, blob: patch.blob }))
-  const report = reportOf(reading.patches, found.value, reading.worktree.head)
+  const outdated = yield* outdatedIn(reading.worktree, reading.patches, found.value)
+  const report = reportOf(reading.patches, found.value, reading.worktree.head, outdated)
   const spans = report.layers.map((layer) => layer.spans)
   return Option.some(
     withRead(report, {
@@ -498,9 +568,10 @@ export const read = Effect.fn("Review.Layers.read")(function* (reading: BranchRe
   if (Option.isNone(found)) {
     return { layers: [] as ReadonlyArray<ReportedLayer>, stale: false, summary: "" }
   }
+  const outdated = yield* outdatedIn(worktree, reading.patches, found.value)
   return {
     layers: reportedLayers(reading.patches, found.value),
-    stale: found.value.head !== worktree.head,
+    stale: found.value.head !== worktree.head || outdated.length > 0,
     rebased: found.value.base !== worktree.base,
     summary: found.value.summary,
   }
